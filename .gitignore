@@ -135,3 +135,5 @@ temp/
 
 # utils/ — local dev tools (inherited from OpenCMF)
 utils/
+# Development drafts and generated files
+docs/development/
