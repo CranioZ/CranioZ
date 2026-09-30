@@ -1,0 +1,137 @@
+# ============================================================
+# CranioZ — .gitignore
+# ============================================================
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# --- Virtual environments ---
+.venv/
+venv/
+ENV/
+env/
+.python-version.local
+
+# --- Testing / coverage ---
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+
+# --- Type checking ---
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pytype/
+.ruff_cache/
+
+# --- Build / packaging ---
+*.whl
+*.tar.gz
+pip-wheel-metadata/
+
+# --- IDEs ---
+# PyCharm / IntelliJ
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# VS Code
+.vscode/
+!.vscode/settings.json.example
+!.vscode/extensions.json
+*.code-workspace
+
+# Sublime / Vim / Emacs
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+\#*\#
+.\#*
+
+# --- OS ---
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# --- CranioZ specific ---
+# Local user data (never commit patient data — LGPD)
+*.dcm
+*.dicom
+*.nii
+*.nii.gz
+*.nrrd
+*.mha
+*.mhd
+*.vti
+*.vtk
+*.stl
+*.obj
+*.ply
+
+# Local projects / settings
+.local/
+.local_projects/
+*.local.json
+
+# Logs
+*.log
+logs/
+
+# Environment overrides
+.env
+.env.local
+.env.*.local
+
+# --- Temporary ---
+*.tmp
+*.bak
+*.orig
+*.rej
+tmp/
+temp/
+
+# utils/ — local dev tools (inherited from OpenCMF)
+utils/

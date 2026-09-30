@@ -1,0 +1,319 @@
+# ============================================================
+# CranioZ — pyproject.toml
+# Modular, open-source platform for virtual surgical planning
+# in cranio-maxillofacial surgery.
+# ============================================================
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# ------------------------------------------------------------
+# Project metadata
+# ------------------------------------------------------------
+[project]
+name = "cranioz"
+version = "0.3.0"
+description = "Modular, open-source platform for virtual surgical planning in cranio-maxillofacial surgery"
+readme = "README.md"
+requires-python = ">=3.12,<3.14"
+license = { text = "AGPL-3.0-or-later" }
+
+authors = [
+    { name = "Jozeias Fernandes de Sousa", email = "jozeiasfernandes@gmail.org" },
+]
+
+maintainers = [
+    { name = "Jozeias Fernandes de Sousa", email = "jozeiasfernandes@gmail.org" },
+]
+
+keywords = [
+    "craniofacial-surgery",
+    "virtual-surgical-planning",
+    "medical-imaging",
+    "orthognathic-surgery",
+    "maxillofacial",
+    "dicom",
+    "3d-visualization",
+    "surgical-guide",
+]
+
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Healthcare Industry",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Medical Science Apps.",
+    "Topic :: Scientific/Engineering :: Visualization",
+    "Typing :: Typed",
+]
+
+# ------------------------------------------------------------
+# Dependencies
+# ------------------------------------------------------------
+dependencies = [
+    # GUI
+    "PySide6>=6.6,<7.0",
+    # Visualization & scientific rendering
+    "vtk>=9.3,<10.0",
+    # Medical imaging
+    "pydicom>=2.4,<4.0",
+    # Scientific computing
+    "numpy>=1.26,<3.0",
+    "scipy>=1.11,<2.0",
+    # Image processing
+    "opencv-python>=4.9,<5.0",
+    # CPU-parallel acceleration
+    "numba>=0.59,<1.0",
+    # Reporting
+    "reportlab>=4.0,<5.0",
+    # HTTP (MCP transport, update checks)
+    "httpx>=0.27,<1.0",
+    # Validation & serialization
+    "pydantic>=2.6,<3.0",
+]
+
+[project.optional-dependencies]
+
+# GPU acceleration (Tier 2+) — opt-in only
+cuda = [
+    "cupy-cuda12x>=13.0,<14.0",
+]
+
+# Testing
+test = [
+    "pytest>=8.0,<9.0",
+    "pytest-cov>=5.0,<6.0",
+    "pytest-qt>=4.4,<5.0",
+    "pytest-benchmark>=4.0,<5.0",
+    "hypothesis>=6.100,<7.0",
+]
+
+# Development tooling
+dev = [
+    "cranioz[test]",
+    "ruff>=0.5,<1.0",
+    "mypy>=1.10,<2.0",
+    "pre-commit>=3.7,<4.0",
+    "build>=1.2,<2.0",
+    "py-spy>=0.3,<1.0",
+    "memory-profiler>=0.61,<1.0",
+]
+
+# Documentation
+docs = [
+    "mkdocs-material>=9.5,<10.0",
+    "mkdocs-mermaid2-plugin>=1.1,<2.0",
+    "mkdocs-minify-plugin>=0.8,<1.0",
+    "mkdocstrings[python]>=0.25,<1.0",
+]
+
+# Everything (for local full setup)
+all = [
+    "cranioz[dev]",
+    "cranioz[docs]",
+]
+
+# ------------------------------------------------------------
+# Scripts & entry points
+# ------------------------------------------------------------
+[project.scripts]
+cranioz = "cranioz.__main__:main"
+
+[project.entry-points."cranioz.modules"]
+patient = "cranioz.modules.patient:PatientModule"
+tomography = "cranioz.modules.tomography:TomographyModule"
+segmentation = "cranioz.modules.segmentation:SegmentationModule"
+registration = "cranioz.modules.registration:RegistrationModule"
+cephalometry = "cranioz.modules.cephalometry:CephalometryModule"
+osteotomy = "cranioz.modules.osteotomy:OsteotomyModule"
+surgical_guide = "cranioz.modules.surgical_guide:SurgicalGuideModule"
+
+# ------------------------------------------------------------
+# URLs
+# ------------------------------------------------------------
+[project.urls]
+Homepage = "https://github.com/cranioz/cranioz"
+Repository = "https://github.com/cranioz/cranioz"
+Issues = "https://github.com/cranioz/cranioz/issues"
+Changelog = "https://github.com/cranioz/cranioz/blob/main/CHANGELOG.md"
+Documentation = "https://cranioz.github.io/cranioz/"
+
+# ------------------------------------------------------------
+# Hatchling — src layout
+# ------------------------------------------------------------
+[tool.hatch.build.targets.wheel]
+packages = ["src/cranioz"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/tests",
+    "/docs",
+    "/README.md",
+    "/LICENSE",
+    "/CHANGELOG.md",
+]
+
+# ------------------------------------------------------------
+# Ruff — linting & formatting
+# ------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+exclude = [
+    ".git",
+    ".venv",
+    "venv",
+    "build",
+    "dist",
+    "__pycache__",
+    ".mypy_cache",
+    ".ruff_cache",
+    ".pytest_cache",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "N",    # pep8-naming
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "SIM",  # flake8-simplify
+    "RUF",  # ruff-specific
+    "TID",  # flake8-tidy-imports
+    "PTH",  # flake8-use-pathlib
+    "PL",   # pylint
+    "S",    # flake8-bandit (security)
+]
+ignore = [
+    "PLR0913",  # too many arguments (common in medical constructors)
+    "PLR2004",  # magic value comparison (common in thresholds)
+    "SIM108",   # ternary (not always clearer)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["PLR2004", "S101", "S105", "S106"]
+"__init__.py" = ["F401"]  # re-exports
+
+[tool.ruff.lint.isort]
+known-first-party = ["cranioz"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+docstring-code-format = true
+
+# ------------------------------------------------------------
+# Mypy — strict type checking
+# ------------------------------------------------------------
+[tool.mypy]
+python_version = "3.12"
+files = ["src/cranioz"]
+strict = true
+
+warn_return_any = true
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+
+disallow_any_generics = true
+disallow_subclassing_any = true
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_decorators = true
+
+no_implicit_optional = true
+no_implicit_reexport = true
+
+show_error_codes = true
+show_column_numbers = true
+
+exclude = [
+    "build/",
+    "dist/",
+    ".venv/",
+    "venv/",
+]
+
+# Third-party libs without stubs
+[[tool.mypy.overrides]]
+module = [
+    "vtk.*",
+    "PySide6.*",
+    "pydicom.*",
+    "reportlab.*",
+    "numba.*",
+    "cupy.*",
+    "cv2.*",
+    "scipy.*",
+]
+ignore_missing_imports = true
+
+# ------------------------------------------------------------
+# Pytest
+# ------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "-ra",
+]
+
+markers = [
+    "unit: unit tests",
+    "integration: integration tests",
+    "slow: slow tests (>1s)",
+    "gpu: requires GPU",
+    "qt: requires Qt (uses pytest-qt)",
+]
+
+# pytest-benchmark configuration (prefixed)
+benchmark_disable = false
+benchmark_columns = ["min", "max", "mean", "stddev", "median", "iqr", "ops"]
+
+# ------------------------------------------------------------
+# Coverage
+# ------------------------------------------------------------
+[tool.coverage.run]
+source = ["src/cranioz"]
+branch = true
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/__main__.py",
+    "*/conftest.py",
+    "*/docs/*",
+    "*/scripts/*",
+]
+
+[tool.coverage.paths]
+source = ["src/cranioz"]
+
+[tool.coverage.report]
+# fail_under = 80   # descomentar quando atingir 80% (PDF exige ≥80% no Core)
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "@abstractmethod",
+]
