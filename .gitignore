@@ -1,5 +1,5 @@
-# ============================================================
-# CranioZ — .gitignore
+﻿# ============================================================
+# CranioZ - .gitignore
 # ============================================================
 
 # --- Python ---
@@ -92,12 +92,11 @@ $RECYCLE.BIN/
 ._*
 
 # Linux
-*~
 .directory
 .Trash-*
 
 # --- CranioZ specific ---
-# Local user data (never commit patient data — LGPD)
+# Local user data (never commit patient data - LGPD)
 *.dcm
 *.dicom
 *.nii
@@ -133,7 +132,10 @@ logs/
 tmp/
 temp/
 
-# utils/ — local dev tools (inherited from OpenCMF)
+# --- Local dev tools ---
+# Tools inherited from OpenCMF, kept outside version control.
 utils/
-# Development drafts and generated files
+
+# --- Development drafts ---
+# Drafts and generated files not meant for version control.
 docs/development/

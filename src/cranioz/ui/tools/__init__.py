@@ -1,0 +1,1 @@
+# Specialized interaction within the editors
