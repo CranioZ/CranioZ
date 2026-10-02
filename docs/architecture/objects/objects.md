@@ -1,51 +1,51 @@
 ## 1. The Conceptual Model
 An Object can be understood through four complementary dimensions:
 
-text
-Object
-│
-├── Data
-│     └── What is the data?
-│
-├── Semantic
-│     └── What does this data represent?
-│
-├── Components
-│     └── What additional information/structures does it have?
-│
-└── Capabilities
-      └── What can be done with this Object?
+
+    Object
+    │
+    ├── Data
+    │     └── What is the data?
+    │
+    ├── Semantic
+    │     └── What does this data represent?
+    │
+    ├── Components
+    │     └── What additional information/structures does it have?
+    │
+    └── Capabilities
+          └── What can be done with this Object?
 For example:
 
-text
-Mandible
-│
-├── Data
-│     └── Mesh
-│
-├── Semantic
-│     └── Anatomy.Bone.Mandible
-│
-├── Components
-│     ├── Transform
-│     ├── LandmarkSet
-│     └── AnatomicalProperties
-│
-└── Capabilities
-      ├── Transform
-      ├── Measure
-      ├── Boolean
-      ├── Cut
-      ├── Osteotomy
-      └── Landmark
+
+    Mandible
+    │
+    ├── Data
+    │     └── Mesh
+    │
+    ├── Semantic
+    │     └── Anatomy.Bone.Mandible
+    │
+    ├── Components
+    │     ├── Transform
+    │     ├── LandmarkSet
+    │     └── AnatomicalProperties
+    │
+    └── Capabilities
+          ├── Transform
+          ├── Measure
+          ├── Boolean
+          ├── Cut
+          ├── Osteotomy
+          └── Landmark
 This is much better than creating classes such as:
 
-text
-MandibleMesh
-MandibleSurgicalMesh
-MandibleOrthognathicMesh
-MandibleSegmentedMesh
-MandibleOsteotomyMesh
+
+    MandibleMesh
+    MandibleSurgicalMesh
+    MandibleOrthognathicMesh
+    MandibleSegmentedMesh
+    MandibleOsteotomyMesh
 
 ## 2. Data: the physical representation
 I would rename the previous term Data Type to simply Data or Data Representation.
@@ -56,35 +56,35 @@ The question is:
 
 Examples:
 
-text
-Mesh
-Volume
-Image
-ImageSeries
-Point
-Curve
-Surface
-Region
+
+    Mesh
+    Volume
+    Image
+    ImageSeries
+    Point
+    Curve
+    Surface
+    Region
+
 This has no clinical semantics.
 
 A Mesh can be:
 
-text
-Mandible
-Maxilla
-Tooth
-Implant
-Plate
-Scan
-SurgicalGuide
+    Mandible
+    Maxilla
+    Tooth
+    Implant
+    Plate
+    Scan
+    SurgicalGuide
 Therefore:
 
-text
-Mesh ≠ Mandible
+
+    Mesh ≠ Mandible
 and:
 
-text
-Mandible ≠ Mesh
+    Mandible ≠ Mesh
+
 The mandible may have a Mesh as its geometric representation.
 
 ## 3. Semantic: the meaning of the Object
@@ -96,46 +96,45 @@ The question is:
 
 For example:
 
-text
-Anatomy.Bone.Mandible
-Anatomy.Bone.Maxilla
-Anatomy.Tooth
-Anatomy.Zygoma
-
-Implant.Dental
-Implant.Facial
-
-Surgical.Osteotomy
-Surgical.Guide
-Surgical.Splint
-
-Imaging.CT
-Imaging.CBCT
-Imaging.Panoramic
+    Anatomy.Bone.Mandible
+    Anatomy.Bone.Maxilla
+    Anatomy.Tooth
+    Anatomy.Zygoma
+    
+    Implant.Dental
+    Implant.Facial
+    
+    Surgical.Osteotomy
+    Surgical.Guide
+    Surgical.Splint
+    
+    Imaging.CT
+    Imaging.CBCT
+    Imaging.Panoramic
 This resolves an important issue:
 
-text
-data:
-    Mesh
 
-semantic:
-    Anatomy.Bone.Mandible
+    data:
+        Mesh
+    
+    semantic:
+        Anatomy.Bone.Mandible
 The same Mesh could be:
 
-text
-data:
-    Mesh
 
-semantic:
-    Scan.Intraoral
+    data:
+        Mesh
+    
+    semantic:
+        Scan.Intraoral
 or:
 
-text
-data:
-    Mesh
 
-semantic:
-    Implant.Facial
+    data:
+        Mesh
+
+    semantic:
+        Implant.Facial
 The geometry does not need to know these semantics.
 
 ## 4. Components
@@ -145,30 +144,28 @@ A Component represents additional information or structure associated with the O
 
 Example:
 
-text
-Mandible
-│
-├── Mesh
-├── Transform
-├── LandmarkSet
-└── AnatomicalProperties
+    Mandible
+    │
+    ├── Mesh
+    ├── Transform
+    ├── LandmarkSet
+    └── AnatomicalProperties
 Or:
 
-text
-PanoramicRadiograph
-│
-├── Image
-├── Transform2D
-└── ImageProperties
+    PanoramicRadiograph
+    │
+    ├── Image
+    ├── Transform2D
+    └── ImageProperties
 Or:
 
-text
-Plate
-│
-├── Mesh
-├── Transform
-├── PlateProperties
-└── MaterialProperties
+
+    Plate
+    │
+    ├── Mesh
+    ├── Transform
+    ├── PlateProperties
+    └── MaterialProperties
 This is different from Capability.
 
 Component: "What does the Object have?"
@@ -184,40 +181,40 @@ A Capability represents an operational capability that can be applied to a given
 
 For example:
 
-text
-Mandible
-    capabilities:
-        Transform
-        Measure
-        Boolean
-        Cut
-        Osteotomy
-        Landmark
+
+    Mandible
+        capabilities:
+            Transform
+            Measure
+            Boolean
+            Cut
+            Osteotomy
+            Landmark
 While:
 
-text
-PanoramicRadiograph
-    capabilities:
-        Transform2D
-        WindowLevel
-        Crop
-        Annotation
-        Export
+
+    PanoramicRadiograph
+        capabilities:
+            Transform2D
+            WindowLevel
+            Crop
+            Annotation
+            Export
 This avoids:
 
-python
-if object.semantic_type == "Mandible":
-    show_osteotomy_tool()
+    if object.semantic_type == "Mandible":
+        show_osteotomy_tool()
+
 and enables something conceptually closer to:
 
-text
-Object
-    ↓
-CapabilityRegistry
-    ↓
-Capabilities
-    ↓
-Tools
+
+    Object
+        ↓
+    CapabilityRegistry
+        ↓
+    Capabilities
+        ↓
+    Tools
 The Toolbar, context, or module can then ask:
 
 "Which Tools are compatible with the capabilities of this Object?"
@@ -239,12 +236,13 @@ The Capability should be resolved by the system from the Object, its semantics, 
 
 For example:
 
-text
-Mandible
-    semantic:
-        Anatomy.Bone.Mandible
 
-    components:
+    Mandible
+        semantic:
+            Anatomy.Bone.Mandible
+
+components:
+
         Mesh
         Transform
         LandmarkSet
@@ -255,28 +253,27 @@ Mandible
 
             ↓
 
-    Transform
-    Measure
-    Landmark
-    Boolean
-    Cut
-    Osteotomy
+        Transform
+        Measure
+        Landmark
+        Boolean
+        Cut
+        Osteotomy
+
 This is more powerful because a Capability can depend on context.
 
 For example:
 
-text
-Mandible
+    Mandible
 may have:
 
-text
-Osteotomy
+    Osteotomy
 but a particular osteotomy may require:
 
-text
-Mesh
-+ valid geometry
-+ anatomical state
+    Mesh
+    + valid geometry
+      + anatomical state
+
 Therefore, a Capability is not just a "label". It can represent a verifiable capability of the system.
 
 ## 7. Capability is not Tool
@@ -284,33 +281,32 @@ This distinction is also important for the documentation we are writing now.
 
 For example:
 
-text
-Capability
-    Osteotomy
+    Capability
+        Osteotomy
 means:
 
 This Object can participate in osteotomy operations.
 
 But the Tools may be:
 
-text
-Create Osteotomy Plane
-Create BSSO
-Create Le Fort I
-Split Segment
-Move Segment
+
+    Create Osteotomy Plane
+    Create BSSO
+    Create Le Fort I
+    Split Segment
+    Move Segment
 Therefore:
 
-text
-Object
-    ↓
-Capability
-    ↓
-Tool
-    ↓
-Command
-    ↓
-Domain/Application Service
+
+    Object
+        ↓
+    Capability
+        ↓
+    Tool
+        ↓
+    Command
+        ↓
+    Domain/Application Service
 This chain becomes quite elegant for CranioZ.
 
 ## 8. The role of the ObjectRegistry
@@ -322,44 +318,42 @@ The ObjectRegistry should answer:
 
 For example:
 
-text
-ObjectRegistry
-│
-├── Object #001
-│     semantic = Anatomy.Bone.Mandible
-│
-├── Object #002
-│     semantic = Anatomy.Bone.Maxilla
-│
-├── Object #003
-│     semantic = Anatomy.Tooth
-│
-└── Object #004
-      semantic = Imaging.CBCT
+    ObjectRegistry
+    │
+    ├── Object #001
+    │     semantic = Anatomy.Bone.Mandible
+    │
+    ├── Object #002
+    │     semantic = Anatomy.Bone.Maxilla
+    │
+    ├── Object #003
+    │     semantic = Anatomy.Tooth
+    │
+    └── Object #004
+          semantic = Imaging.CBCT
 It should not be responsible for determining the clinical meaning of the Object.
 
 For that, there is the:
 
-text
-SemanticRegistry
+    SemanticRegistry
 And to discover what can be done:
 
-text
-CapabilityRegistry
+
+    CapabilityRegistry
 Thus:
 
-text
-ObjectRegistry
-    "Which objects exist?"
 
-SemanticRegistry
-    "What do these objects represent?"
-
-CapabilityRegistry
-    "Which capabilities are available?"
-
-ObjectFactory
-    "How are these objects created?"
+    ObjectRegistry
+        "Which objects exist?"
+    
+    SemanticRegistry
+        "What do these objects represent?"
+    
+    CapabilityRegistry
+        "Which capabilities are available?"
+    
+    ObjectFactory
+        "How are these objects created?"
 This division remains very good.
 
 ## 9. ObjectTypeRegistry
@@ -371,33 +365,32 @@ It answers:
 
 For example:
 
-text
-ObjectTypeRegistry
-
-    Mesh
-    Volume
-    Image
-    ImageSeries
-    Point
-    Curve
-    Landmark
-    Measurement
-    Transform
-    CoordinateSystem
-    Scan
-    AnatomicalObject
-    SurgicalGuide
-    ...
+    ObjectTypeRegistry
+    
+        Mesh
+        Volume
+        Image
+        ImageSeries
+        Point
+        Curve
+        Landmark
+        Measurement
+        Transform
+        CoordinateSystem
+        Scan
+        AnatomicalObject
+        SurgicalGuide
+        ...
 This is different from the SemanticRegistry.
 
 For example:
 
-text
-Object Type:
-    Mesh
+    Object Type:
+        Mesh
+    
+    Semantic:
+        Anatomy.Bone.Mandible
 
-Semantic:
-    Anatomy.Bone.Mandible
 ## 10. SceneGraph and RelationshipGraph
 The previous architecture also had two structures worth preserving.
 
@@ -405,51 +398,48 @@ SceneGraph
 
 It answers:
 
-"Where is this Object in the spatial/visual organization of the project?"
+    "Where is this Object in the spatial/visual organization of the project?"
 
 For example:
 
-text
-Scene
-│
-├── Patient
-│   ├── Maxilla
-│   ├── Mandible
-│   ├── Teeth
-│   └── FacialScan
-│
-└── Planning
-    ├── Osteotomy
-    ├── Segments
-    └── SurgicalGuide
+    Scene
+    │
+    ├── Patient
+    │   ├── Maxilla
+    │   ├── Mandible
+    │   ├── Teeth
+    │   └── FacialScan
+    │
+    └── Planning
+        ├── Osteotomy
+        ├── Segments
+        └── SurgicalGuide
 RelationshipGraph
 
 It answers:
 
-"What is the semantic or dependency relationship between these Objects?"
+    "What is the semantic or dependency relationship between these Objects?"
 
 For example:
 
-text
-Measurement
-    ├── references → Landmark A
-    └── references → Landmark B
+    Measurement
+        ├── references → Landmark A
+        └── references → Landmark B
 or:
 
-text
-Segmentation
-    └── derived-from → Volume
+    Segmentation
+        └── derived-from → Volume
 or:
 
-text
-Mesh
-    └── representation-of → Mandible
+
+    Mesh
+        └── representation-of → Mandible
 This separation is useful because visual hierarchy is not necessarily a domain relationship.
 
 ## 11. A more mature architecture
 Combining the previous architecture with the current one, I would arrive at:
 
-text
+
                               OBJECT
                                  │
               ┌──────────────────┼──────────────────┐
@@ -486,72 +476,71 @@ This preserves the original idea but prevents the Object from becoming a "god ob
 ## 12. Example: Mandible
 I would document the example as follows:
 
-text
-Object
-│
-├── id
-│
-├── data
-│   └── Mesh
-│
-├── semantic
-│   └── Anatomy.Bone.Mandible
-│
-├── components
-│   ├── Transform
-│   ├── LandmarkSet
-│   └── AnatomicalProperties
-│
-└── relationships
-    ├── representation-of → Mandible
-    └── references → ...
+
+    Object
+    │
+    ├── id
+    │
+    ├── data
+    │   └── Mesh
+    │
+    ├── semantic
+    │   └── Anatomy.Bone.Mandible
+    │
+    ├── components
+    │   ├── Transform
+    │   ├── LandmarkSet
+    │   └── AnatomicalProperties
+    │
+    └── relationships
+        ├── representation-of → Mandible
+        └── references → ...
 And its capabilities would be resolved:
 
-text
-Mandible
-    ↓
-CapabilityResolver
-    ↓
-Transform
-Measure
-Boolean
-Cut
-Osteotomy
-Landmark
-Symmetry
+
+    Mandible
+        ↓
+    CapabilityResolver
+        ↓
+    Transform
+    Measure
+    Boolean
+    Cut
+    Osteotomy
+    Landmark
+    Symmetry
 We do not need to create:
 
-text
-MandibleMesh
-MandibleSurgicalMesh
-MandibleOrthognathicMesh
+
+    MandibleMesh
+    MandibleSurgicalMesh
+    MandibleOrthognathicMesh
 
 ## 13. Example: Panoramic Radiograph
-text
-Object
-│
-├── id
-│
-├── data
-│   └── Image
-│
-├── semantic
-│   └── Imaging.Radiography.Panoramic
-│
-├── components
-│   ├── Transform2D
-│   └── ImageProperties
-│
-└── relationships
-    └── ...
+
+    Object
+    │
+    ├── id
+    │
+    ├── data
+    │   └── Image
+    │
+    ├── semantic
+    │   └── Imaging.Radiography.Panoramic
+    │
+    ├── components
+    │   ├── Transform2D
+    │   └── ImageProperties
+    │
+    └── relationships
+        └── ...
 Capabilities:
 
-text
-Transform2D
-WindowLevel
-Crop
-Annotation
-Measure2D
-Export
-ExternalEditor
-Note that the Object does not need to know that these capabilities correspond to buttons on a Toolbar.
+    Transform2D
+    WindowLevel
+    Crop
+    Annotation
+    Measure2D
+    Export
+    ExternalEditor
+    Note that the Object does not need to know that these capabilities correspond to buttons on a Toolbar.
