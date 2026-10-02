@@ -8,8 +8,6 @@ Um Module define **o que o sistema faz**, não **como a interface se apresenta
 
 A arquitetura de Modules segue a seguinte hierarquia conceitual:
 
-text
-
 ```
 Application
 └── Modules
@@ -19,8 +17,6 @@ Application
     ├── Domain
     └── Capabilities
 ```
-
-svgsvg
 
 Essa separação é fundamental para permitir que a mesma funcionalidade clínica seja utilizada por diferentes configurações de interface sem que o Module dependa de detalhes de apresentação.
 
@@ -55,7 +51,6 @@ Um Module **não é responsável por**:
 
 A separação pode ser resumida como:
 
-text
 
 ```
 Module  → funcionalidade clínica
@@ -65,8 +60,6 @@ Tool    → intenção do usuário
 Editor  → experiência de interface
 Scene   → estado clínico
 ```
-
-svgsvg
 
 ---
 
@@ -104,18 +97,13 @@ Ele controla aspectos como:
 - navegação;
 - apresentação de informações.
 
-text
 
 ```
 Module  → funcionalidade
 Editor  → experiência de interface
 ```
 
-svgsvg
-
 A relação é de **declaração**, não de posse:
-
-text
 
 ```
 Module
@@ -126,7 +114,6 @@ Module
  └── Capabilities
 ```
 
-svgsvg
 
 O Module pode declarar que determinada funcionalidade necessita de certas capacidades de interface, mas **não possui nem instancia os Editors** que as fornecem.
 
@@ -136,7 +123,6 @@ O Module pode declarar que determinada funcionalidade necessita de certas capaci
 
 A comunicação entre `Application` e `Module` pode ser realizada por meio de um `ModuleHost`.
 
-text
 
 ```
 Application
@@ -144,7 +130,6 @@ Application
     └── Module
 ```
 
-svgsvg
 
 O `ModuleHost` funciona como camada de hospedagem e adaptação entre a infraestrutura da Application e a implementação funcional do Module.
 
@@ -168,7 +153,6 @@ Todos os Modules devem derivar de uma abstração comum.
 
 Uma implementação conceitual pode ser representada por:
 
-python
 
 ```
 class Module(ABC):
@@ -189,21 +173,16 @@ class Module(ABC):
         ...
 ```
 
-svgsvg
-
 A interface concreta poderá evoluir conforme as necessidades do sistema.
 
 O objetivo da classe base não é impor uma implementação específica, mas estabelecer um contrato comum para registro, criação e ciclo de vida.
 
 ### Ciclo de vida síncrono
 
-text
-
 ```
 constructed → initialized → active ⇄ inactive → disposed
 ```
 
-svgsvg
 
 ### Ciclo de vida com carregamento
 
@@ -215,7 +194,6 @@ text
 registered → loaded → initialized → active ⇄ inactive → unloaded → disposed
 ```
 
-svgsvg
 
 ### Contratos do ciclo de vida
 
@@ -240,8 +218,6 @@ Regras adicionais:
 
 Para evitar ambiguidade sobre quem registra o quê, adota-se a seguinte regra:
 
-text
-
 ```
 Module        → declara
 ModuleLoader  → registra
@@ -249,7 +225,6 @@ Registry      → resolve
 ModuleHost    → hospeda
 ```
 
-svgsvg
 
 Ou seja:
 
@@ -260,7 +235,6 @@ Ou seja:
 
 O Module **não conhece diretamente** `ToolRegistry`, `EditorRegistry` ou `CommandStack`. Ele recebe abstrações via contexto.
 
-text
 
 ```
 Module
@@ -276,7 +250,6 @@ ModuleLoader
 Registries
 ```
 
-svgsvg
 
 ---
 
@@ -295,8 +268,6 @@ O Registry é responsável por:
 
 Exemplo conceitual:
 
-text
-
 ```
 ModuleRegistry
 │
@@ -308,8 +279,6 @@ ModuleRegistry
 └── ...
 ```
 
-svgsvg
-
 O Registry permite que o sistema trabalhe com identificadores estáveis em vez de depender diretamente das classes concretas.
 
 Por exemplo:
@@ -320,17 +289,13 @@ python
 module_id = "orthognathic"
 ```
 
-svgsvg
-
 em vez de:
 
-python
 
 ```
 OrthognathicModule(...)
 ```
 
-svgsvg
 
 na configuração da Application.
 
@@ -344,8 +309,6 @@ Entretanto, a Application não instancia diretamente as classes dos Modules.
 
 O fluxo é:
 
-text
-
 ```
 Application
    │
@@ -358,7 +321,6 @@ ModuleRegistry
 Module
 ```
 
-svgsvg
 
 Dessa forma, a configuração da Application permanece declarativa.
 
@@ -373,8 +335,6 @@ ModuleSpec(
 )
 ```
 
-svgsvg
-
 A Application conhece:
 
 text
@@ -383,17 +343,12 @@ text
 "orthognathic"
 ```
 
-svgsvg
 
 mas não precisa conhecer:
-
-text
 
 ```
 OrthognathicModule
 ```
-
-svgsvg
 
 Essa responsabilidade pertence ao `ModuleRegistry`.
 
@@ -415,8 +370,6 @@ Ele descreve:
 
 Conceitualmente:
 
-text
-
 ```
 ModuleTree
 │
@@ -431,7 +384,6 @@ ModuleTree
 └── Module: Cephalometry
 ```
 
-svgsvg
 
 O `ModuleTree` **não controla** Commands, Tools ou Services. Ele apenas descreve a composição e as dependências. O registro efetivo pertence ao processo de carregamento.
 
@@ -460,8 +412,6 @@ ModuleHosts
 Modules ativos
 ```
 
-svgsvg
-
 ### ModuleTree
 
 Representação declarativa da composição funcional.
@@ -484,8 +434,6 @@ Nem todo Module precisa estar carregado o tempo todo. Módulos de IA, biblioteca
 
 ### Políticas de carregamento
 
-yaml
-
 ```
 module:
   id: ai-segmentation
@@ -494,8 +442,6 @@ module:
   on_failure: notify_user | retry | disable
   timeout: 30s
 ```
-
-svgsvg
 
 ### Estratégias
 
@@ -507,7 +453,6 @@ svgsvg
 
 ### Combinado
 
-text
 
 ```
 startup:
@@ -522,8 +467,6 @@ on demand:
   - simulation      (lazy)
 ```
 
-svgsvg
-
 ### Estados observáveis
 
 text
@@ -532,7 +475,6 @@ text
 registered → loaded → initialized → active ⇄ inactive → unloaded → disposed
 ```
 
-svgsvg
 
 Diferenças cruciais:
 
@@ -561,7 +503,7 @@ depends_on:
     load_policy: promote  # promote | defer | optional
 ```
 
-svgsvg
+
 
 | **Política** | **Comportamento**                               |
 | :----------- | :---------------------------------------------- |
@@ -573,8 +515,6 @@ svgsvg
 
 O `ModuleLoader` deve expor:
 
-text
-
 ```
 ModuleLoader.load(module_id) → Task[Module]
     estados: pending → loading → loaded | failed | cancelled
@@ -582,7 +522,6 @@ ModuleLoader.load(module_id) → Task[Module]
 ModuleLoader.cancel(module_id)
 ```
 
-svgsvg
 
 O `initialize()` assíncrono deve cooperar com cancelamento (token) e liberar recursos parcialmente alocados.
 
@@ -595,9 +534,6 @@ Commands representam **alterações de estado** no CranioZ.
 Um Module **declara** os Commands específicos do seu domínio.
 
 Exemplos:
-
-text
-
 ```
 OrthognathicModule
 ├── MoveMandibleCommand
@@ -611,7 +547,6 @@ ImplantModule
 └── RemoveImplantCommand
 ```
 
-svgsvg
 
 Um Command deve:
 
@@ -622,7 +557,6 @@ Um Command deve:
 
 O fluxo preferencial é:
 
-text
 
 ```
 User
@@ -640,7 +574,6 @@ EventBus
 Editors
 ```
 
-svgsvg
 
 Isso mantém undo/redo, rastreabilidade e comunicação entre componentes independentes.
 
@@ -652,7 +585,6 @@ Tools representam **intenções ou operações iniciadas pelo usuário**.
 
 Um Module **declara** Tools específicas do seu domínio, que serão disponibilizadas para as Toolbars dos Editors.
 
-text
 
 ```
 OrthognathicModule
@@ -661,13 +593,10 @@ OrthognathicModule
 └── LandmarkTool
 ```
 
-svgsvg
 
 As Tools declaradas por um Module são **registradas pelo ModuleLoader** no `ToolRegistry`.
 
 A definição da Tool é única; a instanciação é responsabilidade da Toolbar que a utiliza.
-
-text
 
 ```
 Module
@@ -684,8 +613,6 @@ Toolbar
    ▼
 Tool
 ```
-
-svgsvg
 
 Uma Tool não deve modificar diretamente o estado clínico. Ela traduz a intenção do usuário em Command.
 
@@ -710,8 +637,6 @@ ImplantModule
 ├── ImplantPlacementService
 └── ImplantValidationService
 ```
-
-svgsvg
 
 Um Service pode:
 
@@ -738,7 +663,6 @@ Ele contém:
 
 Exemplos:
 
-text
 
 ```
 OrthognathicDomain
@@ -748,8 +672,6 @@ OrthognathicDomain
 ├── Splint
 └── OrthognathicPlan
 ```
-
-svgsvg
 
 ### Fronteira entre Domain, Scene e Services
 
@@ -786,8 +708,6 @@ O Domain é a parte mais estável e independente do Module.
 
 Em vez de um Module depender diretamente de IDs específicos de Editors, ele declara **capacidades** que necessita.
 
-yaml
-
 ```
 requires:
   - 3d-visualization
@@ -795,11 +715,8 @@ requires:
   - landmark-overlay
 ```
 
-svgsvg
 
 O Workspace resolve essas capacidades para Editors concretos.
-
-text
 
 ```
 Module
@@ -814,13 +731,11 @@ Workspace
 Editor
 ```
 
-svgsvg
 
 Isso reduz o acoplamento a nomes específicos de componentes e permite que diferentes configurações de interface atendam à mesma capacidade.
 
 ### Exemplo
 
-text
 
 ```
 Orthognathic Module
@@ -830,8 +745,6 @@ Orthognathic Module
     └── requires: landmark-overlay
 ```
 
-svgsvg
-
 O Module **não sabe** se `3d-visualization` será atendida por um `Viewport3DEditor` ou por outro Editor futuro.
 
 ---
@@ -840,7 +753,6 @@ O Module **não sabe** se `3d-visualization` será atendida por um `Viewpor
 
 O contexto de um Module deve ser **mínimo e específico**, evitando concentrar dependências desnecessárias.
 
-text
 
 ```
 ModuleContext
@@ -867,13 +779,10 @@ ToolContext
 └── EventBus
 ```
 
-svgsvg
 
 O Module recebe **apenas o que precisa**. Isso evita que o `ModuleContext` se torne uma "Application disfarçada".
 
 ### Exemplo conceitual de uso
-
-python
 
 ```
 class OrthognathicModule(Module):
@@ -887,7 +796,6 @@ class OrthognathicModule(Module):
         ...
 ```
 
-svgsvg
 
 O Module não recebe a aplicação inteira, apenas o contexto necessário.
 
