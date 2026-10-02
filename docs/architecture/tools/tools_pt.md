@@ -11,16 +11,16 @@ A execução efetiva deve ser delegada à camada apropriada da aplicação, norm
 
 A relação conceitual é:
 
-User
-  │
-  ▼
-Tool
-  │
-  ▼
-Command / Service
-  │
-  ▼
-Domain
+    User
+      │
+      ▼
+    Tool
+      │
+      ▼
+    Command / Service
+      │
+      ▼
+    Domain
 
 Essa separação permite que a mesma operação seja acionada por diferentes mecanismos sem duplicação de lógica.
 
@@ -28,16 +28,16 @@ Essa separação permite que a mesma operação seja acionada por diferentes mec
 
 O sistema de Tools deve:
 
-fornecer uma interface uniforme para ações executáveis;
-permitir que módulos exponham suas funcionalidades à UI;
-separar apresentação e interação da lógica de negócio;
-permitir diferentes formas de apresentação da mesma Tool;
-facilitar descoberta e registro de funcionalidades;
-permitir habilitação/desabilitação contextual;
-fornecer metadados suficientes para construção automática da UI;
-permitir acionamento por interação humana ou por sistemas automatizados;
-manter as operações independentes de uma localização específica no Workspace;
-possibilitar integração futura com automação e MCP.
+* fornecer uma interface uniforme para ações executáveis;
+* permitir que módulos exponham suas funcionalidades à UI;
+* separar apresentação e interação da lógica de negócio;
+* permitir diferentes formas de apresentação da mesma Tool;
+* facilitar descoberta e registro de funcionalidades;
+* permitir habilitação/desabilitação contextual;
+* fornecer metadados suficientes para construção automática da UI;
+* permitir acionamento por interação humana ou por sistemas automatizados;
+* manter as operações independentes de uma localização específica no Workspace;
+* possibilitar integração futura com automação e MCP.
 
 Uma Tool deve ser suficientemente declarativa para que a aplicação consiga determinar o que ela é, quando pode ser utilizada e como deve ser apresentada, sem que o módulo precise conhecer detalhes específicos da UI.
 
@@ -51,44 +51,44 @@ Representa uma ação disponibilizada ao usuário.
 
 Responde principalmente às perguntas:
 
-O que esta ação faz?
-Como ela é identificada?
-Como aparece na interface?
-Quando está disponível?
-Como pode ser acionada?
-Command
+* O que esta ação faz?
+* Como ela é identificada?
+* Como aparece na interface?
+* Quando está disponível?
+* Como pode ser acionada?
+* Command
 
 Representa uma operação executável pela aplicação.
 
 Responde principalmente às perguntas:
 
-Qual operação será executada?
-Quais são seus parâmetros?
-Como pode ser desfeita?
-Como participa do histórico de operações?
-Quais eventos são produzidos?
+* Qual operação será executada?
+* Quais são seus parâmetros?
+* Como pode ser desfeita?
+* Como participa do histórico de operações?
+* Quais eventos são produzidos?
 
 Assim:
 
-Tool
- └── executa → Command
+    Tool
+     └── executa → Command
 
 mas:
 
-Command
- └── não depende necessariamente de uma Tool
+    Command
+     └── não depende necessariamente de uma Tool
 
 Um Command pode ser executado por:
 
-Tool;
-atalho de teclado;
-menu;
-macro;
-workflow;
-automação;
-MCP;
-script;
-outra operação interna.
+    Tool;
+    atalho de teclado;
+    menu;
+    macro;
+    workflow;
+    automação;
+    MCP;
+    script;
+    outra operação interna.
 
 Da mesma forma, uma Tool pode representar uma interação mais complexa que resulte na execução de um ou vários Commands.
 
@@ -98,30 +98,30 @@ No framework, Tool deve ser tratada inicialmente como um contrato.
 
 Uma Tool deve definir, no mínimo:
 
-identifier
-label
-description
-icon
-category
-availability
-execution
+    identifier
+    label
+    description
+    icon
+    category
+    availability
+    execution
 
 A implementação concreta pode variar.
 
 Conceitualmente:
 
-class Tool(ABC):
-    identifier: str
-    label: str
-    description: str
-    icon: str | None
-    category: str | None
-
-    def is_available(self, context) -> bool:
-        ...
-
-    def execute(self, context) -> None:
-        ...
+    class Tool(ABC):
+        identifier: str
+        label: str
+        description: str
+        icon: str | None
+        category: str | None
+    
+        def is_available(self, context) -> bool:
+            ...
+    
+        def execute(self, context) -> None:
+            ...
 
 A interface definitiva deve permanecer pequena. Recursos adicionais devem ser adicionados apenas quando houver necessidade arquitetural real.
 
@@ -131,7 +131,7 @@ Cada Tool deve possuir um identificador único e estável.
 
 Exemplo:
 
-orthognathic.cephalometry.add_landmark
+    orthognathic.cephalometry.add_landmark
 
 ou:
 
@@ -139,21 +139,21 @@ osteotomy.create_lefort_i
 
 O identificador deve:
 
-ser único dentro do sistema;
-ser estável entre versões sempre que possível;
-não depender do texto apresentado ao usuário;
-não depender da posição da Tool na interface;
-poder ser utilizado por Commands, menus, plugins e automações.
+* ser único dentro do sistema;
+* ser estável entre versões sempre que possível;
+* não depender do texto apresentado ao usuário;
+* não depender da posição da Tool na interface;
+* poder ser utilizado por Commands, menus, plugins e automações.
 
 O label é destinado à apresentação.
 
 Exemplo:
 
-identifier:
-    orthognathic.cephalometry.add_landmark
+    identifier:
+        orthognathic.cephalometry.add_landmark
 
-label:
-    Add Landmark
+    label:
+        Add Landmark
 
 A alteração do texto apresentado ao usuário não deve alterar a identidade da Tool.
 
@@ -163,23 +163,23 @@ Uma Tool não deve determinar diretamente onde será exibida.
 
 Por exemplo, uma Tool pode ser apresentada:
 
-em uma toolbar;
-em um menu;
-em um painel;
-em um menu contextual;
-em uma Command Palette;
-em um Editor;
-em uma interface de módulo.
+* em uma toolbar;
+* em um menu;
+* em um painel;
+* em um menu contextual;
+* em uma Command Palette;
+* em um Editor;
+* em uma interface de módulo.
 
 A decisão de posicionamento pertence à camada de UI e ao sistema de Workspace/Layout.
 
 Portanto:
 
-Tool
- └── define a ação
-
-Layout / Workspace
- └── define onde a ação aparece
+    Tool
+     └── define a ação
+    
+    Layout / Workspace
+     └── define onde a ação aparece
 
 Isso é particularmente importante no CranioZ porque o mesmo conjunto de Tools poderá ser utilizado em diferentes layouts e contextos.
 
@@ -189,21 +189,21 @@ Editors e Tools possuem responsabilidades diferentes. Um Editor fornece um espa�
 
 Por exemplo:
 
-3D Editor
- ├── Select
- ├── Move
- ├── Rotate
- ├── Measure
- └── Landmark
+    3D Editor
+     ├── Select
+     ├── Move
+     ├── Rotate
+     ├── Measure
+     └── Landmark
 
 ou:
 
-Cephalometric Editor
- ├── Add Landmark
- ├── Move Landmark
- ├── Remove Landmark
- ├── Measure Angle
- └── Measure Distance
+    Cephalometric Editor
+     ├── Add Landmark
+     ├── Move Landmark
+     ├── Remove Landmark
+     ├── Measure Angle
+     └── Measure Distance
 
 O Editor não deve precisar implementar novamente cada operação.
 
@@ -280,33 +280,33 @@ A execução de uma Tool não deve concentrar lógica clínica ou geométrica co
 
 O fluxo preferencial é:
 
-User
-  │
-  ▼
-Tool
-  │
-  ▼
-Command
-  │
-  ├── Domain
-  ├── Service
-  └── Infrastructure
+    User
+      │
+      ▼
+    Tool
+      │
+      ▼
+    Command
+      │
+      ├── Domain
+      ├── Service
+      └── Infrastructure
 
 Exemplo:
 
-Tool:
-    Create Le Fort I Osteotomy
-
-Command:
-    CreateOsteotomyCommand
-
-Domain:
-    Osteotomy
-    Bone
-    Geometry
-
-Service:
-    OsteotomyService
+    Tool:
+        Create Le Fort I Osteotomy
+    
+    Command:
+        CreateOsteotomyCommand
+    
+    Domain:
+        Osteotomy
+        Bone
+        Geometry
+    
+    Service:
+        OsteotomyService
 
 A Tool funciona como uma camada de interação.
 
@@ -388,19 +388,19 @@ Permanece ativa enquanto o usuário interage com a cena.
 
 Alterna entre dois estados.
 
-Show/Hide
-Snap
-Visibility
-Orthographic/Perspective
+    Show/Hide
+    Snap
+    Visibility
+    Orthographic/Perspective
 
 ### 12.4 Stateful Tool
 
 Mantém um estado de interação mais complexo.
 
-Segmentation Brush
-Sculpt
-Registration
-Osteotomy Planning
+    Segmentation Brush
+    Sculpt
+    Registration
+    Osteotomy Planning
 
 Essa classificação é útil para o comportamento da UI, mas não deve criar subclasses desnecessárias se uma interface comum for suficiente.
 
@@ -523,11 +523,11 @@ Conceitualmente:
 
 O Registry permite que:
 
-módulos registrem suas Tools;
-plugins adicionem Tools;
-a UI descubra Tools disponíveis;
-menus e toolbars sejam construídos dinamicamente;
-sistemas de automação encontrem ações disponíveis.
+* módulos registrem suas Tools;
+* plugins adicionem Tools;
+* a UI descubra Tools disponíveis;
+* menus e toolbars sejam construídos dinamicamente;
+* sistemas de automação encontrem ações disponíveis.
 
 Exemplo:
 
@@ -582,15 +582,15 @@ Isso permite que terceiros adicionem funcionalidades sem modificar o Core do Cra
 
 Exemplo hipotético:
 
-AI Segmentation Plugin
-    └── Automatic Segmentation Tool
+    AI Segmentation Plugin
+        └── Automatic Segmentation Tool
 
 ou:
 
-Rhinoplasty Plugin
-    ├── Nasal Landmark Tool
-    ├── Nasal Osteotomy Tool
-    └── Soft Tissue Simulation Tool
+    Rhinoplasty Plugin
+        ├── Nasal Landmark Tool
+        ├── Nasal Osteotomy Tool
+        └── Soft Tissue Simulation Tool
 
 ## 20. Tool Manifest
 
@@ -598,14 +598,14 @@ Quando uma Tool pertence a um plugin, seus metadados podem ser declarados no man
 
 Exemplo conceitual:
 
-tools:
-  - id: rhinoplasty.add_landmark
-    label: Add Landmark
-    category: annotation
-
-  - id: rhinoplasty.simulate
-    label: Simulate
-    category: simulation
+    tools:
+      - id: rhinoplasty.add_landmark
+        label: Add Landmark
+        category: annotation
+    
+        - id: rhinoplasty.simulate
+          label: Simulate
+          category: simulation
 
 O manifest descreve a Tool, mas não deve substituir sua implementação.
 
@@ -615,21 +615,21 @@ Capability descreve uma capacidade que um módulo ou componente oferece. Tool re
 
 Exemplo:
 
-Capability:
-    cephalometric_analysis
-
-Tools:
-    Add Landmark
-    Measure Angle
-    Calculate Analysis
+    Capability:
+        cephalometric_analysis
+    
+    Tools:
+        Add Landmark
+        Measure Angle
+        Calculate Analysis
 
 Uma Capability responde:
 
-"O sistema consegue fazer isso?"
+    "O sistema consegue fazer isso?"
 
 Uma Tool responde:
 
-"Qual ação o usuário pode executar para fazer isso?"
+    "Qual ação o usuário pode executar para fazer isso?"
 
 Essa distinção será especialmente importante para automação e MCP.
 
@@ -639,23 +639,23 @@ _Services_ implementam operações ou regras de aplicação que não devem perte
 
 Exemplo:
 
-Tool:
-    Register Models
-
-Service:
-    RegistrationService
+    Tool:
+        Register Models
+    
+    Service:
+        RegistrationService
 
 A Tool inicia a operação.
 
 O Service executa a lógica necessária.
 
-Register Models Tool
-        ↓
-RegisterModelsCommand
-        ↓
-RegistrationService
-        ↓
-Registration algorithm
+    Register Models Tool
+            ↓
+    RegisterModelsCommand
+            ↓
+    RegistrationService
+            ↓
+    Registration algorithm
 
 ## 23. Tool e MCP
 
@@ -681,7 +681,7 @@ Assim, o MCP não precisa controlar diretamente a UI.
 
 Um agente poderia solicitar:
 
-create_osteotomy(...)
+    create_osteotomy(...)
 
 e a aplicação executar a mesma operação fundamental utilizada por uma Tool da interface gráfica.
 
@@ -711,90 +711,90 @@ Isso é necessário porque Commands podem ser acionados por mecanismos diferente
 
 Um exemplo simples:
 
-Tool
-    Add Landmark
-
-Context:
-    active patient
-    active 3D editor
-    valid anatomical model
-
-Interaction:
-    user clicks on model
-
-Result:
+    Tool
+        Add Landmark
+    
+    Context:
+        active patient
+        active 3D editor
+        valid anatomical model
+    
+    Interaction:
+        user clicks on model
+    
+    Result:
+        AddLandmarkCommand
+    
+    Fluxo:
+    
+    Add Landmark Tool
+            │
+            │ user interaction
+            ▼
+    Landmark position
+            │
+            ▼
     AddLandmarkCommand
-
-Fluxo:
-
-Add Landmark Tool
-        │
-        │ user interaction
-        ▼
-Landmark position
-        │
-        ▼
-AddLandmarkCommand
-        │
-        ▼
-Cephalometric Landmark
-        │
-        ▼
-Scene / Project
+            │
+            ▼
+    Cephalometric Landmark
+            │
+            ▼
+    Scene / Project
 
 A Tool não precisa conhecer os detalhes de persistência do Landmark.
 
-26. Exemplo: Tool de osteotomia
-Define Osteotomy Tool
-        │
-        ▼
-User selects anatomical region
-        │
-        ▼
-Interactive preview
-        │
-        ▼
-User confirms
-        │
-        ▼
-CreateOsteotomyCommand
-        │
-        ▼
-Osteotomy domain object
-        │
-        ▼
+## 26. Exemplo: Tool de osteotomia
+    Define Osteotomy Tool
+            │
+            ▼
+    User selects anatomical region
+            │
+            ▼
+    Interactive preview
+            │
+            ▼
+    User confirms
+            │
+            ▼
+    CreateOsteotomyCommand
+            │
+            ▼
+    Osteotomy domain object
+            │
+            ▼
 Scene update
 
 A mesma operação poderá posteriormente ser acionada por:
 
-Toolbar
-Menu
-Shortcut
-Workflow
-MCP
-Script
+* Toolbar
+* Menu
+* Shortcut
+* Workflow
+* MCP
+* Script
 
 sem que a lógica de osteotomia seja duplicada.
 
-27. Organização do código
+## 27. Organização do código
 
 A definição dos contratos deve permanecer na infraestrutura de módulos do framework:
 
-src/cranioz/modules/
-
-├── base/
-│   ├── module.py
-│   ├── module_state.py
-│   └── lifecycle.py
-│
-├── contracts/
-│   ├── command.py
-│   ├── tool.py
-│   ├── service.py
-│   └── capability.py
-│
-├── specs/
-│   └── module_spec.py
+    src/cranioz/modules/
+    
+    ├── base/
+    │   ├── module.py
+    │   ├── module_state.py
+    │   └── lifecycle.py
+    │
+    ├── contracts/
+    │   ├── command.py
+    │   ├── tool.py
+    │   ├── service.py
+    │   └── capability.py
+    │
+    ├── specs/
+    │   └── module_spec.py
 
 O contrato de Tool deve permanecer pequeno e estável.
 
@@ -802,66 +802,22 @@ Implementações específicas devem permanecer nos módulos que as utilizam.
 
 Exemplo:
 
-src/cranioz/modules/
-└── cephalometry/
-    ├── tools/
-    │   ├── add_landmark.py
-    │   ├── move_landmark.py
-    │   └── measure_angle.py
-    │
-    ├── commands/
-    │   └── ...
-    │
-    └── services/
-        └── ...
+    src/cranioz/modules/
+    └── cephalometry/
+        ├── tools/
+        │   ├── add_landmark.py
+        │   ├── move_landmark.py
+        │   └── measure_angle.py
+        │
+        ├── commands/
+        │   └── ...
+        │
+        └── services/
+            └── ...
 
 A organização exata dos diretórios pode variar conforme a maturidade do módulo, mas a separação conceitual deve ser preservada.
 
-28. Princípios arquiteturais
-
-O sistema de Tools do CranioZ deve seguir os seguintes princípios:
-
-1. Tool é uma interface de interação
-
-Não é o domínio e não deve conter lógica clínica complexa.
-
-2. Tool não é Command
-
-Uma Tool pode disparar um Command, mas o Command deve permanecer independente da UI.
-
-3. Tool não pertence a uma Area
-
-Uma Tool pode ser apresentada em qualquer Area ou Editor compatível.
-
-4. Tool deve ser contextual
-
-Sua disponibilidade pode depender do estado atual do projeto, seleção, Editor ou módulo.
-
-5. Tool deve possuir identidade estável
-
-O identificador deve ser independente do texto e da posição na interface.
-
-6. Tool deve ser descobrível
-
-Tools devem poder ser registradas e consultadas pelo framework.
-
-7. Tool deve ser reutilizável
-
-A mesma operação deve poder ser acionada por diferentes mecanismos.
-
-8. Validação não deve depender da UI
-
-Operações importantes devem ser validadas nas camadas de aplicação/domínio.
-
-9. Plugins podem fornecer Tools
-
-O mecanismo deve funcionar tanto para módulos internos quanto para extensões externas.
-
-10. Tools devem ser compatíveis com automação
-
-A arquitetura deve permitir que Commands e Services sejam utilizados futuramente por workflows, scripts e MCP.
-
-29. Resumo conceitual
+## 28. Resumo conceitual
 
 A arquitetura pode ser resumida da seguinte forma:
 
@@ -897,27 +853,27 @@ A arquitetura pode ser resumida da seguinte forma:
 
 Em paralelo:
 
-Module
- ├── Tools
- ├── Commands
- ├── Services
- └── Capabilities
+    Module
+     ├── Tools
+     ├── Commands
+     ├── Services
+     └── Capabilities
 
 E na interface:
 
-Workspace
-   │
-   ├── Area
-   │    └── Editor
-   │         └── Tool
-   │
-   ├── Area
-   │    └── Editor
-   │         └── Tool
-   │
-   └── Area
-        └── Editor
-             └── Tool
+    Workspace
+       │
+       ├── Area
+       │    └── Editor
+       │         └── Tool
+       │
+       ├── Area
+       │    └── Editor
+       │         └── Tool
+       │
+       └── Area
+            └── Editor
+                 └── Tool
 
 A ideia central é que Tool seja a unidade de ação/interação do framework, enquanto Command seja a unidade de execução e histórico, Service seja a unidade de lógica de aplicação reutilizável, Domain seja a unidade de significado clínico e computacional, e Capability descreva aquilo que um módulo é capaz de oferecer.
 
