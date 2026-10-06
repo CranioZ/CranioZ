@@ -472,7 +472,7 @@ permitirem.
 
 **Meta de cobertura:** ≥ 80% para `ui/workspace/`.
 
-Ver [workspace-testing.md](workspace-testing.md) para detalhes.
+Ver [workspace-testing.md](../workspace-testing.md) para detalhes.
 
 ---
 

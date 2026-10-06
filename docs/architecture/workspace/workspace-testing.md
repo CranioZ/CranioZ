@@ -2,7 +2,7 @@
 
 > **Status:** Draft
 > **Related:** [workspace.md](../architecture/workspace.md),
-> [workspace-implementation.md](workspace-implementation.md)
+> [workspace-implementation.md](implementation/workspace-implementation.md)
 > **Scope:** How the Workspace subsystem is tested
 
 ---

@@ -12,6 +12,7 @@ Não é um único widget nem uma única classe. É uma *composição* de **Areas
 - Um **coordenador de layout** que organiza as Areas em uma árvore de splits.
 - Um **gerenciador de ciclo de vida** das Areas (registro, ativação, remoção).
 - Um **gerenciador de Overlays** — camadas flutuantes sobre regiões.
+- O host do **Painel de Etapas (`steps_panel`)**, uma Overlay persistente que apresenta o fluxo clínico ativo.
 - Um **alvo de configuração** cujo layout pode ser persistido por projeto.
 - Um **materializador** de composições de UI declaradas por Módulos.
 
@@ -19,13 +20,13 @@ Não é um único widget nem uma única classe. É uma *composição* de **Areas
 
 > **O Workspace hospeda Areas e Overlays. Nada mais.**
 
-Se algo não é uma `Area` nem uma `Overlay`, o Workspace não sabe que existe. Editores, Toolbars, Tools e Módulos são todos invisíveis ao Workspace.
+Se algo não é uma `Area` nem uma `Overlay`, o Workspace não sabe que existe. Editores, Toolbars, Tools, Módulos e Flows são todos invisíveis ao Workspace. O `steps_panel` é uma Overlay da UI da workspace; seu conteúdo e estado são fornecidos pela camada de aplicação que executa o Flow.
 
 ### 1.3 Módulo declara; Workspace materializa
 
 > **O Módulo declara a composição de UI. O Workspace materializa essa declaração.**
 
-O Módulo **não possui** Areas nem Editores. Ele apenas descreve o que quer, através de um `ModuleUISpec`.
+O Módulo **não possui** Areas nem Editores. Ele apenas descreve o que quer, através de um `ModuleUISpec`. A composição do módulo não define nem substitui a sequência global de etapas do Flow.
 
 O Workspace recebe essa declaração e **materializa**:
 
@@ -36,7 +37,11 @@ O Workspace recebe essa declaração e **materializa**:
 - Renderiza em widgets Qt.
 - Posiciona as Overlays.
 
+O `steps_panel` é mantido como Overlay compartilhada durante as trocas de módulo. A cada troca, a Workspace materializa o novo `ModuleUISpec` sem reconstruir ou reiniciar o progresso do painel.
+
 O Workspace **não conhece o Módulo.** Ele apenas recebe a especificação. Isso preserva a regra de §1.2.
+
+Overlays declaradas no `ModuleUISpec` são específicas daquele Módulo e acompanham a composição que ele fornece. Overlays compartilhadas da interface da Workspace, como o `steps_panel`, são registradas fora do `ModuleUISpec` e permanecem durante a troca de Módulo.
 
 ---
 
@@ -122,7 +127,9 @@ Quem decide quantas e quais Areas existem é o **Módulo carregado pelo Flow**:
 | Edição 3D de Malha | `[left, central, right]` |
 | Tomografia | `[left, central, right, bottom]` |
 
-Ao selecionar um Módulo, o Workspace constrói a árvore a partir dessas declarações. A árvore é a única fonte de verdade do layout.
+Ao receber a composição de um Módulo, o Workspace constrói a árvore a partir dessas declarações. A árvore é a única fonte de verdade do layout. A ativação do Módulo é coordenada pela camada de aplicação; o Workspace recebe o `ModuleUISpec` e permanece sem conhecimento do Módulo ou do Flow que o selecionou.
+
+No fluxo clínico, o Flow define uma sequência única de etapas em JSON, normalmente com uma etapa associada a um Módulo. O motor do Flow, na camada de aplicação e implementado em Python, avalia requisitos e solicita à aplicação que ative o Módulo da próxima etapa. A aplicação carrega o Módulo e encaminha seu `ModuleUISpec` ao Workspace. O Workspace apenas materializa essa composição. O `steps_panel` permanece como Overlay compartilhada, exibindo a mesma sequência durante as trocas de Módulo.
 
 Para o modelo de declaração da composição, ver §3.5.
 
@@ -210,6 +217,11 @@ classDiagram
         +QWidget content
     }
 
+    class StepsPanelOverlay {
+        +set_content(view_model)
+        +emit_user_action(action)
+    }
+
     class Placement {
         <<enumeration>>
         LEFT
@@ -284,6 +296,7 @@ classDiagram
     Region --> Area : agrupa
     Overlay --> Placement : usa
     Overlay <|-- TopOverlay
+    Overlay <|-- StepsPanelOverlay
     Area --> EditorHost : hospeda
     EditorHost --> Editor : gerencia
     EditorRegistry ..> Editor : cria
@@ -306,6 +319,7 @@ classDiagram
 - A `LayoutTree` é uma **árvore N-ária** de nós `Leaf` e `Split`.
 - Uma **Região** é **derivada geometricamente** da `LayoutTree`.
 - Uma **Overlay** cobre uma Região.
+- O `steps_panel` é implementado como uma Overlay compartilhada da UI da Workspace. O Workspace gerencia seu ciclo de vida e posicionamento como qualquer Overlay; a aplicação fornece seu estado de apresentação e recebe suas ações.
 
 ### 3.3 Chrome da aplicação
 
@@ -438,6 +452,8 @@ Split(VERTICAL)
 **Restrição:** um `ModuleUISpec` precisa declarar ao menos `CENTRAL`. Se não declarar, o Workspace rejeita o carregamento com erro claro.
 
 **Trocar de Módulo:** ao selecionar outro Módulo, o Workspace recebe um novo `ModuleUISpec` e **descarta a árvore atual**. Areas com o mesmo `area_id` **podem ser reaproveitadas** se os `editor_ids` declarados forem compatíveis (ver §6.4).
+
+**Troca de Módulo pelo Flow:** quando o motor do Flow conclui uma etapa e solicita a próxima, a camada de aplicação ativa o Módulo associado à etapa seguinte e fornece seu `ModuleUISpec` ao Workspace. Para o Workspace, essa operação é igual a qualquer outra troca de composição: ele materializa o novo spec, sem avaliar requisitos clínicos e sem conhecer o Flow. A Overlay `steps_panel` é compartilhada e permanece ativa durante a troca; o progresso do Flow não faz parte da árvore de layout.
 
 ### 3.6 EditorRegistry
 
@@ -732,19 +748,22 @@ MainWindow criada
 Workspace criado (vazio — sem árvore)
     |
     v
+Overlays compartilhadas registradas (incluindo steps_panel, inicialmente sem Flow ativo)
+    |
+    v
 Módulos carregados via ModuleRegistry
     |
     v
-Flow inicial é selecionado
+Flow inicial e estado do projeto são carregados pela aplicação
     |
     v
-Primeiro Módulo é carregado
+Motor do Flow determina a etapa ativa e solicita a ativação do Módulo correspondente
     |
     v
-Workspace lê o ModuleUISpec do Módulo
+Aplicação carrega o Módulo e fornece seu ModuleUISpec ao Workspace
     |
     v
-LayoutBuilder constrói a árvore a partir do ModuleUISpec
+Workspace materializa o ModuleUISpec; Steps Panel Overlay recebe o estado de apresentação do Flow
     |
     v
 LayoutRenderer renderiza a árvore como QSplitters aninhados
@@ -765,10 +784,13 @@ Projeto aberto
 Scene carregada do JSON
     |
     v
-Flow do projeto é selecionado
+Flow e progresso persistidos do projeto são carregados
     |
     v
-Módulo do Flow é carregado
+Motor do Flow restaura a etapa ativa e solicita à aplicação o Módulo correspondente
+    |
+    v
+Aplicação carrega o Módulo e entrega seu ModuleUISpec ao Workspace
     |
     v
 Layout persistido é carregado do projeto (se existir)
@@ -798,6 +820,9 @@ Usuário fecha a janela
 Workspace serializa a árvore
     |
     v
+Aplicação persiste o progresso do Flow separadamente, se houver alterações
+    |
+    v
 Scene salva (se suja)
     |
     v
@@ -807,7 +832,7 @@ QApplication encerra
 ### 6.4 Troca de Módulo
 
 ```text
-Usuário seleciona outro Módulo
+Usuário seleciona outro Módulo ou o motor do Flow solicita o próximo Módulo
     |
     v
 Workspace descarta a árvore atual
@@ -827,7 +852,10 @@ LayoutBuilder constrói a nova árvore
 LayoutRenderer renderiza a nova árvore
     |
     v
-Workspace reposiciona as Overlays
+Workspace reposiciona as Overlays específicas do Módulo e preserva as Overlays compartilhadas
+    |
+    v
+Overlay steps_panel compartilhada permanece ativa e recebe o estado atualizado do Flow
 ```
 
 **Regra explícita de reaproveitamento:**
@@ -940,4 +968,45 @@ O Painel Superior é **um painel único** que se comporta como **três segmentos
 | **Central** | Centralizado | Ferramentas do Editor ativo, `+` |
 | **Direito** | Ancorado à direita | Extras, toggle Right, controles de janela |
 
-**Cada segmento tem largura própria** (baseada no conteúdo). Os segmentos **não se emp
+**Cada segmento tem largura própria**, baseada no conteúdo. O layout distribui os três segmentos sem sobreposição e mantém o segmento central centralizado.
+
+### 7.6 Painel de Etapas (`steps_panel`)
+
+O **Painel de Etapas** é uma Overlay da UI da Workspace, gerenciada pelo `OverlayManager`. Ele apresenta o Flow clínico ativo e permanece visível enquanto o Módulo associado a cada etapa é ativado. O painel não é uma Area, não pertence a um Módulo clínico e não é recriado a cada troca de `ModuleUISpec`.
+
+Esta classificação preserva a regra de §1.2: para o Workspace, o Painel de Etapas é uma Overlay genérica. O Workspace conhece apenas o ciclo de vida, o posicionamento e a região-alvo da Overlay; ele não conhece etapas, requisitos, estado clínico ou a identidade do Flow.
+
+#### Conteúdo e coordenação
+
+- A definição do Flow é declarada em JSON e contém a sequência única e ordenada de etapas, seus títulos, orientações, passos, requisitos e referências aos Módulos.
+- Como padrão, cada etapa referencia um Módulo. O mesmo Módulo pode aparecer em várias etapas.
+- O motor do Flow é implementado em Python na camada de aplicação. Ele valida a definição, avalia requisitos e decide se uma etapa pode ser concluída.
+- Quando uma etapa é concluída, o motor solicita à aplicação a ativação do Módulo da próxima etapa. A aplicação carrega o Módulo e envia seu `ModuleUISpec` ao Workspace.
+- O Workspace materializa o novo `ModuleUISpec` e mantém a Overlay compartilhada. Ele não decide a transição clínica nem seleciona diretamente o Módulo.
+- O estado do Flow é enviado ao painel por um modelo de apresentação. Ações do usuário no painel são encaminhadas ao motor de aplicação, que valida e processa cada solicitação.
+
+```text
+Steps Panel Overlay ── ação do usuário ──> Motor do Flow (Application)
+       ▲                                         ├── valida requisito e avanço
+       └──────── estado de apresentação ─────────┤
+                                                 └── solicita ativação do Módulo
+                                                               │
+                                               ModuleRegistry / Module
+                                                               │
+                                                        ModuleUISpec
+                                                               │
+                                                               v
+                                                           Workspace
+```
+
+O painel pode exibir campos de entrada, como seleção de arquivos, texto de orientação, imagens PNG ou SVG, passos e requisitos. A Overlay coleta a interação e apresenta o estado; validação e importação dos arquivos são realizadas pelos serviços da aplicação e pelos Módulos apropriados.
+
+#### Estado e persistência
+
+O Painel de Etapas e o layout da Workspace têm ciclos de persistência separados. A configuração visual e o posicionamento da Overlay pertencem ao estado da Workspace. O progresso clínico — Flow e versão, etapa ativa, requisitos satisfeitos e referências a dados do caso — pertence ao estado persistente do projeto/caso e é gerenciado pela aplicação. Fechar e reabrir o projeto deve restaurar o progresso do Flow sem confundi-lo com a árvore de layout.
+
+#### Características visuais
+
+O Painel de Etapas pode ser expandido ou recolhido, movido e redimensionado. Apresenta as etapas em sequência vertical, expande a etapa ativa para mostrar seus passos, orientações e controles, e indica estados pendentes, ativos, concluídos ou bloqueados. Estados não dependem apenas de cor e o conteúdo pode rolar quando exceder a área disponível.
+
+O painel deve suportar navegação por teclado, foco visível, nomes e estados acessíveis a leitores de tela e contraste legível. Imagens informativas têm texto alternativo; imagens decorativas são identificadas como tais.

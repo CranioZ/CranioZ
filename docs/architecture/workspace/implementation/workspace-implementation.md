@@ -465,7 +465,7 @@ Phases 5 and 6 can be developed in parallel if dependencies allow.
 
 **Target coverage:** ≥ 80% for `ui/workspace/`.
 
-See [workspace-testing.md](workspace-testing.md) for details.
+See [workspace-testing.md](../workspace-testing.md) for details.
 
 ---
 

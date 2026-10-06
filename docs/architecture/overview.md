@@ -351,6 +351,7 @@ Typical responsibilities include:
 * Tasks
 * Event dispatch
 * Workflow execution
+* Workflow requirement evaluation and step transitions
 * Application state
 * Transaction boundaries
 * Coordination between modules
@@ -413,6 +414,7 @@ Conceptual UI elements include:
 * Editors
 * Scene tree
 * Context panels
+* Workflow navigation panels, including the reusable `steps_panel`
 * Status and assistant areas
 
 An `Area` is a structural region of the interface.
@@ -423,46 +425,105 @@ UI elements should consume application capabilities rather than directly impleme
 
 ---
 
-# 6. Modules
+## 6. Module Composition
 
 A module represents a coherent functional capability of the CranioZ platform.
 
-Modules are the principal unit for organizing clinical functionality.
+Modules do not own or implement the fundamental UI infrastructure. Instead, they **compose their functionality using platform-provided architectural primitives and extension points**.
 
-Examples include:
-
-* Patient
-* Tomography
-* Segmentation
-* Registration
-* Cephalometry
-* Osteotomy
-* Splint
-* Airway
-* Facial Analysis
-* Implant Planning
-* Osteosynthesis Design
-* Surgical Guides
-* Documents
-* 2D Editor
-* Animation
-* Fibula Reconstruction
-
-A module may provide:
+A module may compose:
 
 * Tools
 * Commands
 * Services
 * Data types
+* Editors
+* Toolbars
 * Views
-* Areas
-* UI components
+* Workspace Areas
 * Flows
 * Capabilities
 
-Modules should depend on stable platform contracts rather than on other modules' internal implementations.
+The platform defines the available UI and application infrastructure. The module determines which components are relevant to its clinical context and how they are composed.
 
-The detailed Module Contract and Service Provider Interface (SPI) are defined separately.
+For example, an orthognathic planning module may define a workspace composition such as:
+
+```
+Orthognathic Module
+      │
+      ▼
+Workspace Composition
+      │
+      ├── LEFT
+      │     └── Scene Editor
+      │
+      ├── CENTRAL
+      │     └── 3D Planning Editor
+      │
+      ├── RIGHT
+      │     └── Osteotomy Editor
+      │
+      └── BOTTOM
+            └── Console Editor
+```
+
+The `Area` objects belong to the Workspace infrastructure. The module does not create a new type of Area for its own use. Instead, it declares which existing editors or views should occupy the available Areas.
+
+Similarly, a module does not need to implement a new Toolbar or Tool infrastructure. It composes the existing platform mechanisms and declares the tools, commands, and editors relevant to its functionality.
+
+This establishes a clear separation between **platform infrastructure** and **module composition**:
+
+```
+Platform
+    ├── Areas
+    ├── Editors
+    ├── Toolbars
+    ├── Tools
+    ├── Commands
+    └── Views
+             ▲
+             │
+      Module Composition
+             │
+             ▼
+    Clinical Context
+```
+
+A module therefore acts primarily as a **consumer and composer of platform capabilities**, rather than as an owner of the underlying UI infrastructure.
+
+### Workspace Composition
+
+A module may declare a `Workspace Composition` describing how its functionality should be presented within the active workspace.
+
+The composition may specify:
+
+* Which editor is active in the central Area
+* Which editors or views are displayed in side Areas
+* Which editor is displayed in the bottom Area
+* Which toolbars are associated with editors
+* Which tools are available in a given context
+* Which capabilities are required
+* Which UI elements are optional
+* Which initial layout should be used
+
+For example:
+
+```
+Module
+   │
+   └── Workspace Composition
+          │
+          ├── Central Area → Planning Editor
+          ├── Left Area    → Scene Editor
+          ├── Right Area   → Context Editor
+          └── Bottom Area  → Console Editor
+```
+
+The Workspace remains responsible for hosting and arranging Areas.
+
+The module remains responsible for defining the clinical composition presented within those Areas.
+
+This distinction prevents clinical modules from becoming coupled to the implementation of the Workspace itself.
 
 ---
 
@@ -506,37 +567,40 @@ The detailed contract is defined in a dedicated architectural document and ADR.
 
 # 8. Flows
 
-A `Flow` represents an ordered sequence of modules used to accomplish a particular task.
+A `Flow` represents an ordered sequence of steps used to accomplish a particular task. Each step describes a unit of work and, by default, is associated with one module. A flow may reuse the same module in multiple steps. This keeps the clinical sequence unified while allowing the application to activate the appropriate module at each step.
 
 For example:
 
 ```
 Orthognathic Planning
-    ↓
-Tomography
-    ↓
-Models
-    ↓
-Cephalometry
-    ↓
-Registration
-    ↓
-Osteotomy
-    ↓
-Splint
+  Step 1: Tomography  → tomography_module
+  Step 2: Models      → models_module
+  Step 3: Cephalometry → cephalometry_module
+  Step 4: Registration → registration_module
+  Step 5: Osteotomy   → osteotomy_module
+  Step 6: Splint      → splint_module
 ```
 
-Flows provide orchestration rather than duplicating the functionality of modules.
+Flows provide orchestration rather than duplicating the functionality of modules. A step may contain substeps, user guidance, input fields, requirements, dependencies, and completion criteria. The flow definition describes these declaratively; it does not contain executable clinical algorithms.
+
+Flow definitions are stored in versioned JSON files. The JSON identifies steps, associated modules, user-facing text and resources, requirement and action identifiers, and navigation rules. Referenced validators and actions must be registered by the application; unknown references are configuration errors.
+
+The Python workflow engine belongs to the Application layer. It loads and validates the JSON definition, evaluates requirements using application capabilities and module results, calculates step state, and determines the next step. When a step is completed, the engine asks the application to activate the module associated with the next step. The application loads that module and provides its `ModuleUISpec` to the Workspace to materialize. The UI panel does not implement clinical rules or mark a step complete on its own.
+
+The reusable `steps_panel` is a shared Overlay hosted by the Workspace. It presents the flow's single ordered step list across module changes, sends user actions to the workflow engine, and displays the resulting progress and requirement status. It remains the same panel while the active module changes; the Workspace manages it as a generic Overlay and does not interpret its clinical content.
+
+Workflow definitions and case progress are separate. JSON stores the versioned definition; persisted project or case state stores the active step, completion status, choices, and references to relevant module data so work can be resumed. The detailed schema, persistence strategy, and migration policy are defined separately.
 
 A flow may define:
 
-* Module order
-* Required modules
-* Optional modules
-* Initial state
-* Navigation
-* Dependencies
+* Ordered steps and associated modules
+* Substeps and user guidance
+* Required and optional requirements
+* Alternative ways to satisfy a requirement
+* Completion criteria and dependencies
+* Contextual actions and navigation behavior
 * Workflow-specific configuration
+* Versioned user-facing labels and resource references
 
 The architecture should allow users or extensions to define custom flows.
 
@@ -918,6 +982,8 @@ The persistence architecture must address:
 * Separation of metadata and large data
 * Error recovery
 
+Persisted case or project state also includes workflow progress needed to resume work, including the workflow definition version, active step, completion state, and stable references to relevant data. The workflow definition itself remains separate from per-case progress. Detailed workflow persistence and migration policies are defined separately.
+
 The exact project storage format, directory structure, schema, and migration strategy are defined separately.
 
 ---
@@ -1013,6 +1079,8 @@ The detailed versioning strategy is defined separately.
 
 The workspace provides the environment in which modules and their UI components operate.
 
+The workspace also hosts reusable workflow-navigation UI components. The `steps_panel` is a shared Overlay in this workspace UI infrastructure; it is not owned by an individual clinical module. Its content is supplied by the active Flow, while the Application workflow engine evaluates requirements and controls transitions. The application activates modules and supplies their UI specifications to the Workspace, allowing the same panel and ordered workflow to remain visible across successive steps.
+
 The UI is designed around interchangeable Areas and Views.
 
 Conceptually:
@@ -1027,6 +1095,8 @@ Workspace
 ```
 
 Areas may host different views depending on the active module and context.
+
+The workflow panel is separate from module-specific editor composition. A module may contribute editors, views, and tools to workspace Areas, while the `steps_panel` presents the active Flow across module boundaries.
 
 The bottom area is not a special architectural category. It is an `Area` positioned at the bottom of the workspace.
 
@@ -1227,6 +1297,8 @@ Validate:
 * Tool presentation
 * Workspace composition
 * UI state synchronization
+* Steps Panel state and interaction
+* Workflow navigation across module changes
 
 ---
 
@@ -1401,6 +1473,8 @@ The architecture is expected to have ADRs addressing, among others:
 * Dependency policy
 * Rendering architecture
 * Workflow architecture
+* Workflow definition schema and execution contract
+* Steps Panel and Workspace integration
 * Observability
 * Security and auditability
 * Geometric and numerical validation

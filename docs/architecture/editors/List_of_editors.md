@@ -2,7 +2,8 @@
 ├── PatientEditor
 ├── MPRViewerEditor
 ├── CPRViewerEditor
-├── SegmentationEditor
+├── SegmentationEditor3D
+├── SegmentationEditor2D
 ├── ObjectAlignmentEditor
 ├── OsteotomyEditor
 └── GuideBuilderEditor
