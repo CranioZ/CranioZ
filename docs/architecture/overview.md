@@ -1,78 +1,104 @@
-Architecture Overview
-1. Purpose
+# Architecture Overview
+
+# 1. Purpose
+
 This document provides a high-level overview of the CranioZ system architecture. It defines the principal architectural concepts, boundaries, responsibilities, and relationships between the major parts of the system.
 
 The purpose is to establish a common architectural vocabulary and provide a reference for developing the core platform, UI, clinical modules, plugins, and infrastructure.
 
 Detailed architectural decisions are documented separately as Architecture Decision Records (ADRs).
 
-2. Architectural Goals
+# 2. Architectural Goals
+
 The CranioZ architecture is designed to:
 
-Provide a professional software platform for cranio-maxillofacial surgical planning.
+- Provide a professional software platform for cranio-maxillofacial surgical planning.
 
-Separate clinical concepts from generic computational and graphical infrastructure.
 
-Evolve through independent modules and plugins.
+- Separate clinical concepts from generic computational and graphical infrastructure.
 
-Keep the core platform small, stable, and reusable.
 
-Favor Python as the primary implementation language.
+- Evolve through independent modules and plugins.
 
-Reuse mature open-source libraries rather than reimplementing established functionality.
 
-Support multiple clinical workflows without coupling the core to a specific procedure.
+- Keep the core platform small, stable, and reusable.
 
-Maintain explicit boundaries between domain logic, application orchestration, infrastructure, and presentation.
 
-Support deterministic operations, validation, undo/redo, and controlled state changes.
+- Favor Python as the primary implementation language.
 
-Provide mechanisms for long-running operations without blocking the UI.
 
-Provide a stable foundation for automation and AI/MCP integration.
+- Reuse mature open-source libraries rather than reimplementing established functionality.
 
-Support reliable persistence, migration, and backward compatibility.
 
-Provide architectural foundations for security, auditing, and regulatory requirements.
+- Support multiple clinical workflows without coupling the core to a specific procedure.
 
-3. Architectural Principles
-3.1 Domain-first design
+
+- Maintain explicit boundaries between domain logic, application orchestration, infrastructure, and presentation.
+
+
+- Support deterministic operations, validation, undo/redo, and controlled state changes.
+
+
+- Provide mechanisms for long-running operations without blocking the UI.
+
+
+- Provide a stable foundation for automation and AI/MCP integration.
+
+
+- Support reliable persistence, migration, and backward compatibility.
+
+
+- Provide architectural foundations for security, auditing, and regulatory requirements.
+
+
+# 3. Architectural Principles
+
+### 3.1 Domain-first design
+
 Clinical and scientific concepts are represented explicitly in the domain model: Patient, Project, Scene, Mesh, Volume, Landmark, Bone, Maxilla, Mandible, Tooth, Osteotomy, Surgical Guide, Plate, Cephalometric Landmark, Registration, Planning Operation.
 
 Generic computational structures must not be forced to carry clinical semantics that do not belong to them.
 
-3.2 Separation of responsibilities
+### 3.2 Separation of responsibilities
+
 The system is divided into four principal layers: Domain, Application, Infrastructure, and UI. Modules and plugins extend these layers through defined contracts.
 
 The Domain defines concepts and fundamental rules. The Application coordinates operations, state changes, transactions, and workflows. Infrastructure provides technical implementations. The UI presents application capabilities to the user.
 
-3.3 Composition over monolithic functionality
+### 3.3 Composition over monolithic functionality
+
 CranioZ is not a single large application. The platform provides a stable core; clinical functionality is composed from modules and plugins.
 
 An orthognathic workflow may compose: Tomography → Models → Cephalometry → Registration → Osteotomy → Splint. Another workflow may use a different sequence. The same module may participate in multiple workflows.
 
-3.4 Clinical semantics over generic abstractions
+### 3.4 Clinical semantics over generic abstractions
+
 A Mesh represents geometric data. A Mandible represents a clinical concept that may reference or contain geometric representations. The same geometric infrastructure supports different clinical entities without making geometry responsible for clinical meaning.
 
-3.5 Stable core, extensible edge
+### 3.5 Stable core, extensible edge
+
 The core platform remains intentionally small and stable. New functionality is preferentially implemented through modules, plugins, tools, services, data types, workflows, UI components, and public extension points.
 
-3.6 Explicit operations
+### 3.6 Explicit operations
+
 User-triggered operations are represented explicitly rather than hidden inside UI callbacks:
 
-text
+```text
 User → Tool → Command → Application Service → Domain → State Change → Event → UI
+```
+
 This provides explicit boundaries for undo/redo, validation, transactions, logging, automation, workflow execution, testing, and AI integration.
 
-3.7 UI is not the domain
+### 3.7 UI is not the domain
 The UI must not contain clinical rules or core computational logic. UI components present state, collect input, and delegate operations to the Application and Domain layers.
 
-3.8 Explicit architectural boundaries
+### 3.8 Explicit architectural boundaries
 CranioZ follows a Ports and Adapters approach. The Application layer defines ports for persistence, project loading and saving, external computation, rendering integration, and task execution. Infrastructure provides concrete adapters. The Domain remains independent of infrastructure implementations.
 
-4. High-Level Architecture
+## 4. High-Level Architecture
 The diagram below represents logical responsibilities, not a strict runtime dependency graph. The vertical arrangement does not represent dependency order.
 
+```
 text
 ┌───────────────────────────────────────────────────────────┐
 │                         CranioZ                           │
@@ -107,12 +133,15 @@ text
 │  │  Clinical capabilities and platform extensions      │  │
 │  └─────────────────────────────────────────────────────┘  │
 └───────────────────────────────────────────────────────────┘
+```
+
 Infrastructure is orthogonal, not inferior. Modules and Plugins are transversal extensions, not a fifth layer.
 
-5. Core Architectural Layers
-5.1 Domain
+## 5. Core Architectural Layers
+### 5.1 Domain
 The domain layer contains the conceptual model. It must be independent of Qt, VTK, file formats, database implementations, OS APIs, rendering implementations, and external services.
 
+```
 text
 domain/
 ├── objects/
@@ -128,19 +157,21 @@ domain/
 ├── nodes/
 ├── units/
 └── parametric_facial_model/
+```
+
 domain/flow/ contains the conceptual model of Flows. The execution engine belongs to the Application layer. The definitions are stored in versioned JSON. The progress is persisted in project state.
 
-5.2 Application
+### 5.2 Application
 The application layer coordinates system operations: Commands, command execution, undo/redo, application services, tasks, event dispatch, workflow execution, workflow requirement evaluation and step transitions, application state, transaction boundaries, coordination between modules, validation orchestration, and application ports.
 
 Its primary responsibility is orchestration, not a second domain model.
 
-5.3 Infrastructure
+### 5.3 Infrastructure
 The infrastructure layer contains technical implementations: DICOM access, STL/OBJ import and export, VTK/ITK integration, PyDicom, NumPy, Open CASCADE, CGAL, rendering, persistence, serialization, and platform integration.
 
 Implementations must be replaceable when practical. The Domain must not know whether a mesh is internally represented using VTK, OpenMesh, or another library.
 
-5.4 UI
+### 5.4 UI
 The ui layer contains the graphical interface. It presents application state and collects user interaction.
 
 Conceptual UI elements include:
@@ -174,7 +205,7 @@ There is no separate EditorHost or Editor abstraction. A Toolbar is internal to 
 
 Terminology: "Area" emphasizes position; "Editor" emphasizes function. Both refer to the same concept. Terms like Viewport Editor, List Editor, Console Editor, and Properties Editor describe specific roles.
 
-6. Module Composition
+## 6. Module Composition
 A module represents a coherent functional capability. Modules do not own or implement the fundamental UI infrastructure. They compose their functionality using platform-provided primitives and extension points.
 
 A module may compose: Tools, Commands, Services, Data Types, Editors, Toolbars, Flows, and Capabilities.
@@ -195,6 +226,7 @@ Layout state may be personalized by the user and persisted with the project.
 The initial composition declared by the module is distinct from the active layout, which may have been personalized. Activation of a module must not overwrite a saved personalized layout.
 
 Semantic regions
+```
 text
 Orthognathic Module
       │
@@ -209,11 +241,14 @@ ModuleUISpec (Workspace Composition)
       │                (Properties, Material, Osteotomy Patterns)
       └── BOTTOM    → Consoles and Extras
                        (Console, History, AI Assistant)
+```
+
 The regions LEFT, CENTRAL, RIGHT, and BOTTOM are semantic conventions used by the module to declare its initial composition. They are not fixed positions imposed on the user.
 
 The Workspace layout is an N-ary tree of splits. The semantic regions guide the LayoutBuilder in constructing the initial tree. Once built, the user may move, resize, hide, or add Areas.
 
 Separation between platform and module
+```
 text
 Platform
     ├── Areas (= Editors)
@@ -222,13 +257,15 @@ Platform
     ├── Commands
     ├── Overlays (including steps_panel)
     └── Layout mechanism (N-ary tree of splits)
+```
 The module declares which Areas exist and which Editors occupy them. It does not declare Toolbars, Overlays, the layout mechanism, or other modules.
 
 A module is a consumer and composer of platform capabilities, not an owner of the underlying UI infrastructure.
 
-7. Module Contract
+## 7. Module Contract
 A module may expose or register:
 
+```
 text
 Module
 ├── Module Specification
@@ -239,11 +276,12 @@ Module
 ├── Services
 ├── Data Types
 └── Capabilities
+```
 The module contract defines identity, lifecycle, dependencies, registration, public capabilities, extension points, state ownership, resource management, and compatibility requirements. The detailed contract is defined in a dedicated document and ADR.
 
-8. Flows
+## 8. Flows
 A Flow represents an ordered sequence of steps to accomplish a task. Each step is associated with one module by default. A flow may reuse the same module in multiple steps.
-
+```
 text
 Orthognathic Planning
   Step 1: Tomography   → tomography_module
@@ -252,6 +290,7 @@ Orthognathic Planning
   Step 4: Registration → registration_module
   Step 5: Osteotomy    → osteotomy_module
   Step 6: Splint       → splint_module
+```
 Flows orchestrate. They do not implement clinical logic. The Flow declares:
 
 Ordered steps and associated modules
@@ -284,7 +323,7 @@ If a Flow definition was updated since the project was saved, the engine resolve
 
 Flows can be created, edited, removed, exported, and imported through Gerir Fluxos.
 
-9. Tools, Commands, Services, and Tasks
+## 9. Tools, Commands, Services, and Tasks
 Tool. An operational capability exposed to the user. A Tool does not necessarily contain the implementation.
 
 Command. An executable application operation. Every state-changing operation passes through the Command mechanism.
@@ -305,16 +344,18 @@ Service. Reusable application or domain functionality not naturally belonging to
 
 Task. A potentially long-running operation managed by the Application layer. Provides execution, progress, cancellation, error propagation, result delivery, and state reporting.
 
-10. Transactions and State Consistency
+## 10. Transactions and State Consistency
 Multi-step operations must not leave the project in an invalid intermediate state.
-
+```
 text
 Command → Transaction Boundary → Domain Changes → Commit → Events
+```
+
 Not all infrastructure operations are transactional by nature. Changes to memory, files, and other resources may require different commit and recovery strategies.
 
 For operations that cannot be reverted automatically, the Command contract specifies the compensation or recovery mechanism.
 
-11. Concurrency and Long-Running Operations
+## 11. Concurrency and Long-Running Operations
 Potentially long-running operations must be executed outside the UI event loop.
 
 The GIL is not the architectural reason: VTK, ITK, and Open CASCADE release the GIL during native operations.
@@ -323,14 +364,16 @@ text
 UI → Tool → Command → Task → Application Service → Domain / Infrastructure → Progress / Result / Error → Event → UI
 Modules must not independently reinvent the concurrency model.
 
-12. Scene and Rendering Architecture
+## 12. Scene and Rendering Architecture
 The Domain Scene represents semantic state. The visualization backend (VTK) represents that state graphically. These representations must not become independent sources of truth.
-
+```
 text
 Domain Scene → Application Events → Visualization Adapter → VTK Scene / Render Window
+```
+
 The Domain does not depend directly on VTK. A visualization adapter translates domain state into renderer-specific representations. The VTK representation remains an implementation detail.
 
-13. Event Architecture
+## 13. Event Architecture
 text
 Tool → Command → Domain / Service → State Change → Event → Subscribers
 Commands express that something should happen. Events communicate that something happened.
@@ -339,7 +382,7 @@ Events are published only after successful commit. A rolled-back transaction mus
 
 Events must not be used as hidden commands. The Event Bus must not cause the Domain to depend on the UI or rendering system.
 
-14. Data Architecture
+## 14. Data Architecture
 The system works with Volumes, Meshes, Images, Landmarks, Anatomical Structures, Teeth, Surgical Plans, Osteotomies, Plates, Guides, Patient Information, and Project Information. Technical representations may include DICOM, STL, OBJ, JSON, image arrays, VTK data structures, and Open CASCADE structures.
 
 14.1 Objects and DataTypes
@@ -347,18 +390,19 @@ An Object provides common identity and metadata. A DataType defines a stable typ
 
 Complete contracts for Object identity, lifecycle, registration, and serialization are defined in dedicated documents.
 
-15. Persistence
+## 15. Persistence
 CranioZ projects require a versioned semantic project representation, distinguishing between: semantic project metadata, object identity and relationships, configuration and state, large binary data, and domain-specific formats.
 
 The persistence architecture addresses schema versioning, migration, stable object identifiers, backward compatibility, deterministic serialization, integrity of references, separation of metadata and large data, and error recovery.
 
 Persisted case or project state includes workflow progress needed to resume work: workflow definition version, active step, completion state, and stable references.
 
-16. Dependency Architecture
+## 16. Dependency Architecture
 CranioZ follows a Ports and Adapters approach.
-
+```
 text
 UI → Application Ports → Domain
+```
 Contracts are owned by the layer that defines them:
 
 Domain contracts represent domain concepts.
@@ -369,7 +413,7 @@ Infrastructure adapters implement Application ports.
 
 The Domain must not depend on infrastructure implementations.
 
-17. Plugin Architecture and API Stability
+## 17. Plugin Architecture and API Stability
 A plugin may provide: Modules, Tools, Services, Data Types, UI components, Flows, Capabilities, and Integrations.
 
 Plugins communicate through public APIs and extension points, not private implementation details.
@@ -378,12 +422,12 @@ Public extension points are versioned: module contracts, tool contracts, command
 
 The plugin system distinguishes Public API, Internal API, and Experimental API. Plugins declare their compatibility requirements.
 
-18. Workspace and UI Composition
+## 18. Workspace and UI Composition
 The Workspace provides the environment in which modules and their UI components operate.
 
 Structure and Overlays
 The Workspace has two distinct structural categories:
-
+```
 text
 Workspace
 ├── Top Bar (Painel Superior)   ← structural component
@@ -399,6 +443,7 @@ Workspace
 │
 └── Overlays
     └── steps_panel
+```
 Structural components are part of the Workspace itself. They have a fixed position and are not repositionable or closeable by the user.
 
 Overlays are floating layers managed by the Workspace. They can be moved, resized, and closed. The steps_panel is the primary example.
@@ -421,7 +466,7 @@ The Home Page and the Workspace each have their own structural header and their 
 
 The steps_panel presents the active Flow across module boundaries. A module may contribute Areas and Tools to the Workspace, while the steps_panel remains visible.
 
-19. Clinical Semantics and Geometry
+## 19. Clinical Semantics and Geometry
 A fundamental distinction is made between Geometry and Clinical Meaning.
 
 text
@@ -429,14 +474,14 @@ Mesh → Anatomical Structure → Mandible
 Mesh → Surgical Object → Osteotomy Segment
 The geometric representation may be shared, replaced, or transformed without changing the clinical concept.
 
-20. Observability and Auditability
+## 20. Observability and Auditability
 Observability includes structured logging, error reporting, metrics, performance measurements, tracing, and diagnostic information.
 
 Observability is distinguished from clinical or security auditing.
 
 Audit mechanisms record actor, timestamp, action, affected object or project, and operation result. Audit requirements depend on the deployment context and applicable regulatory requirements.
 
-21. Security and Compliance
+## 21. Security and Compliance
 CranioZ may process patient-related information and must provide architectural mechanisms for protecting sensitive data.
 
 Security considerations include authentication, authorization, access control, data protection, encryption in transit and at rest, secure storage and data exchange, auditability, sensitive-data handling, and dependency and supply-chain security.
@@ -447,18 +492,19 @@ Professional identification, authentication, authorization, and digital signatur
 
 Regulatory requirements depend on the deployment context, jurisdiction, intended use, and regulatory classification. Relevant frameworks may include LGPD, applicable ANVISA requirements, HIPAA, and MDR.
 
-22. Automation and MCP
+## 22. Automation and MCP
 Automation is an extension of the existing architecture, not a separate execution model.
 
 CranioZ treats AI as a first-class citizen. The AIAssistantEditor is a regular Editor presented in the Bottom Area. AI executes commands through the same Command mechanism used by human-triggered Tools.
-
+```
 text
 AI / MCP → Tool / Command / Service → Application → Domain → State
+```
 Every AI-executed command is auditable (via AuditLog) and visible in the History Editor. Reversibility depends on the specific Command contract. Commands declare whether they support undo/redo or require a compensating action.
 
 AI does not bypass the Application and Domain layers, and is subject to the same validation, authorization, and audit rules as human-triggered commands.
 
-23. Testing and Validation
+## 23. Testing and Validation
 Tests follow architectural boundaries and account for the numerical and geometric nature of the system.
 
 Domain tests validate entities, rules, clinical semantics, mathematical calculations, and invariants.
@@ -473,7 +519,7 @@ Geometric and numerical validation requires tests that validate properties of th
 
 Where appropriate, the test suite uses property-based tests, geometric invariants, numerical tolerance checks, reference datasets, regression datasets, golden results, and visual regression testing.
 
-24. Architectural Boundaries
+## 24. Architectural Boundaries
 Boundary	Principle
 Domain ↔ UI	Domain must not depend on UI
 Domain ↔ Qt	Domain should not depend on Qt
@@ -486,7 +532,9 @@ Persistence ↔ Domain	Persistence is an implementation concern
 Rendering ↔ Domain	Rendering state is derived from semantic application state
 AI/MCP ↔ Core	AI executes Commands through the same unified entry point as human tools
 Long-running Work ↔ UI	Computational tasks must not block the UI event loop
-25. Architectural Invariants
+
+
+## 25. Architectural Invariants
 The UI event loop must remain responsive.
 
 Potentially long-running operations must use the Application task mechanism.
@@ -518,6 +566,7 @@ Clinical or audit-relevant actions should be traceable where required.
 Rendering infrastructure must remain replaceable without redefining the domain model.
 
 26. Project Structure
+```
 text
 cranioz/
 ├── .github/
@@ -542,6 +591,7 @@ cranioz/
 ├── CHANGELOG.md
 ├── CONTRIBUTING.md
 └── CODE_OF_CONDUCT.md
+```
 Config vs Settings:
 
 config/ — system configuration. Describes how the system works. Defined by developers/admins. Rarely changed. Versioned with the software.
@@ -550,31 +600,16 @@ settings/ — user preferences. Describes what the user chose. Defined by the us
 
 The ConfigurationLoader merges defaults from config/ with user overrides from the OS-specific application data directory.
 
-27. Architectural Evolution
+## 27. Architectural Evolution
 Early versions prioritize stable domain concepts; core object and DataType infrastructure; application command model; module contracts; UI workspace infrastructure; basic persistence; task execution infrastructure; essential clinical modules; validation and testing infrastructure.
 
 Advanced capabilities are planned for progressive introduction: advanced CAD operations; parametric facial models; finite element analysis; AI-assisted segmentation and planning; MCP integration; advanced automation; third-party plugin ecosystems.
 
 Architectural evolution favors incremental changes over large-scale rewrites. Changes to public contracts are explicitly documented and versioned.
 
-28. Architecture Decision Records
+## 28. Architecture Decision Records
 Specific architectural decisions are documented under docs/architecture/adr/.
 
 The architecture is expected to have ADRs addressing: programming language and runtime; UI framework; dependency architecture and Ports & Adapters; application transaction boundaries; Unit of Work and rollback; concurrency and task execution; Module Contract / SPI; Plugin API and versioning; DataType registry; command architecture; event system; scene and rendering synchronization; persistence format; project schema versioning and migration; dependency policy; rendering architecture; workflow architecture; workflow definition schema and execution contract; Steps Panel and Workspace integration; Area = Editor; Top Bar ownership; Object Library; Custom Flows; AI command execution; observability; security and auditability; geometric and numerical validation; MCP integration.
 
 The overview.md describes the structure and principles. The ADRs explain why specific decisions were made and the contracts developers will implement.
-
-29. Summary
-CranioZ is an extensible clinical software platform, not a monolithic surgical-planning application.
-
-Its architecture separates:
-
-text
-Clinical Concepts → Application Operations → Technical Infrastructure → User Interface
-while allowing clinical functionality to be composed through Modules + Tools + Commands + Services + Tasks + Flows + Plugins.
-
-The architecture provides explicit mechanisms for state management, transaction boundaries, long-running operations, scene/rendering synchronization, persistence and schema evolution, module and plugin extensibility, observability, security, geometric and numerical validation, and automation.
-
-The central objective is a stable, reusable platform in which new cranio-maxillofacial capabilities can be developed independently without compromising the core.
-
-The architecture favors explicit contracts, clear responsibilities, modularity, extensibility, controlled state changes, numerical robustness, and reuse of mature computational libraries.
