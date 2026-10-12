@@ -11,7 +11,6 @@ from cranioz.ui.workspace.specs.editor_layout_spec import (
     SplitDirection,
 )
 
-
 # ----- LEAF ---------------------------------------------------------
 
 

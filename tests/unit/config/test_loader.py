@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -59,7 +60,7 @@ def test_load_returns_config(defaults_dir: Path) -> None:
 
 def test_missing_app_json_raises(tmp_path: Path) -> None:
     (tmp_path / "paths.json").write_text(json.dumps({"paths": {}}), encoding="utf-8")
-    with pytest.raises(ConfigError, match="app.json"):
+    with pytest.raises(ConfigError, match=re.escape("app.json")):
         ConfigurationLoader(tmp_path).load()
 
 
@@ -79,7 +80,7 @@ def test_missing_paths_json_raises(tmp_path: Path) -> None:
         ),
         encoding="utf-8",
     )
-    with pytest.raises(ConfigError, match="paths.json"):
+    with pytest.raises(ConfigError, match=re.escape("paths.json")):
         ConfigurationLoader(tmp_path).load()
 
 

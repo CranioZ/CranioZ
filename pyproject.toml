@@ -149,6 +149,7 @@ Documentation = "https://cranioz.github.io/cranioz/"
 # ------------------------------------------------------------
 [tool.hatch.build.targets.wheel]
 packages = ["src/cranioz"]
+force-include = { "src/cranioz/py.typed" = "cranioz/py.typed" }
 
 [tool.hatch.build.targets.sdist]
 include = [
@@ -201,10 +202,12 @@ ignore = [
     "PLR0913",  # too many arguments (common in medical constructors)
     "PLR2004",  # magic value comparison (common in thresholds)
     "SIM108",   # ternary (not always clearer)
+    "PLR6301",  # no-self-use
+    "N818",
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["PLR2004", "S101", "S105", "S106"]
+"tests/**" = ["PLR2004", "S101", "S105", "S106", "RUF100"]
 "__init__.py" = ["F401"]  # re-exports
 
 [tool.ruff.lint.isort]

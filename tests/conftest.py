@@ -14,6 +14,6 @@ def qapp() -> QApplication:
     guarantees a single instance is reused across the entire test session.
     """
     app = QApplication.instance()
-    if app is None:
-        app = QApplication([])
-    return app
+    if isinstance(app, QApplication):
+        return app
+    return QApplication([])

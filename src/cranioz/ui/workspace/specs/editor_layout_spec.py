@@ -39,7 +39,7 @@ class EditorLayoutSpec:
 
     type: LayoutType
     direction: SplitDirection | None = None
-    children: tuple["EditorLayoutSpec", ...] = field(default_factory=tuple)
+    children: tuple[EditorLayoutSpec, ...] = field(default_factory=tuple)
     editor_id: str | None = None
 
     def __post_init__(self) -> None:
@@ -68,7 +68,7 @@ class EditorLayoutSpec:
             )
 
     @classmethod
-    def leaf(cls, editor_id: str) -> "EditorLayoutSpec":
+    def leaf(cls, editor_id: str) -> EditorLayoutSpec:
         """Create a LEAF node for the given editor_id."""
         return cls(type=LayoutType.LEAF, editor_id=editor_id)
 
@@ -76,7 +76,7 @@ class EditorLayoutSpec:
     def split(
         cls,
         direction: SplitDirection,
-        children: tuple["EditorLayoutSpec", ...],
-    ) -> "EditorLayoutSpec":
+        children: tuple[EditorLayoutSpec, ...],
+    ) -> EditorLayoutSpec:
         """Create a SPLIT node with the given direction and children."""
         return cls(type=LayoutType.SPLIT, direction=direction, children=children)

@@ -60,7 +60,7 @@ class EventBus:
         for handler in handlers:
             try:
                 handler(event)
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 errors.append(exc)
         if errors:
             raise EventBusError(

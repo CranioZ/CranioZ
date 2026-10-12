@@ -35,7 +35,7 @@ class ConfigurationLoader:
             return build_config(app_data, paths_data)
         except ConfigError:
             raise
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             raise ConfigError(f"failed to build configuration: {exc}") from exc
 
     def _read_json(self, filename: str) -> dict[str, Any]:

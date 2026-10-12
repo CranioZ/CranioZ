@@ -32,15 +32,11 @@ class ToolbarState:
         cls,
         toolbar_id: str,
         mode: ToolbarVisibilityMode,
-    ) -> "ToolbarState":
+    ) -> ToolbarState:
         """Return the initial state for a given toolbar and visibility mode."""
-        if mode is ToolbarVisibilityMode.ALWAYS:
+        if mode is ToolbarVisibilityMode.ALWAYS or mode is ToolbarVisibilityMode.COLLAPSIBLE:
             visible = True
-        elif mode is ToolbarVisibilityMode.COLLAPSIBLE:
-            visible = True
-        elif mode is ToolbarVisibilityMode.AUTO_HIDE:
-            visible = False
-        elif mode is ToolbarVisibilityMode.HIDDEN:
+        elif mode is ToolbarVisibilityMode.AUTO_HIDE or mode is ToolbarVisibilityMode.HIDDEN:
             visible = False
         else:
             raise ToolbarStateError(f"unknown visibility mode: {mode!r}")

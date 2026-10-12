@@ -65,7 +65,6 @@ def test_default_toolbar_specs_is_empty() -> None:
 
 
 def test_default_persistent_state_is_empty() -> None:
-    editor = ConcreteEditor()
     # The base class returns {} by default.
     # Our ConcreteEditor returns its own state, so test the base directly.
     class Minimal(Editor):
