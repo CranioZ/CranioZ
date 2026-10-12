@@ -3,7 +3,7 @@ CranioZ — Modular, open-source platform for virtual surgical planning
 in cranio-maxillofacial surgery.
 
 This package exposes the public API of the CranioZ platform.
-Internal modules should not be imported directly; use the entry points
+Internal list_modules should not be imported directly; use the entry points
 and the public API defined here.
 """
 

@@ -18,7 +18,7 @@ Não é um único widget nem uma única classe. É uma *composição* de **Areas
 
 ### 1.2 A regra única
 
-> **O Workspace hospeda Areas e Overlays. Nada mais.**
+> **O Workspace hospeda estruturalmente apenas Areas e Overlays.**
 
 Se algo não é uma `Area` nem uma `Overlay`, o Workspace não sabe que existe. Editores, Toolbars, Tools, Módulos e Flows são todos invisíveis ao Workspace. O `steps_panel` é uma Overlay da UI da workspace; seu conteúdo e estado são fornecidos pela camada de aplicação que executa o Flow.
 
@@ -551,9 +551,52 @@ O catálogo é populado por:
 
 ### 4.4 Toolbars
 
-Uma toolbar é um **widget interno de um Editor**, não uma Area.
+Uma Barra de Ferramentas (Toolbar) é um widget interno de um Editor, não uma Área.
 
-Cada Editor decide se quer ter uma toolbar própria. O Workspace nunca hospeda toolbars.
+Cada Editor decide se deseja ter sua própria barra de ferramentas. O Espaço de Trabalho (Workspace) nunca hospeda barras de ferramentas. 
+```
+Editor
+├── Barra de Ferramentas
+│   └── Ferramentas
+├── Conteúdo
+└── Sobreposições (Overlays)
+```
+
+A Barra de Ferramentas é uma especificação declarativa pertencente ao Editor. Sua materialização é responsabilidade do próprio Editor, que projeta a Barra de Ferramentas em seu próprio espaço de conteúdo, respeitando a orientação declarada (HORIZONTAL ou VERTICAL).
+
+As ferramentas não pertencem a uma Barra de Ferramentas específica. Elas pertencem a um catálogo compartilhado, o *ToolRegistry*, e podem ser referenciadas por Barras de Ferramentas de diferentes Editores. 
+
+```
+Viewport3DEditor
+├── ViewportToolbar (VERTICAL)
+│   ├── select_tool
+│   ├── transform_tool
+│   └── measure_tool
+├── ViewportToolbar (HORIZONTAL)
+│   ├── reset_view
+│   └── fit_view
+└── Visualização 3D
+
+MPRViewerEditor
+├── MPRToolbar (VERTICAL)
+│   ├── select_tool
+│   └── measure_tool
+└── Visualizações 2D
+```
+
+Uma Barra de Ferramentas não deve ser tratada como uma *ToolbarArea* especial nem como uma responsabilidade de Layout. Ela faz parte da experiência do Editor e é apresentada dentro do próprio Editor, o qual não tem conhecimento nem depende da posição do Editor no Espaço de Trabalho.
+
+#### 4.4.1 Múltiplas Barras de Ferramentas por Editor
+Um Editor pode declarar mais de uma Barra de Ferramentas, com orientações independentes:
+```
+Editor
+├── Barra de Ferramentas Vertical:   Tool2, Tool4
+├── Conteúdo
+├── Sobreposições
+└── Barra de Ferramentas Horizontal: Tool1, Tool2, Tool4
+```
+
+A composição de cada Barra de Ferramentas é independente, mesmo quando as mesmas definições de ferramentas são referenciadas.
 
 ### 4.5 Adicionar um Editor
 
@@ -965,7 +1008,7 @@ O Painel Superior é **um painel único** que se comporta como **três segmentos
 | Segmento | Alinhamento | Conteúdo típico |
 |---|---|---|
 | **Esquerdo** | Ancorado à esquerda | Menu, Home, título contextual, toggle Left |
-| **Central** | Centralizado | Ferramentas do Editor ativo, `+` |
+| **Central** | Centralizado | Lista de módulos carregados pelo Fluxo clínico `+` |
 | **Direito** | Ancorado à direita | Extras, toggle Right, controles de janela |
 
 **Cada segmento tem largura própria**, baseada no conteúdo. O layout distribui os três segmentos sem sobreposição e mantém o segmento central centralizado.

@@ -1,9 +1,8 @@
 ### Area Central
 ├── PatientEditor
-├── MPRViewerEditor
+├── TomographicEditor
 ├── CPRViewerEditor
 ├── SegmentationEditor3D
-├── SegmentationEditor2D
 ├── ObjectAlignmentEditor
 ├── OsteotomyEditor
 └── GuideBuilderEditor

@@ -1,119 +1,96 @@
-# Workspace
+Workspace
+1. Concept
+The Workspace is the runtime environment where clinical work happens. It is not a single widget nor a single class. It is a composition of Areas — containers that host Editors — and Overlays — floating layers over regions.
 
-## 1. Concept
+1.1 What the Workspace is
+A container of Areas.
 
-The **Workspace** is the runtime environment where clinical work happens.
+A layout coordinator that arranges Areas in a split tree.
 
-It is not a single widget nor a single class. It is a *composition* of
-**Areas** — generic containers that host **Editors** — and **Overlays** —
-floating layers that cover regions of Areas.
+A lifecycle manager for Areas.
 
-### 1.1 What the Workspace is
+An Overlay manager.
 
-- A **container** that hosts one or more Areas.
-- A **layout coordinator** that arranges Areas in a split tree.
-- A **lifecycle manager** for Areas (registration, activation, removal).
-- An **Overlay manager** — floating layers over regions.
-- A **configuration target** whose layout can be persisted per project.
-- A **materializer** of UI compositions declared by Modules.
+A configuration target whose layout can be persisted per project.
 
-### 1.2 The single rule
+A materializer of UI compositions declared by Modules.
 
-> **The Workspace hosts Areas and Overlays. Nothing else.**
+1.2 The single rule
+The Workspace hosts Areas and Overlays. Nothing else.
 
-If something is not an `Area` and not an `Overlay`, the Workspace does
-not know it exists. Editors, Toolbars, Tools and Modules are all
-invisible to the Workspace.
+If something is not an Area and not an Overlay, the Workspace does not know it exists. Toolbars, Tools and Modules are invisible to the Workspace.
 
-### 1.3 Module declares; Workspace materializes
+1.3 Module declares; Workspace materializes
+The Module declares the UI composition. The Workspace materializes it.
 
-> **The Module declares the UI composition. The Workspace materializes
-> that declaration.**
+The Module does not own Areas or Editors. It describes what it wants through a ModuleUISpec.
 
-The Module **does not own** Areas or Editors. It only describes what it
-wants through a `ModuleUISpec`.
+The Workspace materializes it:
 
-The Workspace receives this declaration and **materializes** it:
+Resolves editor_id values in the EditorRegistry.
 
-- Resolves `editor_id` values in the `EditorRegistry`.
-- Creates Editor instances.
-- Creates Areas.
-- Builds the `LayoutTree`.
-- Renders into Qt widgets.
-- Positions Overlays.
+Creates Editor instances.
 
-The Workspace **does not know the Module.** It only receives the
-specification. This preserves the rule from §1.2.
+Creates Areas.
 
----
+Builds the two layout trees (Area and Editor).
 
-## 2. Core Concept: Area
+Renders into Qt widgets.
 
-An **Area** is the fundamental building block of the Workspace.
+Positions Overlays.
 
-This is Principle #7 (*Panels Are Areas*): there are no `SidePanel`,
-`BottomPanel`, `CentralArea` or `ToolbarArea` classes. There is only
-`Area`.
+The Workspace does not know the Module. It only receives the specification.
 
-### 2.1 What an Area is
+2. Core Concept: Area
+An Area is the fundamental building block of the Workspace.
 
-An Area is a **generic UI container**. It:
+This is Principle #7 (Panels Are Areas): there are no SidePanel, BottomPanel, CentralArea or ToolbarArea classes. There is only Area.
 
-- Has a **stable identifier** (e.g., `area.left`, `area.central`).
-- Has a **title** (user-facing, translatable via i18n).
-- **Hosts an `EditorHost`** (which in turn hosts one or more Editors).
-- Has a **visibility state** (shown/hidden).
-- Is **positioned by the layout tree**, never by itself.
+2.1 What an Area is
+An Area is a container of Editors. It:
 
-**The Area does not store `placement`.** The `placement` is construction
-metadata of the `AreaSpec`. Once the tree is built, it is no longer
-consulted.
+Has a stable identifier (e.g., area.left, area.central).
 
-### 2.2 What an Area is NOT
+Has a title (user-facing, translatable via i18n).
 
-- It is **not** an Editor. An Editor is a widget that an Area may host.
-- It is **not** an `EditorHost`. The `EditorHost` is an internal
-  component of the Area (see `editors.md`).
-- It is **not** a Toolbar. A Toolbar is a widget inside an Editor.
-- It is **not** a Module. A Module declares which Areas it wants the
-  Workspace to materialize.
-- It is **not** a state holder. State lives in the Scene.
-- It does **not** know the purpose of its content. It only knows it
-  hosts an `EditorHost`.
-- It does **not** create the `EditorHost` nor the Editors it hosts.
+Hosts one or more Editors, organized in its own internal Editor Layout Tree.
 
-### 2.3 Area lifecycle
+Has a visibility state (shown/hidden).
 
-```text
+Is positioned by the Area Layout Tree, never by itself.
+
+Every Area follows the same model. There is no special type of Area. Any Area (LEFT, CENTRAL, RIGHT, BOTTOM) may host one or multiple Editors.
+
+The Area does not store placement. The placement is construction metadata of the AreaSpec. Once the trees are built, it is no longer consulted.
+
+2.2 What an Area is NOT
+Not a Toolbar. A Toolbar is a widget inside an Editor.
+
+Not a Module. A Module declares which Areas it wants the Workspace to materialize.
+
+Not a state holder. State lives in the Scene.
+
+Not a manager of other Areas.
+
+2.3 Area lifecycle
+text
 created → registered → placed → activated → deactivated → unregistered → destroyed
-```
+State	Meaning
+created	Instance exists, not yet in the Workspace.
+registered	Known to the AreaManager.
+placed	Assigned to a position in the Area Layout Tree.
+activated	Visible and receiving user input.
+deactivated	Hidden but still registered.
+unregistered	Removed from the AreaManager.
+destroyed	Instance disposed.
+3. Workspace Architecture
+3.1 High-level composition
+The Workspace is a split tree of Areas, not a fixed set of panels.
 
-| State | Meaning |
-|---|---|
-| **created** | Instance exists, not yet in the Workspace. |
-| **registered** | Known to the AreaManager. |
-| **placed** | Assigned to a position in the layout tree. |
-| **activated** | Visible and receiving user input. |
-| **deactivated** | Hidden but still registered. |
-| **unregistered** | Removed from the AreaManager. |
-| **destroyed** | Instance disposed. |
-
-The `EditorHost` and Editor lifecycle is **separate** (see
-`editors.md`).
-
----
-
-## 3. Workspace Architecture
-
-### 3.1 High-level composition
-
-The Workspace is a **split tree of Areas**, not a fixed set of panels.
-
-```text
+text
 +-------------------------------------------------------+
 |                     MainWindow                        |
 +-------------------------------------------------------+
-|                                                       |
 |  +----------+----------------------+----------+       |
 |  | Area     | Area                 | Area     |       |
 |  | left     | central              | right    |       |
@@ -123,974 +100,774 @@ The Workspace is a **split tree of Areas**, not a fixed set of panels.
 |  | Area — bottom                                     ||
 |  +---------------------------------------------------+|
 +-------------------------------------------------------+
-```
+Every visible rectangle is an Area. Each Area hosts its own Editor Layout Tree, containing the Editors assigned to it.
 
-Every visible rectangle is an **Area**. The **tree structure** (which
-Areas exist and how they are arranged) is **data**, not code.
+The Workspace does not define a default layout. It is an empty skeleton until a Module declares the UI composition it wants.
 
-The Workspace **does not define** a default layout. It is an **empty
-skeleton** until a Module declares the UI composition it wants.
+Who decides how many and which Areas exist is the Module loaded by the Flow:
 
-Who decides how many and which Areas exist is the **Module loaded by
-the Flow**:
+Module	UI composition
+Patient	[central]
+3D Mesh Editing	[left, central, right]
+Tomography	[left, central, right, bottom]
+The tree is the single source of truth for the layout.
 
-| Module | UI composition |
-|---|---|
-| Patient | `[central]` |
-| 3D Mesh Editing | `[left, central, right]` |
-| Tomography | `[left, central, right, bottom]` |
+3.2 Relationship diagram
 
-When a Module is selected, the Workspace builds the tree from those
-declarations. The tree is the single source of truth for the layout.
 
-For the composition declaration model, see §3.5.
 
-For the tree implementation, see §5.
 
-For the Overlay model, see §7.
 
-### 3.2 Relationship diagram
 
-```mermaid
-classDiagram
-    class MainWindow {
-        +Workspace workspace
-    }
 
-    class Workspace {
-        +AreaManager area_manager
-        +LayoutTree layout_tree
-        +OverlayManager overlay_manager
-        +load_spec(spec)
-        +get_area(area_id) Area
-        +list_areas() Area[]
-        +save_layout() dict
-        +load_layout(data)
-    }
 
-    class AreaManager {
-        +register(area)
-        +unregister(area_id)
-        +get(area_id) Area
-        +list_all() Area[]
-    }
 
-    class OverlayManager {
-        +register(overlay)
-        +unregister(overlay_id)
-        +get(overlay_id) Overlay
-        +reposition_all()
-    }
 
-    class LayoutTree {
-        +SplitNode root
-        +find(area_id) Leaf
-        +find_regions() Region[]
-        +to_dict() dict
-        +from_dict(data, areas)
-        +from_specs(specs, areas)
-    }
 
-    class SplitNode {
-        <<abstract>>
-    }
 
-    class Leaf {
-        +Area area
-    }
 
-    class Split {
-        +SplitDirection direction
-        +SplitNode[] children
-    }
 
-    class SplitDirection {
-        <<enumeration>>
-        HORIZONTAL
-        VERTICAL
-    }
 
-    class Region {
-        +str id
-        +Rect bounds
-        +Area[] areas
-        +Placement semantic_role
-    }
 
-    class Overlay {
-        <<abstract>>
-        +str id
-        +Placement target_region
-        +QWidget widget
-        +reposition(rect)
-    }
 
-    class TopOverlay {
-        +QWidget content
-    }
 
-    class Placement {
-        <<enumeration>>
-        LEFT
-        CENTRAL
-        RIGHT
-        BOTTOM
-    }
 
-    class AreaSpec {
-        +str area_id
-        +str title
-        +Placement placement
-        +str[] editor_ids
-        +str active_editor_id
-    }
 
-    class ModuleUISpec {
-        +AreaSpec[] areas
-        +OverlaySpec[] overlays
-        +LayoutSpec layout
-    }
 
-    class Module {
-        <<abstract>>
-        +ui_spec() ModuleUISpec
-    }
 
-    class EditorRegistry {
-        +register(editor_id, editor_type)
-        +resolve(editor_id) type~Editor~
-        +create(editor_id) Editor
-    }
 
-    class Area {
-        +str id
-        +str title
-        +EditorHost editor_host
-        +bool visible
-        +activate()
-        +deactivate()
-    }
 
-    class EditorHost {
-        +add_editor(editor)
-        +remove_editor(editor_id)
-        +set_active(editor_id)
-        +active_editor() Editor
-    }
 
-    class Editor {
-        <<abstract>>
-        +str id
-        +str title
-        +QWidget widget
-    }
 
-    MainWindow --> Workspace : hosts
-    Workspace --> AreaManager : uses
-    Workspace --> LayoutTree : uses
-    Workspace --> OverlayManager : uses
-    Workspace --> Area : manages
-    Workspace ..> EditorRegistry : uses
-    Workspace ..> ModuleUISpec : materializes
-    AreaManager --> Area : registers
-    OverlayManager --> Overlay : manages
-    LayoutTree --> SplitNode : owns
-    SplitNode <|-- Leaf
-    SplitNode <|-- Split
-    Split --> SplitDirection : uses
-    Leaf --> Area : contains
-    LayoutTree --> Region : derives
-    Region --> Area : groups
-    Overlay --> Placement : uses
-    Overlay <|-- TopOverlay
-    Area --> EditorHost : hosts
-    EditorHost --> Editor : manages
-    EditorRegistry ..> Editor : creates
-    Module --> ModuleUISpec : declares
-    ModuleUISpec --> AreaSpec : composes
-    AreaSpec --> Placement : uses
-    AreaSpec ..> EditorRegistry : references via editor_id
-```
 
-**Key points:**
 
-- The `Workspace` knows `Area`, `AreaManager`, `LayoutTree`,
-  `OverlayManager` and `EditorRegistry`.
-- The `Workspace` has **no** reference to `Scene`, `Editor`, `Toolbar`
-  or `Module`.
-- The `Workspace` **materializes** a `ModuleUISpec`, but does not know
-  the `Module`.
-- `AreaSpec` **references** Editors via `editor_id` (string), not via
-  concrete class.
-- The `EditorRegistry` resolves `editor_id` to the concrete class and
-  creates instances.
-- `Area` is a **concrete class**.
-- `EditorHost` is an internal component of the Area (see `editors.md`).
-- `Editor` is an **abstract class**.
-- The `LayoutTree` is an **N-ary tree** of `Leaf` and `Split` nodes.
-- A **Region** is **derived geometrically** from the `LayoutTree`.
-- An **Overlay** covers a Region.
 
-### 3.3 Application chrome
 
-Some visual elements are **not** Areas nor Overlays:
 
-- The native **OS menu bar** (if any).
-- Native window controls (if not embedded in the Top Bar).
 
-These belong to the `MainWindow`.
 
-**There is no status bar.** The traditional status bar role is served
-by the Console Area (bottom), when the Module declares it.
 
-The Workspace does not know these elements exist. This preserves the
-rule stated in §1.2.
 
-For details on the **Top Bar** (Upper Panel) and its 3 segments, see
-`top-bar.md`.
 
-### 3.4 Data flow
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Key points:
+
+The Workspace knows Area, AreaManager, LayoutTree, OverlayManager and EditorRegistry.
+
+The Workspace has no reference to Scene, Editor, Toolbar or Module.
+
+The Workspace materializes a ModuleUISpec, but does not know the Module.
+
+AreaSpec references Editors via editor_id (string).
+
+The EditorRegistry resolves editor_id to concrete classes.
+
+The LayoutTree is an N-ary tree of Leaf and Split.
+
+Each Area hosts an internal Editor Layout Tree (same model).
+
+A Region is derived geometrically from the LayoutTree.
+
+An Overlay covers a Region.
+
+3.3 Application chrome
+Some visual elements are not Areas nor Overlays:
+
+The native OS menu bar (if any).
+
+Native window controls (if not embedded in the Top Bar).
+
+These belong to the MainWindow.
+
+There is no status bar. The traditional status bar role is served by the Console Area (bottom), when the Module declares it.
+
+For details on the Top Bar (Painel Superior) and its 3 segments, see top-bar.md.
+
+3.4 Data flow
 The Workspace does not mutate clinical state. It only presents it.
 
-```text
-User action
-    |
-    v
-Editor (inside an EditorHost, inside an Area)
-    |
-    | builds
-    v
-Command
-    |
-    | publishes to
-    v
-CommandBus
-    |
-    | executes
-    v
-Scene (mutation)
-    |
-    | emits
-    v
-EventBus
-    |
-    | notifies
-    v
-Editors
-    |
-    | redraw
-    v
-User sees the update
-```
+text
+User action → Editor → Command → CommandBus → Scene (mutation) → EventBus → Editors → redraw
+Read/write separation:
 
-**Read/write separation:**
+Read: the Editor accesses the Scene via SceneProvider (read-only API).
 
-- **Read:** the Editor accesses the Scene via `SceneProvider` (injected
-  in the constructor). The `SceneProvider` exposes a read-only API.
-- **Write:** the Editor publishes `Command`s to the `CommandBus`.
-  It never mutates the Scene directly.
+Write: the Editor publishes Commands to the CommandBus. It never mutates the Scene directly.
 
-This keeps the Scene as the **single source of truth**, without
-exposing direct mutation to Editors.
+This keeps the Scene as the single source of truth.
 
-See `commands.md` and `scene.md` (to be written).
+3.5 The Module declares the UI composition
+The Workspace does not decide which Areas exist. Each Module declares its UI composition through a ModuleUISpec.
 
-### 3.5 The Module declares the UI composition
-
-The Workspace **does not decide** which Areas exist. Each Module
-declares its **UI composition** through a `ModuleUISpec`.
-
-```python
+python
 @dataclass(frozen=True)
 class ModuleUISpec:
     areas: list[AreaSpec]
     overlays: list[OverlaySpec]
-    layout: LayoutSpec | None = None
 
 @dataclass(frozen=True)
 class AreaSpec:
     area_id: str
     title: str
     placement: Placement
-    editor_ids: list[str]                # Editor IDs
-    active_editor_id: str | None = None  # which one starts active
-```
+    editor_layout: EditorLayoutSpec
 
-**Important points:**
+@dataclass(frozen=True)
+class EditorLayoutSpec:
+    type: LayoutType                          # LEAF | SPLIT
+    direction: SplitDirection | None = None   # HORIZONTAL | VERTICAL
+    children: list[EditorLayoutSpec] = []
+    editor_id: str | None = None              # when type == LEAF
+Important points:
 
-- `Placement` is **construction metadata**. Used by the `LayoutBuilder`
-  to build the tree. Once built, it is no longer consulted.
-- `AreaSpec` declares Editors via **`editor_ids`** — strings, not
-  concrete classes.
-- The Module **does not import** the Editor classes.
-- The `EditorRegistry` resolves the IDs to concrete classes.
+Placement is construction metadata. Used by the LayoutBuilder to build the Area Layout Tree.
 
-**Example:**
+AreaSpec declares its Editors through an EditorLayoutSpec, not a flat list.
 
-```text
-Module "3D Mesh Editing" declares:
-    ModuleUISpec(
-        areas=[
-            AreaSpec("area.left",    "Toolbox",    ["editor.toolbox"]),
-            AreaSpec("area.central", "Viewport",   ["editor.viewport_3d"]),
-            AreaSpec("area.right",   "Properties", ["editor.properties"]),
-        ],
-    )
+The Module does not import the Editor classes.
 
-Workspace materializes:
-    - Resolves "editor.toolbox"     → ToolboxEditor
-    - Resolves "editor.viewport_3d" → Viewport3DEditor
-    - Resolves "editor.properties"  → PropertiesEditor
-    - Creates the 3 instances
-    - Creates the 3 Areas
-    - Builds: Split(HORIZONTAL)[Leaf(left), Leaf(central), Leaf(right)]
-```
+The EditorRegistry resolves the IDs to concrete classes.
 
-If the Module declares only `[area.central]`:
+Example:
 
-```text
-Leaf(area.central)
-```
+text
+Orthognathic Module declares:
 
-If the Module declares `[left, central, right, bottom]`:
+ModuleUISpec(
+    areas=[
+        AreaSpec("area.left", "Lists", Placement.LEFT,
+            EditorLayoutSpec.leaf("editor.object_list")),
 
-```text
-Split(VERTICAL)
-├── Split(HORIZONTAL)[Leaf(left), Leaf(central), Leaf(right)]
-└── Leaf(bottom)
-```
+        AreaSpec("area.central", "Editing", Placement.CENTRAL,
+            EditorLayoutSpec.split(HORIZONTAL, [
+                EditorLayoutSpec.leaf("editor.viewport_3d"),
+                EditorLayoutSpec.split(VERTICAL, [
+                    EditorLayoutSpec.leaf("editor.mpr_axial"),
+                    EditorLayoutSpec.leaf("editor.mpr_sagittal"),
+                ]),
+            ])),
 
-**Placement rules:**
+        AreaSpec("area.right", "Tools", Placement.RIGHT,
+            EditorLayoutSpec.split(VERTICAL, [
+                EditorLayoutSpec.leaf("editor.properties"),
+                EditorLayoutSpec.leaf("editor.material"),
+            ])),
 
-- `CENTRAL` — always exists; it is the center of the tree.
-- `LEFT` — flanks the central on the left.
-- `RIGHT` — flanks the central on the right.
-- `BOTTOM` — sits below the horizontal row.
+        AreaSpec("area.bottom", "Consoles", Placement.BOTTOM,
+            EditorLayoutSpec.split(HORIZONTAL, [
+                EditorLayoutSpec.leaf("editor.console"),
+                EditorLayoutSpec.leaf("editor.history"),
+                EditorLayoutSpec.leaf("editor.ai_assistant"),
+            ])),
+    ],
+)
+Placement rules:
 
-**Constraint:** a `ModuleUISpec` must declare at least `CENTRAL`. If it
-does not, the Workspace rejects the load with a clear error.
+CENTRAL — always exists; it is the center of the Area Layout Tree.
 
-**Switching Modules:** when another Module is selected, the Workspace
-receives a new `ModuleUISpec` and **discards the current tree**. Areas
-with the same `area_id` **may be reused** if the declared `editor_ids`
-are compatible (see §6.4).
+LEFT — flanks the central on the left.
 
-### 3.6 EditorRegistry
+RIGHT — flanks the central on the right.
 
-The **`EditorRegistry`** is the component that resolves `editor_id` to
-concrete Editor implementations.
+BOTTOM — sits below the horizontal row.
 
-```python
+Constraint: a ModuleUISpec must declare at least CENTRAL. Otherwise, the Workspace rejects the load with a clear error.
+
+Switching Modules: when another Module is selected, the Workspace receives a new ModuleUISpec and discards the current Area Layout Tree. Areas with the same area_id may be reused if their declared editor layouts are compatible.
+
+3.6 EditorRegistry
+The EditorRegistry resolves editor_id to concrete Editor implementations.
+
+python
 class EditorRegistry:
     def register(self, editor_id: str, editor_type: type[Editor]) -> None: ...
     def resolve(self, editor_id: str) -> type[Editor]: ...
     def create(self, editor_id: str) -> Editor: ...
-```
+Why it exists:
 
-**Responsibilities:**
+The Module does not need to import the concrete Editor classes.
 
-- **Register** Editor implementations (system, Modules, Plugins).
-- **Resolve** an `editor_id` to the corresponding `type[Editor]`.
-- **Create** instances on demand.
+Plugins can register new Editors without changing the Workspace code.
 
-**Why it exists:**
+Registry population:
 
-- The Module **does not need to import** the concrete Editor classes.
-- It only needs to declare `editor_id` (string).
-- Plugins can register new Editors without changing the Workspace code.
+System Editors register at boot.
 
-**Registry population:**
+Modules register their Editors when loaded.
 
-- **System Editors** register at boot.
-- **Modules** register their Editors when loaded.
-- **Plugins** register their Editors when activated.
+Plugins register their Editors when activated.
 
----
+4. Editor
+An Editor is the functional unit hosted by an Area. There is no distinction between "Viewport", "Panel" or "Editor". They are all Editors.
 
-## 4. Editor
+For full details on the Editor lifecycle and catalog, see editors.md.
 
-All content of an Area is managed by an **`EditorHost`**. The
-`EditorHost` hosts one or more **Editors**.
-
-There is no distinction between "Viewport", "Panel" or "Editor". They
-are all Editors. They all live in `ui/editors/`.
-
-For full details on `EditorHost`, the Editor lifecycle and the Editor
-catalog, see `editors.md`.
-
-### 4.1 What an Editor is
-
+4.1 What an Editor is
 An Editor is a widget that:
 
-- Renders or edits a specific type of content.
-- Receives Scene events via `SceneProvider` (read).
-- Emits user intent via `Command` (write).
-- May have its own internal toolbar (local Editor chrome).
+Renders or edits a specific type of content.
 
-The Workspace **does not know** what an Editor does. The `EditorHost`
-manages it; the Area hosts it indirectly.
+Receives Scene events via SceneProvider (read).
 
-### 4.2 Available Editors
+Emits user intent via Command (write).
 
-The system keeps a **global Editor catalog**, organized by category:
+May have its own internal toolbar.
 
-| Category | Editors |
-|---|---|
-| **View** | `Viewport3DEditor`, `MPRViewerEditor` |
-| **Mesh** | `MeshEditor`, `NodeEditor` |
-| **Data** | `PropertiesEditor`, `SceneEditor`, `DocumentEditor` |
-| **Console** | `ConsoleEditor` |
-| **Aux** | `AIConsoleEditor`, `HistoryEditor`, `AnimationEditor` |
+The Workspace does not know what an Editor does.
 
-The catalog is populated by:
+4.2 Editor catalog
+The system keeps a global Editor catalog, organized by category:
 
-- **System Editors** (built-in, always available).
-- **Editors registered by Modules**.
-- **Editors registered by Plugins**.
+Category	Editors
+View	Viewport3DEditor, MPRViewerEditor
+Mesh	MeshEditor, NodeEditor
+Data	PropertiesEditor, SceneEditor, DocumentEditor
+Console	ConsoleEditor
+Aux	AIConsoleEditor, HistoryEditor, AnimationEditor
+Populated by: System Editors, Editors registered by Modules, Editors registered by Plugins.
 
-### 4.3 Where an Editor sits
+4.3 Where an Editor sits
+The Editor does not decide where it sits. The Area hosts it. The Area's internal Editor Layout Tree determines the position.
 
-**The Editor does not decide where it sits.** The `EditorHost` manages
-it; the Area hosts it indirectly.
+Who decides which Editor goes in which Area:
 
-**The Area does not create the Editor either.** It hosts an
-`EditorHost`. The `EditorHost` receives the Editors already created by
-the system.
+The Module, when declaring its AreaSpec.
 
-**Who decides which Editor goes in which Area:**
+The user, when adding an Editor to an existing Area.
 
-1. **The Module**, when declaring its `AreaSpec`. Each `AreaSpec`
-   declares the `editor_ids` that the Area should host initially.
-2. **The user**, when adding an Editor to an existing Area.
-3. **The `ModuleUISpec`**, when declaring which Editors each Area
-   should host initially.
+Typical conventions (not rules):
 
-**Typical conventions** (not rules):
+Editor	Where it typically sits
+PropertiesEditor	Right or Bottom
+ConsoleEditor	Bottom
+NodeEditor	Central
+Viewport3DEditor	Central
+MPRViewerEditor	Central
+Instance policy: each Editor is a new instance. Two Viewport3DEditor are two independent instances.
 
-| Editor | Where it typically sits |
-|---|---|
-| `PropertiesEditor` | Right or Bottom Area |
-| `ConsoleEditor` | Bottom Area |
-| `NodeEditor` | Central Area |
-| `Viewport3DEditor` | Central Area |
-| `MPRViewerEditor` | Central Area |
+4.4 Toolbars
+A Toolbar is an internal widget of an Editor, not an Area. Each Editor decides whether it wants its own Toolbar. The Workspace never hosts Toolbars.
 
-**Nothing in the system imposes** these conventions.
+text
+Editor
+├── Toolbar
+│   └── Tools
+├── Content
+└── Overlays
+The Toolbar is a declarative specification of the Editor. It is materialized by the Editor itself, respecting the declared orientation (HORIZONTAL or VERTICAL).
 
-**Instance policy:** each Editor is a **new instance**. Two
-`Viewport3DEditor` are two independent instances.
+Tools do not belong to a specific Toolbar. They belong to a shared catalog, the ToolRegistry, and may be referenced by Toolbars from different Editors.
 
-### 4.4 Toolbars
+text
+Viewport3DEditor
+├── ViewportToolbar (VERTICAL)
+│   ├── select_tool
+│   ├── transform_tool
+│   └── measure_tool
+├── ViewportToolbar (HORIZONTAL)
+│   ├── reset_view
+│   └── fit_view
+└── 3D View
+Multiple Toolbars per Editor. An Editor may declare more than one Toolbar, with independent orientations:
 
-A toolbar is an **internal widget of an Editor**, not an Area.
-
-Each Editor decides whether it wants its own toolbar. The Workspace
-never hosts toolbars.
-
-### 4.5 Adding an Editor
-
+text
+Editor
+├── Toolbar Vertical:   Tool2, Tool4
+├── Content
+├── Overlays
+└── Toolbar Horizontal: Tool1, Tool2, Tool4
+4.5 Adding an Editor
 The user can add an Editor through:
 
-- **`+` button** on the Area chrome or on the `EditorHost` tab bar.
-- **Keyboard shortcut**.
-- **Context menu**.
++ button on the Area chrome.
+
+Keyboard shortcut.
+
+Context menu.
 
 Flow:
 
-1. The system opens the available **Editor catalog**.
-2. The user chooses an Editor.
-3. The system **creates a new instance** of the chosen Editor.
-4. The `EditorHost` **adds the new Editor** to the list.
-5. The new tab (if ≥ 2 Editors) appears and becomes active.
+The system opens the available Editor catalog.
 
-**Nothing is destroyed.** The original Area keeps existing; the new
-Editor is **additional** inside the same `EditorHost`.
+The user chooses an Editor.
 
-### 4.6 Switching the active Editor
+The system creates a new instance.
 
-The user can **switch** between the Editors of an `EditorHost`:
+The Editor is added to the Area's internal Editor Layout Tree.
 
-1. The `EditorHost` does `detach` of the current Editor (without
-   destroying it).
-2. The `EditorHost` does `attach` of the new Editor.
-3. The new Editor is initialized with the current Scene.
-4. The change is recorded as a `Command`.
+The new Editor becomes active.
 
-**Note:** switching the **active** Editor is different from
-**removing** an Editor. Removing is done via the `❌` on the tab.
+Nothing is destroyed. The original Area keeps existing; the new Editor is additional.
 
-For details, see `editors.md`.
+4.6 Switching the active Editor
+The user can switch between Editors within an Area:
 
----
+The current Editor is detached (without destroying it).
 
-## 5. Layout Model — N-ary Split Tree
+The new Editor is attached.
 
-### 5.1 The model
+The new Editor is initialized with the current Scene.
 
-The Workspace layout is an **N-ary tree**.
+The change is recorded as a Command.
 
-- A **`Leaf`** contains exactly one `Area`.
-- A **`Split`** contains **two or more** child nodes, and a
-  **direction** (horizontal or vertical).
+Note: switching the active Editor is different from removing an Editor. Removing is done via ❌.
 
-```text
-Split(VERTICAL)
-├── Split(HORIZONTAL)
-│   ├── Leaf(Area left)
-│   ├── Leaf(Area central)
-│   └── Leaf(Area right)
-└── Leaf(Area bottom)
-```
+For details, see editors.md.
 
-**This is the only layout mechanism.** There are no slots, no
-predefined templates, no grid.
+5. Layout Model — Dual N-ary Split Trees
+5.1 The model
+The Workspace has two kinds of layout trees, both following the same N-ary split tree model:
 
-### 5.2 Initial state
+Area Layout Tree (external) — organizes the Areas of the Workspace.
 
-The Workspace **starts empty**. There is no pre-built tree.
+Editor Layout Trees (internal) — each Area has its own, organizing the Editors hosted by that Area.
 
-The first tree is built when the first Module is loaded, from the
-`ModuleUISpec` (see §3.5).
+Node types (both trees):
 
-**Examples:**
+A Leaf contains exactly one element (Area or Editor).
 
-**Patient Module** (`[central]`):
+A Split contains two or more children and a direction (HORIZONTAL or VERTICAL).
 
-```text
-Leaf(area.central)
-```
+text
+Workspace
+├── Area Layout Tree (external)
+│   ├── Area LEFT      → Editor Layout Tree (internal)
+│   ├── Area CENTRAL   → Editor Layout Tree (internal)
+│   ├── Area RIGHT     → Editor Layout Tree (internal)
+│   └── Area BOTTOM    → Editor Layout Tree (internal)
+└── Overlays
+This is the only layout mechanism. No slots, no predefined templates, no grid.
 
-**3D Mesh Editing Module** (`[left, central, right]`):
+There is no special Area. LEFT, CENTRAL, RIGHT, and BOTTOM follow the same model. Any Area may host one or multiple Editors.
 
-```text
+5.2 Initial state
+The Workspace starts empty. There is no pre-built tree.
+
+Both trees are built when the first Module is loaded, from the ModuleUISpec.
+
+Examples:
+
+Patient Module ([central] with one Editor):
+
+text
+Area Layout Tree: Leaf(area.central)
+
+Editor Layout Tree (area.central): Leaf(editor.patient)
+3D Mesh Editing Module ([left, central, right] with one Editor each):
+
+text
+Area Layout Tree:
 Split(HORIZONTAL)
 ├── Leaf(area.left)
 ├── Leaf(area.central)
 └── Leaf(area.right)
-```
 
-**Tomography Module** (`[left, central, right, bottom]`):
+Editor Layout Tree (area.left):    Leaf(editor.toolbox)
+Editor Layout Tree (area.central): Leaf(editor.viewport_3d)
+Editor Layout Tree (area.right):   Leaf(editor.properties)
+Tomography Module (central with 2×2 Editors, right with 2 Editors, bottom with 3 Editors):
 
-```text
+text
+Area Layout Tree:
 Split(VERTICAL)
 ├── Split(HORIZONTAL)
 │   ├── Leaf(area.left)
 │   ├── Leaf(area.central)
 │   └── Leaf(area.right)
 └── Leaf(area.bottom)
-```
 
-**The user can hide and re-show** the Areas the Module declared. This
-is done via buttons on the application chrome (it is not
-creating/destroying Areas — it is only showing/hiding).
+Editor Layout Tree (area.central):
+Split(HORIZONTAL)
+├── Leaf(editor.mpr_axial)
+└── Split(VERTICAL)
+    ├── Leaf(editor.mpr_sagittal)
+    └── Leaf(editor.viewport_3d)
 
-**The user can add** new Areas through the `+` button (see §4.5).
+Editor Layout Tree (area.right):
+Split(VERTICAL)
+├── Leaf(editor.properties)
+└── Leaf(editor.material)
 
-### 5.3 Resizing
+Editor Layout Tree (area.bottom):
+Split(HORIZONTAL)
+├── Leaf(editor.console)
+├── Leaf(editor.history)
+└── Leaf(editor.ai_assistant)
+The user can hide and re-show the Areas the Module declared.
 
-Each `Split` is rendered as a `QSplitter`. The user can **drag the
-dividers** to resize adjacent Areas.
+The user can add new Editors to any Area's internal tree, and reorganize them.
 
-- Sizes are **relative**.
-- Initial sizes are set once, when the tree is built.
-- Resizing **does not** change the tree structure — only the
-  proportions.
+5.3 Resizing
+Each Split (in either tree) is rendered as a QSplitter. The user can drag the dividers to resize adjacent elements.
 
-### 5.4 Rendering
+Sizes are relative.
 
-Rendering the tree into Qt widgets is the responsibility of the
-**`LayoutRenderer`**.
+Initial sizes are set once, when the tree is built.
 
-The `LayoutTree` is a **pure data model**, with no Qt dependency. The
-`LayoutRenderer` is the **Anti-Corruption Layer** between the model
-and Qt.
+Resizing does not change the tree structure — only the proportions.
 
-**The `LayoutRenderer` keeps rendering state:**
+5.4 Rendering
+Rendering both trees into Qt widgets is the responsibility of the LayoutRenderer.
 
-```python
-class LayoutRenderer:
-    _split_widgets: dict[int, QSplitter]   # id(SplitNode) → QSplitter
-    _area_widgets: dict[str, Area]         # area_id → Area (widget)
-```
+The layout trees are pure data models, with no Qt dependency. The LayoutRenderer is the Anti-Corruption Layer between the models and Qt.
 
-This state is a **cache** — it is not a source of truth. It can be
-discarded and rebuilt from the `LayoutTree` at any time.
+The LayoutRenderer renders recursively:
 
-**Rules:**
+An Area Layout Tree Split → QSplitter at the Workspace level.
 
-- The `LayoutTree` is the **single source of truth** for structure.
-- The `LayoutRenderer` **never invents** structure.
-- If there is a divergence, the tree wins.
+An Area Layout Tree Leaf → the Area widget.
 
-### 5.5 Persistence
+Inside each Area, its Editor Layout Tree Split → QSplitter.
 
-The tree is serialized as nested JSON:
+Its Editor Layout Tree Leaf → the Editor widget.
 
-```json
+Rules:
+
+The layout trees are the single source of truth for structure.
+
+The LayoutRenderer never invents structure.
+
+If there is a divergence, the trees win.
+
+5.5 Persistence
+Both trees are serialized as nested JSON:
+
+json
 {
-  "type": "split",
-  "direction": "vertical",
-  "children": [
-    {
-      "type": "split",
-      "direction": "horizontal",
-      "children": [
-        { "type": "leaf", "area_id": "area.left" },
-        { "type": "leaf", "area_id": "area.central" },
-        { "type": "leaf", "area_id": "area.right" }
-      ]
+  "area_tree": {
+    "type": "split",
+    "direction": "vertical",
+    "children": [
+      {
+        "type": "split",
+        "direction": "horizontal",
+        "children": [
+          { "type": "leaf", "area_id": "area.left" },
+          { "type": "leaf", "area_id": "area.central" },
+          { "type": "leaf", "area_id": "area.right" }
+        ]
+      },
+      { "type": "leaf", "area_id": "area.bottom" }
+    ]
+  },
+  "area_editor_trees": {
+    "area.left": {
+      "type": "leaf", "editor_id": "editor.toolbox"
     },
-    { "type": "leaf", "area_id": "area.bottom" }
-  ]
+    "area.central": {
+      "type": "split", "direction": "horizontal",
+      "children": [
+        { "type": "leaf", "editor_id": "editor.viewport_3d" },
+        { "type": "split", "direction": "vertical",
+          "children": [
+            { "type": "leaf", "editor_id": "editor.mpr_axial" },
+            { "type": "leaf", "editor_id": "editor.mpr_sagittal" }
+          ]
+        }
+      ]
+    }
+  }
 }
-```
-
 This JSON is stored inside the project file, not in user settings.
 
-**Precedence when opening a project:**
+Precedence when opening a project:
 
-1. **Persisted layout** in the project (most specific).
-2. **Default layout** declared by the Module.
-3. **System fallback** (single central).
+Persisted layout in the project (most specific).
 
-If the persisted layout is **incompatible** with the current Module,
-the Workspace discards it and rebuilds from the Module.
+Default layout declared by the Module.
 
-### 5.6 Why an N-ary tree
+System fallback (single central Area with a single Editor).
 
-- **Simple:** two node types.
-- **Recursive:** each subtree is a complete layout.
-- **Composable:** any Area can be split; any split can be closed.
-- **Persistable:** JSON maps directly to the tree.
-- **No slots:** positions emerge from the tree.
-- **Direct mapping to Qt:** each `Split` is rendered as a `QSplitter`;
-  each `Leaf` as an `Area`.
+If the persisted layout is incompatible with the current Module, the Workspace discards it and rebuilds from the Module.
 
-This mirrors how **tmux**, **VSCode**, **Blender** and **3D Slicer**
-implement panel layouts.
+5.6 Why an N-ary tree
+Simple: two node types.
 
-### 5.7 Evolution
+Recursive: each subtree is a complete layout.
 
-The tree model is **stable**. Future operations:
+Composable: any element can be split; any split can be closed.
 
-- `split` and `close` of nodes.
-- Drag-and-drop to reorder Leaves.
-- Floating Areas.
-- Predefined trees.
-- Multiple Workspaces.
+Persistable: JSON maps directly to the tree.
 
-**None of these operations changes the tree model.**
+Direct mapping to Qt: each Split is rendered as a QSplitter; each Leaf as a widget.
 
----
+5.7 Evolution
+The tree model is stable. Future operations:
 
-## 6. Workspace Lifecycle
+split and close of nodes.
 
-### 6.1 Startup
+Drag-and-drop to reorder Leaves.
 
-```text
+Floating Areas.
+
+Multiple Workspaces.
+
+None of these operations changes the tree model.
+
+6. Workspace Lifecycle
+6.1 Startup
+text
 QApplication starts
-    |
-    v
+    ↓
 MainWindow created
-    |
-    v
-Workspace created (empty — no tree)
-    |
-    v
+    ↓
+Workspace created (empty — no trees)
+    ↓
 Modules loaded via ModuleRegistry
-    |
-    v
+    ↓
 Initial Flow is selected
-    |
-    v
+    ↓
 First Module is loaded
-    |
-    v
+    ↓
 Workspace reads the Module's ModuleUISpec
-    |
-    v
-LayoutBuilder builds the tree from the ModuleUISpec
-    |
-    v
-LayoutRenderer renders the tree as nested QSplitters
-    |
-    v
+    ↓
+LayoutBuilder builds the Area Layout Tree + Editor Layout Trees
+    ↓
+LayoutRenderer renders as nested QSplitters
+    ↓
 Workspace positions Overlays over Regions
-    |
-    v
+    ↓
 Workspace shown to the user
-```
-
-### 6.2 Opening a project
-
-```text
+6.2 Opening a project
+text
 Project opened
-    |
-    v
+    ↓
 Scene loaded from JSON
-    |
-    v
+    ↓
 Project Flow is selected
-    |
-    v
+    ↓
 Flow Module is loaded
-    |
-    v
+    ↓
 Persisted layout is loaded from the project (if it exists)
-    |
-    v
+    ↓
 If the persisted layout is compatible with the ModuleUISpec:
     Workspace uses the loaded layout
 Else:
-    LayoutBuilder builds the tree from the ModuleUISpec
-    |
-    v
-LayoutRenderer renders the tree
-    |
-    v
+    LayoutBuilder builds the trees from the ModuleUISpec
+    ↓
+LayoutRenderer renders the trees
+    ↓
 Workspace positions Overlays over Regions
-    |
-    v
-Editors inside Areas redraw from Scene state
-```
-
-### 6.3 Shutdown
-
-```text
+    ↓
+Editors redraw from Scene state
+6.3 Shutdown
+text
 User closes the window
-    |
-    v
-Workspace serializes the tree
-    |
-    v
+    ↓
+Workspace serializes the trees
+    ↓
 Scene saved (if dirty)
-    |
-    v
+    ↓
 QApplication exits
-```
-
-### 6.4 Module switch
-
-```text
+6.4 Module switch
+text
 User selects another Module
-    |
-    v
-Workspace discards the current tree
-    |
-    v
+    ↓
+Workspace discards the current trees
+    ↓
 For each AreaSpec of the new ModuleUISpec:
     If an Area is registered with the same area_id
-    And the declared editor_ids are compatible:
+    And the declared editor layouts are compatible:
         Reuse the instance
     Else:
         Create a new Area
-    |
-    v
-LayoutBuilder builds the new tree
-    |
-    v
-LayoutRenderer renders the new tree
-    |
-    v
+    ↓
+LayoutBuilder builds the new trees
+    ↓
+LayoutRenderer renders the new trees
+    ↓
 Workspace repositions Overlays
-```
+Explicit reuse rule:
 
-**Explicit reuse rule:**
+An Area is reused only when the area_id is the same and the declared editor layouts are compatible.
+Otherwise, the Area is reconfigured (Editors swapped) or replaced.
 
-> An Area is **reused** only when the `area_id` is the same **and**
-> the declared `editor_ids` are compatible.
->
-> Otherwise, the Area is **reconfigured** (Editors swapped) or
-> **replaced**.
-
-This avoids reuse with incompatible Editors.
-
----
-
-## 7. Overlays
-
-### 7.1 Concept
-
-An **Overlay** is a **floating layer** that the Workspace positions
-over a **Region** of Areas.
+7. Overlays
+7.1 Concept
+An Overlay is a floating layer that the Workspace positions over a Region of Areas.
 
 The Overlay:
 
-- **Does not interfere with the layout** — it floats over the Areas.
-- **Is not an Area.** It is not hosted by any Area.
-- **Is managed by the Workspace** (via `OverlayManager`).
+Does not interfere with the layout — it floats over the Areas.
 
-### 7.2 Regions
+Is not an Area. It is not hosted by any Area.
 
-A **Region** is a **geometric area derived** from the `LayoutTree`
-that groups a set of related Areas.
+Is managed by the Workspace (via OverlayManager).
 
-The Region is **computed** from the rendered Areas (bounding boxes).
-The `LayoutTree` exposes `find_regions()` which returns the Regions.
+7.2 Regions
+A Region is a geometric area derived from the Area Layout Tree that groups related Areas.
 
-**The Region is NOT defined by `Placement`.** The `Placement` is only
-a **convention** that helps identify semantic regions when they exist.
-The Region itself is **geometric**.
+The Region is computed from the rendered Areas (bounding boxes). The LayoutTree exposes find_regions().
 
-```python
+The Region is NOT defined by Placement. Placement is only a semantic convention. The Region itself is geometric.
+
+python
 @dataclass
 class Region:
     id: str                # "central", "left", "right", "bottom"
     bounds: Rect           # rectangle that contains the Region
     areas: list[Area]      # Areas that belong to the Region
-    semantic_role: Placement | None   # convention, optional
-```
+    semantic_role: Placement | None
+Why geometric and not semantic? Allows arbitrary splits, floating areas, multiple Workspaces, drag-and-drop, and lateral overlays.
 
-**Why geometric and not semantic?**
-
-- Allows arbitrary splits (the Central Region may be 2×2, 3×1, etc).
-- Allows floating areas.
-- Allows multiple Workspaces.
-- Allows drag-and-drop.
-- Allows lateral overlays.
-
-`Placement` still exists, but as a **semantic identifier** ("this
-Region is the Central one"), not as the definer of the Region.
-
-### 7.3 The Upper Panel
-
-The **Upper Panel** is an Overlay of the **Central Region**.
+7.3 The Top Bar
+The Top Bar (Painel Superior) is an Overlay of the Central Region.
 
 It:
 
-- Is anchored to the **top** of the Central Region.
-- Has the **width** of the Central Region (with fixed side margins).
-- Floats **over** the Central Areas.
-- Does not push content — it overlaps.
-- Is **a single unit**, independent of the number of Central Areas.
+Is anchored to the top of the Central Region.
 
-```text
+Has the width of the Central Region (with fixed side margins).
+
+Floats over the Central Areas.
+
+Does not push content — it overlaps.
+
+Is a single unit, independent of the number of Central Areas.
+
+text
 +-----------+-----------------------------------+----------+
 |           |  ┌─────────────────────────────┐  |          |
-| Area Left |  │       Upper Panel           │  | Area Right|
+| Area Left |  │        Top Bar              │  | Area Right|
 |           |  └─────────────────────────────┘  |          |
-|           |                                   |          |
 |           |         Central Region            |          |
-|           |                                   |          |
 +-----------+-----------------------------------+----------+
 |                    Bottom Area                           |
 +----------------------------------------------------------+
-```
-
-**The Central Region may have N Areas inside.** The Upper Panel
-covers all of them as a single unit.
-
-### 7.4 Computing the bounds
-
-The Workspace computes the Central Region bounds from the rendered
-Areas:
-
-```python
+7.4 Computing the bounds
+python
 x_min = right_edge_of(Region.LEFT)   or  0
 x_max = left_edge_of(Region.RIGHT)   or  workspace_width
 y_min = 0
 y_max = top_edge_of(Region.BOTTOM)   or  workspace_height
-```
+The Top Bar is positioned at:
 
-The Upper Panel is positioned at:
+x = x_min + margin
 
-- `x` = `x_min + margin`
-- `y` = `y_min + margin_top`
-- `width` = `(x_max - x_min) - 2 * margin`
-- `height` = fixed
+y = y_min + margin_top
 
-### 7.5 Content: the three segments
+width = (x_max - x_min) - 2 * margin
 
-The Upper Panel is **a single panel** that behaves as **three
-independent segments**:
+height = fixed
 
-```text
+7.5 Content: the three segments
+The Top Bar is a single panel that behaves as three independent segments:
+
+text
 +---------------------------------------------------------------------------+
 | [Left]                        [Center]                     [Right]        |
 +---------------------------------------------------------------------------+
-```
+Segment	Alignment	Typical content
+Left	Anchored left	Menu, Home, context title, Left toggle
+Center	Centered	Module tabs loaded by the clinical workflow, +
+Right	Anchored right	Extras, Right toggle, window controls
+Each segment has its own width (based on content). The segments do not push each other — empty spaces fill the rest.
 
-| Segment | Alignment | Typical content |
-|---|---|---|
-| **Left** | Anchored left | Menu, Home, context title, Left toggle |
-| **Center** | Centered | Active Editor tools, `+` |
-| **Right** | Anchored right | Extras, Right toggle, window controls |
+Each segment responds to width independently, collapsing as available space shrinks.
 
-**Each segment has its own width** (based on content). The segments
-**do not push each other** — empty spaces fill the rest.
+Visual effect: the Top Bar has frosted glass (blur + tint) in the background, capturing the Central Region content behind it.
 
-**Each segment responds to width independently**, collapsing as
-available space shrinks.
+For full details, see top-bar.md.
 
-**Visual effect:** the Upper Panel has **frosted glass** (blur + tint)
-in the background, capturing the Central Region content behind it.
+7.6 When the layout changes
+Whenever the layout changes (new Module, split, window resize, visibility of lateral Areas), the Workspace:
 
-For full details on the Top Bar (3 segments, responsiveness, glass
-effect), see `top-bar.md`.
+Recomputes the bounds of each Region.
 
-### 7.6 When the layout changes
+Repositions the Overlays.
 
-Whenever the layout changes (new Module, split, window resize,
-visibility of lateral Areas), the Workspace:
+The Overlay is reactive.
 
-1. Recomputes the bounds of each Region.
-2. Repositions the Overlays.
-
-The Overlay is **reactive**.
-
-### 7.7 Other Overlays
-
+7.7 Other Overlays
 In the future, other Overlays may be added:
 
-- **Lower Panel** (Central Region overlay, anchored to the bottom).
-- **Lateral overlays** (LEFT, RIGHT).
-- **Floating overlays**.
+Lower Panel (Central Region overlay, anchored to the bottom).
 
-For now, the **Upper Panel** is the only defined Overlay.
+Lateral overlays (LEFT, RIGHT).
 
-### 7.8 Persistence
+Floating overlays.
 
-The presence and configuration of Overlays are persisted with the
-tree layout, inside the project file. Non-persisted Overlays fall back
-to the Module default.
+7.8 Persistence
+The presence and configuration of Overlays are persisted with the layout trees, inside the project file.
 
----
+8. Open Questions
+8.1 Is the layout per-project or per-user?
+Option A: Per-project.
+Option B: Per-user.
+Option C: Hybrid.
 
-## 8. Open Questions
+Current lean: Option C.
 
-### 8.1 Is the layout per-project or per-user?
+8.2 Does the global Editor catalog exist?
+Option A: Yes — the user can open any system Editor.
+Option B: No — only what the Module declared.
 
-**Option A:** Per-project.
-**Option B:** Per-user.
-**Option C:** Hybrid.
+Current lean: Option A.
 
-**Current lean:** Option C.
+8.3 How to handle floating Areas on multi-monitor?
+Requires extra handling (Qt handles most of it, but VTK viewports need care).
 
-### 8.2 Does the global Area catalog exist?
+Current lean: define when multi-monitor support enters scope.
 
-**Option A:** Yes — the user can open any system Editor.
-**Option B:** No — only what the Module declared.
+8.4 Where does the "active Area" concept live?
+Option A: The Workspace tracks the active Area.
+Option B: Each Area tracks its own focus.
 
-**Current lean:** Option A.
-
-### 8.3 How to handle floating Areas on multi-monitor?
-
-Requires extra handling (Qt handles most of it, but VTK viewports
-need care).
-
-**Current lean:** define when multi-monitor support enters scope.
-
-### 8.4 Can two Areas show the same Editor?
-
-**Option A:** No — each Editor is an independent instance.
-**Option B:** Yes — useful to compare two views of the same data.
-
-**Current lean:** Option A.
-
-### 8.5 Where does the "active Area" concept live?
-
-**Option A:** The Workspace tracks the active Area.
-**Option B:** Each Area tracks its own focus.
-
-**Current lean:** Option A, with per-Area focus as a secondary concept.
+Current lean: Option A, with per-Area focus as a secondary concept.

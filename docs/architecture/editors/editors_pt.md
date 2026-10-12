@@ -1,12 +1,12 @@
-# Editors
+# Editores
 
 ## 1. Visão geral
 
-Os Editors são componentes funcionais da interface do CranioZ responsáveis por apresentar e permitir a interação com determinado tipo de conteúdo ou atividade.
+Os Editores são componentes funcionais da interface do usuário do CranioZ, responsáveis por apresentar e permitir a interação com um tipo específico de conteúdo ou atividade.
 
-Um Editor define **o que o usuário está fazendo** dentro de uma `Area`. Ele não define **onde está localizado** na interface.
+Um Editor define o que o usuário está fazendo dentro de uma Área. Ele não define onde está localizado na interface.
 
-A arquitetura de interface segue a seguinte hierarquia:
+A arquitetura da interface segue esta hierarquia:
 
 ```text
 Workspace
@@ -22,55 +22,50 @@ Workspace
 
 Essa separação permite que o mesmo Editor seja utilizado em diferentes configurações de interface sem depender de uma posição específica.
 
-Por exemplo, um `MPRViewerEditor` pode ocupar uma Area central, lateral ou inferior dependendo do Layout, sem que o Editor precise conhecer ou controlar essa posição.
+Por exemplo, um `MPRViewerEditor` pode ocupar uma Área central, lateral ou inferior, dependendo do Layout, sem que o Editor conheça ou controle essa posição.
 
-A Area é fornecida pelo Workspace; o Editor não a cria nem a gerencia.
-
----
+A Área é fornecida pelo Workspace; o Editor não a cria nem a gerencia.
 
 ## 2. Responsabilidades
 
 Um Editor é responsável por:
 
 - definir uma experiência funcional de edição ou visualização;
-- apresentar determinado tipo de conteúdo;
+- apresentar um tipo específico de conteúdo;
 - fornecer interação específica para esse conteúdo;
-- declarar sua Toolbar e as Tools que ela referencia;
-- traduzir interações do usuário em Commands;
-- reagir a alterações relevantes do estado da aplicação;
+- declarar e materializar sua própria Toolbar e as Tools que ela referencia;
+- traduzir as interações do usuário em Commands;
+- reagir a mudanças relevantes no estado da aplicação;
 - manter o estado específico da apresentação quando necessário.
 
-Um Editor **não é responsável por**:
+Um Editor não é responsável por:
 
 - determinar sua posição na interface;
 - criar ou gerenciar Areas;
 - definir o Layout do Workspace;
 - controlar docking ou divisão espacial;
 - gerenciar outros Editors;
-- implementar lógica clínica pertencente a Modules;
-- modificar diretamente o estado clínico da Scene;
-- materializar diretamente widgets Qt.
+- implementar lógica clínica pertencente aos Modules;
+- modificar diretamente o estado clínico da Scene.
 
-A separação pode ser resumida como:
+A separação pode ser resumida da seguinte forma:
 
 ```text
 Area    → onde
 Editor  → o quê
 Tool    → intenção do usuário
-Command → alteração de estado
+Command → mudança de estado
 Module  → funcionalidade clínica
 Scene   → estado clínico
 ```
 
----
-
 ## 3. Editor versus Area
 
-`Area` e `Editor` possuem responsabilidades diferentes.
+Area e Editor possuem responsabilidades diferentes.
 
 ### Area
 
-A `Area` é uma unidade estrutural da interface.
+Uma Area é uma unidade estrutural da interface.
 
 Ela controla aspectos como:
 
@@ -80,13 +75,13 @@ Ela controla aspectos como:
 - docking;
 - divisão;
 - apresentação;
-- relacionamento espacial com outras Areas.
+- relações espaciais com outras Areas.
 
-A Area não deve possuir conhecimento específico sobre cirurgia, imagem, cefalometria, segmentação ou qualquer outra funcionalidade clínica.
+Uma Area não deve conter conhecimento específico sobre cirurgia, imagens, cefalometria, segmentação ou qualquer outra funcionalidade clínica.
 
 ### Editor
 
-O Editor representa uma função da interface.
+Um Editor representa uma função da interface.
 
 Ele controla aspectos como:
 
@@ -98,7 +93,7 @@ Ele controla aspectos como:
 - navegação;
 - apresentação de informações.
 
-Um Editor não deve assumir que está no centro, na lateral ou na parte inferior da janela.
+Um Editor não deve presumir que está localizado no centro, na lateral ou na parte inferior da janela.
 
 ```text
 Area
@@ -108,11 +103,9 @@ Area
 
 A Area fornece o espaço de apresentação; o Editor fornece a experiência funcional.
 
----
-
 ## 4. EditorHost
 
-A comunicação entre Area e Editor ocorre por meio de um `EditorHost`.
+A comunicação entre uma Area e um Editor ocorre por meio de um `EditorHost`.
 
 ```text
 Area
@@ -120,29 +113,25 @@ Area
     └── Editor
 ```
 
-O `EditorHost` funciona como camada de hospedagem e adaptação entre a infraestrutura espacial do Workspace e a implementação do Editor.
+O `EditorHost` atua como uma camada de hospedagem e adaptação entre a infraestrutura espacial do Workspace e a implementação do Editor.
 
 Suas responsabilidades incluem:
 
 - hospedar a instância do Editor;
 - conectar o Editor à Area;
-- administrar o ciclo de vida visual;
-- fornecer o contexto necessário para o Editor;
-- materializar a Toolbar declarada pelo Editor;
-- conectar Toolbar e Content;
+- gerenciar o ciclo de vida visual;
+- fornecer o contexto necessário ao Editor;
 - adaptar a implementação do Editor ao sistema de Layout.
 
-O EditorHost não deve assumir responsabilidades clínicas.
+O `EditorHost` não deve assumir responsabilidades clínicas.
 
-O Editor declara sua Toolbar; o EditorHost materializa essa Toolbar no espaço fornecido pela Area, respeitando o Layout.
-
----
+O `EditorHost` não materializa Toolbars. Ele apenas hospeda o Editor. Cada Editor declara e materializa sua própria Toolbar dentro do seu espaço de conteúdo.
 
 ## 5. Interface base
 
 Todos os Editors devem derivar de uma abstração comum.
 
-Uma implementação conceitual pode ser representada por:
+Uma implementação conceitual pode ser representada da seguinte forma:
 
 ```python
 class Editor(ABC):
@@ -160,26 +149,34 @@ class Editor(ABC):
 
     def dispose(self) -> None:
         ...
+
+    # Conteúdo e elementos internos da interface
+    def content_widget(self) -> "QWidget":
+        ...
+
+    def toolbar_specs(self) -> list["ToolbarSpec"]:
+        return []
+
+    def overlays(self) -> list["Overlay"]:
+        return []
 ```
 
-A interface concreta poderá evoluir conforme as necessidades do sistema.
+A interface concreta pode evoluir de acordo com as necessidades do sistema.
 
-O objetivo da classe base não é impor uma implementação visual específica, mas estabelecer um contrato comum para registro, criação e ciclo de vida.
+O objetivo da classe base não é impor uma implementação visual específica, mas estabelecer um contrato comum para registro, criação e gerenciamento do ciclo de vida, além de declarar a composição interna do Editor: Content, Toolbars e Overlays.
 
 ### Ciclo de vida
 
 ```text
-initialize(context) → chamado uma vez, ao criar o Editor
-activate()          → Editor torna-se ativo
-deactivate()        → Editor torna-se inativo
-dispose()           → Editor é destruído
+initialize(context) → chamado uma vez quando o Editor é criado
+activate()          → o Editor se torna ativo
+deactivate()        → o Editor se torna inativo
+dispose()           → o Editor é destruído
 ```
 
-Um Editor pode permanecer hospedado enquanto está inativo. O estado visual transitório pode ou não persistir entre `deactivate()` e `activate()`, conforme a natureza do Editor.
+Um Editor pode continuar hospedado enquanto estiver inativo. O estado visual temporário pode ou não persistir entre `deactivate()` e `activate()`, dependendo da natureza do Editor.
 
 `deactivate()` não implica `dispose()`.
-
----
 
 ## 6. EditorRegistry
 
@@ -187,12 +184,12 @@ Os Editors são registrados no `EditorRegistry`.
 
 O Registry é responsável por:
 
-- registrar Editors disponíveis;
-- localizar um Editor por `editor_id`;
+- registrar os Editors disponíveis;
+- localizar um Editor por meio de `editor_id`;
 - fornecer metadados;
 - criar novas instâncias;
-- controlar factories;
-- validar Editors solicitados por Layouts.
+- gerenciar factories;
+- validar os Editors solicitados pelos Layouts.
 
 Exemplo conceitual:
 
@@ -208,7 +205,7 @@ EditorRegistry
 └── cephalometry
 ```
 
-O Registry permite que o sistema trabalhe com identificadores estáveis em vez de depender diretamente das classes concretas.
+O Registry permite que o sistema trabalhe com identificadores estáveis, em vez de depender diretamente de classes concretas.
 
 Por exemplo:
 
@@ -224,9 +221,7 @@ Viewport3DEditor(...)
 
 na definição do Layout.
 
-O Registry fornece definições ou factories. Ele não mantém instâncias de execução; a criação das instâncias é realizada pelo Workspace ou pelo Host correspondente.
-
----
+O Registry fornece definições ou factories. Ele não mantém instâncias em execução; a criação das instâncias é realizada pelo Workspace ou pelo host correspondente.
 
 ## 7. Layout e Editors
 
@@ -248,7 +243,7 @@ EditorRegistry
 Instância do Editor
 ```
 
-Dessa forma, a definição do Layout permanece declarativa.
+Isso mantém a definição do Layout declarativa.
 
 Exemplo conceitual:
 
@@ -273,17 +268,15 @@ Viewport3DEditor
 
 Essa responsabilidade pertence ao `EditorRegistry`.
 
----
-
 ## 8. LayoutTree
 
-O `LayoutTree` é a fonte de verdade da composição espacial da interface.
+O `LayoutTree` é a fonte de verdade para a composição espacial da interface.
 
 Ele descreve:
 
 - Areas;
 - relações entre Areas;
-- divisão espacial;
+- divisões espaciais;
 - docking;
 - visibilidade;
 - Editors associados às Areas;
@@ -305,13 +298,11 @@ LayoutTree
     └── Editor: Properties
 ```
 
-O LayoutTree não contém widgets Qt concretos. Ele representa a estrutura lógica da interface.
-
----
+O `LayoutTree` não contém widgets Qt concretos. Ele representa a estrutura lógica da interface.
 
 ## 9. Materialização do Layout
 
-A criação da interface ocorre em etapas distintas:
+A interface é criada em etapas distintas:
 
 ```text
 LayoutTree
@@ -335,19 +326,21 @@ Representação declarativa da composição.
 
 ### LayoutBuilder
 
-Interpreta o LayoutTree e cria a estrutura necessária.
+Interpreta o `LayoutTree` e cria a estrutura necessária.
 
 ### LayoutRenderer
 
 Projeta essa estrutura na interface Qt.
 
-Essa separação evita que a estrutura lógica do Workspace fique acoplada à implementação específica do Qt.
+Essa separação impede que a estrutura lógica do Workspace fique acoplada à implementação específica do Qt.
 
----
+É importante observar que a estrutura interna do Editor — Toolbar, Content e Overlays — é materializada pelo próprio Editor, e não pelo `LayoutRenderer`. O `LayoutRenderer` apenas gerencia a árvore de Areas e hospeda o Editor dentro do `EditorHost`.
 
 ## 10. Toolbar
 
-A Toolbar pertence ao Editor. Cada Editor define sua própria Toolbar, composta por Tools que podem ser compartilhadas com outros Editors.
+Uma Toolbar é um widget interno de um Editor, e não uma Area.
+
+Cada Editor decide se deseja possuir sua própria Toolbar. O Workspace nunca hospeda Toolbars.
 
 ```text
 Editor
@@ -357,7 +350,7 @@ Editor
 └── Overlays
 ```
 
-A Toolbar é uma especificação declarativa pertencente ao Editor. Sua materialização é responsabilidade do EditorHost, que a projeta no espaço fornecido pela Area por meio do LayoutRenderer.
+A Toolbar é uma especificação declarativa pertencente ao Editor. Sua materialização é responsabilidade do próprio Editor, que projeta a Toolbar dentro do seu espaço de conteúdo, respeitando a orientação declarada: `HORIZONTAL` ou `VERTICAL`.
 
 As Tools não pertencem a uma Toolbar específica. Elas pertencem a um catálogo compartilhado, o `ToolRegistry`, e podem ser referenciadas por Toolbars de diferentes Editors.
 
@@ -365,39 +358,41 @@ Exemplo:
 
 ```text
 Viewport3DEditor
-├── ViewportToolbar
+├── ViewportToolbar (VERTICAL)
 │   ├── select_tool
 │   ├── transform_tool
 │   └── measure_tool
+├── ViewportToolbar (HORIZONTAL)
+│   ├── reset_view
+│   └── fit_view
 └── 3D View
 
 MPRViewerEditor
-├── MPRToolbar
+├── MPRToolbar (VERTICAL)
 │   ├── select_tool
 │   └── measure_tool
 └── 2D Views
 ```
 
-A Toolbar não deve ser tratada como uma `ToolbarArea` especial nem como responsabilidade do Layout. Ela é parte da experiência do Editor e pode ser apresentada conforme o Layout e o estado atual da interface, sem que o Editor precise conhecer os detalhes dessa apresentação.
+Uma Toolbar não deve ser tratada como uma `ToolbarArea` especial nem como uma responsabilidade do Layout. Ela faz parte da experiência do Editor e é apresentada dentro do próprio Editor, que não conhece nem depende da posição que ocupa no Workspace.
 
 ### Múltiplas Toolbars por Editor
 
-Um Editor pode declarar mais de uma Toolbar:
+Um Editor pode declarar mais de uma Toolbar, com orientações independentes:
 
 ```text
 Editor
-├── Toolbar1: Tool2, Tool4
-├── Toolbar2: Tool1, Tool2, Tool4
-└── Content
+├── Toolbar Vertical:   Tool2, Tool4
+├── Content
+├── Overlays
+└── Toolbar Horizontal: Tool1, Tool2, Tool4
 ```
 
-A composição de cada Toolbar é independente, mesmo quando as mesmas definições de Tool são referenciadas.
-
----
+A composição de cada Toolbar é independente, mesmo quando as mesmas definições de Tools são referenciadas.
 
 ## 11. Tools
 
-Tools representam intenções ou operações iniciadas pelo usuário.
+As Tools representam intenções ou operações iniciadas pelo usuário.
 
 Uma Tool é uma unidade funcional independente. Ela não pertence a uma Toolbar específica e pode ser referenciada por várias Toolbars.
 
@@ -413,26 +408,26 @@ Toolbar1: Tool2, Tool4
 Toolbar2: Tool1, Tool2, Tool4
 ```
 
-A definição de cada Tool reside no `ToolRegistry`. A Toolbar que a utiliza é responsável por criar a instância da Tool.
+Cada definição de Tool reside no `ToolRegistry`. A Toolbar que utiliza a Tool é responsável por criar sua instância.
 
-Assim, `Tool2` na `Toolbar1` e `Tool2` na `Toolbar2` compartilham a mesma definição, mas são instâncias independentes:
+Assim, a `Tool2` da `Toolbar1` e a `Tool2` da `Toolbar2` compartilham a mesma definição, mas são instâncias independentes:
 
 ```text
 ToolRegistry
-├── Tool1 (definição)
-├── Tool2 (definição)
-├── Tool3 (definição)
-├── Tool4 (definição)
-└── Tool5 (definição)
+├── Tool1 (definition)
+├── Tool2 (definition)
+├── Tool3 (definition)
+├── Tool4 (definition)
+└── Tool5 (definition)
 
-Toolbar1 cria Tool2 e Tool4
-Toolbar2 cria Tool1, Tool2 e Tool4
+Toolbar1 creates Tool2 and Tool4
+Toolbar2 creates Tool1, Tool2, and Tool4
 ```
 
 ### Fluxo de resolução
 
 ```text
-Toolbar
+Toolbar (dentro de um Editor)
    │ resolve tool_id
    ▼
 ToolRegistry
@@ -446,7 +441,7 @@ Toolbar cria a Tool
 Uma Tool não deve modificar diretamente o estado clínico. O fluxo preferencial é:
 
 ```text
-User
+Usuário
   ↓
 Tool
   ↓
@@ -461,7 +456,9 @@ EventBus
 Editors
 ```
 
-Quando ativada, uma Tool recebe um contexto controlado fornecido pelo Editor por meio da Toolbar. Esse contexto pode conter referências a consultas da Scene, serviços de Selection, despacho de Commands, inscrições em Events e serviços especializados. A Tool não deve assumir conhecimento sobre a posição do Editor na interface.
+Quando ativada, uma Tool recebe um contexto controlado fornecido pelo Editor por meio da Toolbar. Esse contexto pode conter referências a consultas da Scene, serviços de seleção, despacho de Commands, assinaturas de eventos e serviços especializados.
+
+Uma Tool não deve presumir conhecimento sobre a posição do Editor na interface.
 
 ### Ciclo de vida
 
@@ -472,29 +469,27 @@ Tool.deactivate()    → desativada
 Tool.dispose()       → destruída com a Toolbar
 ```
 
-O estado transitório da Tool pode ou não persistir entre `deactivate()` e `activate()`, conforme a natureza da Tool. Tools de medição geralmente reiniciam; Tools de seleção geralmente preservam seu estado.
+O estado temporário de uma Tool pode ou não persistir entre `deactivate()` e `activate()`, dependendo da natureza da Tool. Tools de medição geralmente são reiniciadas; Tools de seleção geralmente preservam seu estado.
 
 ### Isolamento de estado
 
-Como cada Toolbar cria suas próprias instâncias de Tool, o estado de execução não é compartilhado acidentalmente entre Toolbars diferentes. Isso é especialmente importante quando a mesma Tool aparece em contextos distintos, como uma `MeasureTool` tanto no `Viewport3DEditor` quanto no `MPRViewerEditor`.
+Como cada Toolbar cria suas próprias instâncias de Tools, o estado de execução não é compartilhado acidentalmente entre diferentes Toolbars. Isso é especialmente importante quando a mesma Tool aparece em diferentes contextos, como uma `MeasureTool` em um `Viewport3DEditor` e em um `MPRViewerEditor`.
 
-A decisão arquitetural é:
+A decisão arquitetural é, portanto:
 
-> A Toolbar cria suas próprias instâncias de Tool a partir das definições fornecidas pelo ToolRegistry. A mesma Tool pode ser referenciada por diferentes Toolbars, mas cada Toolbar mantém instâncias independentes.
-
----
+> A Toolbar cria suas próprias instâncias de Tools a partir das definições fornecidas pelo ToolRegistry. A mesma Tool pode ser referenciada por diferentes Toolbars, mas cada Toolbar mantém instâncias independentes.
 
 ## 12. Conteúdo do Editor
 
-O conteúdo apresentado por um Editor varia conforme sua finalidade.
+O conteúdo apresentado por um Editor varia de acordo com sua finalidade.
 
 ### Viewport 3D
 
 ```text
 Viewport3DEditor
-├── 3D viewport
-├── camera
-├── selection
+├── viewport 3D
+├── câmera
+├── seleção
 ├── overlays
 └── tools
 ```
@@ -503,40 +498,38 @@ Viewport3DEditor
 
 ```text
 MPRViewerEditor
-├── axial view
-├── sagittal view
-├── coronal view
+├── visualização axial
+├── visualização sagital
+├── visualização coronal
 ├── crosshair
-├── slice navigation
-└── image tools
+├── navegação pelos slices
+└── ferramentas de imagem
 ```
 
-### Properties
+### Propriedades
 
 ```text
 PropertiesEditor
-├── object information
-├── transform
-├── appearance
-└── clinical properties
+├── informações do objeto
+├── transformação
+├── aparência
+└── propriedades clínicas
 ```
 
-### Node Editor
+### Editor de Nodes
 
 ```text
 NodeEditor
-├── node canvas
+├── canvas de nodes
 ├── nodes
 ├── links
-├── node tools
-└── graph navigation
+├── ferramentas de nodes
+└── navegação pelo grafo
 ```
 
 O conteúdo específico não deve ser confundido com a Area que o hospeda.
 
----
-
-## 13. Editors previstos
+## 13. Editors planejados
 
 A arquitetura não deve exigir que todos os Editors existam desde o início. Entretanto, os seguintes são candidatos naturais para o CranioZ.
 
@@ -574,15 +567,13 @@ A arquitetura não deve exigir que todos os Editors existam desde o início. Ent
 
 Essa lista é extensível e não pretende ser exaustiva.
 
----
-
 ## 14. Editors e Modules
 
-`Module` e `Editor` não são equivalentes.
+Module e Editor não são equivalentes.
 
-Um **Module** representa uma funcionalidade do CranioZ.
+Um Module representa uma funcionalidade do CranioZ.
 
-Um **Editor** representa uma experiência de interface utilizada para trabalhar com essa funcionalidade.
+Um Editor representa uma experiência de interface utilizada para trabalhar com essa funcionalidade.
 
 A relação entre eles é:
 
@@ -594,36 +585,34 @@ Module
  └── Editor specifications
 ```
 
-Um Module pode declarar que determinada funcionalidade utiliza um Editor, mas não possui nem instancia o Editor.
+Um Module pode declarar que uma funcionalidade utiliza determinado Editor, mas não é proprietário nem instancia o Editor.
 
 Por exemplo:
 
 ```text
 Orthognathic Module
     │
-    ├── declares: viewport_3d
-    ├── declares: mpr_viewer
-    └── declares: cephalometry
+    ├── declara: viewport_3d
+    ├── declara: mpr_viewer
+    └── declara: cephalometry
 ```
 
-A criação efetiva das instâncias pertence ao Workspace e ao `EditorRegistry`.
+O Workspace e o `EditorRegistry` são responsáveis por criar as instâncias reais.
 
 Isso permite que diferentes Modules utilizem o mesmo Editor sem duplicar sua implementação.
-
----
 
 ## 15. Editors compartilhados
 
 Os Editors devem ser projetados para reutilização.
 
-Por exemplo, o `Viewport3DEditor` pode ser utilizado em:
+Por exemplo, o `Viewport3DEditor` pode ser utilizado para:
 
 - planejamento ortognático;
 - implantes faciais;
 - osteossíntese;
 - reconstrução mandibular;
 - planejamento de rinoplastia;
-- planejamento de guias cirúrgicas;
+- planejamento de guias cirúrgicos;
 - análise de modelos.
 
 O Editor fornece a experiência genérica de interação.
@@ -637,13 +626,11 @@ A lógica específica da aplicação é fornecida por:
 - Scene;
 - contexto da aplicação.
 
----
-
 ## 16. EditorContext
 
-Um Editor pode receber um contexto de execução contendo referências controladas para os serviços de que necessita.
+Um Editor pode receber um contexto de execução contendo referências controladas aos serviços de que necessita.
 
-O contexto deve ser pequeno e orientado a interfaces. Ele não deve se transformar em um barramento global de comunicação ou em um God Object.
+O contexto deve ser pequeno e orientado a interfaces. Ele não deve se tornar um barramento global de comunicação nem um God Object.
 
 Um contexto conceitual é:
 
@@ -669,7 +656,7 @@ Essa separação facilita:
 - manutenção;
 - evolução arquitetural.
 
-Exemplo conceitual:
+Um exemplo conceitual:
 
 ```python
 class Viewport3DEditor(Editor):
@@ -682,7 +669,7 @@ class Viewport3DEditor(Editor):
 
 O Editor recebe apenas o contexto de que necessita.
 
-Sempre que possível, uma Tool deve receber um `ToolContext` ainda mais restrito:
+Uma Tool deve receber um `ToolContext` ainda mais restrito sempre que possível:
 
 ```text
 ToolContext
@@ -692,21 +679,19 @@ ToolContext
 └── ToolServices
 ```
 
----
-
 ## 17. Estado do Editor
 
 O estado clínico deve ser separado do estado puramente visual.
 
 ### Estado clínico
 
-Pertence à aplicação e à `Scene`.
+Pertence à aplicação e à Scene.
 
 Exemplos:
 
-- posição de uma mandíbula;
-- plano de osteotomia;
-- posição de um implante;
+- a posição da mandíbula;
+- um plano de osteotomia;
+- a posição de um implante;
 - landmarks;
 - modelos anatômicos;
 - splints.
@@ -723,24 +708,23 @@ Exemplos:
 - seleção visual;
 - modo de apresentação;
 - visibilidade temporária;
-- configuração da viewport.
+- configuração do viewport;
+- layout interno da Toolbar.
 
-Essa separação evita que informações transitórias da interface sejam confundidas com os dados clínicos do projeto.
-
----
+Essa separação impede que informações temporárias da interface sejam confundidas com os dados clínicos do projeto.
 
 ## 18. Overlays
 
 Overlays são elementos temporários ou flutuantes apresentados sobre um Editor.
 
-Exemplos:
+Os exemplos incluem:
 
 - gizmos;
 - crosshairs;
-- medidas;
+- medições;
 - marcadores;
 - indicadores;
-- menus contextuais;
+- menus de contexto;
 - informações temporárias.
 
 Conceitualmente:
@@ -758,18 +742,19 @@ Overlays não devem ser transformados em Editors apenas porque ocupam uma regiã
 
 ### Diretrizes
 
-- Overlays são gerenciados pelo Editor ou pelo EditorHost, conforme sua natureza.
-- Overlays interativos, como gizmos, podem participar do hit testing.
-- Overlays possuem uma ordem de renderização, ou z-order, definida pelo Editor.
-- Overlays não devem alterar diretamente o estado clínico; Overlays interativos utilizam Commands quando uma alteração clínica é necessária.
+Os Overlays são gerenciados pelo Editor. O `EditorHost` pode coordenar o ciclo de vida visual, mas não é responsável pela semântica dos Overlays.
 
----
+Overlays interativos, como gizmos, podem participar do hit testing.
+
+Os Overlays possuem uma ordem de renderização, ou z-order, definida pelo Editor.
+
+Os Overlays não devem alterar diretamente o estado clínico; Overlays interativos devem utilizar Commands quando uma alteração clínica for necessária.
 
 ## 19. Independência espacial
 
 Um dos princípios fundamentais dos Editors é:
 
-> **Um Editor não deve saber onde está.**
+> Um Editor não deve saber onde está.
 
 O mesmo Editor pode aparecer como:
 
@@ -805,8 +790,6 @@ sem modificar a implementação do Editor.
 
 A composição pertence ao Workspace.
 
----
-
 ## 20. ToolRegistry
 
 O `ToolRegistry` mantém as definições de Tools disponíveis no sistema.
@@ -814,9 +797,9 @@ O `ToolRegistry` mantém as definições de Tools disponíveis no sistema.
 Ele é responsável por:
 
 - registrar definições de Tools;
-- localizar uma definição por `tool_id`;
+- localizar uma definição por meio de `tool_id`;
 - fornecer factories ou classes;
-- validar Tools referenciadas por Toolbars.
+- validar as Tools referenciadas pelas Toolbars.
 
 Conceitualmente:
 
@@ -829,10 +812,10 @@ ToolRegistry
 └── ...
 ```
 
-O ToolRegistry não mantém instâncias de execução. Ele fornece definições ou factories; a Toolbar cria e mantém as instâncias que utiliza.
+O `ToolRegistry` não mantém instâncias em execução. Ele fornece definições ou factories; a Toolbar cria e possui as instâncias que utiliza.
 
 ```text
-Toolbar
+Toolbar (dentro de um Editor)
    │ resolve tool_id
    ▼
 ToolRegistry
@@ -843,40 +826,38 @@ Toolbar cria a Tool
 
 Essa separação permite:
 
-- reutilização de definições entre Toolbars;
-- isolamento de estado por instância;
-- testes com Tools simuladas;
-- evolução independente entre definição e uso.
-
----
+- reutilizar definições entre Toolbars;
+- isolar o estado por instância;
+- testar com Tools simuladas;
+- evoluir independentemente as definições e os usos.
 
 ## 21. Princípios arquiteturais
 
-Os seguintes princípios devem orientar a implementação:
+Os seguintes princípios devem orientar a implementação.
 
-### 21.1 Editor é funcional, não espacial
+### 21.1 Um Editor é funcional, não espacial
 
 A posição pertence à Area e ao Layout.
 
-### 21.2 Editor não instancia outros Editors
+### 21.2 Um Editor não instancia outros Editors
 
 A composição é responsabilidade do Workspace e do Layout.
 
-### 21.3 Module não possui Editors
+### 21.3 Um Module não possui Editors
 
-Modules declaram necessidades de interface; o Workspace resolve e cria as instâncias dos Editors.
+Os Modules declaram necessidades de interface; o Workspace resolve e cria as instâncias dos Editors.
 
-### 21.4 Layout é declarativo
+### 21.4 O Layout é declarativo
 
-Layouts utilizam identificadores estáveis e especificações, evitando referências diretas a classes concretas.
+Os Layouts utilizam identificadores e especificações estáveis, evitando referências diretas a classes concretas.
 
 ### 21.5 O Registry cria instâncias
 
-Classes concretas não aparecem nas definições de Layout.
+Classes concretas não aparecem nas definições dos Layouts.
 
-### 21.6 Editor não contém lógica clínica
+### 21.6 Um Editor não contém lógica clínica
 
-A lógica clínica pertence aos Modules, Services, Domain e camadas da Application.
+A lógica clínica pertence aos Modules, Services, Domain e às camadas de Application.
 
 ### 21.7 Alterações persistentes de estado utilizam Commands
 
@@ -884,41 +865,41 @@ Quando uma interação altera o estado persistente da aplicação, o Editor deve
 
 ### 21.8 Events notificam alterações
 
-Events não substituem Commands e não devem funcionar como mecanismo primário de escrita.
+Events não substituem Commands e não devem funcionar como o mecanismo primário de escrita.
 
-### 21.9 Estado visual e estado clínico permanecem separados
+### 21.9 O estado visual e o estado clínico permanecem separados
 
-A interface pode manter estado transitório sem contaminar o modelo clínico.
+A interface pode manter um estado temporário sem contaminar o modelo clínico.
 
-### 21.10 Hosts controlam a apresentação espacial
+### 21.10 Os Hosts controlam a apresentação espacial
 
-Docking, floating e múltiplos monitores não devem contaminar a implementação do Editor.
+Docking, janelas flutuantes e múltiplos monitores não devem contaminar a implementação do Editor.
 
-### 21.11 Editors devem ser reutilizáveis
+### 21.11 Os Editors devem ser reutilizáveis
 
 Um tipo de Editor deve poder ser utilizado por vários Modules e Layouts.
 
 ### 21.12 O contexto deve ser mínimo
 
-As dependências são fornecidas por interfaces específicas.
+As dependências são fornecidas por meio de interfaces específicas.
 
 ### 21.13 Qt é um detalhe de apresentação
 
-A arquitetura lógica dos Editors deve permanecer o mais independente possível dos widgets Qt concretos.
+A arquitetura lógica dos Editors deve permanecer o mais independente possível dos widgets concretos do Qt.
 
-### 21.14 O Editor declara a Toolbar; o EditorHost a materializa
+### 21.14 O Editor declara e materializa sua própria Toolbar
 
-O Editor não cria widgets Qt de Toolbar. Ele declara a composição; o EditorHost materializa sua apresentação.
+O Editor declara a composição da Toolbar e a materializa dentro do seu próprio espaço de conteúdo, respeitando a orientação declarada. O `EditorHost` não materializa Toolbars; ele apenas hospeda o Editor.
 
 ### 21.15 O ToolRegistry fornece definições; a Toolbar cria instâncias
 
 Uma definição de Tool é registrada uma vez e pode ser reutilizada. A instância de execução pertence à Toolbar que a utiliza.
 
-### 21.16 Editors devem ser testáveis sem Qt
+### 21.16 Os Editors devem ser testáveis sem Qt
 
-O contrato do Editor deve permitir testes unitários sem dependência de widgets concretos.
+A lógica do Editor — inicialização, ativação, gerenciamento de estado e tratamento de interações — deve ser testável sem dependências de widgets Qt concretos.
 
----
+A materialização específica do Qt — Content, Toolbar e Overlays — deve ser isolada para que possa ser simulada ou substituída em testes unitários.
 
 ## 22. Fluxo completo
 
@@ -926,10 +907,10 @@ A arquitetura pode ser resumida pelo seguinte fluxo:
 
 ```text
                     ┌───────────────┐
-                    │     Module    │
+                    │    Module     │
                     └───────┬───────┘
                             │
-                      declara Editor
+                    declara o Editor
                             │
                             ▼
                     ┌───────────────┐
@@ -945,17 +926,20 @@ A arquitetura pode ser resumida pelo seguinte fluxo:
                           create
                             ▼
 ┌───────────┐       ┌───────────────┐
-│   Area    │──────▶│  EditorHost   │
+│   Area    │──────▶│  EditorHost   │  (apenas hospeda)
 └───────────┘       └───────┬───────┘
                             │
                             ▼
                     ┌───────────────┐
-                    │    Editor     │
+                    │    Editor     │  (declara e
+                    │               │   materializa seu
+                    │               │   próprio chrome interno)
                     └───────┬───────┘
                             │
               ┌─────────────┼─────────────┐
               ▼             ▼             ▼
           Toolbar        Content       Overlays
+          (Editor)       (Editor)      (Editor)
               │
               │ resolve tool_id
               ▼
@@ -980,7 +964,7 @@ A arquitetura pode ser resumida pelo seguinte fluxo:
              Editors
 ```
 
-Essa arquitetura permite que o CranioZ mantenha uma interface altamente configurável sem transformar o Workspace em um conjunto de componentes específicos de cada Module clínico.
+Essa arquitetura permite que o CranioZ mantenha uma interface altamente configurável sem transformar o Workspace em uma coleção de componentes específicos de Modules clínicos individuais.
 
 O princípio central é:
 
@@ -989,11 +973,11 @@ Workspace = composição
 Layout    = organização
 Area      = espaço
 Editor    = experiência funcional
-Toolbar   = composição de Tools
+Toolbar   = composição de Tools (interna ao Editor)
 Tool      = intenção
-Command   = alteração
+Command   = mudança
 Module    = funcionalidade
 Scene     = estado clínico
 ```
 
-Esse modelo deve ser considerado a base para a evolução do sistema de Editors do CranioZ.
+Este modelo deve ser considerado a base para a evolução do sistema de Editors do CranioZ.
