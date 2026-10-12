@@ -1,1 +1,0 @@
-# Functional content of the areas

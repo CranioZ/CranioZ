@@ -1,0 +1,12 @@
+{
+  "app": {
+    "name": "CranioZ",
+    "language": "pt-BR",
+    "theme": "dark",
+    "recent_projects_limit": 10
+  },
+  "logging": {
+    "level": "INFO",
+    "format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+  }
+}

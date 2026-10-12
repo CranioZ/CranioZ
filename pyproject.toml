@@ -98,6 +98,7 @@ dev = [
     "cranioz[test]",
     "ruff>=0.5,<1.0",
     "mypy>=1.10,<2.0",
+    "types-PyYAML>=6.0,<7.0",
     "pre-commit>=3.7,<4.0",
     "build>=1.2,<2.0",
     "py-spy>=0.3,<1.0",
@@ -261,6 +262,7 @@ module = [
     "cupy.*",
     "cv2.*",
     "scipy.*",
+    "yaml.*",
 ]
 ignore_missing_imports = true
 
@@ -286,10 +288,6 @@ markers = [
     "gpu: requires GPU",
     "qt: requires Qt (uses pytest-qt)",
 ]
-
-# pytest-benchmark configuration (prefixed)
-benchmark_disable = false
-benchmark_columns = ["min", "max", "mean", "stddev", "median", "iqr", "ops"]
 
 # ------------------------------------------------------------
 # Coverage
