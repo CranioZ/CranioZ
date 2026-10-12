@@ -1,1556 +1,509 @@
 # Tools
-
 ## 1. Overview
+A Tool represents an action or interaction mode made available to the user by a CranioZ module. Tools are one of the main interfaces between the user and the application's executable functionality, and may be presented in toolbars, menus, panels, contextual menus, or Editors without their definition depending on a specific Workspace location.
 
-A **Tool** represents an action or interaction mode that can be made available to the user by a CranioZ module.
+A Tool does not represent the module itself and should not contain clinical, geometric, or infrastructure logic. Its responsibility is to define what it represents, how it is identified, in which contexts it is available, and how interaction is initiated. Execution is delegated to the application layer through Commands and Application Services.
 
-Tools are one of the main interfaces between the user and the application's executable functionality. They may be presented in different areas of the interface—for example, in a toolbar, menu, panel, contextual menu, or Editor—without their definition depending on a specific location in the Workspace.
-
-A Tool does not represent the module itself and should not directly contain clinical, geometric, or infrastructure logic. Its responsibility is to define **what the tool represents, how it is identified, in which contexts it is available, and how interaction with it is initiated**.
-
-The actual execution of an operation should be delegated to the appropriate application layer, usually through Commands and Application Services.
-
-The conceptual relationship is:
-
-```text
-User
-  │
-  ▼
-Tool
-  │
-  ▼
-Command
-  │
-  ▼
-Application Service
-  │
-  ▼
-Domain
-```
-
-Not every Tool needs to result directly in a single Command. Interactive Tools may produce a sequence of operations or generate a Command only when the interaction is completed.
-
-Separating interaction, execution, and domain logic allows the same operation to be triggered by different mechanisms without duplicating logic.
-
----
+    User → Tool → Command → Command Executor → Application Service → Domain
+Not every Tool results directly in a single Command. Interactive Tools may produce a sequence of operations or generate a Command only when interaction completes.
 
 ## 2. Objectives
+The Tool system should provide a uniform interface for actions and interaction modes, allow modules and plugins to expose functionality, separate interaction and presentation from application logic, support multiple presentation forms for the same Tool, facilitate discovery and registration, support contextual availability, provide metadata for UI construction, allow activation by humans or automation, keep Tools independent of Workspace location, allow reuse by menus, shortcuts, workflows, scripts, and MCP, and enable extensibility through plugins.
 
-The Tool system should:
+A Tool should be sufficiently declarative for the application to determine what it is, when it can be used, and how it should be presented, without its implementation needing to know Workspace-specific details.
 
-* provide a uniform interface for actions and interaction modes;
-* allow modules to expose functionality to the user;
-* separate interaction and presentation from application logic;
-* support different presentation forms for the same Tool;
-* facilitate the discovery and registration of functionality;
-* support contextual availability;
-* provide sufficient metadata for UI construction;
-* allow activation by human interaction or automated systems;
-* keep Tools independent of a specific Workspace location;
-* allow operations to be reused by menus, shortcuts, workflows, scripts, and MCP;
-* enable extensibility through plugins.
+## 3. Tool, Command, and Service
+A Tool represents an action or interaction mode made available to the user. It answers: what does it represent, how is it identified, how does it appear, in which contexts is it available, how is interaction initiated, what type of interaction does it support.
 
-A Tool should be sufficiently declarative for the application to determine **what it is, when it can be used, and how it should be presented**, without its implementation needing to know Workspace-specific details.
+A Command represents an operation executable by the application. It answers: what operation will be executed, what are its parameters, how can it be undone, how does it participate in history, what changes does it produce, what events are generated.
 
----
+A Service implements application operations or rules that should not belong to the Tool. Algorithms and specific rules remain in their appropriate layers.
 
-## 3. A Tool Is Not a Command
+    Tool      → may create/execute → Command
+    Command   → does not necessarily depend on a Tool
+    Service   → coordinates application logic
+A Command may be triggered by a Tool, shortcut, menu, macro, workflow, automation, MCP, script, or internal operation. A Tool may represent a complex interaction resulting in one or more Commands. The preferred flow is:
 
-Tool and Command are related but different concepts.
 
-### 3.1 Tool
+    Tool → Command → CommandExecutor → CommandStack → Application Service → Domain
 
-A Tool represents an **action or interaction mode made available to the user**.
+The CommandExecutor handles execution, history, and Undo/Redo. The Tool should not implement these responsibilities. CommandStack remains independent of the Tool.
 
-It primarily answers the following questions:
+Example:
 
-* What does this tool represent?
-* How is it identified?
-* How does it appear in the interface?
-* In which contexts is it available?
-* How is its interaction initiated?
-* What type of interaction does it support?
-
-### 3.2 Command
-
-A Command represents an **operation executable by the application**.
-
-It primarily answers the following questions:
-
-* What operation will be executed?
-* What are its parameters?
-* How can the operation be undone?
-* How does it participate in history?
-* What changes does it produce?
-* What events are generated?
-
-Therefore:
-
-```text
-Tool
-  └── may create/execute → Command
-```
-
-but:
-
-```text
-Command
-  └── does not necessarily depend on a Tool
-```
-
-A Command may be triggered by:
-
-* a Tool;
-* a keyboard shortcut;
-* a menu;
-* a macro;
-* a workflow;
-* automation;
-* MCP;
-* a script;
-* another internal operation.
-
-Likewise, a Tool may represent a more complex interaction that results in the execution of one or more Commands.
-
----
+    Tool:                Create Le Fort I Osteotomy
+    Command:             CreateOsteotomyCommand
+    Application Service: OsteotomyService
+    Domain:              Osteotomy, Bone, Geometry
 
 ## 4. Tool as a Contract
+Tool should be treated as a contract. Using Protocol (structural typing) rather than ABC reduces coupling and allows plugins to implement Tools without inheriting from a framework base class.
 
-In the framework, `Tool` should initially be treated as a **contract**.
+The base contract should remain small and stable, describing identity, metadata, presentation, and contextual availability. Execution is not mandatory in the base contract, since different Tool modalities exist.
 
-The base contract should remain small and stable. It primarily describes:
+    python
+    class Tool(Protocol):
+        identifier: str
+        label: str
+        description: str
+        icon: str | None
+        category: str | None
+    
+        def is_available(self, context: ToolContext) -> bool:
+            ...
 
-* identity;
-* metadata;
-* presentation;
-* contextual availability.
-
-Execution should not be mandatory in the base contract, since different Tool modalities exist.
-
-Conceptually:
-
-```python
-class Tool(ABC):
-    identifier: str
-    label: str
-    description: str
-    icon: str | None
-    category: str | None
-    group: str | None
-
-    def is_available(self, context: ToolContext) -> bool:
-        ...
-
-    def is_enabled(self, context: ToolContext) -> bool:
-        ...
-```
-
-Specific execution or interaction behavior is defined by derived interfaces.
+is_enabled does not belong exclusively to subclasses. The UI needs to present Tools of different modalities and determine whether each can be triggered. If the operation depended on inspecting the concrete modality to discover is_enabled, complexity would shift into UI components. Instead, the framework should resolve availability and enablement through a dedicated component (e.g., ToolStateResolver), using declared requirements and context. The UI must not rely on improvised type checks.
 
 ### 4.1 Action Tool
+An ActionTool represents a discrete action. It normally results in the execution of a Command or application operation.
 
-An `ActionTool` represents a discrete action.
-
-```python
-class ActionTool(Tool):
-    def execute(self, context: ToolContext) -> ToolResult:
+    python
+    class ActionTool(Tool, Protocol):
+        def execute(self, context: ToolContext) -> ToolResult:
         ...
-```
-
-Examples:
-
-```text
-Save
-Undo
-Add Landmark
-Create Plate
-Calculate Cephalometry
-```
-
-An `ActionTool` normally results in the execution of a Command or an application operation.
+Examples: Save, Undo, Add Landmark, Create Plate, Calculate Cephalometry.
 
 ### 4.2 Interactive Tool
+An InteractiveTool represents a continuous interaction mode. The definitive interface should remain small.
 
-An `InteractiveTool` represents a continuous interaction mode.
-
-```python
-class InteractiveTool(Tool):
-    def activate(self, context: ToolContext) -> None:
+    python
+    class InteractiveTool(Tool, Protocol):
+        def activate(self, context: ToolContext) -> None:
+            ...
+    
+        def deactivate(self, context: ToolContext) -> None:
+            ...
+    
+        def handle_event(self, event: ToolEvent, context: ToolContext) -> None:
         ...
-
-    def deactivate(self, context: ToolContext) -> None:
-        ...
-
-    def handle_event(
-        self,
-        event: ToolEvent,
-        context: ToolContext,
-    ) -> None:
-        ...
-```
-
-Examples:
-
-```text
-Select
-Move
-Rotate
-Measure
-Place Landmark
-Define Osteotomy Plane
-Paint Segmentation
-Sculpt
-```
-
-The definitive interface should remain small. Additional features should be added only when there is a real architectural need.
-
----
+Examples: Select, Move, Rotate, Measure, Place Landmark, Define Osteotomy Plane, Paint Segmentation, Sculpt.
 
 ## 5. Identity
-
 Each Tool must have a unique and stable identifier.
 
-Examples:
 
-```text
-orthognathic.cephalometry.add_landmark
-```
+    orthognathic.cephalometry.add_landmark
+    osteotomy.create_lefort_i
+The identifier should be unique within the system, remain stable across versions whenever possible, not depend on user-facing text, not depend on interface position, and be usable by menus, plugins, workflows, and automations. The label is intended for presentation only.
 
-or:
+    yaml
+    identifier: orthognathic.cephalometry.add_landmark
+    label: Add Landmark
+Changing the user-facing text should not change the Tool's identity.
 
-```text
-osteotomy.create_lefort_i
-```
+## 6. Presentation and Metadata
+A Tool should not determine where it is displayed. Positioning belongs to the UI layer and to the Workspace/Layout system.
 
-The identifier should:
+    Tool                        → defines the action or interaction
+    Workspace / Layout / Editor → defines where the Tool is presented
 
-* be unique within the system;
-* remain stable across versions whenever possible;
-* not depend on the text presented to the user;
-* not depend on the Tool's position in the interface;
-* be usable by menus, plugins, workflows, and automations.
+The Tool declares identity metadata: identifier, name, description, icon, semantic category, context requirements, and interaction modality. The UI configuration determines toolbar, menu position, display order, visual grouping, keyboard shortcut, and region-specific visibility.
 
-The `label` is intended for presentation.
-
-Example:
-
-```yaml
-identifier: orthognathic.cephalometry.add_landmark
-label: Add Landmark
-```
-
-Changing the text presented to the user should not change the identity of the Tool.
-
----
-
-## 6. Presentation
-
-A Tool should not directly determine where it is displayed.
-
-For example, a Tool may be presented:
-
-* in a toolbar;
-* in a menu;
-* in a panel;
-* in a contextual menu;
-* in a Command Palette;
-* in an Editor;
-* in a module-specific interface.
-
-The positioning decision belongs to the UI layer and to the Workspace/Layout system.
-
-Therefore:
-
-```text
-Tool
-  └── defines the action or interaction
-
-Workspace / Layout / Editor
-  └── defines where the Tool is presented
-```
-
-This is particularly important in CranioZ because the same set of Tools may be used in different layouts and contexts.
-
-A Tool should not assume that it permanently belongs to a particular Area.
-
----
+category is a semantic metadata of the Tool. group deserves caution: if it does not have a consistent meaning for discovery or semantic grouping, it risks becoming merely a UI hint disguised as metadata. It should be kept only when there is a clear discovery or grouping use case, and treated as presentation metadata otherwise.
 
 ## 7. Tool and Editor
+An Editor provides a specialized interaction space. A Tool provides an action or interaction mode usable in that space.
 
-Editors and Tools have different responsibilities.
+    3D Editor
+    ├── Select, Move, Rotate, Measure, Landmark
+    
+    Cephalometric Editor
+    ├── Add Landmark, Move Landmark, Remove Landmark, Measure Angle, Measure Distance
+8. 
+The Editor should not reimplement the logic of each Tool, and a Tool should not assume exclusive use by a particular Editor unless its definition explicitly requires a specific context.
 
-An **Editor** provides a specialized interaction space.
 
-A **Tool** provides an action or interaction mode that can be used in that space.
-
-For example:
-
-```text
-3D Editor
-├── Select
-├── Move
-├── Rotate
-├── Measure
-└── Landmark
-```
-
-or:
-
-```text
-Cephalometric Editor
-├── Add Landmark
-├── Move Landmark
-├── Remove Landmark
-├── Measure Angle
-└── Measure Distance
-```
-
-The Editor should not need to reimplement the logic of each Tool.
-
-Likewise, a Tool should not assume that it will be used exclusively by a particular Editor, unless its definition explicitly requires a specific context.
-
-The relationship is therefore:
-
-```text
-Editor
-  └── hosts / uses → Tool
-```
-
+    Editor → hosts / uses → Tool
 and not:
 
-```text
-Tool
-  └── structurally belongs to → Editor
-```
-
-This distinction is important to allow the same Tool to be used by different Editors.
-
----
+    Tool → structurally belongs to → Editor
 
 ## 8. Execution Context
+Tools often depend on the current state of the system. An osteotomy Tool may be available only when a patient is loaded, a valid mandible or maxilla exists, the model is in a compatible state, the module is available, a valid selection exists, and the current Editor supports the interaction.
 
-Tools often depend on the current state of the system.
+ToolContext should represent the execution context provided by the framework, while services and specific interfaces provide access to the necessary operations. It should not become an excessively broad global context; each new need should not encourage additional dependencies in a monolithic context. Contexts may be segregated so that a Tool accesses only what it needs.
 
-For example, an osteotomy Tool may be available only when:
 
-* a patient is loaded;
-* a valid mandible or maxilla exists;
-* the model is in a compatible state;
-* the corresponding module is available;
-* a valid selection exists;
-* the current Editor supports the interaction.
+    class ToolContext(Protocol):
+        @property
+        def scene(self) -> SceneContext: ...
+        @property
+        def selection(self) -> SelectionContext: ...
+        @property
+        def editor(self) -> EditorContext | None: ...
+        @property
+        def permissions(self) -> PermissionContext: ...
 
-The Tool should therefore consult an application context.
-
-Conceptually:
-
-```text
-Tool
-  │
-  ├── Context
-  │   ├── Project
-  │   ├── Patient
-  │   ├── Selection
-  │   ├── Scene
-  │   ├── Active Editor
-  │   ├── Active Module
-  │   └── Application State
-  │
-  └── Interaction / Execution
-```
-
-`ToolContext` should provide only the information necessary for the Tool to determine its availability and execute its interaction.
-
-Example:
-
-```python
-def is_available(self, context: ToolContext) -> bool:
-    return (
-        context.scene.has_patient
-        and context.selection.has_mandible
-    )
-```
+A measurement tool may need selection and the active Editor, but not necessarily the Patient object or administrative permissions. The context may inform permissions, but effective authorization must be verified by the layer responsible for executing the operation.
 
 ### 8.1 Availability and Enablement
+Available: the Tool makes sense in the current context and may be presented. Enabled: the Tool is available and can be activated immediately.
 
-It is important to distinguish **availability** from **enablement**.
+    Create Le Fort I Osteotomy
 
-* **Available**: the Tool makes sense in the current context and may be presented.
-* **Enabled**: the Tool is available and can be activated immediately.
+    Available: yes
+    Enabled:   no
 
-Example:
+The Tool may be available because the osteotomy module is active and a patient exists, but remain disabled because no valid maxilla has been selected. The UI uses is_available(context) to decide whether to present the Tool and is_enabled(context) to decide whether it can be activated. This distinction prevents contextual logic from being embedded in UI components.
 
-```text
-Create Le Fort I Osteotomy
+9. Tool State
+The existence, availability, and activation of a Tool are different states. They are related properties, not necessarily successive phases of a universal state machine.
 
-Available: yes
-Enabled: no
-```
+Concept	                Meaning
+Registered	            The Tool was registered in the system.
+Available	            The Tool can be used in the current context and presented.
+Enabled	                The Tool can be triggered at that moment.
+Active              	The Tool is executing an interaction session, when applicable.
+Completed	            The interaction ended.
 
-The Tool may be available because the osteotomy module is active and a patient exists, but remain disabled because no valid maxilla has been selected.
+An ActionTool does not normally need a persistent Active state. An InteractiveTool may remain active until the user completes, cancels, or interrupts the interaction. Contextual state should be determined by the framework and the current context, not maintained as arbitrary state inside UI components. Tool state and session state are distinct: a Tool may be Available and Enabled with no active session, and the session has its own cycle (Idle → Interacting → Completed).
 
-The UI may use:
+## 10. Execution and Result
+Tool execution should not concentrate clinical, geometric, or infrastructure logic. The Tool acts as an interaction layer.
 
-```python
-tool.is_available(context)
-```
+### 10.1 ToolResult
+ToolResult and the result of a Command are distinct concepts. ToolResult is the result of the interaction or triggering of the Tool; the operational result belongs to the Command or service called.
 
-to determine whether the Tool should be presented.
+An interactive Tool may complete successfully even when the operation requested by the user is cancelled before producing a persistent change. Likewise, a Tool may start an asynchronous Command and end its interaction before processing finishes.
 
-And:
+    class ToolResult:
+        interaction_status: Literal["completed", "cancelled", "interrupted"]
+        command_result: CommandResult | None
+        message: str | None
+Keeping the results separate prevents ToolResult from becoming a generic container for all data produced by the system.
 
-```python
-tool.is_enabled(context)
-```
+### 10.2 Threading and Asynchrony
+Interactive Tools typically run on the UI thread, since they process input events and update previews. However, not every Command must be asynchronous. A simple command, such as changing a landmark property, may run synchronously. Segmentation, volume registration, complex geometric operations, and long calculations should be dispatched asynchronously when appropriate.
 
-to determine whether it can be activated.
+Recommended policy:
 
-This distinction prevents contextual logic from being embedded directly in UI components.
+* Tool interaction: managed in the thread context required by the UI.
+* Lightweight Commands: may run synchronously.
+* Long operations: executed asynchronously by an appropriate mechanism.
+* Shared state changes: coordinated by explicit concurrency and consistency rules.
+* Preview and visual updates: synchronized with the UI thread.
+* Cancellation: handled explicitly by the operation and the session lifecycle.
 
----
+The Command — not the Tool — should declare its execution mode, so the CommandExecutor decides how to dispatch and the Tool remains unaware of threading.
 
-## 9. Tool State
 
-The existence, availability, and activation of a Tool are different states.
-
-A Tool may be in the following states:
-
-```text
-Registered
-    ↓
-Available
-    ↓
-Enabled
-    ↓
-Activated
-    ↓
-Completed
-```
-
-Not all Tools use all of these states.
-
-For example, an `ActionTool` may follow:
-
-```text
-Registered
-    ↓
-Available
-    ↓
-Enabled
-    ↓
-Executed
-```
-
-while an `InteractiveTool` may follow:
-
-```text
-Registered
-    ↓
-Available
-    ↓
-Enabled
-    ↓
-Activated
-    ↓
-Interacting
-    ↓
-Completed
-    ↓
-Deactivated
-```
-
-Contextual state should be determined by the framework and the current context, rather than maintained as arbitrary state inside UI components.
-
----
-
-## 10. Execution
-
-Tool execution should not concentrate clinical, geometric, or infrastructure logic.
-
-The preferred flow is:
-
-```text
-User
-  │
-  ▼
-Tool
-  │
-  ▼
-Command
-  │
-  ▼
-Command Executor
-  │
-  ▼
-Application Service
-  │
-  ▼
-Domain
-```
-
-Example:
-
-```text
-Tool:
-Create Le Fort I Osteotomy
-
-Command:
-CreateOsteotomyCommand
-
-Application Service:
-OsteotomyService
-
-Domain:
-Osteotomy
-Bone
-Geometry
-```
-
-The Tool acts as an interaction layer.
-
-Application and domain logic remain outside the UI.
-
-This prevents the UI from containing clinical rules or complex geometric operations.
-
-### 10.1 Execution Result
-
-When a Tool executes an action, it may need to provide an explicit result to the presentation layer.
-
-Conceptually:
-
-```python
-class ToolResult:
-    success: bool
-    message: str | None
-    data: Any | None
-```
-
-This result may provide:
-
-* user feedback;
-* information for the UI;
-* data produced by the operation;
-* information for automation;
-* an indication of failure or success.
-
-The `CommandExecutor` remains responsible for executing the Command, managing history, and handling Undo/Redo.
-
-The Tool should not assume these responsibilities.
-
----
+    class Command(Protocol):
+        execution_mode: Literal["sync", "async"] = "sync"
 
 ## 11. Interactive Tools
+Some Tools represent continuous interaction with the user: Select, Move, Rotate, Draw, Measure, Place Landmark, Define Osteotomy Plane, Paint Segmentation, Sculpt, Place Implant. In these cases, the Tool has its own lifecycle.
 
-Not all Tools correspond to an instantaneous action.
 
-Some represent continuous interaction with the user.
-
-Examples:
-
-* Select;
-* Move;
-* Rotate;
-* Draw;
-* Measure;
-* Place Landmark;
-* Define Osteotomy Plane;
-* Paint Segmentation;
-* Sculpt;
-* Place Implant.
-
-In these cases, the Tool has its own lifecycle.
-
-Conceptually:
-
-```text
-Idle
-  ↓
-Activated
-  ↓
-Interacting
-  ↓
-Completed
-  ↓
-Deactivated
-```
-
+    Idle → Activated → Interacting → Completed → Deactivated
 Example:
 
-```text
-Define Osteotomy Plane
-        ↓
-Tool activated
-        ↓
-User selects points
-        ↓
-Plane preview
-        ↓
-User confirms
-        ↓
-CreateOsteotomyCommand
-        ↓
-Command executed
-        ↓
-Tool deactivated
-```
-
-The Tool may function as an interaction state machine, while persistent changes to the model remain the responsibility of the application/domain layer.
+    Define Osteotomy Plane
+            ↓
+    Tool activated
+            ↓
+    User selects points
+            ↓
+    Plane preview
+            ↓
+    User confirms
+            ↓
+    CreateOsteotomyCommand
+            ↓
+    Command executed
+            ↓
+    Tool deactivated
+The Tool may function as an interaction state machine, while persistent changes remain the responsibility of the application/domain layer.
 
 ### 11.1 Tool Session
+It is useful to distinguish the Tool definition from a specific interaction session.
 
-For interactive Tools, it is useful to distinguish the Tool definition from a specific interaction session.
 
-The architecture may use:
+    Tool        → tool definition
+    ToolSession → state of a specific interaction
 
-```text
-Tool
-  └── tool definition
-
-ToolSession
-  └── state of a specific interaction
-```
-
-Conceptually:
-
-```python
-class ToolSession:
-    tool: Tool
-    state: ToolState
-    context: ToolContext
-    started_at: datetime
-    finished_at: datetime | None
-```
-
-This prevents the base Tool contract from being polluted with temporary interaction state.
-
-A session may exist only while the Tool is active.
+    class ToolSession:
+        tool: Tool
+        state: ToolState
+        context: ToolContext
+        started_at: datetime
+        finished_at: datetime | None
+This prevents the base Tool contract from being polluted with temporary interaction state. A session may exist only while the Tool is active.
 
 ### 11.2 Activation and Deactivation
+Activation of interactive Tools should be managed by a dedicated component, such as ToolManager.
 
-Activation of interactive Tools should be managed by a dedicated component, such as `ToolManager`.
+    python
+    class ToolManager:
+        def activate(self, identifier: str, context: ToolContext) -> None: ...
+        def deactivate(self) -> None: ...
+        def active_tool(self) -> Tool | None: ...
 
-Conceptually:
+ToolManager may ensure that only one interactive Tool is active per Editor, the previous Tool is correctly deactivated, changing Editors ends the appropriate session, changing modules is handled correctly, activation and deactivation events are propagated, an ActionTool may be executed even while an InteractiveTool is active in the same Editor (provided there is no conflict), and switching Editors with an active session suspends or terminates the session according to a defined policy. Different Editors may have different active Tools, similarly to the editor model used by Blender.
 
-```python
-class ToolManager:
-    def activate(
-        self,
-        identifier: str,
-        context: ToolContext,
-    ) -> None:
-        ...
+12. Tool Modalities
+Tools may be classified according to behavior. This classification is primarily behavioral and should not create an excessively complex class hierarchy.
 
-    def deactivate(self) -> None:
-        ...
+Modality                        Description          	                                    Contract
+Action Tool	                    Executes a discrete action.	                                ActionTool
+Interactive Tool	            Remains active while the user interacts with the scene.	    InteractiveTool
+Toggle Tool	                    Switches between two states.	                            ActionTool (flips state)
+Stateful Tool	                Maintains a more complex interaction state.	                InteractiveTool (with state)
 
-    def active_tool(self) -> Tool | None:
-        ...
-```
+Examples: Save, Undo, Add Landmark, Create Plate, Calculate Cephalometry (Action); Select, Move, Measure, Place Landmark, Draw Osteotomy (Interactive); Snap, Grid, Visibility, Orthographic/Perspective (Toggle); Segmentation Brush, Sculpt, Registration, Osteotomy Planning (Stateful).
 
-`ToolManager` may ensure that:
+A ToggleTool may be modeled as an ActionTool whose execution flips a state and returns the new state in ToolResult. A StatefulTool may be modeled as an InteractiveTool whose session carries additional state. A dedicated contract should only be introduced if the existing ones prove insufficient. ActionTool and InteractiveTool define interaction modalities; Toggle and Stateful describe behaviors or characteristics, not classes. Creating a class for each combination would increase complexity without improving the contract.
 
-* only one interactive Tool is active per Editor;
-* the previous Tool is correctly deactivated;
-* changing Editors ends the appropriate session;
-* changing modules is handled correctly;
-* activation and deactivation events are propagated.
+## 13. Tool Groups and Categories
+Tools may be grouped semantically for presentation and discovery.
 
-This does not necessarily mean that only one Tool may be active throughout the application. Different Editors may have different active Tools, similarly to the editor model used by Blender.
 
----
+    Cephalometry
+    ├── Add Landmark, Move Landmark, Delete Landmark, Measure Distance, Measure Angle
+    
+    Osteotomy
+    ├── Create Osteotomy, Edit Osteotomy, Move Segment, Rotate Segment, Confirm Osteotomy
+    Grouping does not change the identity of the Tool.
 
-## 12. Tool Modalities
+Category is a broader semantic classification. Group is a contextual grouping of Tools for presentation.
 
-Tools may be classified according to their behavior.
+    Category: Measurement
+    Group:    Cephalometry
+    Tool:     Measure Angle
+Category defines the type of Tool; Group defines how it may be grouped in the UI. This prevents category from becoming a generic field responsible for different functions.
 
-### 12.1 Action Tool
+Initial categories may include: Selection, Navigation, Measurement, Annotation, Modeling, Planning, Segmentation, Analysis, Visualization, Documentation. Categories should not be excessively rigid; the framework may provide common categories, while modules and plugins may introduce specific ones when necessary.
 
-Executes a discrete action.
-
-```text
-Save
-Undo
-Add Landmark
-Create Plate
-Calculate Cephalometry
-```
-
-### 12.2 Interactive Tool
-
-Remains active while the user interacts with the scene.
-
-```text
-Select
-Move
-Measure
-Place Landmark
-Draw Osteotomy
-```
-
-### 12.3 Toggle Tool
-
-Switches between two states.
-
-```text
-Snap
-Grid
-Visibility
-Orthographic / Perspective
-```
-
-### 12.4 Stateful Tool
-
-Maintains a more complex interaction state.
-
-```text
-Segmentation Brush
-Sculpt
-Registration
-Osteotomy Planning
-```
-
-This classification is primarily behavioral and should not create an excessively complex class hierarchy.
-
-When two modalities can share the same contract, an additional abstraction should not be created solely for classification purposes.
-
----
-
-## 13. Tool and Command History
-
-When a Tool produces a persistent change to the project, that change should preferably occur through a Command.
-
-Example:
-
-```text
-User clicks "Move Landmark"
-        ↓
-Move Landmark Tool
-        ↓
-MoveLandmarkCommand
-        ↓
-Command Executor
-        ↓
-Landmark moved
-        ↓
-Command Stack
-```
-
-This enables:
-
-* Undo;
-* Redo;
-* history;
-* macros;
-* automation;
-* operation auditing;
-* future MCP integration.
-
-The Tool should not implement the Undo/Redo mechanism directly.
-
-The preferred path is:
-
-```text
-Tool
-  ↓
-Command
-  ↓
-CommandExecutor
-  ↓
-CommandStack
-```
-
-`CommandStack` should remain independent of the Tool.
-
----
-
-## 14. Tool Groups
-
-Tools may be grouped semantically for presentation and discovery purposes.
-
-Example:
-
-```text
-Cephalometry
-├── Add Landmark
-├── Move Landmark
-├── Delete Landmark
-├── Measure Distance
-└── Measure Angle
-```
-
-or:
-
-```text
-Osteotomy
-├── Create Osteotomy
-├── Edit Osteotomy
-├── Move Segment
-├── Rotate Segment
-└── Confirm Osteotomy
-```
-
-Grouping does not change the identity of the Tool.
-
-A Tool remains an independent unit that can be presented in different contexts.
-
-### 14.1 Group versus Category
-
-It is useful to distinguish:
-
-* **Category**: a broader semantic classification.
-* **Group**: a contextual grouping of Tools for presentation.
-
-Example:
-
-```text
-Category:
-Measurement
-
-Group:
-Cephalometry
-
-Tool:
-Measure Angle
-```
-
-Thus:
-
-```text
-Category → defines the type of Tool
-
-Group → defines how it may be grouped in the UI
-```
-
-This prevents `category` from becoming a generic field responsible for different functions.
-
----
-
-## 15. Tool Categories
-
-A Tool may have a category to facilitate organization and discovery.
-
-Initial categories may include:
-
-* Selection;
-* Navigation;
-* Measurement;
-* Annotation;
-* Modeling;
-* Planning;
-* Segmentation;
-* Analysis;
-* Visualization;
-* Documentation.
-
-Categories should not be excessively rigid.
-
-The framework may provide common categories, while modules and plugins may introduce specific categories when necessary.
-
----
-
-## 16. Tool Parameters
-
+## 14. Tool Parameters
 Some Tools require parameters.
 
-Example:
 
-```text
-Create Plate
+    Create Plate
+    
+    thickness     = 1.5 mm
+    hole_diameter = 2.0 mm
+    locking       = true
+The Tool should not necessarily store these values as permanent state. When appropriate, it may request the parameters from the user and produce a parameterized Command.
 
-thickness = 1.5 mm
-hole_diameter = 2.0 mm
-locking = true
-```
+    Create Plate Tool → Plate Configuration → CreatePlateCommand(thickness=1.5, hole_diameter=2.0, locking=True) → CommandExecutor
+Recommended distinction:
 
-The Tool should not necessarily store these values as permanent state.
+The Tool defines or requests which parameters are required for the interaction.
 
-When appropriate, it may request the parameters from the user and produce a parameterized Command.
+The UI collects the concrete values.
 
-Example:
+The Command receives the concrete values required to execute the operation.
 
-```text
-Create Plate Tool
-        ↓
-Plate Configuration
-        ↓
-CreatePlateCommand
-        ↓
-CommandExecutor
-```
+The Domain validates model-specific rules.
 
-The Command receives the concrete values:
-
-```python
-CreatePlateCommand(
-    thickness=1.5,
-    hole_diameter=2.0,
-    locking=True,
-)
-```
-
-### 16.1 Parameters in the Tool versus Parameters in the Command
-
-The recommended distinction is:
-
-* The **Tool** defines or requests which parameters are required for the interaction.
-* The **UI** collects the concrete values.
-* The **Command** receives the concrete values required to execute the operation.
-* The **Domain** validates the model-specific rules.
-
-Conceptually:
-
-```text
-Tool
-  ↓
-Parameter Specification
-  ↓
-UI
-  ↓
-Concrete Parameters
-  ↓
-Command
-  ↓
-Domain
-```
-
+    Tool → Parameter Specification → UI → Concrete Parameters → Command → Domain
 This keeps the definition of the operation separate from the presentation of its parameters.
 
----
-
-## 17. Tool Registry
-
+15. Tool Registry and Discovery
 CranioZ should provide a Tool registration mechanism.
 
-Conceptually:
 
-```text
-ToolRegistry
-├── register(tool)
-├── unregister(identifier)
-├── get(identifier)
-├── find(...)
-└── list(...)
-```
+    ToolRegistry
+    ├── register(tool)
+    ├── unregister(identifier)
+    ├── get(identifier)
+    ├── find(...)
+    └── list(...)
+The Registry allows modules to register Tools, plugins to add Tools, the UI to discover available Tools, menus and toolbars to be built dynamically, automation systems to find Tools, and Tools to be queried by identifier.
 
-The Registry allows:
 
-* modules to register their Tools;
-* plugins to add Tools;
-* the UI to discover available Tools;
-* menus and toolbars to be built dynamically;
-* automation systems to find Tools;
-* Tools to be queried by identifier.
+    Module → register Tools → ToolRegistry → UI / Tool Manager / Automation
+A Registry is a component, not a contract. Contracts describe interfaces or expected behavior; a Registry maintains records, resolves identifiers, and applies uniqueness rules. It should live in the layer responsible for managing Tools (e.g., a Tools subsystem), not inside contracts/. The definitive location depends on who owns the lifecycle, discovery, and registration of Tools: the module framework or a specific application subsystem. That responsibility should be defined before fixing the file path.
 
-Example:
+### 15.1 Identity Conflicts
+The Registry must define clear rules for identifier uniqueness, conflicts between modules and plugins, priority, replacement, and deactivation. If two plugins attempt to register rhinoplasty.add_landmark, the Registry must have a deterministic policy. The preferred policy is to reject duplicate identifiers, unless an explicit override mechanism has been defined.
 
-```text
-Module
-  ↓
-register Tools
-  ↓
-ToolRegistry
-  ↓
-UI / Tool Manager / Automation
-```
+### 15.2 Manifest and Implementation Resolution
+When a Tool is declared in a plugin manifest, the framework must resolve the manifest entry to an implementation. An explicit entry point is recommended.
 
-### 17.1 Identity Conflicts
+    yaml
+    tools:
+      - id: rhinoplasty.add_landmark
+        label: Add Landmark
+        category: annotation
+        entry_point: rhinoplasty.tools.add_landmark:AddLandmarkTool
 
-The Registry must define clear rules for:
+The Registry resolves entry_point via the plugin loader. Declarative metadata alone is not a complete Tool definition; the implementation is authoritative. Information that depends on code or context should not be duplicated in the manifest.
 
-* `identifier` uniqueness;
-* conflicts between modules;
-* conflicts between plugins;
-* priority;
-* replacement;
-* deactivation.
+### 15.3 Tool Discovery
+Declaring a Tool and deciding where it is presented are distinct responsibilities.
 
-For example, if two plugins attempt to register:
 
-```text
-rhinoplasty.add_landmark
-```
+    Module              → declares functionalities and Tools
+    Tool Registry/Manager → registers, discovers, resolves, manages Tools
+    UI / Editor / Toolbar → chooses which Tools to present and where
 
-the Registry must have a deterministic policy for handling the conflict.
+A Tool may exist in the Registry without being currently visible. It may be used by a contextual menu, shortcut, workflow, or another interface without requiring its definition to change. The Editor declares which modalities/contexts it accepts, and the Registry filters compatible Tools. This is more flexible than having the Tool declare "I belong to Editor X".
 
-The preferred policy should be to **reject duplicate identifiers**, unless an explicit override mechanism has been defined.
+## 16. Tools Provided by Modules and Plugins
+Each module may provide the Tools required to expose its functionality.
 
----
-
-## 18. Tools Provided by Modules
-
-Each module may provide the Tools required to expose its functionality to the user.
-
-Example:
-
-```text
-Cephalometry Module
-
-Tools:
-├── Add Landmark
-├── Move Landmark
-├── Delete Landmark
-├── Measure Distance
-└── Measure Angle
-```
+    Cephalometry Module
+    Tools: Add Landmark, Move Landmark, Delete Landmark, Measure Distance, Measure Angle
 
 A module may contain:
 
-```text
-Module
-├── Commands
-├── Tools
-├── Services
-└── Capabilities
-```
 
-However, the module should not directly own the Workspace's `Areas` or `Editors`.
-
-The relationship with the UI should occur through the appropriate UI, Layout, or Module Specification contracts.
-
-This keeps the architecture modular and prevents coupling between a module's functional domain and the physical organization of the Workspace.
-
----
-
-## 19. Tools Provided by Plugins
+    Module
+    ├── Commands
+    ├── Tools
+    ├── Services
+    └── Capabilities
+However, the module should not directly own the Workspace's Areas or Editors. The relationship with the UI occurs through the appropriate UI, Layout, or Module Specification contracts.
 
 Plugins may register Tools in the same way as internal modules.
 
-Example:
 
-```text
-Plugin
-  ↓
-ToolRegistry
-  ↓
-Custom Tool
-```
-
-This allows third parties to add functionality without modifying the CranioZ Core.
-
-Hypothetical examples:
-
-```text
-AI Segmentation Plugin
-└── Automatic Segmentation Tool
-```
-
-or:
-
-```text
-Rhinoplasty Plugin
-├── Nasal Landmark Tool
-├── Nasal Osteotomy Tool
-└── Soft Tissue Simulation Tool
-```
-
-Plugin Tools should use the same contracts as native Tools whenever possible.
-
----
-
-## 20. Tool Manifest
-
-When a Tool belongs to a plugin, its metadata may be declared in the plugin manifest.
-
-Conceptual example:
-
-```yaml
-tools:
-  - id: rhinoplasty.add_landmark
-    label: Add Landmark
-    category: annotation
-    group: landmarks
-
-  - id: rhinoplasty.simulate
-    label: Simulate
-    category: analysis
-    group: simulation
-```
-
-The manifest describes the Tool and its discovery metadata, but it does not replace its implementation.
-
-Information that depends on code or context should not be unnecessarily duplicated in the manifest.
-
----
-
-## 21. Tool and Capability
-
-A **Capability** describes a capability offered by a module or component.
-
-A **Tool** represents a way to use a capability through an action or interaction.
-
-Example:
-
-```text
-Capability:
-cephalometric_analysis
-
-Tools:
-├── Add Landmark
-├── Measure Angle
-└── Calculate Analysis
-```
-
-A Capability answers:
-
-> "Does the system have this capability?"
-
-A Tool answers:
-
-> "What action or interaction can the user use to access it?"
-
-This distinction will be especially important for:
-
-* feature discovery;
-* workflows;
-* automation;
-* plugins;
-* MCP.
-
-A Capability may exist without a corresponding Tool.
-
-Likewise, a generic interaction Tool such as `Select` may not represent a specific clinical Capability.
-
----
-
-## 22. Tool and Service
-
-Services implement application operations or rules that should not belong to the Tool.
-
-Example:
-
-```text
-Tool:
-Register Models
-
-Command:
-RegisterModelsCommand
-
-Service:
-RegistrationService
-```
-
-The flow may be:
-
-```text
-Register Models Tool
-        ↓
-RegisterModelsCommand
-        ↓
-RegistrationService
-        ↓
-Registration Algorithm
-```
-
-The Tool initiates the interaction.
-
-The Command represents the operation.
-
-The Service coordinates the application logic.
-
-Algorithms and specific rules remain in their appropriate layers.
-
----
-
-## 23. Tool and MCP
-
-The Tool system should be designed so that CranioZ operations can eventually be used by agents or external systems.
-
-However, a **CranioZ Tool** and an **MCP Tool** should not necessarily be considered the same abstraction.
-
-A CranioZ Tool represents an application action or interaction.
-
-An MCP Tool represents an operation exposed to an external agent through the MCP protocol.
-
-The architecture may allow both to use the same application layer:
-
-```text
-UI Tool
-  │
-  ▼
-Command
-  │
-  ▼
-Application Service
-  │
-  ▼
-Domain
-```
-
-and:
-
-```text
-MCP Tool
-  │
-  ▼
-Command
-  │
-  ▼
-Application Service
-  │
-  ▼
-Domain
-```
-
-Thus, MCP does not need to control the UI directly.
-
-An agent could request:
-
-```text
-create_osteotomy(...)
-```
-
-and the application would execute the same fundamental operation used by the graphical interface, passing through the same validations.
-
-### 23.1 MCP as an Adapter
-
-An adapter-based architecture avoids duplication:
-
-```text
-┌───────────────┐
-│   UI Tool     │
-└───────┬───────┘
-        │
-        ▼
-┌───────────────┐
-│    Command    │
-└───────┬───────┘
-        │
-        ▼
-┌───────────────┐
-│    Service    │
-└───────┬───────┘
-        │
-        ▼
-┌───────────────┐
-│    Domain     │
-└───────────────┘
-```
-
-and:
-
-```text
-┌───────────────┐
-│   MCP Tool    │
-└───────┬───────┘
-        │
-        ▼
-┌───────────────┐
-│    Command    │
-└───────┬───────┘
-        │
-        ▼
-┌───────────────┐
-│    Service    │
-└───────┬───────┘
-        │
-        ▼
-┌───────────────┐
-│    Domain     │
-└───────────────┘
-```
-
-This allows the UI and automation to use the same application logic.
-
----
-
-## 24. Security and Validation
-
-Tools should not be considered a sufficient security or validation boundary.
-
-An important operation should also be validated in the application and domain layers.
-
-For example:
-
-```text
-UI Tool
-  ↓
-Command
-  ↓
-Application Validation
-  ↓
-Domain Validation
-  ↓
-Operation
-```
-
-This is necessary because Commands may be triggered by mechanisms other than the UI.
-
-The system should consider, when applicable:
-
-* input validation;
-* permissions;
-* authorization;
-* auditing;
-* operational limits;
-* confirmation of destructive operations.
-
-This becomes especially important when Commands may be triggered by automation, scripts, or MCP.
-
----
-
-## 25. Example: Landmark Tool
-
-A simple example:
-
-```text
-Tool:
-Add Landmark
-
-Context:
-├── active patient
-├── active 3D editor
-└── valid anatomical model
-
-Interaction:
-└── user clicks on model
-
-Result:
-└── AddLandmarkCommand
-```
-
-Flow:
-
-```text
-Add Landmark Tool
-        │
-        │ user interaction
-        ▼
-Landmark Position
-        │
-        ▼
-AddLandmarkCommand
-        │
-        ▼
-Application Service
-        │
-        ▼
-Cephalometric Landmark
-        │
-        ▼
-Scene / Project
-```
-
+    Plugin → ToolRegistry → Custom Tool
+
+This allows third parties to add functionality without modifying the CranioZ Core. Examples:
+
+
+    AI Segmentation Plugin
+    └── Automatic Segmentation Tool
+    
+    Rhinoplasty Plugin
+    ├── Nasal Landmark Tool
+    ├── Nasal Osteotomy Tool
+    └── Soft Tissue Simulation Tool
+Plugin Tools should use the same contracts as native Tools whenever possible. A plugin manifest may declare metadata and entry points (see §15.2).
+
+## 17. Tool and Capability
+A Capability describes a capability offered by a module or component. A Tool represents a way to use a capability through an action or interaction.
+
+
+    Capability: cephalometric_analysis
+    
+    Tools:
+    ├── Add Landmark
+    ├── Measure Angle
+    └── Calculate Analysis
+A Capability answers: "Does the system have this capability?" A Tool answers: "What action or interaction can the user use to access it?"
+
+A Capability may exist without a corresponding Tool. A generic interaction Tool such as Select may not represent a specific clinical Capability.
+
+## 18. Tool and MCP
+A CranioZ Tool and an MCP Tool are not the same abstraction. A CranioZ Tool represents an application action or interaction; an MCP Tool represents an operation exposed to an external agent through the MCP protocol. Both may use the same application layer.
+
+    UI Tool                         MCP Tool
+      │                                │
+      ▼                                ▼
+    Command                         Command
+      │                                │
+      ▼                                ▼
+    Application Service             Application Service
+      │                                │
+      ▼                                ▼
+    Domain                          Domain
+
+MCP does not need to control the UI directly. An agent could request create_osteotomy(...), and the application would execute the same fundamental operation used by the graphical interface, passing through the same validations. An adapter-based architecture avoids duplication and allows the UI and automation to share application logic.
+
+## 19. Security and Validation
+Tools should not be considered a sufficient security or validation boundary. Important operations should also be validated in the application and domain layers.
+
+    UI Tool → Command → Application Validation → Domain Validation → Operation
+
+This is necessary because Commands may be triggered by mechanisms other than the UI. The system should consider, when applicable: input validation, permissions, authorization, auditing, operational limits, and confirmation of destructive operations. ToolContext may inform permissions, but effective authorization remains in the application and domain layers. This becomes especially important when Commands may be triggered by automation, scripts, or MCP.
+
+## 20. Examples
+### 20.1 Landmark Tool
+
+    Tool:      Add Landmark
+    
+    Context:
+    ├── active patient
+    ├── active 3D editor
+    └── valid anatomical model
+    
+    Interaction:
+    └── user clicks on model
+    
+    Result:
+    └── AddLandmarkCommand
+
+    Add Landmark Tool
+            │ user interaction
+            ▼
+    Landmark Position
+            ▼
+    AddLandmarkCommand
+            ▼
+    Application Service
+            ▼
+    Cephalometric Landmark
+            ▼
+    Scene / Project
 The Tool does not need to know the persistence details of the Landmark.
 
----
+### 20.2 Osteotomy Tool
 
-## 26. Example: Osteotomy Tool
+    Define Osteotomy Tool
+            ▼
+    User selects anatomical region
+            ▼
+    Interactive preview
+            ▼
+    User confirms
+            ▼
+    CreateOsteotomyCommand
+            ▼
+    Application Service
+            ▼
+    Osteotomy Domain Object
+            ▼
+    Scene Update
+The same operation may later be triggered by a Toolbar, Menu, Shortcut, Workflow, Script, or MCP. The osteotomy logic does not need to be duplicated for each activation mechanism.
 
-An interactive osteotomy Tool may follow this flow:
+## 21. Code Organization
+Contract definitions should remain in the framework's module infrastructure.
 
-```text
-Define Osteotomy Tool
-        │
-        ▼
-User selects anatomical region
-        │
-        ▼
-Interactive preview
-        │
-        ▼
-User confirms
-        │
-        ▼
-CreateOsteotomyCommand
-        │
-        ▼
-Application Service
-        │
-        ▼
-Osteotomy Domain Object
-        │
-        ▼
-Scene Update
-```
 
-The same operation may later be triggered by:
-
-* a Toolbar;
-* a Menu;
-* a Shortcut;
-* a Workflow;
-* a Script;
-* MCP.
-
-The osteotomy logic does not need to be duplicated for each activation mechanism.
-
----
-
-## 27. Code Organization
-
-The contract definitions should remain in the framework's module infrastructure:
-
-```text
-src/cranioz/modules/
-
-├── base/
-│   ├── module.py
-│   ├── module_state.py
-│   └── lifecycle.py
-│
-├── contracts/
-│   ├── command.py
-│   ├── tool.py
-│   ├── service.py
-│   └── capability.py
-│
-└── specs/
-    └── module_spec.py
-```
-
-The `Tool` contract should remain small and stable.
-
-Specific implementations should remain in the modules that use them.
-
-Example:
-
-```text
-src/cranioz/modules/
-└── cephalometry/
-    ├── tools/
-    │   ├── add_landmark.py
-    │   ├── move_landmark.py
-    │   └── measure_angle.py
+    src/cranioz/modules/
+    ├── base/
+    │   ├── module.py
+    │   ├── module_state.py
+    │   └── lifecycle.py
     │
-    ├── commands/
-    │   └── ...
+    ├── contracts/
+    │   ├── command.py
+    │   ├── tool.py
+    │   ├── tool_context.py
+    │   ├── tool_result.py
+    │   └── tool_session.py
     │
-    └── services/
-        └── ...
-```
+    └── specs/
+        └── module_spec.py
+The Tool contract should remain small and stable. Specific implementations should remain in the modules that use them.
 
-The exact directory organization may vary as the module matures, but the conceptual separation should be preserved.
 
----
+    src/cranioz/modules/
+    └── cephalometry/
+        ├── tools/
+        │   ├── add_landmark.py
+        │   ├── move_landmark.py
+        │   └── measure_angle.py
+        ├── commands/
+        └── services/
+The Registry is not a contract and should live in the layer responsible for managing Tools, outside contracts/.
 
-## 28. Architectural Principles
+## 22. Architectural Principles
+* A Tool is an interaction interface. It is not the domain and should not contain complex clinical or geometric logic.
+* A Tool is not a Command. A Tool may create or execute a Command, but the Command remains independent of the UI.
+* A Tool does not structurally belong to an Area. It may be presented in any compatible Area or Editor.
+* A Tool should be contextual. Its availability may depend on the current project, selection, Editor, or module state.
+* A Tool should have a stable identity. Its identifier is independent of its label and interface position.
+* A Tool should be discoverable. Tools are registered and queried by the framework.
+* A Tool should be reusable. The same operation is triggerable by different mechanisms.
+* An interactive Tool should have its own lifecycle. Temporary interaction state is separated from the Tool's permanent definition.
+* Validation should not depend on the UI. Important operations are validated in the application and domain layers.
+* Plugins may provide Tools. The mechanism works for internal modules and external extensions.
+* Tools should not know the Workspace organization. The Tool defines the interaction; the Workspace determines where it is presented.
+* Commands should remain independent of Tools. The same operation is usable by the UI, workflows, scripts, and automation.
+* Tools should be automation-compatible. The architecture allows the same operations to be used by workflows, scripts, and MCP.
+* Threading must be explicit. Tool interaction runs on the UI thread; Commands declare their execution mode; the CommandExecutor decides how to dispatch.
 
-The CranioZ Tool system should follow these principles:
-
-1. **A Tool is an interaction interface**
-
-   It is not the domain and should not contain complex clinical or geometric logic.
-
-2. **A Tool is not a Command**
-
-   A Tool may create or execute a Command, but the Command should remain independent of the UI.
-
-3. **A Tool does not structurally belong to an Area**
-
-   A Tool may be presented in any compatible Area or Editor.
-
-4. **A Tool should be contextual**
-
-   Its availability may depend on the current project, selection, Editor, or module state.
-
-5. **A Tool should have a stable identity**
-
-   Its identifier should be independent of its label and position in the interface.
-
-6. **A Tool should be discoverable**
-
-   Tools should be registered and queried by the framework.
-
-7. **A Tool should be reusable**
-
-   The same operation should be triggerable by different mechanisms.
-
-8. **An interactive Tool should have its own lifecycle**
-
-   Temporary interaction state should be separated from the Tool's permanent definition.
-
-9. **Validation should not depend on the UI**
-
-   Important operations should be validated in the application and domain layers.
-
-10. **Plugins may provide Tools**
-
-    The mechanism should work for both internal modules and external extensions.
-
-11. **Tools should not know the Workspace organization**
-
-    The Tool defines the interaction; the Workspace determines where it is presented.
-
-12. **Commands should remain independent of Tools**
-
-    The same operation should be usable by the UI, workflows, scripts, and automation.
-
-13. **Tools should be automation-compatible**
-
-    The architecture should allow the same operations to be used in the future by workflows, scripts, and MCP.
-
----
-
-## 29. Conceptual Summary
-
-The architecture can be summarized as follows:
-
-```text
-                         ┌───────────────┐
-                         │     User      │
-                         └───────┬───────┘
-                                 │
-                                 ▼
-                         ┌───────────────┐
-                         │     Tool      │
-                         │               │
-                         │ interaction   │
-                         │ presentation  │
-                         │ availability  │
-                         └───────┬───────┘
-                                 │
-                                 ▼
-                         ┌───────────────┐
-                         │    Command    │
-                         │               │
-                         │ operation     │
-                         │ undo/redo     │
-                         └───────┬───────┘
-                                 │
-                                 ▼
-                         ┌───────────────┐
-                         │   Application │
-                         │    Service    │
-                         └───────┬───────┘
-                                 │
-                                 ▼
-                         ┌───────────────┐
-                         │    Domain     │
-                         │               │
-                         │ clinical      │
-                         │ semantics     │
-                         │ geometry      │
-                         └───────────────┘
-```
-
-In parallel:
-
-```text
-Module
-├── Tools
-├── Commands
-├── Services
-└── Capabilities
-```
-
-In the interface:
-
-```text
-Workspace
-│
-├── Area
-│   └── Editor
-│       └── Tool
-│
-├── Area
-│   └── Editor
-│       └── Tool
-│
-└── Area
-    └── Editor
-        └── Tool
-```
-
-The central idea is that **Tool** is the framework's unit of action and interaction, while **Command** is the unit of operation and history, **Application Service** is the unit of application-logic coordination, **Domain** is the unit of clinical and computational meaning, and **Capability** describes what a module or component is able to provide.
-
-This separation allows CranioZ to keep its interface decoupled from clinical logic, provide a modular and plugin-extensible architecture, and establish a consistent foundation for workflows, automation, scripts, and MCP.
+The UI must not inspect concrete modalities. Availability and enablement are resolved by the framework.

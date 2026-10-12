@@ -1083,36 +1083,36 @@ Infrastructure implements Application ports (RenderingPort,
 PersistencePort, ExternalComputationPort). The Scene does not depend on
 Infrastructure implementations.
     
-    ┌─────────────────────────────────────────────┐
-    │ Project │
+    ┌──────────────────────────────────────────┐
+    │ Project                                  │
     │ ┌──────────────────┐ ┌─────────────────┐ │
-    │ │ DomainObjectStore│ │ Scenes │ │
-    │ │ Canonical Objects│ │ Membership │ │
-    │ │ Identity │ │ Hierarchy │ │
-    │ │ Lifecycle │ │ Transforms │ │
-    │ │ │ │ Relationships │ │
+    │ │ DomainObjectStore│ │ Scenes          │ │
+    │ │ Canonical Objects│ │ Membership      │ │
+    │ │ Identity         │ │ Hierarchy       │ │
+    │ │ Lifecycle        │ │ Transforms      │ │
+    │ │                    │ │ Relationships │ │
     │ └────────┬─────────┘ └────────┬────────┘ │
-    └───────────┼─────────────────────┼───────────┘
-    │ │
+    └───────────┼─────────────────────┼────────┘
+    │            │
     └──────────┬──────────┘
     │
     Commands / Events / Transactions
     │
     ▼
     ┌─────────────────────┐
-    │ Application Core │
-    │ Commands │
-    │ Transactions │
-    │ Services │
-    │ Flows │
+    │ Application Core    │
+    │ Commands            │
+    │ Transactions        │
+    │ Services            │
+    │ Flows               │
     └──────────┬──────────┘
-    │
-    ▼
+                │
+                ▼
     ┌─────────────────────┐
-    │ Infrastructure │
-    │ Rendering Adapter │
-    │ Spatial Index │
-    │ Persistence │
+    │ Infrastructure      │
+    │ Rendering Adapter   │
+    │ Spatial Index       │
+    │ Persistence         │
     └─────────────────────┘
 
 The fundamental separation:

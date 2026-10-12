@@ -320,30 +320,47 @@ Viewport3DEditor may be used for:
 The Editor provides the generic interaction experience. Application-specific logic is provided by Modules, Tools, Commands, Services, Scene, and the application context.
 
 ## 15. EditorContext
-An Editor receives a small, interface-oriented execution context.
+
+An Editor receives a small, interface-oriented execution context. It is
+provided once at insertion and remains stable throughout the Editor's
+lifetime.
 
 ```
 text
 EditorContext
-├── SceneQuery
-├── SelectionService
-├── CommandDispatcher
-├── EventSubscription
-├── ViewStateStore
-└── EditorServices
+├── SceneQuery            → read-only access to the Scene
+├── SelectionService     → query and observe the current selection
+├── CommandDispatcher    → dispatch Commands (write intention)
+├── EventSubscription    → subscribe to application events
+├── ViewStateStore       → per-Editor presentation state
+└── EditorServices       → additional Editor-scoped services
 ```
 
-The Editor must depend on abstractions and avoid direct dependencies on concrete application components whenever possible.
+
+Each component has a specific role:
+
+- **`SceneQuery`** — exposes a read-only view of the Scene. The Editor never receives a mutable reference.
+- **`SelectionService`** — exposes the current selection and allows the Editor to observe selection changes.
+- **`CommandDispatcher`** — accepts Commands from the Editor. The Editor never mutates the Scene directly.
+- **`EventSubscription`** — allows the Editor to subscribe to relevant application events (e.g., `SceneChanged`, `SelectionChanged`).
+- **`ViewStateStore`** — stores per-Editor presentation state (zoom, camera, current slice, visual selection, presentation mode). It is
+  **not** part of the clinical state and is **not** the same as the Workspace `LayoutState`.
+- **`EditorServices`** — additional services scoped to the Editor (e.g., Editor-specific caches, helpers). This is deliberately a narrow extension point, not a service locator.
+
+The Editor must depend on abstractions and avoid direct dependencies on
+concrete application components whenever possible.
 
 A Tool receives an even narrower context:
-```
-text
-ToolContext
-├── SceneQuery
-├── SelectionService
-├── CommandDispatcher
-└── ToolServices
-```
+
+    ToolContext
+    ├── SceneQuery → read-only access to the Scene
+    ├── SelectionService → query and observe the current selection
+    ├── CommandDispatcher → dispatch Commands
+    └── ToolServices → additional Tool-scoped services
+
+
+The `ToolContext` is a strict subset of the `EditorContext`. A Tool never receives `EventSubscription`, `ViewStateStore`, or
+`EditorServices`, because it does not own presentation state and does not subscribe to events directly — it acts through the Editor.
 
 ## 16. Editor state
 Clinical state must be separated from purely visual state.
@@ -420,20 +437,20 @@ This separation enables:
 * independent evolution of definitions and usage.
 
 ## 20. Validation
-Before materializing, the following rules are enforced:
+Validation of a ModuleUISpec is the responsibility of the **LayoutBuilder** before materialization. The rules are defined in **workspace.md** §3.5:
 
 * LEAF must have editor_id and no children.
 * SPLIT must have direction and at least two children, and no editor_id.
-* Every editor_id must resolve in the EditorRegistry.
 * Placement must be one of LEFT, CENTRAL, RIGHT, BOTTOM.
 * A ModuleUISpec must declare at least CENTRAL.
 
+Additionally, every editor_id must resolve in the EditorRegistry. This is verified by the EditorRegistry.resolve() call.
 Any violation produces a clear error. The Workspace does not fall back silently.
 
 ## 21. Architectural principles
 1. An Editor is functional, not spatial. Position belongs to the Area and the Layout.
-2. An Editor does not instantiate other Editors. Composition belongs to the Workspace.
-3. A Module does not own Editors. Modules declare interface needs; the Workspace resolves and creates Editor instances.
+2. An Editor does not instantiate other Editors. Composition of Areas belongs to the Workspace; composition of Editors within an Area belongs to the Area.
+3. A Module does not own Editors. Modules declare interface needs; the EditorRegistry resolves and creates Editor instances; the Area hosts them.
 4. Layout is declarative. Layouts use stable identifiers, not concrete classes.
 5. The Registry registers types; the Catalog filters by context.
 6. An Editor does not contain clinical logic. Clinical logic belongs to Modules, Services, Domain, and Application.
