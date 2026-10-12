@@ -2,2017 +2,1128 @@
 
 ## 1. Overview
 
-A **Scene** represents the spatial organization and state of domain objects within a specific planning context in CranioZ.
+A **Scene** represents the spatial organization and state of domain
+objects within a specific planning context in CranioZ.
 
-The Scene is a **domain-level concept**. It is independent of the user interface, rendering engine, viewport implementation, and visualization framework.
+The Scene is a **domain-level concept**, independent of UI, rendering
+engine, viewport implementation, and visualization framework.
 
 The Scene defines:
 
-* object membership;
-* spatial hierarchy;
-* spatial relationships;
-* object transforms;
-* reference frames associated with the spatial context;
-* the coordinate system used to interpret spatial state.
+- object membership;
+- spatial hierarchy;
+- spatial relationships;
+- object transforms;
+- reference frames;
+- the coordinate system.
 
 The Scene does **not** own the lifecycle of domain objects.
 
-The fundamental architectural principle is:
+> **The Scene does not own domain objects. It owns the spatial
+> organization of objects within a specific planning context.**
 
-> **The Scene does not own domain objects. It owns the spatial organization of objects within a specific planning context.**
+A domain object represents **what** an object is.
+A Scene represents **where** it exists and **how** it relates to other
+objects.
+A rendering representation represents **how** it is visualized.
+Domain Object ≠ Scene ≠ Rendering Actor ≠ Viewport
 
-A domain object represents **what an object is**.
-
-A Scene represents **where that object exists and how it is spatially related to other objects**.
-
-A rendering representation represents **how that object is visualized**.
-
-A viewport represents **how the user sees and interacts with that representation**.
-
-Therefore:
-
-```
-Domain Object
-    ≠
-Scene
-    ≠
-Rendering Actor
-    ≠
-Viewport
-```
+text
 
 ---
 
-# 2. Architectural Role
+## 2. Architectural Role
 
-The Scene belongs to the Domain layer and participates in the following architecture:
+The Scene belongs to the Domain layer. 
 
-```
-┌────────────────────────────────────────────┐
-│                     UI                     │
-│ Areas · Viewports · Panels · Interaction  │
-└──────────────────────┬─────────────────────┘
-                       │
-                       ▼
-┌────────────────────────────────────────────┐
-│                Application                 │
-│ Tools · Commands · Services · Flows        │
-│ Transactions · Event Coordination          │
-└──────────────────────┬─────────────────────┘
-                       │
-                       ▼
-┌────────────────────────────────────────────┐
-│                   Domain                  │
-│                                            │
-│ Project                                    │
-│ ├── DomainObjectStore                      │
-│ └── Scenes                                 │
-│      ├── Membership                        │
-│      ├── Hierarchy                         │
-│      ├── Transforms                        │
-│      └── Relationships                     │
-│                                            │
-└──────────────────────┬─────────────────────┘
-                       │
-                       ▼
-┌────────────────────────────────────────────┐
-│              Infrastructure               │
-│ DICOM · VTK · ITK · OCCT · Storage         │
-│ Rendering Adapters · Spatial Indexes       │
-└────────────────────────────────────────────┘
-```
+    ┌──────────────────────────────────────────┐
+    │ UI │
+    │ Areas · Editors · Toolbars · Overlays │
+    └──────────────────┬───────────────────────┘
+    │
+    ┌──────────────────▼───────────────────────┐
+    │ Application │
+    │ Tools · Commands · Services · Flows │
+    │ Transactions · Event Coordination │
+    └──────────────────┬───────────────────────┘
+    │
+    ┌──────────────────▼───────────────────────┐
+    │ Domain │
+    │ Project │
+    │ ├── DomainObjectStore │
+    │ └── Scenes │
+    │ ├── Membership │
+    │ ├── Hierarchy │
+    │ ├── Transforms │
+    │ └── Relationships │
+    └──────────────────┬───────────────────────┘
+    │
+    ┌──────────────────▼───────────────────────┐
+    │ Infrastructure │
+    │ DICOM · VTK · ITK · OCCT · Storage │
+    │ Rendering Adapters · Spatial Indexes │
+    └──────────────────────────────────────────┘
 
-The Scene is therefore domain state that is manipulated through the Application layer and consumed by Infrastructure and UI components.
+
+The UI layer is composed of Areas (structural containers), Editors (functional units hosted in Areas), Toolbars (internal to Editors, see ADR-0002), and Overlays (floating layers managed by the Workspace).
+See ADR-0001 for the relationship between Area and Editor.
+
+A **View** is a visual representation of an aspect of the Scene. It is rendered by a **Viewport**, hosted by an **Editor**, hosted by an **Area**. The Scene does not know about Viewports or Views.
 
 ---
 
-# 3. Project and Scene Context
+## 3. Project and Scene Context
 
-A Scene always belongs to a **Project**.
+A Scene always belongs to a **Project**, which provides the persistent
+boundary.
 
-The Project provides the persistent boundary within which domain objects and Scenes exist.
-
-Conceptually:
-
-```
-Project
-├── DomainObjectStore
-└── Scenes
-      ├── Scene A
-      ├── Scene B
-      └── ...
-```
+    Project
+    ├── DomainObjectStore
+    └── Scenes
+    ├── Scene A
+    ├── Scene B
+    └── ...
 
 The Project is responsible for the complete persistent planning context.
-
 The Scene is responsible only for its spatial context.
 
----
 
-# 4. DomainObjectStore
+## 4. DomainObjectStore
 
-The **DomainObjectStore** is the canonical registry and lifecycle authority for domain objects belonging to a Project.
+The **DomainObjectStore** is the canonical registry and lifecycle
+authority for domain objects belonging to a Project.
 
-Conceptually:
+    Project
+    └── DomainObjectStore
+    ├── Maxilla
+    ├── Mandible
+    ├── Tooth 11
+    ├── Tooth 21
+    ├── CT Volume
+    └── Surgical Splint
 
-```
-Project
-│
-└── DomainObjectStore
-      ├── Maxilla
-      ├── Mandible
-      ├── Tooth 11
-      ├── Tooth 21
-      ├── CT Volume
-      └── Surgical Splint
-```
 
 The DomainObjectStore is **Project-scoped**, not application-global.
 
 This provides:
 
-* isolation between Projects;
-* deterministic object identity;
-* explicit lifecycle boundaries;
-* straightforward persistence;
-* prevention of accidental cross-Project references.
+- isolation between Projects;
+- deterministic object identity;
+- explicit lifecycle boundaries;
+- straightforward persistence;
+- prevention of cross-Project references.
 
-The detailed contract of the DomainObjectStore is defined separately.
+The detailed contract is defined separately.
 
 ---
 
-# 5. Scene and DomainObjectStore
+## 5. Scene and DomainObjectStore
 
-The Scene references objects belonging to the DomainObjectStore associated with the same Project.
+The Scene references objects belonging to the DomainObjectStore of the
+same Project.
 
-Conceptually:
+    Project
+    ├── DomainObjectStore
+    │ ├── Maxilla
+    │ ├── Mandible
+    │ └── Splint
+    │
+    └── Scene
+    ├── object_id → Maxilla
+    ├── object_id → Mandible
+    └── object_id → Splint
 
-```
-Project
-│
-├── DomainObjectStore
-│     ├── Maxilla
-│     ├── Mandible
-│     └── Splint
-│
-└── Scene
-      ├── object_id → Maxilla
-      ├── object_id → Mandible
-      └── object_id → Splint
-```
 
-The Scene does not create independent canonical copies of these objects.
+The Scene does not create canonical copies.
 
-The Scene assumes the following contract:
-
-> **While an object is a member of a Scene, its object ID must resolve to a valid domain object in the Project's DomainObjectStore.**
+> **While an object is a member of a Scene, its object ID must resolve
+> to a valid domain object in the Project's DomainObjectStore.**
 
 This invariant must hold throughout the lifetime of the Scene.
 
 ---
 
-# 6. Object Ownership and Scene Membership
+## 6. Ownership vs. Membership
 
-Ownership and membership are distinct concepts.
+**Ownership** and **membership** are distinct concepts.
 
-## 6.1 Object ownership
+**Object ownership.** The DomainObjectStore owns the canonical lifecycle.
+Import CT → Create Volume Object → Register in DomainObjectStore → Add to Scene
 
-The DomainObjectStore owns the canonical lifecycle of Project domain objects.
 
-An object becomes an official Project domain object when it is registered in the store.
+**Scene membership.** A domain object participates in the spatial context
+of a Scene. Membership does not transfer ownership.
 
-For example:
+    Scene
+    ├── Maxilla
+    ├── Mandible
+    └── Splint
 
-```
-Import CT
-    ↓
-Create Volume Object
-    ↓
-Register in DomainObjectStore
-    ↓
-Add Object to Scene
-```
+The Scene maintains references through stable identities.
 
 ---
 
-## 6.2 Scene membership
+## 7. Membership Integrity
 
-Scene membership means that a domain object participates in the spatial context of a Scene.
+Every membership reference must resolve to a valid object in the
+DomainObjectStore.
+Scene Membership → DomainObjectStore.get(object_id) → Valid Domain Object
 
-Membership does not transfer ownership to the Scene.
-
-For example:
-
-```
-Scene
-├── Maxilla
-├── Mandible
-└── Splint
-```
-
-The Scene maintains references to these objects through their stable identities.
-
----
-
-# 7. Membership Integrity
-
-Every Scene membership reference must resolve to a valid object in the Project's DomainObjectStore.
-
-Invalid membership references are not permitted as a normal state.
-
-Therefore:
-
-```
-Scene Membership
-      │
-      ▼
-DomainObjectStore.get(object_id)
-      │
-      ▼
-Valid Domain Object
-```
 
 The Scene must never intentionally contain dangling references.
 
 ---
 
-# 8. Object Removal and Membership Removal
+## 8. Object Removal vs. Membership Removal
 
-Removing an object from a Scene and removing an object from a Project are different operations.
-
-### Remove membership
-
-```
+**Remove membership.**
 Scene.remove_object(object_id)
-```
 
-means:
 
-> Remove the object's spatial membership from this Scene.
 
-The domain object remains in the DomainObjectStore.
+Removes spatial membership. The domain object remains in the
+DomainObjectStore.
 
-### Remove object from Project
-
-```
+**Remove object from Project.**
 DomainObjectStore.remove(object_id)
-```
 
-means:
 
-> Remove the canonical domain object from the Project.
+Removes the canonical domain object.
 
-An object must not be removed from the DomainObjectStore while it is still a member of any Scene in the same Project.
+An object must not be removed from the DomainObjectStore while it is a
+member of any Scene in the same Project.
 
-Therefore, before object removal:
+    Remove Object from Project
+    ↓
+    Check Scene Memberships
+    ↓
+    ┌────┴────┐
+    Exists None
+    │ │
+    ▼ ▼
+    Reject Remove
 
-```
-Remove Object from Project
-        ↓
-Check Scene Memberships
-        ↓
-   ┌────┴────┐
-   │         │
-Exists     None
-   │         │
-   ▼         ▼
-Reject     Remove
-```
 
-The Application Core is responsible for coordinating this operation.
-
-The DomainObjectStore should not need to directly own or scan all Scenes.
+The Application Core coordinates this operation.
 
 ---
 
-# 9. Scene Core
+## 9. Scene Core
 
-The Scene Core contains the fundamental spatial state of the Scene.
+The Scene Core contains the fundamental spatial state:
 
-It includes:
+- Scene identity;
+- metadata;
+- object membership;
+- coordinate-system definition;
+- spatial hierarchy;
+- transforms;
+- spatial relationships;
+- persistent reference-frame associations.
 
-* Scene identity;
-* metadata;
-* object membership;
-* coordinate-system definition;
-* spatial hierarchy;
-* transforms;
-* spatial relationships;
-* persistent reference-frame associations.
-
-The Scene Core should remain deliberately small.
-
-It must not become a general-purpose container for Project state.
+The Scene Core must remain deliberately small. It must not become a general-purpose container for Project state.
 
 ---
 
-# 10. Spatial Hierarchy
+## 10. Spatial Hierarchy
 
-Spatial hierarchy is an explicit Scene-level concept.
+Spatial hierarchy represents parent-child relationships that affect spatial interpretation.
 
-It represents parent-child relationships that affect spatial interpretation.
-
-For example:
-
-```
-Mandible
-├── Left Segment
-└── Right Segment
-```
-
+    Mandible
+    ├── Left Segment
+    └── Right Segment
 or:
 
-```
-Patient Reference
-├── Maxilla
-└── Mandible
-```
+    Patient Reference
+    ├── Maxilla
+    └── Mandible
 
-Hierarchy is not merely an internal optimization.
-
-It is part of the Scene's spatial domain state.
+Hierarchy is part of the Scene's spatial domain state.
 
 ---
 
-# 11. Parent-Child Rules
+## 11. Parent-Child Rules
 
 An object may have **at most one parent within a given Scene**.
 
-Conceptually:
+    Scene
+    └── Mandible
+    ├── Left Segment
+    └── Right Segment
 
-```
-Scene
-└── Mandible
-      ├── Left Segment
-      └── Right Segment
-```
 
-The Scene should provide operations conceptually equivalent to:
+Conceptual operations:
 
-```
-set_parent()
-get_parent()
-iter_children()
-```
+    set_parent()
+    get_parent()
+    iter_children()
+
 
 The hierarchy must not contain cycles.
 
-The parent relationship belongs to the Scene, not to the domain object itself.
+The parent relationship belongs to the Scene, not to the domain object.
+The same object may participate in different Scenes with different
+parents.
 
-Therefore, the same domain object may theoretically participate in different Scenes with different parents.
+    Scene A Scene B
+    └── Mandible └── Osteotomy Reference
+    └── Segment └── Segment
 
-For example:
-
-```
-Scene A
-└── Mandible
-      └── Segment
-
-Scene B
-└── Osteotomy Reference
-      └── Segment
-```
-
-The object's intrinsic identity does not change.
-
-Only its spatial organization within the Scene changes.
+Only the spatial organization changes.
 
 ---
 
-# 12. Hierarchy and Transform Composition
+## 12. Transform Composition
 
-Parent-child hierarchy provides a basis for transform composition.
+    Parent-child hierarchy provides a basis for transform composition.
+    Scene → Mandible → Left Segment
 
-For example:
+    T_scene_segment = T_scene_mandible · T_mandible_segment
 
-```
-Scene
-  │
-  └── Mandible
-        │
-        └── Left Segment
-```
 
-The resulting Scene-space transform may be expressed conceptually as:
-
-```
-T_scene_segment =
-    T_scene_mandible
-    · T_mandible_segment
-```
 
 For deeper hierarchies:
 
-```
-T_scene_object =
-    T_scene_parent
-    · T_parent_child
-    · T_child_object
-```
+    T_scene_object = T_scene_parent · T_parent_child · T_child_object
 
-The exact mathematical representation belongs to the geometry layer.
-
-Scene depends on domain-level transformation abstractions rather than directly on NumPy, VTK, OCCT, or another mathematical library.
+The exact mathematical representation belongs to the geometry layer. Scene depends on domain-level transformation abstractions, not directly on NumPy, VTK, or OCCT.
 
 ---
 
-# 13. Spatial Relationships
+## 13. Spatial Relationships
 
-Not every relationship between objects should be represented as parent-child hierarchy.
+Not every relationship is parent-child hierarchy.
 
-A Scene may maintain explicit **SpatialRelationships**.
+    SpatialRelationship
+    ├── source
+    ├── target
+    ├── type
+    ├── directed
+    └── data
 
-Examples include:
 
-* registration;
-* attachment;
-* correspondence;
-* derivation;
-* alignment;
-* reference relationships.
+Examples:
 
-Conceptually:
+    Registration(CT, IOS)
+    AttachedTo(Plate, Mandible)
+    DerivedFrom(OsteotomySegment, Mandible)
 
-```
-SpatialRelationship
-├── source
-├── target
-├── type
-├── directed
-└── data
-```
 
-For example:
-
-```
-Registration(CT, IOS)
-
-AttachedTo(Plate, Mandible)
-
-DerivedFrom(OsteotomySegment, Mandible)
-```
-
-The Scene provides the spatial context for these relationships.
-
-The algorithms that establish relationships belong to appropriate domain or application services.
+The Scene provides the spatial context. The algorithms that establish relationships belong to domain or application services.
 
 ---
 
-# 14. Relationship Cardinality and Identity
+## 14. Relationship Cardinality
 
 A relationship type defines its own semantic constraints.
 
-The Scene provides structural integrity but does not impose arbitrary cardinality rules on every relationship type.
-
-For example:
-
-```
-Registration
-    CT → IOS
-```
-
-may have different cardinality rules from:
-
-```
-DerivedFrom
-    Segment → Mandible
-```
-
-or:
-
-```
-AttachedTo
-    Plate → Mandible
-```
-
 A relationship may be:
 
-* directed or symmetric;
-* unique or non-unique;
-* one-to-one;
-* one-to-many;
-* many-to-many.
+- directed or symmetric;
+- unique or non-unique;
+- one-to-one, one-to-many, many-to-many.
 
-These properties must be defined by the specific relationship type.
+These properties must be defined by the relationship type.
 
-Unless explicitly defined otherwise, a relationship is identified by its complete semantic identity and duplicate relationships should not be silently created.
-
-The detailed contract for relationship types should be documented separately.
+Duplicate relationships should not be silently created.
 
 ---
 
-# 15. Relationship Lifecycle
+## 15. Relationship Lifecycle
 
-Relationships cannot reference objects that do not exist in the relevant Scene context.
+Relationships cannot reference objects that are not valid Scene members.
 
-When an object is removed from a Scene, relationships involving that membership must be handled according to the relationship contract.
+> **A Scene must not retain an active relationship whose required
+> object references are no longer valid Scene members.**
 
-The default rule is:
-
-> **A Scene must not retain an active relationship whose required object references are no longer valid Scene members.**
-
-Relationship cleanup is therefore part of the Scene's structural integrity.
-
-The exact behavior for derived or persistent relationships may be defined by the relationship type.
+Relationship cleanup is part of the Scene's structural integrity.
 
 ---
 
-# 16. Global Coordinate System
+## 16. Coordinate System
 
 Each Scene defines a global coordinate system.
 
-The coordinate system provides the reference frame for spatial interpretation.
+- Units: **millimetres (mm)**.
+- Handedness, axis orientation, and origin convention must be defined.
 
-The canonical spatial unit is:
-
-```
-millimetres (mm)
-```
-
-The coordinate system must define:
-
-* units;
-* handedness;
-* axis orientation;
-* origin convention.
-
-The exact anatomical convention is a project-wide geometry decision and should be defined separately in the geometry documentation and corresponding ADR.
+The exact anatomical convention is a project-wide geometry decision, defined separately in the geometry documentation and corresponding ADR.
 
 ---
 
-# 17. Scene Origin and Reference Frames
+## 17. Scene Origin and Reference Frames
 
 The Scene origin represents the global technical reference frame.
 
-It must not be confused with clinically meaningful anatomical reference frames.
+It must not be confused with clinically meaningful anatomical reference
+frames.
 
-A Scene may contain or reference multiple reference frames:
+    Scene Coordinate System
+    ├── Patient Reference Frame
+    ├── Cranial Reference Frame
+    ├── Maxillary Reference Frame
+    └── Mandibular Reference Frame
 
-```
-Scene Coordinate System
-│
-├── Patient Reference Frame
-├── Cranial Reference Frame
-├── Maxillary Reference Frame
-└── Mandibular Reference Frame
-```
-
-A reference frame with persistent identity and clinical meaning may be represented as a domain object and registered in the DomainObjectStore.
-
-A transient mathematical reference frame may instead exist only as temporary domain/application state.
-
-Reference frames may therefore have:
-
-* identity;
-* transform;
-* parent reference frame;
-* semantic type;
-* persistence state.
-
-The Scene defines how these frames participate in its spatial context.
+A reference frame with persistent identity and clinical meaning may be a domain object. A transient mathematical frame may exist only as
+temporary state.
 
 ---
 
-# 18. Object Transforms
+## 18. Object Transforms
 
-Objects may have local coordinate systems and transformations into Scene space.
+Objects may have local coordinate systems and transforms into Scene space.
+Local Object Coordinates → Transform → Scene Coordinate System
 
-Conceptually:
-
-```
-Local Object Coordinates
-          │
-          │ Transform
-          ▼
-Scene Coordinate System
-```
-
-This allows imported and generated objects to retain their local coordinate representation while being positioned within the Scene.
-
-For example:
-
-```
-Dental Scan
-    │
-    ▼
-Registration Transform
-    │
-    ▼
-Scene Coordinates
-```
 
 The Scene maintains the resulting spatial state.
 
 ---
 
-# 19. Rigid Transformations
+## 19. Rigid Transformations
 
 Rigid transformations are first-class Scene operations.
 
-They are appropriate for:
+Appropriate for:
 
-* bone segments;
-* dental models;
-* implants;
-* plates;
-* splints;
-* surgical guides;
-* reference objects.
+- bone segments;
+- dental models;
+- implants;
+- plates;
+- splints;
+- surgical guides;
+- reference objects.
 
-A rigid transform preserves:
+A rigid transform preserves distances, angles, and topology.
 
-* distances;
-* angles;
-* topology.
-
-The Scene should use a validated domain-level rigid transformation type.
+The Scene uses a validated domain-level rigid transformation type.
 
 ---
 
-# 20. Deformable Transformations
+## 20. Deformable Transformations
 
 Deformable transformations are separate from rigid Scene transforms.
+    
+    Base Geometry
+    ├── Rigid Transform
+    └── Deformation Field
 
-A deformable object may conceptually have:
 
-```
-Base Geometry
-     │
-     ├── Rigid Transform
-     │
-     └── Deformation Field
-```
 
-A deformation field may be represented by:
+A deformation field may be represented by displacement fields,
+deformation fields, morph targets, facial rigs, or other domain-specific
+models.
 
-* displacement fields;
-* deformation fields;
-* morph targets;
-* facial rigs;
-* other domain-specific deformation models.
-
-The deformation representation does not inherently belong to the Scene.
-
-It belongs to the appropriate domain object, planning result, or simulation model.
-
-The Scene provides the spatial context in which the resulting state is interpreted.
+The deformation representation belongs to the domain object, not to the
+Scene.
 
 ---
 
-# 21. Registration
+## 21. Registration
 
-Registration establishes spatial correspondence between coordinate systems.
+Registration establishes spatial correspondence between coordinate
+systems.
 
-The Scene provides the common spatial context in which registered objects coexist.
+    CT
+    │ T_ct_to_scene
+    ▼
+    Scene
+    ▲ T_ios_to_scene
+    │
+    IOS
 
-For example:
-
-```
-CT
-  │
-  │ T_ct_to_scene
-  ▼
-Scene
-  ▲
-  │ T_ios_to_scene
-  │
-IOS
-```
-
-Registration algorithms are not implemented by the Scene.
-
-They belong to domain services, application services, or infrastructure-backed algorithms.
+Registration algorithms belong to domain services, application services, or infrastructure-backed algorithms.
 
 The Scene stores the resulting transformation and/or spatial relationship.
 
 ---
 
-# 22. Derived Objects
+## 22. Derived Objects
 
-Some domain objects are derived from other objects.
+Some objects are derived from others.
 
-Examples:
+    CT → Segmentation → Bone Mesh
+    
+    Mandible → Osteotomy → Osteotomy Segment
+    
+    CT + Facial Scan → Registration → Facial Model
 
-```
-CT
-  ↓
-Segmentation
-  ↓
-Bone Mesh
-```
 
-or:
+Derived relationships support reproducibility, dependency tracking, invalidation, regeneration, and persistence.
 
-```
-Mandible
-  ↓
-Osteotomy
-  ↓
-Osteotomy Segment
-```
-
-or:
-
-```
-CT + Facial Scan
-  ↓
-Registration
-  ↓
-Facial Model
-```
-
-Derived relationships may be important for:
-
-* reproducibility;
-* dependency tracking;
-* invalidation;
-* regeneration;
-* persistence.
-
-The application/module layer performs the operation that creates the derived object.
-
-The Scene maintains its spatial organization and relevant relationships.
+The application/module layer performs the operation. The Scene maintains spatial organization and relevant relationships.
 
 ---
 
-# 23. Measurements
+## 23. Measurements
 
-Measurements are interpreted within the Scene coordinate system unless explicitly associated with another reference frame.
+Measurements are interpreted within the Scene coordinate system unless
+associated with another reference frame.
 
-This provides consistent spatial interpretation for:
+    Distance(PointA, PointB) → mm
 
-* distances;
-* angles;
-* bone thickness;
-* segment displacement;
-* overjet;
-* overbite;
-* implant dimensions;
-* airway measurements;
-* contact distances.
-
-For example:
-
-```
-Distance(PointA, PointB) → mm
-```
 
 Measurement algorithms remain separate domain services.
 
 ---
 
-# 24. Rendering Independence
+## 24. Rendering Independence
 
 The Scene is completely independent of the rendering engine.
 
-It must not contain:
+It must not contain `vtkActor`, `vtkRenderer`, `vtkMapper`, cameras,
+lights, OpenGL state, or viewport objects.
 
-* `vtkActor`;
-* `vtkRenderer`;
-* `vtkMapper`;
-* cameras;
-* lights;
-* OpenGL state;
-* viewport objects.
+The **Editor** consumes Scene state via `SceneQuery` (read-only). The
+**Rendering Adapter** creates visual representations (Views) inside
+Viewports.
 
-The rendering system consumes Scene state and creates visual representations.
+    Scene → Editor (SceneQuery) → Rendering Adapter → Viewport → View
 
-Conceptually:
 
-```
-Scene
-  │
-  ▼
-Rendering Adapter
-  │
-  ├── Actor Factory
-  ├── Actor Registry
-  └── Renderer
-  │
-  ▼
-Rendering Engine
-```
+The Scene does not know about Viewports, Views, or Editors.
 
 ---
 
-# 25. Rendering Representation
+## 25. Rendering Representation
 
 A domain object and its visual representation are separate entities.
 
-For example:
+    Mandible (domain object)
+    │
+    ├── Viewport3DEditor
+    │ └── Viewport → View: surface representation
+    │
+    ├── MPRViewerEditor
+    │ └── Viewport → View: contour/intersection
+    │
+    └── PlanningEditor
+    └── Viewport → View: translucent surface
 
-```
-Domain Object
-    Mandible
-        │
-        ▼
-Rendering Adapter
-        │
-        ▼
-    vtkActor
-```
-
-The same domain object may have different representations in different Areas or Viewports.
-
-For example:
-
-```
-Mandible
-├── 3D View
-│     └── surface representation
-│
-├── MPR View
-│     └── contour/intersection representation
-│
-└── Planning View
-      └── translucent surface representation
-```
+The same domain object may have different Views in different Viewports,
+hosted by different Editors.
 
 ---
 
-# 26. Rendering Adapter
+## 26. Rendering Adapter
 
-The Rendering Adapter bridges domain/application state and rendering infrastructure.
+The Rendering Adapter bridges domain/application state and rendering
+infrastructure. A VTK implementation may contain:
 
-A VTK implementation may contain:
+- `VTKActorFactory` — converts domain representations into VTK objects.
+- `ActorRegistry` — maps object IDs to rendering actors.
+- `VTKSceneRenderer` — manages the VTK rendering context.
+- `SceneBridge` — synchronizes Scene events with rendering representations.
 
-```
-VTKActorFactory
-ActorRegistry
-VTKSceneRenderer
-SceneBridge
-```
-
-These components belong to Infrastructure/UI integration, not the Domain layer.
+These components belong to Infrastructure/UI integration, not the Domain
+layer. The Scene remains unaware of them.
 
 ---
 
-## 26.1 VTKActorFactory
+## 27. Presentation State
 
-`VTKActorFactory` converts domain object representations into VTK rendering objects.
+Presentation concerns include color, opacity, visibility, selection,
+representation mode, shading, and rendering style.
 
-Conceptually:
-
-```
-Domain Object
-      ↓
-VTKActorFactory
-      ↓
-   vtkActor
-```
-
-The factory must not modify domain semantics.
+These are not Scene properties. The same Scene object may have different
+presentation states in different Viewports.
 
 ---
 
-## 26.2 ActorRegistry
+## 28. Membership vs. Visibility
+Scene membership ≠ Viewport visibility
 
-`ActorRegistry` maintains the mapping between domain object IDs and rendering actors.
+text
 
-Conceptually:
-
-```
-Object ID → vtkActor
-```
-
-It is a rendering infrastructure component.
-
-It is not the canonical storage location for domain objects.
+An object can remain a Scene member while hidden in one or more
+Viewports. This supports multiple Areas and Viewports without modifying
+domain state.
 
 ---
 
-## 26.3 VTKSceneRenderer
+## 29. Selection
 
-`VTKSceneRenderer` manages the VTK rendering context associated with a specific rendering surface.
-
-It is responsible for:
-
-* adding actors;
-* removing actors;
-* updating actors;
-* managing renderer-specific state.
-
-It does not own domain objects.
+Selection is an Application/UI concern. The Scene does not know which
+object is currently selected. Selection state remains outside the Scene
+Core.
 
 ---
 
-## 26.4 SceneBridge
+## 30. Temporary and Preview Objects
 
-`SceneBridge` coordinates synchronization between Scene/Application events and rendering representations.
+Temporary objects include cutting planes, boolean operands, collision
+proxies, registration markers, preview osteotomies, temporary splints,
+simulation results, and construction geometry.
 
-For example:
-
-```
-ObjectAdded
-    ↓
-SceneBridge
-    ↓
-VTKActorFactory
-    ↓
-ActorRegistry
-    ↓
-VTKSceneRenderer
-```
-
-Or:
-
-```
-ObjectTransformed
-    ↓
-SceneBridge
-    ↓
-Update vtkActor transform
-```
-
-The SceneBridge must not become a general-purpose domain coordinator.
+Temporary objects should not automatically become persistent Project
+objects. Only objects intended to become part of the persistent domain
+model are registered in the DomainObjectStore.
 
 ---
 
-# 27. Presentation State
+## 31. Scene API
 
-The following are generally presentation concerns:
+Conceptual operations:
 
-* color;
-* opacity;
-* visibility;
-* selection;
-* representation mode;
-* shading;
-* rendering style.
+**Core:**
 
-These should not be placed indiscriminately in domain objects.
+    add_object()
+    remove_object()
+    contains()
+    get_object()
+    iter_objects()
+    get_transform()
+    set_transform()
 
-The same Scene object may therefore have different presentation states in different Viewports.
 
----
+**Graph:**
 
-# 28. Scene Membership vs. Visibility
+    set_parent()
+    get_parent()
+    iter_children()
+    iter_subtree()
 
-Scene membership is a domain concept.
 
-Visibility is normally a presentation concept.
+**Relationship:**
 
-Therefore:
-
-```
-Scene membership
-    ≠
-Viewport visibility
-```
-
-An object can remain a Scene member while being hidden in one or more Viewports.
-
-This distinction is required to support multiple Areas and Viewports without modifying domain state.
-
----
-
-# 29. Selection
-
-Selection is an Application/UI concern.
-
-The Scene does not need to know which object is currently selected by the user.
-
-For example:
-
-```
-Scene
-├── Maxilla
-├── Mandible
-└── Tooth 11
-```
-
-A 3D Viewport may select the Mandible while another Area may select a landmark.
-
-Selection state should therefore remain outside the Scene Core.
-
----
-
-# 30. Temporary and Preview Objects
-
-Planning workflows frequently generate temporary objects.
-
-Examples include:
-
-* cutting planes;
-* boolean operands;
-* collision proxies;
-* registration markers;
-* preview osteotomies;
-* temporary splints;
-* simulation results;
-* construction geometry.
-
-Temporary objects should not automatically become persistent Project objects.
-
-The architecture distinguishes:
-
-```
-Persistent Domain Objects
-```
-
-from:
-
-```
-Temporary / Preview / Computational State
-```
-
-Only objects intended to become part of the persistent domain model should be registered in the DomainObjectStore.
-
----
-
-# 31. Scene API
-
-The Scene API should remain deliberately focused.
-
-## 31.1 Scene Core API
-
-Conceptually:
-
-```
-add_object()
-remove_object()
-contains()
-get_object()
-iter_objects()
-
-get_transform()
-set_transform()
-```
-
----
-
-## 31.2 Scene Graph API
-
-Conceptually:
-
-```
-set_parent()
-get_parent()
-iter_children()
-
-iter_subtree()
-```
-
----
-
-## 31.3 Relationship API
-
-Conceptually:
-
-```
-add_relationship()
-remove_relationship()
-get_relationships()
-iter_relationships()
-```
-
-The exact signatures and type contracts belong to the implementation specification.
+    add_relationship()
+    remove_relationship()
+    get_relationships()
+    iter_relationships()
 
 The API must remain independent of rendering frameworks.
 
 ---
 
-# 32. Scene Invariants
+## 32. Scene Invariants
 
-The Scene must maintain the following invariants.
-
-## 32.1 Unique identity
-
-Object identity is unique within the Project's DomainObjectStore.
-
-## 32.2 Valid membership
-
-Every Scene membership reference resolves to a valid object in the associated DomainObjectStore.
-
-## 32.3 No dangling membership
-
-A Scene must never intentionally retain membership for an object that has been removed from the Project.
-
-## 32.4 Valid hierarchy
-
-The hierarchy contains no cycles.
-
-An object has at most one parent within a Scene.
-
-## 32.5 Valid relationships
-
-Required relationship endpoints must resolve to valid objects.
-
-## 32.6 Valid transforms
-
-Transforms must be mathematically valid and use the Scene's coordinate conventions.
-
-## 32.7 Consistent units
-
-Scene-space measurements use the canonical unit convention.
+- **Unique identity** — object identity is unique within the Project's
+  DomainObjectStore.
+- **Valid membership** — every membership reference resolves to a valid
+  object.
+- **No dangling membership** — the Scene never retains membership for a
+  removed object.
+- **Valid hierarchy** — no cycles; at most one parent per object per Scene.
+- **Valid relationships** — required endpoints resolve to valid objects.
+- **Valid transforms** — mathematically valid and using the Scene's
+  coordinate conventions.
+- **Consistent units** — mm.
 
 ---
 
-# 33. Commands and Scene Mutations
+## 33. Commands and Scene Mutations
 
-Scene mutations should preferably occur through Application Commands.
+Scene mutations should occur through Application Commands.
 
-Examples include:
+Examples: `AddObject`, `RemoveObjectFromScene`, `RemoveObjectFromProject`,
+`SetParent`, `TransformObject`, `AddRelationship`, `RemoveRelationship`,
+`ApplyRigidMovement`.
+Tool → Command → Application Service → DomainObjectStore / Scene → Events
 
-```
-AddObject
-RemoveObjectFromScene
-RemoveObjectFromProject
-SetParent
-TransformObject
-AddRelationship
-RemoveRelationship
-ApplyRigidMovement
-```
+text
 
-Conceptually:
-
-```
-Tool
-  ↓
-Command
-  ↓
-Application Service
-  ↓
-DomainObjectStore / Scene
-  ↓
-Events
-```
-
-This provides a consistent mechanism for:
-
-* validation;
-* transactions;
-* undo/redo;
-* event publication;
-* auditability.
+This provides validation, transactions, undo/redo, event publication,
+and auditability.
 
 ---
 
-# 34. Transactions
+## 34. Transactions
 
-Complex planning operations may modify multiple domain objects and Scene state.
+Complex planning operations may modify multiple objects and Scene state.
 
-For example:
+    Apply Le Fort I Movement
 
-```
-Apply Le Fort I Movement
-```
 
-may affect:
-
-```
-Maxillary Segment
-Dental Model
-Cephalometric Landmarks
-Surgical Splint
-```
+may affect the maxillary segment, dental model, cephalometric landmarks,
+and surgical splint.
 
 Such operations are coordinated by the Application Core as a single logical transaction.
 
-The Scene does not own transaction orchestration.
-
-However, the Scene must provide a state model that allows the Application Core to capture and restore the relevant state.
-
----
-
-# 35. Transaction State and Snapshots
-
-Transaction snapshots and worker-computation snapshots are distinct concepts.
-
-## 35.1 Transaction snapshot
-
-A transaction snapshot is optimized for rollback.
-
-It should contain only the state necessary to restore the affected logical Scene state, such as:
-
-```
-membership
-hierarchy
-transforms
-relationships
-relevant domain state
-```
-
-Large geometry payloads should not be unnecessarily duplicated.
+The Scene does not own transaction orchestration. It provides a state model that allows the Application Core to capture and restore the
+relevant state.
 
 ---
 
-## 35.2 Computation snapshot
+## 35. Transaction and Computation Snapshots
 
-A computation snapshot provides stable input to asynchronous processing.
+**Transaction snapshot** — optimized for rollback. Contains only the state necessary to restore the affected logical Scene state: membership, hierarchy, transforms, relationships, relevant domain state.
 
-It may contain:
+Large geometry payloads should not be unnecessarily duplicated. If a transaction modifies object content (e.g., a recalculated mesh), the snapshot must include enough information to restore it. Immutable
+payloads may be shared by reference.
 
-```
-geometry
-volume data
-landmarks
-transforms
-relevant metadata
-```
+**Computation snapshot** — provides stable input to asynchronous processing. Contains geometry, volume data, landmarks, transforms, and relevant metadata.
 
-Its primary requirements are:
+Requirements: stable read access, immutability, safe use by worker threads, efficient transfer or sharing.
 
-* stable read access;
-* immutability;
-* safe use by worker threads;
-* efficient transfer or sharing.
-
-The two snapshot mechanisms may share implementation infrastructure, but they have different contracts and must not be treated as conceptually identical.
+The two snapshot mechanisms may share infrastructure but have different contracts.
 
 ---
 
-# 36. Transaction Rollback Example
+## 36. Transaction Rollback Example
 
-Consider an orthognathic planning operation:
+    Apply Le Fort I Movement
+    ↓
+    Transaction Started
+    ↓
+    Transform Maxillary Segment
+    ↓
+    Update dependent spatial state
+    ↓
+    Generate / Update Splint
+    ↓
+    Validate Splint
+    ↓
+    Validation Failed
+    ↓
+    Transaction Rolled Back
+    ↓
+    Restore Previous State
 
-```
-Apply Le Fort I Movement
-        ↓
-Transaction Started
-        ↓
-Transform Maxillary Segment
-        ↓
-Update dependent spatial state
-        ↓
-Generate / Update Splint
-        ↓
-Validate Splint
-        ↓
-   Validation Failed
-        ↓
-Transaction Rolled Back
-        ↓
-Restore Previous State
-```
 
-The rollback restores the relevant Scene and domain state to its state before the transaction.
-
-The rendering layer receives the resulting committed state rather than being responsible for transaction management.
+The rendering layer receives the resulting committed state.
 
 ---
 
-# 37. Scene Events
+## 37. Scene Events
 
-Meaningful Scene state changes may generate semantic events.
+Meaningful Scene state changes generate semantic events:
 
-Examples include:
+    ObjectAdded
+    ObjectRemovedFromScene
+    ObjectTransformed
+    ParentChanged
+    RelationshipAdded
+    RelationshipRemoved
 
-```
-ObjectAdded
-ObjectRemovedFromScene
-ObjectTransformed
-ParentChanged
-RelationshipAdded
-RelationshipRemoved
-```
 
-Events must describe semantic state changes rather than UI interactions.
-
-For example:
-
-```
-ObjectTransformed
-```
-
-is a domain-level event.
-
-The following is not:
-
-```
-MouseDragged
-```
-
-because it describes a UI interaction.
+Events describe semantic state changes, not UI interactions. `ObjectTransformed` is a domain event. `MouseDragged` is not.
 
 A generic `SceneChanged` event is intentionally avoided.
 
-Specific state changes should use explicit event types so that consumers can understand exactly what changed.
+---
+
+## 38. Event Semantics
+
+**State information.** A state-change event provides sufficient
+information for observers to determine what changed.
+
+    ObjectTransformed
+    ├── object_id
+    ├── previous_transform
+    └── new_transform
+
+
+**Transaction boundaries.** Events generated during a transaction are
+not interpreted as committed state until the transaction commits.
+
+    TransactionStarted
+    TransactionCommitted
+    TransactionRolledBack
+
+**Deterministic ordering.** Within a committed transaction, event
+ordering is deterministic. Observers are independent. No observer may
+depend on another observer having processed an event first.
+
+If one operation genuinely depends on another, that dependency must be
+expressed explicitly in the Application layer.
 
 ---
 
-# 38. Event Semantics
+## 39. Spatial Indexing
 
-The detailed event infrastructure belongs to the Application layer, but Scene events follow these principles.
+The Scene does not directly manage spatial indexing or rendering performance. It supports external spatial services: spatial indexes, bounding-volume hierarchies, collision detection, nearest-neighbor
+queries, proximity queries, intersection queries, region-of-interest queries.
 
-## 38.1 State information
+    Scene
+    ├── ObjectAdded
+    ├── ObjectRemoved
+    └── ObjectTransformed
+    ↓
+    SpatialIndexService
+    ↓
+    Spatial Index
 
-A state-change event must provide sufficient information for observers to determine what changed.
 
-For example:
-
-```
-ObjectTransformed
-├── object_id
-├── previous_transform
-└── new_transform
-```
-
-An equivalent delta representation may be used.
-
----
-
-## 38.2 Transaction boundaries
-
-Events generated during a transaction must not be interpreted by external consumers as permanently committed state until the transaction commits.
-
-Application-level transaction events may distinguish:
-
-```
-TransactionStarted
-TransactionCommitted
-TransactionRolledBack
-```
-
-The exact implementation belongs to the Application event system.
-
----
-
-## 38.3 Deterministic ordering
-
-Within a committed transaction, event ordering must be deterministic.
-
-However, observers are independent consumers.
-
-No observer may depend on another observer having processed an event first.
-
-For example:
-
-```
-ObjectTransformed
-        │
-   ┌────┴────┐
-   ▼         ▼
-Renderer   Spatial Index
-```
-
-The Rendering Adapter and SpatialIndexService both consume the committed state independently.
-
-If one operation genuinely depends on another, that dependency must be expressed explicitly in the Application layer rather than through implicit observer priority.
-
----
-
-# 39. Spatial Indexing
-
-The Scene does not directly manage spatial indexing or rendering performance.
-
-However, it must support external spatial services.
-
-Potential services include:
-
-* spatial indexes;
-* bounding-volume hierarchies;
-* collision detection;
-* nearest-neighbor queries;
-* proximity queries;
-* intersection queries;
-* region-of-interest queries.
-
-A spatial index may observe Scene changes through the event system.
-
-Conceptually:
-
-```
-Scene
-  │
-  ├── ObjectAdded
-  ├── ObjectRemoved
-  └── ObjectTransformed
-  │
-  ▼
-SpatialIndexService
-  │
-  ▼
-Spatial Index
-```
 
 The Scene remains independent of the concrete indexing implementation.
 
 ---
 
-# 40. Spatial Observers
+## 40. Spatial Observers
 
-Infrastructure and Application services may observe relevant Scene events.
+Infrastructure and Application services may observe Scene events:
+`SpatialIndexService`, `RenderingAdapter`, `MeasurementCache`,
+`CollisionService`, `DependencyTracker`.
 
-Examples include:
+Observers maintain derived state. They do not acquire ownership.
 
-```
-SpatialIndexService
-RenderingAdapter
-MeasurementCache
-CollisionService
-DependencyTracker
-```
-
-Observers maintain derived state.
-
-They do not acquire ownership of domain objects.
-
-The authoritative state remains in:
-
-```
-DomainObjectStore
-+
-Scene
-```
+Authoritative state remains in `DomainObjectStore + Scene`.
 
 ---
 
-# 41. Concurrency and Threading
+## 41. Concurrency and Threading
 
 The Scene is **application-thread confined by default**.
 
-Domain state mutations should occur through the Application Core on the designated application thread.
+Domain mutations occur through the Application Core on the designated application thread. Worker threads must not mutate the live Scene.
 
-Worker threads must not freely mutate the live Scene.
+Long-running operations (segmentation, registration, mesh processing, collision computation, deformation simulation) operate on stable computation snapshots.
+    
+    Application Thread → Scene → Computation Snapshot → Worker Thread
+    ↓
+    Processing
+    ↓
+    Result / Command
+    ↓
+    Application Thread ← Scene ←──── commit ──────────────────┘
 
-Long-running operations such as:
 
-* segmentation;
-* registration;
-* mesh processing;
-* collision computation;
-* deformation simulation;
-
-should operate on stable computation snapshots.
-
-Conceptually:
-
-```
-Application Thread
-        │
-        ▼
-      Scene
-        │
-        ▼
-  Computation Snapshot
-        │
-        ▼
-    Worker Thread
-        │
-        ▼
-     Processing
-        │
-        ▼
-   Result / Command
-        │
-        ▼
-Application Thread
-        │
-        ▼
-      Scene
-```
-
-This prevents uncontrolled concurrent mutation and simplifies transaction, undo/redo, and event semantics.
-
-Concurrent read-only access to live mutable Scene state is not assumed.
-
-When concurrent access is required, immutable snapshots or explicitly defined read models should be used.
+When concurrent access is required, immutable snapshots or explicitly
+defined read models should be used.
 
 ---
 
-# 42. Serialization
+## 42. Serialization
 
 Scene state is serialized as part of the Project format.
 
-The Scene serialization must preserve, as applicable:
+Preserved:
 
-* Scene identity;
-* metadata;
-* coordinate-system definition;
-* object membership;
-* hierarchy;
-* transforms;
-* spatial relationships;
-* persistent reference-frame associations;
-* persistent derived-object relationships.
+- Scene identity;
+- metadata;
+- coordinate-system definition;
+- object membership;
+- hierarchy;
+- transforms;
+- spatial relationships;
+- persistent reference-frame associations;
+- persistent derived-object relationships.
 
-Large binary assets should not be embedded directly into the Scene structure unless explicitly required by the Project format.
+Large binary assets are managed separately.
 
-For example:
-
-```
-Scene Data
-├── Object IDs
-├── Hierarchy
-├── Transforms
-├── Relationships
-└── Asset References
-```
-
-while:
-
-```
-Assets
-├── DICOM
-├── STL
-├── OBJ
-└── other binary data
-```
-
-are managed separately.
+    Scene Data Assets
+    ├── Object IDs      ├── DICOM
+    ├── Hierarchy       ├── STL
+    ├── Transforms      ├── OBJ
+    ├── Relationships   └── other binary data
+    └── Asset References
 
 ---
 
-# 43. Serialization References
+## 43. Serialization References
 
-Scene deserialization requires resolution of references between:
+Scene deserialization resolves references between the Project's
+DomainObjectStore and its Scenes.
 
-```
-Project
-  ├── DomainObjectStore
-  └── Scenes
-```
+The deserializer must reject or explicitly handle:
 
-Objects must be resolved through the Project's DomainObjectStore.
+- missing object references;
+- invalid hierarchy references;
+- invalid relationship endpoints;
+- unsupported schema versions;
+- missing required assets.
 
-The deserialization process must reject or explicitly handle:
-
-* missing object references;
-* invalid hierarchy references;
-* invalid relationship endpoints;
-* unsupported schema versions;
-* missing required assets.
-
-The detailed policies for:
-
-* schema versioning;
-* migrations;
-* missing assets;
-* backward compatibility;
-
-belong to the Project serialization specification.
-
-The Scene document defines only the architectural contract.
+For backward compatibility, the deserializer may apply schema migrations
+before resolving references. Migration policies belong to the Project
+serialization specification.
 
 ---
 
-# 44. Project and Multiple Scenes
+## 44. Multiple Scenes
 
 A Project may contain multiple Scenes.
 
-For example:
+    Project
+    ├── DomainObjectStore
+    └── Scenes
+    ├── Initial State
+    ├── Surgical Plan
+    ├── Simulation
+    └── Comparison
 
-```
-Project
-│
-├── DomainObjectStore
-│
-└── Scenes
-      ├── Initial State
-      ├── Surgical Plan
-      ├── Simulation
-      └── Comparison
-```
 
-Different Scenes may contain different memberships, hierarchies, transforms, and relationships while referencing objects belonging to the same Project.
 
-Whether a specific object may participate in multiple Scenes is a Project-level policy.
+Different Scenes may contain different memberships, hierarchies, transforms, and relationships while referencing the same objects.
 
-If an object participates in multiple Scenes, its spatial organization remains Scene-specific.
+For example, a Mandible may be a member of both an "Initial State" Scene and a "Surgical Plan" Scene, with different transforms in each. The DomainObjectStore owns the canonical Mandible; each Scene owns its own spatial organization of that Mandible.
 
-The concept of an **active Scene** is application/UI state and should not be treated as intrinsic Scene domain state.
+The concept of an **active Scene** is application/UI state.
 
 ---
 
-# 45. Scene and Flows
-
-A Flow represents an ordered clinical or planning workflow.
+## 45. Scene and Flows
 
 A Flow may operate on one or more Scenes.
 
-For example:
-
-```
-Orthognathic Flow
-    │
+    Orthognathic Flow
     ├── Tomography
     ├── Models
     ├── Cephalometry
     ├── Registration
     ├── Osteotomy
     └── Splint
-```
 
-The Flow orchestrates operations.
 
-The Scene provides the spatial state on which those operations act.
 
-The Scene does not know which Flow is currently executing.
+The Flow orchestrates operations. The Scene provides the spatial state.
+The Scene does not know which Flow is executing.
 
 ---
 
-# 46. Scene and Modules
+## 46. Scene and Modules
 
-Modules may create, modify, or consume Scene state through Application Commands and Services.
+Modules create, modify, or consume Scene state through Application Commands and Services.
 
-For example:
+    Segmentation Module → Create Bone Object → DomainObjectStore → Add to Scene
 
-```
-Segmentation Module
-    ↓
-Create Bone Object
-    ↓
-DomainObjectStore
-    ↓
-Add Object to Scene
-```
+    Osteotomy Module → Create Osteotomy Segment → DomainObjectStore → Add to Scene Hierarchy
+    → Apply Transform
 
-or:
 
-```
-Osteotomy Module
-    ↓
-Create Osteotomy Segment
-    ↓
-DomainObjectStore
-    ↓
-Add to Scene Hierarchy
-    ↓
-Apply Transform
-```
-
-Modules must not bypass the Domain/Application boundaries by directly manipulating rendering actors.
+Modules must not bypass the Domain/Application boundaries by directly
+manipulating rendering actors.
 
 ---
 
-# 47. Example: Orthognathic Planning
+## 47. Example: Orthognathic Planning
 
-A simplified orthognathic Scene may contain:
+    Scene (membership references to the DomainObjectStore)
+    │
+    ├── CT Volume
+    ├── Maxilla
+    ├── Mandible
+    ├── Upper Dental Model
+    ├── Lower Dental Model
+    ├── Cephalometric Landmarks
+    ├── Osteotomy Segments
+    ├── Surgical Splint
+    └── Reference Geometry
 
-```
-Scene
-│
-├── CT Volume
-├── Maxilla
-├── Mandible
-├── Upper Dental Model
-├── Lower Dental Model
-├── Cephalometric Landmarks
-├── Osteotomy Segments
-├── Surgical Splint
-└── Reference Geometry
-```
 
-The DomainObjectStore contains the canonical domain objects.
+The Scene members are references to objects in the DomainObjectStore. The Scene does not duplicate them; it organizes them spatially.
 
-The Scene contains their spatial membership, hierarchy, transforms, and relationships.
-
-For example:
-
-```
-DomainObjectStore
-├── Mandible
-├── Left Segment
-├── Right Segment
-└── Splint
-
-Scene
-└── Mandible
-      ├── Left Segment
-      └── Right Segment
-```
+    DomainObjectStore Scene
+    ├── Mandible └── Mandible
+    ├── Left Segment ├── Left Segment
+    ├── Right Segment └── Right Segment
+    └── Splint
 
 ---
 
-# 48. Example: Composed Segment Movement
+## 48. Example: Composed Segment Movement
+    
+    Scene → Mandible
+    ├── Left Segment
+    └── Right Segment
 
-Consider a sagittal split osteotomy.
+    T_scene_left_segment = T_scene_mandible · T_mandible_left_segment
 
-The hierarchy may be:
-
-```
-Scene
-  │
-  └── Mandible
-        │
-        ├── Left Segment
-        └── Right Segment
-```
-
-The left segment transform may be composed as:
-
-```
-T_scene_left_segment =
-    T_scene_mandible
-    · T_mandible_left_segment
-```
 
 After surgical simulation:
 
-```
-Left Segment
-    Transform = T_left
+    Left Segment → Transform = T_left
+    Right Segment → Transform = T_right
 
-Right Segment
-    Transform = T_right
-```
-
-The planning service calculates the appropriate transformations.
-
-The Scene maintains the resulting spatial configuration.
-
-The rendering adapter observes the resulting committed state and updates the visual representation.
+The planning service calculates the transforms. The Scene maintains the resulting configuration. The rendering adapter observes the committed
+state.
 
 ---
 
-# 49. Example: Registration
+## 49. Example: Registration
 
-A CT volume and intraoral scan may originate from different coordinate systems.
+    CT
+    │ T_ct_to_scene
+    ▼
+    Scene
+    ▲ T_ios_to_scene
+    │
+    IOS
 
-Conceptually:
-
-```
-CT
-  │
-  │ T_ct_to_scene
-  ▼
-Scene
-  ▲
-  │ T_ios_to_scene
-  │
-IOS
-```
-
-The registration service calculates the transformation.
-
-The Scene stores the resulting spatial relationship.
-
-The rendering system can then display both datasets in the same spatial context without either domain object becoming dependent on VTK.
+The registration service calculates the transformation. The Scene stores the resulting spatial relationship. The rendering system displays both datasets in the same spatial context, without either domain object becoming dependent on VTK.
 
 ---
 
-# 50. Example: Multiple Viewports
+## 50. Example: Multiple Views
 
-The same Scene may be consumed by multiple visualization contexts.
+The same Scene may be consumed by multiple Editors, each hosting one or
+more Viewports that render different Views of the Scene.
 
-For example:
+    Scene (spatial state)
+    │
+    ├── Viewport3DEditor
+    │ └── Viewport → View: 3D representation
+    │
+    ├── MPRViewerEditor
+    │ ├── Viewport → View: Axial slice
+    │ ├── Viewport → View: Sagittal slice
+    │ └── Viewport → View: Coronal slice
+    │
+    └── CurvedMPREditor
+    └── Viewport → View: Panoramic reconstruction
 
-```
-Scene
-  │
-  ├── 3D View
-  ├── Axial MPR
-  ├── Sagittal MPR
-  ├── Coronal MPR
-  └── Cephalometric View
-```
-
-Each Viewport may have its own:
-
-* camera;
-* projection;
-* orientation;
-* visibility;
-* representation;
-* overlays;
-* selection.
+Each Viewport may have its own camera, projection, orientation, visibility, representation mode, and selection.
 
 These are not properties of the Scene Core.
 
-All Views derive their spatial information from the same Scene state.
+All Viewports derive spatial information from the same Scene state. The Scene does not know which Viewports exist.
 
 ---
 
-# 51. Example: Rendering Synchronization
+## 51. Example: Rendering Synchronization
 
-When an object is added:
+**When an object is added:**
 
-```
-AddObject
+    AddObject
     ↓
-DomainObjectStore
+    DomainObjectStore
     ↓
-Scene.add_object()
+    Scene.add_object()
     ↓
-ObjectAdded
+    ObjectAdded
     ↓
-SceneBridge
+    SceneBridge
     ↓
-VTKActorFactory
-    ↓
-ActorRegistry
-    ↓
-VTKSceneRenderer
-```
+    VTKActorFactory → ActorRegistry → VTKSceneRenderer
 
-When an object is transformed:
 
-```
-TransformObject
-    ↓
-Scene.set_transform()
-    ↓
-ObjectTransformed
-    ↓
-SceneBridge
-    ↓
-Update vtkActor transform
-```
+**When an object is transformed:**
 
-The rendering system reacts to committed domain/application state rather than becoming the owner of that state.
+    TransformObject
+    ↓
+    Scene.set_transform()
+    ↓
+    ObjectTransformed
+    ↓
+    SceneBridge → Update vtkActor transform
+
+
+The rendering system reacts to committed state.
 
 ---
 
-# 52. Example: Spatial Index Synchronization
+## 52. Example: Spatial Index Synchronization
 
-A spatial index may consume the same Scene events:
+    ObjectAdded
+    ↓ SpatialIndexService → Insert Object
+    
+    ObjectTransformed
+    ↓ SpatialIndexService → Update Bounds
+    
+    ObjectRemovedFromScene
+    ↓ SpatialIndexService → Remove Object
 
-```
-ObjectAdded
-    ↓
-SpatialIndexService
-    ↓
-Insert Object
-
-ObjectTransformed
-    ↓
-SpatialIndexService
-    ↓
-Update Bounds
-
-ObjectRemovedFromScene
-    ↓
-SpatialIndexService
-    ↓
-Remove Object
-```
 
 The Scene remains unaware of the concrete spatial-index implementation.
 
 ---
 
-# 53. Reproducibility
+## 53. Reproducibility
 
 The Scene should be deterministic enough to reconstruct the logical spatial planning state from serialized Project data.
 
-Given:
+Given `Project Data + Scene Data + Referenced Assets`, CranioZ should reconstruct the same logical spatial configuration.
 
-```
-Project Data
-+
-Scene Data
-+
-Referenced Assets
-```
-
-CranioZ should be able to reconstruct the same logical spatial configuration.
-
-This supports:
-
-* research reproducibility;
-* planning review;
-* collaboration;
-* version control;
-* automated testing;
-* auditability;
-* Project migration.
+This supports research reproducibility, planning review, collaboration, version control, automated testing, auditability, and Project migration.
 
 ---
 
-# 54. What Scene Must Not Do
+## 54. What Scene Must Not Do
 
-The Scene must not become responsible for:
+The Scene must not be responsible for:
 
-* rendering;
-* VTK actors;
-* cameras;
-* lights;
-* viewport layout;
-* UI selection;
-* dock panels;
-* toolbar state;
-* mouse interaction;
-* keyboard shortcuts;
-* DICOM loading;
-* STL/OBJ loading;
-* mesh processing algorithms;
-* segmentation algorithms;
-* registration algorithms;
-* cephalometric calculations;
-* surgical planning algorithms;
-* persistence infrastructure;
-* plugin discovery;
-* module lifecycle management;
-* rendering actor management;
-* global Project object lifecycle.
+- rendering;
+- VTK actors, cameras, lights;
+- layout (Area Layout Tree or Editor Layout Tree);
+- UI selection;
+- dock behavior;
+- toolbar state (see ADR-0002);
+- mouse interaction, keyboard shortcuts;
+- DICOM or STL/OBJ loading;
+- mesh processing algorithms;
+- segmentation algorithms;
+- registration algorithms;
+- cephalometric calculations;
+- surgical planning algorithms;
+- persistence infrastructure;
+- plugin discovery;
+- module lifecycle management;
+- rendering actor management;
+- global Project object lifecycle.
 
-These responsibilities belong to other architectural layers.
+These responsibilities belong to other architectural layers:
+
+- **Editors** own their Toolbars and Toolbar state (ADR-0002).
+- **Areas** own their Editors and their internal Editor Layout Tree
+  (ADR-0001).
+- **Workspace** owns the Area Layout Tree and Overlays.
+- **Application Core** owns Commands, Transactions, and Services.
+- **Infrastructure** owns Rendering Adapters, DICOM loading, and
+  Spatial Indexes.
 
 ---
 
-# 55. Architectural Summary
+## 55. Architectural Summary
 
-The Scene is the **domain-level spatial context of CranioZ**.
+The Scene is the domain-level spatial context of CranioZ.
+Spatial Membership + Spatial Hierarchy + Transforms
 
-Its core responsibilities are:
+Spatial Relationships + Coordinate System + Reference Frames
 
-```
-Spatial Membership
-      +
-Spatial Hierarchy
-      +
-Transforms
-      +
-Spatial Relationships
-      +
-Coordinate System
-      +
-Reference Frames
-      +
 Spatial State
-```
+
+text
 
 The Project provides the persistent boundary.
 
-The DomainObjectStore provides canonical domain object identity and lifecycle.
+The DomainObjectStore provides canonical object identity and lifecycle.
 
-The Application layer provides:
+The Application layer provides Commands, Transactions, Services, Flows,
+and Event Coordination.
 
-```
-Commands
-Transactions
-Services
-Flows
-Event Coordination
-```
+Infrastructure implements Application ports (RenderingPort,
+PersistencePort, ExternalComputationPort). The Scene does not depend on
+Infrastructure implementations.
+    
+    ┌─────────────────────────────────────────────┐
+    │ Project │
+    │ ┌──────────────────┐ ┌─────────────────┐ │
+    │ │ DomainObjectStore│ │ Scenes │ │
+    │ │ Canonical Objects│ │ Membership │ │
+    │ │ Identity │ │ Hierarchy │ │
+    │ │ Lifecycle │ │ Transforms │ │
+    │ │ │ │ Relationships │ │
+    │ └────────┬─────────┘ └────────┬────────┘ │
+    └───────────┼─────────────────────┼───────────┘
+    │ │
+    └──────────┬──────────┘
+    │
+    Commands / Events / Transactions
+    │
+    ▼
+    ┌─────────────────────┐
+    │ Application Core │
+    │ Commands │
+    │ Transactions │
+    │ Services │
+    │ Flows │
+    └──────────┬──────────┘
+    │
+    ▼
+    ┌─────────────────────┐
+    │ Infrastructure │
+    │ Rendering Adapter │
+    │ Spatial Index │
+    │ Persistence │
+    └─────────────────────┘
 
-Infrastructure provides:
+The fundamental separation:
 
-```
-DICOM
-VTK
-ITK
-OCCT
-CGAL
-Storage
-Rendering Adapters
-Spatial Indexes
-```
-
-The resulting architecture is:
-
-```
-┌─────────────────────────────────────────────┐
-│                    Project                  │
-│                                             │
-│  ┌──────────────────┐  ┌─────────────────┐ │
-│  │ DomainObjectStore │  │     Scenes      │ │
-│  │                  │  │                 │ │
-│  │ Canonical Objects│  │ Membership      │ │
-│  │ Identity         │  │ Hierarchy       │ │
-│  │ Lifecycle        │  │ Transforms      │ │
-│  │                  │  │ Relationships   │ │
-│  └────────┬─────────┘  └────────┬────────┘ │
-│           │                     │          │
-└───────────┼─────────────────────┼──────────┘
-            │                     │
-            └──────────┬──────────┘
-                       │
-                    Commands
-                    Events
-                    Transactions
-                       │
-                       ▼
-            ┌─────────────────────┐
-            │ Application Core    │
-            │                     │
-            │ Commands            │
-            │ Transactions        │
-            │ Services            │
-            │ Flows               │
-            └──────────┬──────────┘
-                       │
-                       ▼
-            ┌─────────────────────┐
-            │ Infrastructure      │
-            │                     │
-            │ Rendering Adapter   │
-            │ VTKActorFactory     │
-            │ ActorRegistry       │
-            │ VTKSceneRenderer    │
-            │ Spatial Index       │
-            └─────────────────────┘
-```
-
-The fundamental separation is:
-
-```
-DomainObjectStore
-    → owns canonical domain object lifecycle
-
-Scene
-    → owns spatial organization within a planning context
-
-Application Core
-    → owns orchestration, commands, and transactions
-
-Rendering Adapter
-    → translates domain state into visual representations
-
-Viewport
-    → presents and interacts with those representations
-```
+    DomainObjectStore → owns canonical domain object lifecycle
+    Scene → owns spatial organization within a planning context
+    Application Core → owns orchestration, commands, and transactions
+    Rendering Adapter → translates domain state into visual representations
+    Viewport → presents a View of the Scene
+    Editor → hosts Viewports and Toolbars
+    Area → hosts Editors
+    Workspace → hosts Areas and Overlays
 
 This separation provides CranioZ with a modular, multi-Scene, rendering-independent spatial architecture suitable for clinical planning, simulation, visualization, and future extensions.

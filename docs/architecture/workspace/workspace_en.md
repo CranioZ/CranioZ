@@ -3,17 +3,13 @@
 The Workspace is the runtime environment where clinical work happens. It is not a single widget nor a single class. It is a composition of Areas — containers that host Editors — and Overlays — floating layers over regions.
 
 ### 1.1 What the Workspace is
-A container of Areas.
-
-A layout coordinator that arranges Areas in a split tree.
-
-A lifecycle manager for Areas and Editors.
-
-An Overlay manager.
-
-A configuration target whose layout is persisted per project and per Module.
-
-A materializer of UI compositions declared by Modules.
+* A container of Areas.
+* A layout coordinator that arranges Areas in a split tree.
+* A lifecycle manager for Areas, and a coordinator of the Editor lifecycle
+* within those Areas.
+* An Overlay manager.
+* A configuration target whose layout is persisted per project and per Module.
+* A materializer of UI compositions declared by Modules.
 
 ### 1.2 The single rule
 The Workspace manages Areas and Overlays and coordinates their layout and lifecycle. It may depend on the platform contracts required to materialize and manage them, but it does not own clinical state, Tools, Toolbars, or Module behavior.
@@ -21,23 +17,25 @@ The Workspace manages Areas and Overlays and coordinates their layout and lifecy
 If something is not an Area and not an Overlay, the Workspace does not interpret it. Toolbars, Tools and Modules are invisible to the Workspace, but the Workspace may use platform services (LayoutRenderer, EditorRegistry, OverlayManager) to materialize and manage its elements.
 
 ### 1.3 Module declares; Workspace materializes
-The Module declares the UI composition. The Workspace materializes that declaration.
 
-The Module does not own Areas or Editors. It describes what it wants through a ModuleUISpec.
+The Module declares the UI composition. The Workspace materializes that
+declaration.
+
+The Module does not own Areas or Editors. It describes what it wants
+through a `ModuleUISpec`.
 
 The Workspace materializes it:
 
-Resolves editor_id values in the EditorRegistry.
+- Resolves `editor_id` values in the `EditorRegistry`.
+- Requests the `EditorRegistry` to create Editor instances.
+- Creates `Area` instances from the `AreaSpec`.
+- Builds the Area Layout Tree.
+- Delegates rendering to the `LayoutRenderer`, which materializes the
+  tree as nested `QSplitter` widgets and hosts the Area widgets.
+- Positions Overlays over Regions.
 
-Creates Editor instances.
-
-Creates Areas.
-
-Builds the two layout trees (Area and Editor).
-
-Renders into Qt widgets.
-
-Positions Overlays.
+Each Area builds its own Editor Layout Tree from the resolved
+`EditorLayoutSpec`. The Workspace does not build the Editor Layout Tree.
 
 The Workspace does not know the Module. It only receives the specification.
 
@@ -47,40 +45,51 @@ An Area is the fundamental building block of the Workspace.
 This is Principle #7 (Panels Are Areas): there are no SidePanel, BottomPanel, CentralArea or ToolbarArea classes. There is only Area.
 
 ### 2.1 What an Area is
+
 An Area is a container of Editors. It:
 
-Has a stable identifier within a layout context (e.g., area.left, area.central).
+- Has a stable identifier within a layout context (e.g., `area.left`,
+  `area.central`).
+- Has a title (user-facing, translatable via i18n).
+- Hosts one or more Editors, organized in its own internal
+  Editor Layout Tree.
+- Manages its Editors directly: it hosts them, organizes them in its
+  internal Editor Layout Tree, and tracks which one is active.
+- Has a visibility state (shown/hidden).
+- Is positioned by the Area Layout Tree, never by itself.
 
-Has a title (user-facing, translatable via i18n).
-
-Hosts one or more Editors, organized in its own internal Editor Layout Tree.
-
-Has a visibility state (shown/hidden).
-
-Is positioned by the Area Layout Tree, never by itself.
-
-Every Area follows the same model. There is no special type of Area. Any Area (LEFT, CENTRAL, RIGHT, BOTTOM) may host one or multiple Editors.
+Every Area follows the same model. There is no special type of Area.
+Any Area (`LEFT`, `CENTRAL`, `RIGHT`, `BOTTOM`) may host one or
+multiple Editors.
 
 ### 2.2 What an Area is NOT
-Not a Toolbar. A Toolbar is a widget inside an Editor.
 
-Not a Module. A Module declares which Areas it wants the Workspace to materialize.
-
-Not a state holder for clinical data. State lives in the Scene.
-
-Not a manager of other Areas.
+- Not a Toolbar. A Toolbar is a widget inside an Editor (see ADR-0002).
+- Not a Module. A Module declares which Areas it wants the Workspace
+  to materialize.
+- Not a state holder for clinical data. State lives in the Scene.
+- Not a manager of other Areas.
+- Not an `EditorHost`. There is no `EditorHost` abstraction. The Area
+  manages its Editors directly, using its internal Editor Layout Tree
+  (see ADR-0001).
 
 ### 2.3 Area lifecycle
-text
-created → registered → placed → activated → deactivated → unregistered → destroyed
-State	Meaning
-created	Instance exists, not yet in the Workspace.
-registered	Known to the AreaManager.
-placed	Assigned to a position in the Area Layout Tree.
-activated	Visible and receiving user input.
-deactivated	Hidden but still registered.
-unregistered	Removed from the AreaManager.
-destroyed	Instance disposed.
+
+| State | Meaning |
+|---|---|
+| `created` | Instance exists, not yet in the Workspace. |
+| `registered` | Known to the `AreaManager`. |
+| `placed` | Assigned to a position in the Area Layout Tree. |
+| `activated` | Visible and receiving user input. |
+| `deactivated` | Hidden but still registered. |
+| `unregistered` | Removed from the `AreaManager`. |
+| `destroyed` | Instance disposed. |
+
+**Relationship with the Editor lifecycle.** The Area is the trigger for
+the Editor lifecycle. When an Area is created from an `AreaSpec`, the
+Editors declared in its `EditorLayoutSpec` are instantiated, registered,
+and inserted. When an Area is destroyed, its Editors are removed and
+disposed. Editor activation is independent of Area activation.
 
 ## 3. Workspace Architecture
 ### 3.1 High-level composition
@@ -115,57 +124,80 @@ Tomography	[left, central, right, bottom]
 The tree is the single source of truth for structure.
 
 ### 3.2 Relationship diagram
-
 Key points:
 
-The Workspace knows Area, AreaManager, LayoutTree, LayoutState, OverlayManager and EditorRegistry.
+- The Workspace knows `Area`, `AreaManager`, `LayoutTree`, `LayoutState`,
+  `OverlayManager`, `EditorRegistry` and `EditorCatalog`.
+- The Workspace has no reference to `Scene`, `Editor`, `Toolbar` or `Module`
+  (see ADR-0001 and ADR-0002).
+- The Workspace materializes a `ModuleUISpec`, but does not know the Module.
+- `AreaSpec` references Editors via `EditorLayoutSpec`, which contains
+  `editor_id` (string) at its leaves.
+- The `EditorRegistry` resolves `editor_id` to concrete classes and creates
+  instances.
+- The `EditorCatalog` filters which Editors are available in the current
+  context.
+- The `LayoutTree` is an N-ary tree of `Leaf` and `Split`.
+- Each Area builds and hosts its own internal Editor Layout Tree (same N-ary
+  model). The Workspace does not build the Editor Layout Tree.
+- Structure lives in the trees; presentation state lives in `LayoutState`.
+- A Region is derived geometrically from the Area Layout Tree.
+- An Overlay covers a Region.
 
-The Workspace has no reference to Scene, Editor, Toolbar or Module.
-
-The Workspace materializes a ModuleUISpec, but does not know the Module.
-
-AreaSpec references Editors via editor_id (string).
-
-The EditorRegistry resolves editor_id to concrete classes.
-
-The LayoutTree is an N-ary tree of Leaf and Split.
-
-Each Area hosts an internal Editor Layout Tree (same model).
-
-Structure lives in the trees; presentation state lives in LayoutState.
-
-A Region is derived geometrically from the Area Layout Tree.
-
-An Overlay covers a Region.
+The `AreaManager` is the registry of Areas within the Workspace. It handles
+registration, unregistration, and lookup by `area_id`.
 
 ### 3.3 Application chrome
-Some visual elements are not Areas nor Overlays:
+Some visual elements are neither Areas nor Overlays:
 
-The native OS menu bar (if any).
+- The native OS menu bar (if any).
+- Native window controls — only if they are not embedded in the Top Bar.
+  In CranioZ, window controls are typically embedded in the right segment
+  of the Top Bar.
 
-Native window controls (if not embedded in the Top Bar).
+The native OS menu bar belongs to the `MainWindow`. Native window controls belong to the `MainWindow` only if they are not embedded in the Top Bar. When embedded in the Top Bar, they belong to the Workspace.
 
-These belong to the MainWindow.
+There is no status bar. The traditional status bar role is served by the Console Editor, hosted in the Bottom Area, when the Module declares it. For details on the Top Bar (Painel Superior) — a structural component of the Workspace, not an Overlay — and its 3 segments, see `top-bar.md`.
 
-There is no status bar. The traditional status bar role is served by the Console Area (bottom), when the Module declares it.
-
-For details on the Top Bar (Painel Superior) — a structural component of the Workspace, not an Overlay — and its 3 segments, see top-bar.md.
+For details on the `steps_panel` — a shared Overlay hosted by the Workspace — see `steps_panel.md`.
 
 ### 3.4 Data flow
+
 The Workspace does not mutate clinical state. It only presents it.
+
 ```
-text
-User action → Editor → Command → CommandBus → Scene (mutation) → EventBus → Editors → redraw
+User action → Editor → Command → CommandBus → CommandHandler → Transaction
+↓
+Scene (mutation)
+↓
+commit
+↓
+EventBus
+↓
+Editors → redraw
 ```
+
 Read/write separation:
 
-Read: the Editor accesses the Scene via SceneProvider (read-only API).
+- **Read:** the Editor accesses the Scene via `SceneProvider` (a read-only
+  API over the Scene). It never receives a mutable reference.
+- **Write:** the Editor publishes `Command`s to the `CommandBus`. It never
+  mutates the Scene directly.
 
-Write: the Editor publishes Commands to the CommandBus. It never mutates the Scene directly.
+The `CommandHandler` (or `CommandExecutor`) is responsible for validating
+the Command, opening a transaction, applying the changes to the Domain/Scene,
+committing, and publishing the events. Editors and Tools never interact with
+the transaction directly.
 
 This keeps the Scene as the single source of truth for clinical data.
 
-Workspace actions (switching active Editor, changing visibility, resizing) are UI operations, not clinical Commands. They update LayoutState and are persisted with the project. They are not mixed with the clinical undo/redo history.
+**UI operations** (switching active Areas, switching active Editors within
+an Area, changing visibility, resizing) are not clinical Commands. They
+update `LayoutState` and are persisted with the project. They are not mixed
+with the clinical undo/redo history.
+
+- The **Area** manages which Editor is active within it.
+- The **Workspace** manages which Area is active globally.
 
 ### 3.5 The Module declares the UI composition
 The Workspace does not decide which Areas exist. Each Module declares its UI composition through a ModuleUISpec.
@@ -263,7 +295,8 @@ Placement rules:
 Switching Modules: the Workspace receives a new ModuleUISpec and reconciles its current layout against it (see §6.4).
 
 ### 3.6 EditorRegistry
-The EditorRegistry resolves editor_id to concrete Editor implementations.
+
+The `EditorRegistry` resolves `editor_id` to concrete Editor implementations.
 
 ```
 python
@@ -276,7 +309,16 @@ The Registry registers types, not instances. It answers:
 
 "Which Editor types exist and how are they created?"
 
-Availability is a separate concern. Not every registered Editor is usable in every context. Availability depends on:
+Error contracts:
+
+register: raises ValueError if editor_id is already registered.
+
+resolve: raises KeyError if editor_id is unknown.
+
+create: raises KeyError if editor_id is unknown.
+
+Availability is a separate concern, handled by the EditorCatalog. The
+EditorCatalog filters registered Editors by:
 
 The active Scene.
 
@@ -294,121 +336,142 @@ Modules register their Editors when loaded.
 
 Plugins register their Editors when activated.
 
-## 4. Editor
-An Editor is the functional unit hosted by an Area. There is no distinction between "Viewport", "Panel" or "Editor". They are all Editors.
+When a Module or Plugin is unloaded or deactivated, its Editors are
+unregistered from the EditorRegistry. Instances already created are
+disposed following the Editor lifecycle.
 
-For full details on the Editor lifecycle and catalog, see editors.md.
+## 4. Editor
+
+An Editor is the functional unit hosted by an Area. There is no distinction
+between "Viewport", "Panel" or "Editor". They are all Editors. A "Panel" is
+a semantic specialization of an Editor (e.g., `editor_kind = PANEL`), not a
+separate concept.
+
+The relationship between Area and Editor is defined in ADR-0001. The
+ownership of Toolbars is defined in ADR-0002.
+
+For full details on the Editor lifecycle and catalog, see `editors.md`.
 
 ### 4.1 What an Editor is
+
 An Editor is a widget that:
 
-Renders or edits a specific type of content.
+- Renders or edits a specific type of content.
+- Receives Scene events via `SceneQuery` (read-only API).
+- Emits user intent via `Command` (write).
+- Declares and materializes its own Toolbar(s).
 
-Receives Scene events via SceneProvider (read).
+An Editor is responsible for:
 
-Emits user intent via Command (write).
+- Defining a functional editing or visualization experience.
+- Presenting a specific type of content.
+- Declaring and materializing its own Toolbar(s).
+- Translating user interactions into Commands.
+- Reacting to relevant changes in application state.
 
-May have its own internal toolbar.
+An Editor is **not** responsible for:
 
-The Workspace does not know what an Editor does.
+- Determining its position in the interface.
+- Creating or managing Areas.
+- Defining the Workspace layout.
+- Implementing clinical logic belonging to Modules.
+- Directly modifying the clinical state of the Scene.
+
+The Workspace does not know what an Editor does. In fact, it has no
+reference to the Editor instance at all.
 
 ### 4.2 Editor lifecycle
-The Editor lifecycle is distinct from the Area lifecycle:
 
-Stage	Meaning
-instantiated	The Editor instance is created.
-registered	The Editor type is registered in the EditorRegistry.
-inserted	The instance is added to an Area's Editor Layout Tree.
-activated	The instance is the active Editor within the Area.
-deactivated	The instance is no longer active but is still hosted.
-removed	The instance is removed from the composition.
-disposed	The instance is destroyed and its resources are released.
-Instance vs type: the EditorRegistry maintains types; the Workspace maintains instances. They are different concepts and must not be confused.
+The Editor lifecycle of a specific **instance**:
 
-Initialization with the Scene occurs at insertion (once). Later activations sync the presentation state, without re-initializing heavy resources.
+| Stage | Meaning |
+|---|---|
+| `instantiated` | The instance is created by the `EditorRegistry`. |
+| `inserted` | The instance is added to an Area's Editor Layout Tree. |
+| `activated` | The instance is the active Editor within the Area. |
+| `deactivated` | The instance is no longer active but is still hosted. |
+| `removed` | The instance is removed from the composition. |
+| `disposed` | The instance is destroyed and its resources are released. |
+
+Separately, the **type** is registered in the `EditorRegistry` when the
+system, a Module, or a Plugin calls `register(editor_id, editor_type)`.
+
+**Instance vs type:** the `EditorRegistry` maintains **types**; each
+**Area** maintains the **instances** it hosts. The Workspace has no
+reference to Editor instances.
+
+Initialization with the Scene occurs at insertion (once). Later activations
+sync the presentation state, without re-initializing heavy resources.
+
+**Relationship with the Area lifecycle:** the Editor lifecycle is triggered
+by the Area lifecycle. When an Area is created from an `AreaSpec`, the
+Editors declared in its `EditorLayoutSpec` are instantiated and inserted.
+When an Area is destroyed, its Editors are removed and disposed. Activation
+is independent: an Editor can be activated or deactivated without the Area
+being affected.
 
 ### 4.3 Editor catalog
-The system keeps a global Editor catalog, organized by category:
 
-Category	Editors
-View	Viewport3DEditor, MPRViewerEditor
-Mesh	MeshEditor, NodeEditor
-Data	PropertiesEditor, SceneEditor, DocumentEditor
-Console	ConsoleEditor
-Aux	AIConsoleEditor, HistoryEditor, AnimationEditor
-Populated by: System Editors, Editors registered by Modules, Editors registered by Plugins.
+The system maintains two related structures:
+
+- **`EditorRegistry`** — the registry of all Editor **types** known to the
+  system. It answers: "Which Editor types exist and how are they created?"
+- **`EditorCatalog`** — the context-aware filter over the `EditorRegistry`.
+  It answers: "Which registered Editors can be used in the current context?"
+
+The `EditorRegistry` is populated by:
+
+- System Editors, registered at boot.
+- Editors registered by Modules, when loaded.
+- Editors registered by Plugins, when activated.
+
+The `EditorCatalog` presents the subset of registered Editors available in
+the current context, respecting:
+
+- The active Scene.
+- The active project.
+- The current Area.
+- Required capabilities and data.
+
+Editors are organized by category in the catalog:
+
+| Category | Editors |
+|---|---|
+| View | `Viewport3DEditor`, `MPRViewerEditor` |
+| Mesh | `MeshEditor`, `NodeEditor` |
+| Data | `PropertiesEditor`, `SceneEditor`, `DocumentEditor` |
+| Console | `ConsoleEditor` |
+| Aux | `AIConsoleEditor`, `HistoryEditor`, `AnimationEditor` |
 
 ### 4.4 Where an Editor sits
-The Editor does not decide where it sits. The Area hosts it. The Area's internal Editor Layout Tree determines its position.
+
+The Editor does not decide where it sits. The Area hosts it. The Area's
+internal Editor Layout Tree determines its position.
 
 Who decides which Editor goes in which Area:
 
-The Module, when declaring its AreaSpec.
+- The Module, when declaring its `AreaSpec` (initial composition).
+- The user, when adding or removing an Editor in an existing Area.
 
-The user, when adding an Editor to an existing Area.
+The Area materializes the composition: it builds its internal Editor Layout
+Tree from the resolved `EditorLayoutSpec` (initial) or from user actions
+(subsequent changes).
 
 Typical conventions (not rules):
 
-Editor	Where it typically sits
-PropertiesEditor	Right or Bottom
-ConsoleEditor	Bottom
-NodeEditor	Central
-Viewport3DEditor	Central
-MPRViewerEditor	Central
-Instance policy: each Editor is a new instance. Two Viewport3DEditor are two independent instances.
+| Editor | Where it typically sits |
+|---|---|
+| `PropertiesEditor` | Right or Bottom |
+| `ConsoleEditor` | Bottom |
+| `NodeEditor` | Central |
+| `Viewport3DEditor` | Central |
+| `MPRViewerEditor` | Central |
 
-### 4.5 Toolbars
-A Toolbar is an internal widget of an Editor, not an Area. Each Editor decides whether it wants its own Toolbar. The Workspace never hosts Toolbars.
-```
-text
-Editor
-├── Toolbar
-│   └── Tools
-├── Content
-└── Overlays
-```
-The Toolbar is a declarative specification of the Editor. It is materialized by the Editor itself, respecting the declared orientation (HORIZONTAL or VERTICAL).
-
-Tools do not belong to a specific Toolbar. They belong to a shared catalog, the ToolRegistry, and may be referenced by Toolbars from different Editors.
-
-An Editor may declare more than one Toolbar, with independent orientations:
-```
-text
-Editor
-├── Toolbar Vertical:   Tool2, Tool4
-├── Content
-├── Overlays
-└── Toolbar Horizontal: Tool1, Tool2, Tool4
-```
-
-### 4.6 Adding and switching Editors
-Adding an Editor (a UI operation):
-
-The system opens the available Editor catalog for the current context.
-
-The user chooses an Editor.
-
-The system creates a new instance.
-
-The Editor is added to the Area's internal Editor Layout Tree.
-
-The new Editor becomes active.
-
-Switching the active Editor (a UI operation):
-
-The current Editor is deactivated (without destroying it).
-
-The new Editor is activated.
-
-The activation syncs with the current Scene state.
-
-LayoutState.active_editor_per_area is updated.
-
-These are UI operations, not clinical Commands. They are persisted with the layout, not with the clinical history.
-
-Removing an Editor is different from switching. Removing is done via ❌ and triggers the removal lifecycle.
-
-For details, see editors.md.
+**Instance policy:** each Editor is a new instance. Two `Viewport3DEditor`
+are two independent instances. If the same `editor_id` appears multiple
+times in the same composition, multiple independent instances are created.
+This is intentional: the user may want two independent Viewport3DEditors
+showing different views.
 
 ## 5. Layout Model — Dual N-ary Split Trees
 ### 5.1 The model
@@ -845,44 +908,3 @@ Temporary informational panels.
 ### 7.6 Persistence
 The presence and configuration of Overlays are persisted in OverlayState, alongside the layout trees, inside the project file.
 
-## 8. Open Questions
-### 8.1 Is the layout per-project or per-user?
-Decision: Hybrid.
-
-Composition and personalization of the current project are persisted in the project, keyed by (project_id, module_id).
-
-General interface preferences (theme, fonts, default proportions) are persisted in user settings.
-
-Project-level personalization takes precedence for the current clinical composition.
-
-### 8.2 Does the global Editor catalog exist?
-Decision: Yes, with contextual availability.
-
-The EditorRegistry maintains all Editor types known to the system. A selection catalog may present Editors available in the current context, respecting:
-
-Required data (mesh, DICOM series, planning model).
-
-Required capabilities.
-
-Dependencies on other Modules.
-
-This avoids both an artificially restricted catalog and the ability to open an Editor that cannot function in the current project.
-
-### 8.3 How to handle floating Areas on multi-monitor?
-Decision: Out of initial scope, preserving future extension.
-
-The initial model does not add the complexity of floating windows, per-monitor restoration, or separate 3D rendering contexts. However, the model does not assume that every Area will always have the main Workspace as its only visual parent.
-
-### 8.4 Where does the "active Area" concept live?
-Decision: The Workspace is the authority for the active Area.
-
-Each Area may maintain its own local focus state. The Workspace tracks which Area has global focus, which is required to route keyboard shortcuts, contextual commands, and actions such as "add Editor" to the correct Area.
-
-### 8.5 Who registers Editors?
-Decision: Registration is separate from availability.
-
-The EditorRegistry answers: "Which Editor types exist and how are they created?"
-
-The contextual selection answers: "Which of these Editors can be added to this Area, with this Scene and in this project?"
-
-This separation is important for Editors that require specific data or capabilities. It does not require a complex permission framework — it only requires that global registration not be interpreted as universal availability.

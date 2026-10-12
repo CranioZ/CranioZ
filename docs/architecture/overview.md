@@ -13,41 +13,17 @@ Detailed architectural decisions are documented separately as Architecture Decis
 The CranioZ architecture is designed to:
 
 - Provide a professional software platform for cranio-maxillofacial surgical planning.
-
-
 - Separate clinical concepts from generic computational and graphical infrastructure.
-
-
 - Evolve through independent modules and plugins.
-
-
 - Keep the core platform small, stable, and reusable.
-
-
 - Favor Python as the primary implementation language.
-
-
 - Reuse mature open-source libraries rather than reimplementing established functionality.
-
-
 - Support multiple clinical workflows without coupling the core to a specific procedure.
-
-
 - Maintain explicit boundaries between domain logic, application orchestration, infrastructure, and presentation.
-
-
 - Support deterministic operations, validation, undo/redo, and controlled state changes.
-
-
 - Provide mechanisms for long-running operations without blocking the UI.
-
-
 - Provide a stable foundation for automation and AI/MCP integration.
-
-
 - Support reliable persistence, migration, and backward compatibility.
-
-
 - Provide architectural foundations for security, auditing, and regulatory requirements.
 
 
@@ -105,7 +81,7 @@ text
 │                                                           │
 │  ┌─────────────────────────────────────────────────────┐  │
 │  │                       UI Layer                      │  │
-│  │  Areas (= Editors) · Toolbars · Overlays            │  │
+│  │  Areas · Editors · Toolbars · Overlays              │  │
 │  │  Depends on Application for operations              │  │
 │  └───────────────────────┬─────────────────────────────┘  │
 │                          │ depends on                     │
@@ -171,39 +147,91 @@ The infrastructure layer contains technical implementations: DICOM access, STL/O
 
 Implementations must be replaceable when practical. The Domain must not know whether a mesh is internally represented using VTK, OpenMesh, or another library.
 
-### 5.4 UI
-The ui layer contains the graphical interface. It presents application state and collects user interaction.
+The UI layer contains the graphical interface. It presents application state and collects user interaction.
 
 Conceptual UI elements include:
 
-Application Menu
+* Application Menu
+* Home Page — project table with actions, filters, and application-level icons
+* Splash Screen — CranioZ startup screen
+* Configurações Iniciais — first-run wizard
+* Workspace
+* Top Bar — structural component of the Workspace (see §18)
+* Areas — structural containers that host Editors
+* Editors — functional units hosted inside Areas
+* Toolbars — internal to each Editor, declared and materialized by the Editor itself
+* Overlays — floating layers managed by the Workspace, including the shared steps_panel
+* Dialog and modal windows
+* Application settings screens
 
-Home Page — project table with actions, filters, and application-level icons
+Area and Editor are distinct concepts
+In CranioZ, Area and Editor are distinct but complementary concepts:
 
-Splash Screen — CranioZ startup screen
+An Area is a structural container provided by the Workspace. It occupies a position in the Area Layout Tree and provides the space where Editors are hosted.
 
-Configurações Iniciais — first-run wizard
+An Editor is a functional unit provided by the system, a Module, or a Plugin. It provides a specific interaction experience (Viewport3D, MPR Viewer, Console, Properties, etc.).
 
+Terminology: Area emphasizes where (position, structure); Editor emphasizes what (function, experience).
+
+Area hosts Editors
+An Area hosts one or more Editors. The Central Area may be split horizontally and vertically, hosting multiple Editors simultaneously in an internal Editor Layout Tree (the same N-ary split tree model used by the Area Layout Tree).
+```
+text
+Area Central
+└── Editor Layout Tree
+    Split(HORIZONTAL)
+    ├── Split(VERTICAL)
+    │   ├── Leaf(editor.mpr_axial)
+    │   └── Leaf(editor.mpr_sagittal)
+    └── Split(VERTICAL)
+        ├── Leaf(editor.mpr_coronal)
+        └── Leaf(editor.viewport_3d)
+```
+The Area provides methods to add, remove, and activate Editors. The Area does not know what an Editor does.
+
+Toolbar is internal to the Editor
+A Toolbar is an internal widget of an Editor, not an Area. Each Editor declares and materializes its own Toolbar(s) inside its own content area. An Editor may declare more than one Toolbar, with independent orientations (HORIZONTAL or VERTICAL).
+
+The Workspace never hosts Toolbars. An Area never owns a Toolbar. The Area hosts Editors; the Editors host their Toolbars. This preserves the Workspace's single rule (§1.2): if something is not an Area and not an Overlay, the Workspace does not interpret it.
+```
+text
+Editor
+├── Toolbar (Vertical)
+│   └── Tools
+├── Content
+├── Overlays
+└── Toolbar (Horizontal)
+    └── Tools
+```
+There is no separate EditorHost
+There is no EditorHost abstraction. An Area manages its Editors directly, using its internal Editor Layout Tree. The Area provides the operations needed to host, activate, and remove Editors; the EditorRegistry provides the operations needed to resolve editor_id to concrete Editor types and create instances.
+
+Relationship summary
+
+```text
 Workspace
+├── Top Bar (Painel Superior)   ← structural component
+│   ├── Left segment   — Menu, Home link, toggle Left
+│   ├── Center segment — module tabs, + button
+│   └── Right segment  — Extras, toggle Right, window controls
+│
+├── Area Layout Tree
+│   ├── Area LEFT      → Editor Layout Tree
+│   ├── Area CENTRAL   → Editor Layout Tree (may be split H/V)
+│   ├── Area RIGHT     → Editor Layout Tree
+│   └── Area BOTTOM    → Editor Layout Tree
+│
+└── Overlays
+    └── steps_panel
+```
+* The Workspace manages Areas and Overlays.
+* An Area hosts Editors and organizes them in its internal Editor Layout Tree.
+* An Editor provides a functional experience and materializes its own Toolbars.
+* A Toolbar presents Tools inside an Editor.
+* A Tool represents an action or interaction mode, defined independently in the ToolRegistry.
 
-Top Bar — structural component of the Workspace (see §18)
-
-Areas (= Editors)
-
-Toolbars — internal to each Area
-
-Overlays — including the shared steps_panel
-
-Dialog and modal windows
-
-Application settings screens
-
-Area and Editor are the same concept
-In CranioZ, Area and Editor refer to the same concept: a unit of the UI that occupies a position in the Workspace Layout tree and provides a specific functional experience.
-
-There is no separate EditorHost or Editor abstraction. A Toolbar is internal to the Area; it is declared and materialized by the Area itself.
-
-Terminology: "Area" emphasizes position; "Editor" emphasizes function. Both refer to the same concept. Terms like Viewport Editor, List Editor, Console Editor, and Properties Editor describe specific roles.
+Compliance with the single rule
+The Workspace manages Areas and Overlays. It does not own clinical state, Tools, Toolbars, or Module behavior. Toolbars, Tools, and Editors are invisible to the Workspace. The Workspace may use platform services (LayoutRenderer, EditorRegistry, OverlayManager) to materialize and manage its elements, but it does not interpret them.
 
 ## 6. Module Composition
 A module represents a coherent functional capability. Modules do not own or implement the fundamental UI infrastructure. They compose their functionality using platform-provided primitives and extension points.
@@ -251,14 +279,15 @@ Separation between platform and module
 ```
 text
 Platform
-    ├── Areas (= Editors)
-    ├── Toolbars (internal to Areas)
+    ├── Areas (host Editors)
+    ├── Editors
+    ├── Toolbars (internal to Editors)
     ├── Tools
     ├── Commands
     ├── Overlays (including steps_panel)
     └── Layout mechanism (N-ary tree of splits)
 ```
-The module declares which Areas exist and which Editors occupy them. It does not declare Toolbars, Overlays, the layout mechanism, or other modules.
+The module declares which Areas exist and which Editors occupy them. It does not declare Toolbars directly; the Toolbars are declared by the Editors the module selects. The module does not declare Overlays, the layout mechanism, or other modules.
 
 A module is a consumer and composer of platform capabilities, not an owner of the underlying UI infrastructure.
 
@@ -435,11 +464,11 @@ Workspace
 │   ├── Center segment — module tabs, + button
 │   └── Right segment  — Extras, toggle Right, window controls
 │
-├── Areas (Layout tree of splits)
-│   ├── LEFT      → Lists
-│   ├── CENTRAL   → Editing area
-│   ├── RIGHT     → Auxiliary tools
-│   └── BOTTOM    → Consoles and extras
+├── Area Layout Tree
+│   ├── Area LEFT      → Editor Layout Tree
+│   ├── Area CENTRAL   → Editor Layout Tree (may be split H/V)
+│   ├── Area RIGHT     → Editor Layout Tree
+│   └── Area BOTTOM    → Editor Layout Tree
 │
 └── Overlays
     └── steps_panel
@@ -464,7 +493,7 @@ Closeable	No	Yes
 Resizable	No	Yes
 The Home Page and the Workspace each have their own structural header and their own overlays. Neither belongs to the MainWindow.
 
-The steps_panel presents the active Flow across module boundaries. A module may contribute Areas and Tools to the Workspace, while the steps_panel remains visible.
+The steps_panel presents the active Flow across module boundaries. A module may contribute Areas and Editors to the Workspace (via its ModuleUISpec), while the steps_panel remains visible. The Editors hosted in those Areas declare their own Toolbars and reference Tools from the ToolRegistry.
 
 ## 19. Clinical Semantics and Geometry
 A fundamental distinction is made between Geometry and Clinical Meaning.
