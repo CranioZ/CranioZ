@@ -1,4 +1,4 @@
-"""Tests for EditorContext."""
+"""Tests for ToolSpec."""
 
 # mypy: ignore-errors
 # This file intentionally mutates frozen dataclasses to test immutability.
@@ -9,34 +9,42 @@ import dataclasses
 
 import pytest
 
-from cranioz.ui.editors.editor_context import EditorContext
+from cranioz.ui.tools.specification import ToolSpec, ToolSpecError
 
 
-def test_editor_context_holds_editor_id() -> None:
-    ctx = EditorContext(editor_id="editor.a")
-    assert ctx.editor_id == "editor.a"
-    assert ctx.extras == {}
+def test_tool_spec_minimal() -> None:
+    spec = ToolSpec(identifier="tool.a", label="A")
+    assert spec.identifier == "tool.a"
+    assert spec.label == "A"
+    assert spec.description == ""
+    assert spec.icon is None
+    assert spec.category is None
 
 
-def test_editor_context_holds_extras() -> None:
-    ctx = EditorContext(editor_id="editor.a", extras={"zoom": 1.5})
-    assert ctx.extras["zoom"] == 1.5
+def test_tool_spec_with_all_fields() -> None:
+    spec = ToolSpec(
+        identifier="tool.a",
+        label="A",
+        description="Does something",
+        icon="tool_a",
+        category="measurement",
+    )
+    assert spec.description == "Does something"
+    assert spec.icon == "tool_a"
+    assert spec.category == "measurement"
 
 
-def test_editor_context_is_frozen() -> None:
-    ctx = EditorContext(editor_id="editor.a")
+def test_empty_identifier_raises() -> None:
+    with pytest.raises(ToolSpecError, match="identifier"):
+        ToolSpec(identifier="", label="A")
+
+
+def test_empty_label_raises() -> None:
+    with pytest.raises(ToolSpecError, match="label"):
+        ToolSpec(identifier="tool.a", label="")
+
+
+def test_tool_spec_is_frozen() -> None:
+    spec = ToolSpec(identifier="tool.a", label="A")
     with pytest.raises(dataclasses.FrozenInstanceError):
-        ctx.editor_id = "editor.b"  # type: ignore[misc,assignment,attr-defined]
-
-
-def test_two_editor_contexts_with_same_data_are_equal() -> None:
-    a = EditorContext(editor_id="editor.a")
-    b = EditorContext(editor_id="editor.a")
-    assert a == b
-
-
-def test_default_extras_are_not_shared_between_instances() -> None:
-    a = EditorContext(editor_id="editor.a")
-    b = EditorContext(editor_id="editor.b")
-    # dicts created via default_factory are independent
-    assert a.extras is not b.extras
+        spec.label = "B"
