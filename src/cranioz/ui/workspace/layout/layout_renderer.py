@@ -51,12 +51,14 @@ from PySide6.QtWidgets import QSplitter, QWidget
 from cranioz.ui.theme.service import ThemeService
 from cranioz.ui.tools.registry.tool_registry import ToolRegistry
 from cranioz.ui.workspace.areas.area_widget import AreaWidget
+from cranioz.ui.workspace.areas.placement import Placement
 from cranioz.ui.workspace.layout.layout_tree import (
     LayoutNode,
     LayoutTree,
     Leaf,
     Split,
 )
+from cranioz.ui.workspace.overlays.region import Bounds
 from cranioz.ui.workspace.specs.editor_layout_spec import SplitDirection
 
 
@@ -121,6 +123,70 @@ class LayoutRenderer:
     def cached_area_widget(self, area_id: str) -> AreaWidget | None:
         """Return the cached AreaWidget for the given area_id, if any."""
         return self._area_widgets.get(area_id)
+
+    # ----- Region geometry ------------------------------------------
+
+    def compute_region_bounds(
+        self,
+    ) -> dict[Placement, Bounds]:
+        """Compute the geometric Bounds of each Region.
+
+        A Region groups every Area that shares the same Placement.
+        Its Bounds is the axis-aligned union of the geometries of
+        the AreaWidgets that belong to it.
+
+        The method reads the current geometry of the cached
+        AreaWidgets. It therefore produces meaningful results only
+        after ``render()`` has been called and Qt has assigned the
+        widgets their real geometry (typically after the parent
+        widget has been shown or laid out).
+
+        Placements with no AreaWidget in the cache produce no
+        entry in the result. Callers that need a stable shape may
+        use ``regions_from_bounds()`` (see below) to build a list
+        of Regions in a documented order.
+        """
+        # Group the AreaWidgets by their Area's Placement.
+        grouped: dict[Placement, list[AreaWidget]] = {}
+        for widget in self._area_widgets.values():
+            # The AreaWidget exposes its area_id; we need the
+            # Placement. We look it up through the widget's Area,
+            # which is stored inside the widget.
+            placement = widget.area_placement()
+            grouped.setdefault(placement, []).append(widget)
+
+        # Compute the union rectangle for each Placement.
+        result: dict[Placement, Bounds] = {}
+        for placement, widgets in grouped.items():
+            union = self._union_bounds(widgets)
+            if union is not None:
+                result[placement] = union
+        return result
+
+    @staticmethod
+    def _union_bounds(widgets: list[AreaWidget]) -> Bounds | None:
+        """Return the axis-aligned union of the widgets' geometries.
+
+        Returns None when the list is empty. Coordinates are in the
+        local coordinate space of each widget's parent; the union
+        assumes the widgets share a common parent, which is the
+        case for all AreaWidgets inside the same Workspace.
+        """
+        if not widgets:
+            return None
+
+        rects = [widget.geometry() for widget in widgets]
+        left = min(r.left() for r in rects)
+        top = min(r.top() for r in rects)
+        right = max(r.right() for r in rects)
+        bottom = max(r.bottom() for r in rects)
+
+        return Bounds(
+            x=float(left),
+            y=float(top),
+            width=float(right - left),
+            height=float(bottom - top),
+        )
 
     # ----- Internals ------------------------------------------------
 

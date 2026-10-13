@@ -53,6 +53,7 @@ from cranioz.ui.toolbars.base import Toolbar
 from cranioz.ui.tools.registry.tool_definition import ToolContext
 from cranioz.ui.tools.registry.tool_registry import ToolRegistry
 from cranioz.ui.workspace.areas.area import Area
+from cranioz.ui.workspace.areas.placement import Placement
 
 
 class AreaWidget(QWidget):
@@ -95,6 +96,14 @@ class AreaWidget(QWidget):
     def area_id(self) -> str:
         """The area_id of the Area this widget reflects."""
         return self._area.area_id
+
+    def area_placement(self) -> Placement:
+        """Return the Placement of the Area this widget reflects.
+
+        Exposed so that the LayoutRenderer can group AreaWidgets by
+        Placement when computing Region Bounds.
+        """
+        return self._area.placement
 
     def refresh(self) -> None:
         """Re-render the widget from the Area model.

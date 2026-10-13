@@ -1,0 +1,41 @@
+cranioz/
+├── .github/                          # Configuração do GitHub (não é código)
+│   ├── workflows/
+│   │   ├── ci.yml                    # lint + typecheck + testes (matriz 3.12/3.13)
+│   │   ├── docs.yml                  # build e deploy de documentação
+│   │   └── release.yml               # empacotamento e release
+│   ├── ISSUE_TEMPLATE/
+│   │   ├── bug.yml                   # template de bug (YAML, não MD)
+│   │   └── feature.yml               # template de feature
+│   ├── PULL_REQUEST_TEMPLATE.md
+│   └── CODEOWNERS                    # você como owner do Core e Domain
+├── src/cranioz/                      # ← MUDANÇA: usar layout src/
+│   ├── domain/
+│   ├── application/
+│   ├── infrastructure/
+│   ├── ui/
+│   ├── settings/                     # subsistema transversal
+│   └── assets/                       # recursos estáticos
+├── modules/                          # módulos oficiais (Paciente, Tomografia, etc.)
+├── plugins/                          # plugins de exemplo e documentação de API
+├── tests/
+│   ├── unit/
+│   ├── integration/
+│   └── data/                         # dados sintéticos (ver seção LGPD abaixo)
+├── docs/
+│   ├── adr/                          # seus 20 ADRs + novos
+│   ├── architecture/
+│   ├── user/
+│   └── dev/
+├── examples/
+│   ├── flows/
+│   ├── projects/
+│   └── plugins/
+├── scripts/
+├── pyproject.toml                    # ← ÚNICA fonte de config do projeto
+├── README.md
+├── LICENSE                           # AGPL-3.0
+├── CHANGELOG.md
+├── CONTRIBUTING.md
+├── CODE_OF_CONDUCT.md
+└── .gitignore
