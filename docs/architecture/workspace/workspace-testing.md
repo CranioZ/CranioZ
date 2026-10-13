@@ -226,15 +226,15 @@ from cranioz.ui.workspace.areas.placement import Placement
 
 @pytest.mark.unit
 def test_placement_enum_has_expected_members():
-  expected = {"LEFT", "CENTRAL", "RIGHT", "BOTTOM"}
-  actual = {member.name for member in Placement}
-  assert actual == expected
+    expected = {"LEFT", "CENTRAL", "RIGHT", "BOTTOM"}
+    actual = {member.name for member in Placement}
+    assert actual == expected
 
 
 @pytest.mark.unit
 def test_placement_enum_values_are_lowercase_strings():
-  for member in Placement:
-    assert member.value == member.name.lower()
+    for member in Placement:
+        assert member.value == member.name.lower()
 ```
 
 ### 7.2 Unit test — `AreaManager`
@@ -398,59 +398,60 @@ from cranioz.ui.workspace.areas.placement import Placement
 
 @pytest.mark.unit
 def test_from_specs_single_central(make_area):
-  specs = [_spec("area.central", Placement.CENTRAL)]
-  areas = {"area.central": make_area("area.central")}
-  tree = LayoutTree.from_specs(specs, areas)
+    specs = [_spec("area.central", Placement.CENTRAL)]
+    areas = {"area.central": make_area("area.central")}
+    tree = LayoutTree.from_specs(specs, areas)
 
-  assert isinstance(tree.root, Leaf)
-  assert tree.root.area.id == "area.central"
+    assert isinstance(tree.root, Leaf)
+    assert tree.root.area.id == "area.central"
 
 
 @pytest.mark.unit
 def test_from_specs_left_central_right(make_area):
-  specs = [
-    _spec("area.left", Placement.LEFT),
-    _spec("area.central", Placement.CENTRAL),
-    _spec("area.right", Placement.RIGHT),
-  ]
-  areas = {s.area_id: make_area(s.area_id) for s in specs}
-  tree = LayoutTree.from_specs(specs, areas)
+    specs = [
+        _spec("area.left", Placement.LEFT),
+        _spec("area.central", Placement.CENTRAL),
+        _spec("area.right", Placement.RIGHT),
+    ]
+    areas = {s.area_id: make_area(s.area_id) for s in specs}
+    tree = LayoutTree.from_specs(specs, areas)
 
-  assert isinstance(tree.root, Split)
-  assert tree.root.direction == SplitDirection.HORIZONTAL
-  assert len(tree.root.children) == 3
+    assert isinstance(tree.root, Split)
+    assert tree.root.direction == SplitDirection.HORIZONTAL
+    assert len(tree.root.children) == 3
 
 
 @pytest.mark.unit
 def test_from_specs_with_bottom(make_area):
-  specs = [
-    _spec("area.central", Placement.CENTRAL),
-    _spec("area.bottom", Placement.BOTTOM),
-  ]
-  areas = {s.area_id: make_area(s.area_id) for s in specs}
-  tree = LayoutTree.from_specs(specs, areas)
+    specs = [
+        _spec("area.central", Placement.CENTRAL),
+        _spec("area.bottom", Placement.BOTTOM),
+    ]
+    areas = {s.area_id: make_area(s.area_id) for s in specs}
+    tree = LayoutTree.from_specs(specs, areas)
 
-  assert isinstance(tree.root, Split)
-  assert tree.root.direction == SplitDirection.VERTICAL
+    assert isinstance(tree.root, Split)
+    assert tree.root.direction == SplitDirection.VERTICAL
 
 
 @pytest.mark.unit
 def test_from_specs_requires_central(make_area):
-  specs = [_spec("area.left", Placement.LEFT)]
-  areas = {"area.left": make_area("area.left")}
-  with pytest.raises(ValueError, match="CENTRAL"):
-    LayoutTree.from_specs(specs, areas)
+    specs = [_spec("area.left", Placement.LEFT)]
+    areas = {"area.left": make_area("area.left")}
+    with pytest.raises(ValueError, match="CENTRAL"):
+        LayoutTree.from_specs(specs, areas)
 
 
 def _spec(area_id, placement):
-  """Helper to build a minimal AreaSpec for tests."""
-  from cranioz.ui.workspace.specs.area_spec import AreaSpec
-  return AreaSpec(
-    area_id=area_id,
-    title=area_id,
-    placement=placement,
-    editor_ids=["editor.dummy"],
-  )
+    """Helper to build a minimal AreaSpec for tests."""
+    from cranioz.ui.workspace.specs.area_spec import AreaSpec
+
+    return AreaSpec(
+        area_id=area_id,
+        title=area_id,
+        placement=placement,
+        editor_ids=["editor.dummy"],
+    )
 ```
 
 ### 7.7 Integration test — `Workspace` with `ModuleUISpec`
@@ -468,30 +469,28 @@ from cranioz.ui.workspace.workspace import Workspace
 @pytest.mark.qt
 @pytest.mark.integration
 def test_workspace_loads_spec_single_central(qtbot):
-  ws = Workspace()
-  qtbot.addWidget(ws)
-  spec = ModuleUISpec(
-    areas=[AreaSpec("area.central", "Central", Placement.CENTRAL, ["editor.dummy"])],
-  )
-  ws.load_spec(spec)
-  assert "area.central" in [a.id for a in ws.list_areas()]
+    ws = Workspace()
+    qtbot.addWidget(ws)
+    spec = ModuleUISpec(
+        areas=[AreaSpec("area.central", "Central", Placement.CENTRAL, ["editor.dummy"])],
+    )
+    ws.load_spec(spec)
+    assert "area.central" in [a.id for a in ws.list_areas()]
 
 
 @pytest.mark.integration
 def test_workspace_loads_spec_left_central_right(qtbot):
-  ws = Workspace()
-  qtbot.addWidget(ws)
-  spec = ModuleUISpec(
-    areas=[
-      AreaSpec("area.left", "Left", Placement.LEFT, ["editor.dummy"]),
-      AreaSpec("area.central", "Central", Placement.CENTRAL, ["editor.dummy"]),
-      AreaSpec("area.right", "Right", Placement.RIGHT, ["editor.dummy"]),
-    ],
-  )
-  ws.load_spec(spec)
-  assert {a.id for a in ws.list_areas()} == {
-    "area.left", "area.central", "area.right"
-  }
+    ws = Workspace()
+    qtbot.addWidget(ws)
+    spec = ModuleUISpec(
+        areas=[
+            AreaSpec("area.left", "Left", Placement.LEFT, ["editor.dummy"]),
+            AreaSpec("area.central", "Central", Placement.CENTRAL, ["editor.dummy"]),
+            AreaSpec("area.right", "Right", Placement.RIGHT, ["editor.dummy"]),
+        ],
+    )
+    ws.load_spec(spec)
+    assert {a.id for a in ws.list_areas()} == {"area.left", "area.central", "area.right"}
 ```
 
 ### 7.8 Benchmark — layout performance

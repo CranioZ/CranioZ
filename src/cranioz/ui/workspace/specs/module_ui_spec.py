@@ -38,6 +38,4 @@ class ModuleUISpec:
             raise ModuleUISpecError("Area ids must be unique within a ModuleUISpec")
 
         if not any(area.placement is Placement.CENTRAL for area in self.areas):
-            raise ModuleUISpecError(
-                "ModuleUISpec must declare at least one CENTRAL Area"
-            )
+            raise ModuleUISpecError("ModuleUISpec must declare at least one CENTRAL Area")

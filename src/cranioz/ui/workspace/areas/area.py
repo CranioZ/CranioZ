@@ -94,9 +94,7 @@ class Area:
         """
         for existing in self._editors:
             if existing.editor_id == editor.editor_id:
-                raise AreaError(
-                    f"editor_id already hosted by this Area: {editor.editor_id}"
-                )
+                raise AreaError(f"editor_id already hosted by this Area: {editor.editor_id}")
         self._editors.append(editor)
         if self._active_editor_id is None:
             self._active_editor_id = editor.editor_id
@@ -114,9 +112,7 @@ class Area:
             if editor.editor_id == editor_id:
                 removed = self._editors.pop(index)
                 if self._active_editor_id == editor_id:
-                    self._active_editor_id = (
-                        self._editors[0].editor_id if self._editors else None
-                    )
+                    self._active_editor_id = self._editors[0].editor_id if self._editors else None
                 return removed
         return None
 
@@ -161,9 +157,7 @@ class Area:
         Raises AreaError if the Editor is not hosted by this Area.
         """
         if not self.contains(editor_id):
-            raise AreaError(
-                f"editor_id is not hosted by this Area: {editor_id}"
-            )
+            raise AreaError(f"editor_id is not hosted by this Area: {editor_id}")
         self._active_editor_id = editor_id
 
     # ----- Representation --------------------------------------------

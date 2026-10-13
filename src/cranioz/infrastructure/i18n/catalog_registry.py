@@ -61,8 +61,7 @@ class TranslationCatalogRegistry:
             catalog = self._loader.load(language, area)
         except CatalogLoaderError as exc:
             raise CatalogRegistryError(
-                f"cannot load catalog for language={language!r} "
-                f"area={area!r}: {exc}"
+                f"cannot load catalog for language={language!r} area={area!r}: {exc}"
             ) from exc
 
         self._cache[key] = catalog

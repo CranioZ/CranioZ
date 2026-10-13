@@ -44,9 +44,7 @@ class CatalogLoader:
         if not base_dir.exists():
             raise CatalogLoaderError(f"catalog base directory not found: {base_dir}")
         if not base_dir.is_dir():
-            raise CatalogLoaderError(
-                f"catalog base path is not a directory: {base_dir}"
-            )
+            raise CatalogLoaderError(f"catalog base path is not a directory: {base_dir}")
         self._base_dir = base_dir
 
     @property
@@ -87,7 +85,5 @@ class CatalogLoader:
             raise CatalogLoaderError(f"cannot read {path}: {exc}") from exc
 
         if not isinstance(data, dict):
-            raise CatalogLoaderError(
-                f"catalog must be a JSON object: {path}"
-            )
+            raise CatalogLoaderError(f"catalog must be a JSON object: {path}")
         return data

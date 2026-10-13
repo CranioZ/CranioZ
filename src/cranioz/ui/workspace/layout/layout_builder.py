@@ -151,13 +151,11 @@ class LayoutBuilder:
         """
         if context_extras is not None and not isinstance(context_extras, dict):
             raise TypeError(
-                "context_extras must be a dict or None, "
-                f"got {type(context_extras).__name__}"
+                f"context_extras must be a dict or None, got {type(context_extras).__name__}"
             )
         if shared_context is not None and not isinstance(shared_context, dict):
             raise TypeError(
-                "shared_context must be a dict or None, "
-                f"got {type(shared_context).__name__}"
+                f"shared_context must be a dict or None, got {type(shared_context).__name__}"
             )
 
         # Defensive copies: the builder does not retain references to

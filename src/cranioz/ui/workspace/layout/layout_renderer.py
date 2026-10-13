@@ -130,9 +130,7 @@ class LayoutRenderer:
             return self._render_leaf(node)
         if isinstance(node, Split):
             return self._render_split(node)
-        raise LayoutRendererError(
-            f"unknown layout node type: {type(node).__name__}"
-        )
+        raise LayoutRendererError(f"unknown layout node type: {type(node).__name__}")
 
     def _render_leaf(self, leaf: Leaf) -> AreaWidget:
         """Return (or create) an AreaWidget for the leaf's Area."""
@@ -171,9 +169,9 @@ class LayoutRenderer:
         return splitter
 
     def _reconcile_children(
-            self,
-            splitter: QSplitter,
-            split: Split,
+        self,
+        splitter: QSplitter,
+        split: Split,
     ) -> None:
         """Ensure the splitter's children match the split's children.
 
@@ -187,9 +185,7 @@ class LayoutRenderer:
           not destroyed — it may be reused elsewhere, or it lives in
           the area_widgets cache).
         """
-        expected_widgets: list[QWidget] = [
-            self._render_node(child) for child in split.children
-        ]
+        expected_widgets: list[QWidget] = [self._render_node(child) for child in split.children]
 
         # Collect the widgets currently attached to the splitter.
         # QSplitter.widget(i) is typed as QWidget | None, so we filter
@@ -234,6 +230,4 @@ class LayoutRenderer:
             return Qt.Orientation.Horizontal
         if direction is SplitDirection.VERTICAL:
             return Qt.Orientation.Vertical
-        raise LayoutRendererError(
-            f"unknown split direction: {direction!r}"
-        )
+        raise LayoutRendererError(f"unknown split direction: {direction!r}")

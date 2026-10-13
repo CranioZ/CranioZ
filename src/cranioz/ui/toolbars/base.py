@@ -118,16 +118,12 @@ class Toolbar(QWidget):
 
         if self._is_toggle(tool):
             button.setCheckable(True)
-            button.toggled.connect(
-                lambda checked, tid=tool_id: self._on_toggle(tid, checked)
-            )
+            button.toggled.connect(lambda checked, tid=tool_id: self._on_toggle(tid, checked))
         else:
             button.clicked.connect(lambda _=False, tid=tool_id: self._on_click(tid))
 
         self._layout.addWidget(button)
-        self._bindings.append(
-            ToolbarItemBinding(tool_id=tool_id, widget=button, tool=tool)
-        )
+        self._bindings.append(ToolbarItemBinding(tool_id=tool_id, widget=button, tool=tool))
 
     def _is_toggle(self, tool: Tool) -> bool:
         return hasattr(tool, "toggle") and hasattr(tool, "checked")

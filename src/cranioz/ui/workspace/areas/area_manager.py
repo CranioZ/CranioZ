@@ -47,9 +47,7 @@ class AreaManager:
         if existing is area:
             return
         if existing is not None:
-            raise AreaManagerError(
-                f"area_id already registered with a different Area: {area_id}"
-            )
+            raise AreaManagerError(f"area_id already registered with a different Area: {area_id}")
         self._areas[area_id] = area
 
     def unregister(self, area_id: str) -> Area | None:
@@ -84,9 +82,7 @@ class AreaManager:
 
     def count_by_placement(self, placement: Placement) -> int:
         """Return the number of registered Areas with the given placement."""
-        return sum(
-            1 for area in self._areas.values() if area.placement is placement
-        )
+        return sum(1 for area in self._areas.values() if area.placement is placement)
 
     def has_central(self) -> bool:
         """Return True if at least one CENTRAL Area is registered."""

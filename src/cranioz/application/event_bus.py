@@ -64,8 +64,7 @@ class EventBus:
                 errors.append(exc)
         if errors:
             raise EventBusError(
-                f"{len(errors)} subscriber(s) failed while publishing "
-                f"{type(event).__name__}"
+                f"{len(errors)} subscriber(s) failed while publishing {type(event).__name__}"
             ) from errors[0]
 
     def subscriber_count(self, event_type: type) -> int:

@@ -84,18 +84,11 @@ class ProjectPathResolver:
         root = self._project_root.resolve()
 
         if root not in candidate.parents and candidate != root:
-            raise ProjectRootInaccessible(
-                f"path escapes project root: {relative}"
-            )
+            raise ProjectRootInaccessible(f"path escapes project root: {relative}")
         return candidate
 
     @staticmethod
     def _resolve(configured_root: str | None) -> Path:
         if configured_root:
             return Path(configured_root).expanduser()
-        return (
-            Path.home()
-            / "Documents"
-            / DEFAULT_PROJECT_ROOT_NAME
-            / DEFAULT_PROJECTS_DIR_NAME
-        )
+        return Path.home() / "Documents" / DEFAULT_PROJECT_ROOT_NAME / DEFAULT_PROJECTS_DIR_NAME

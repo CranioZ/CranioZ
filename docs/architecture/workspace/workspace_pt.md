@@ -391,12 +391,13 @@ class ModuleUISpec:
     overlays: list[OverlaySpec]
     layout: LayoutSpec | None = None
 
+
 @dataclass(frozen=True)
 class AreaSpec:
     area_id: str
     title: str
     placement: Placement
-    editor_ids: list[str]                # IDs dos Editores
+    editor_ids: list[str]  # IDs dos Editores
     active_editor_id: str | None = None  # qual começa ativo
 ```
 
@@ -707,8 +708,8 @@ O `LayoutTree` é **modelo puro de dados**, sem dependência de Qt. O `LayoutRen
 
 ```python
 class LayoutRenderer:
-    _split_widgets: dict[int, QSplitter]   # id(SplitNode) → QSplitter
-    _area_widgets: dict[str, Area]         # area_id → Area (widget)
+    _split_widgets: dict[int, QSplitter]  # id(SplitNode) → QSplitter
+    _area_widgets: dict[str, Area]  # area_id → Area (widget)
 ```
 
 Esse estado é **cache** — não é fonte de verdade. Ele pode ser descartado e reconstruído a partir da `LayoutTree` a qualquer momento.
@@ -934,10 +935,10 @@ A Região é **calculada** a partir das Areas renderizadas (bounding boxes). A `
 ```python
 @dataclass
 class Region:
-    id: str                # "central", "left", "right", "bottom"
-    bounds: Rect           # retângulo que contém a Região
-    areas: list[Area]      # Areas que pertencem à Região
-    semantic_role: Placement | None   # convenção, opcional
+    id: str  # "central", "left", "right", "bottom"
+    bounds: Rect  # retângulo que contém a Região
+    areas: list[Area]  # Areas que pertencem à Região
+    semantic_role: Placement | None  # convenção, opcional
 ```
 
 **Por que geométrica e não semântica?**
@@ -982,10 +983,10 @@ Ele:
 A Workspace calcula os limites da Região Central a partir das Areas renderizadas:
 
 ```python
-x_min = right_edge_of(Region.LEFT)   or  0
-x_max = left_edge_of(Region.RIGHT)   or  workspace_width
+x_min = right_edge_of(Region.LEFT) or 0
+x_max = left_edge_of(Region.RIGHT) or workspace_width
 y_min = 0
-y_max = top_edge_of(Region.BOTTOM)   or  workspace_height
+y_max = top_edge_of(Region.BOTTOM) or workspace_height
 ```
 
 O Painel Superior é posicionado em:

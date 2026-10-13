@@ -50,9 +50,7 @@ def _require(data: dict[str, Any], key: str, context: str) -> Any:
 
 def _require_type(value: Any, expected: type | tuple[type, ...], context: str) -> None:
     if not isinstance(value, expected):
-        raise ConfigError(
-            f"invalid type at {context}: expected {expected}, got {type(value)}"
-        )
+        raise ConfigError(f"invalid type at {context}: expected {expected}, got {type(value)}")
 
 
 def build_config(app_data: dict[str, Any], paths_data: dict[str, Any]) -> Config:

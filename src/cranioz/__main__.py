@@ -27,9 +27,7 @@ from cranioz.infrastructure.project_path_resolver import ProjectPathResolver
 
 _logger = logging.getLogger(__name__)
 
-_DEFAULT_LOGGING_CONFIG = (
-    Path(__file__).parent / "config" / "defaults" / "logging.yaml"
-)
+_DEFAULT_LOGGING_CONFIG = Path(__file__).parent / "config" / "defaults" / "logging.yaml"
 
 
 def _configure_logging(config: Config) -> None:

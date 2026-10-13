@@ -62,9 +62,9 @@ class AreaWidget(QWidget):
     User actions that would change the Area are emitted as signals.
     """
 
-    active_editor_changed = Signal(str, str)   # area_id, editor_id
+    active_editor_changed = Signal(str, str)  # area_id, editor_id
     editor_close_requested = Signal(str, str)  # area_id, editor_id
-    editor_add_requested = Signal(str)         # area_id
+    editor_add_requested = Signal(str)  # area_id
 
     def __init__(
         self,
@@ -151,9 +151,7 @@ class AreaWidget(QWidget):
         followed by the Editor's content_widget().
         """
         container = QWidget()
-        container.setObjectName(
-            f"area_widget.{self._area.area_id}.editor.{editor.editor_id}"
-        )
+        container.setObjectName(f"area_widget.{self._area.area_id}.editor.{editor.editor_id}")
 
         layout = QVBoxLayout(container)
         layout.setContentsMargins(0, 0, 0, 0)

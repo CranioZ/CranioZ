@@ -22,12 +22,10 @@ class ConfigMigrator:
 
         if from_version > CURRENT_SCHEMA_VERSION:
             raise ConfigMigrationError(
-                f"schema {from_version} is newer than supported "
-                f"({CURRENT_SCHEMA_VERSION})"
+                f"schema {from_version} is newer than supported ({CURRENT_SCHEMA_VERSION})"
             )
 
         # Extension point for future migrations.
         raise ConfigMigrationError(
-            f"no migration defined from schema {from_version} "
-            f"to {CURRENT_SCHEMA_VERSION}"
+            f"no migration defined from schema {from_version} to {CURRENT_SCHEMA_VERSION}"
         )

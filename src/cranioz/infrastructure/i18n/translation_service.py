@@ -139,9 +139,7 @@ class CatalogTranslationService:
         try:
             return message.format(**params)
         except (KeyError, IndexError, ValueError) as exc:
-            _logger.warning(
-                "translation interpolation failed for key=%r: %s", key, exc
-            )
+            _logger.warning("translation interpolation failed for key=%r: %s", key, exc)
             # Interpolation failure is a fallback event. Return the
             # source text unformatted so the user still sees something.
             return source_text or _GENERIC_FALLBACK

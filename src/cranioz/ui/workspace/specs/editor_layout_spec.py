@@ -59,13 +59,9 @@ class EditorLayoutSpec:
             if self.direction is None:
                 raise EditorLayoutSpecError("SPLIT must declare direction")
             if len(self.children) < 2:
-                raise EditorLayoutSpecError(
-                    "SPLIT must have at least two children"
-                )
+                raise EditorLayoutSpecError("SPLIT must have at least two children")
         else:
-            raise EditorLayoutSpecError(
-                f"unknown layout type: {self.type!r}"
-            )
+            raise EditorLayoutSpecError(f"unknown layout type: {self.type!r}")
 
     @classmethod
     def leaf(cls, editor_id: str) -> EditorLayoutSpec:

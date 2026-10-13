@@ -29,6 +29,7 @@ from dataclasses import dataclass
 
 from cranioz.ui.workspace.areas.area import Area
 from cranioz.ui.workspace.areas.placement import Placement
+from cranioz.ui.workspace.overlays.region import Bounds, Region
 from cranioz.ui.workspace.specs.area_spec import AreaSpec
 from cranioz.ui.workspace.specs.editor_layout_spec import SplitDirection
 
@@ -132,9 +133,7 @@ class LayoutTree:
 
         for spec in specs:
             if spec.area_id not in areas:
-                raise LayoutTreeError(
-                    f"AreaSpec references an unknown area_id: {spec.area_id}"
-                )
+                raise LayoutTreeError(f"AreaSpec references an unknown area_id: {spec.area_id}")
 
         left = [s for s in specs if s.placement is Placement.LEFT]
         central = [s for s in specs if s.placement is Placement.CENTRAL]
@@ -142,9 +141,7 @@ class LayoutTree:
         bottom = [s for s in specs if s.placement is Placement.BOTTOM]
 
         if not central:
-            raise LayoutTreeError(
-                "LayoutTree.from_specs requires at least one CENTRAL AreaSpec"
-            )
+            raise LayoutTreeError("LayoutTree.from_specs requires at least one CENTRAL AreaSpec")
 
         # Top row: LEFT + CENTRAL + RIGHT, in that order.
         top_row_specs = [*left, *central, *right]
@@ -155,9 +152,7 @@ class LayoutTree:
         else:
             top_node = Split(
                 direction=SplitDirection.HORIZONTAL,
-                children=tuple(
-                    Leaf(area=areas[s.area_id]) for s in top_row_specs
-                ),
+                children=tuple(Leaf(area=areas[s.area_id]) for s in top_row_specs),
             )
 
         if not bottom:
@@ -170,9 +165,7 @@ class LayoutTree:
         else:
             bottom_node = Split(
                 direction=SplitDirection.HORIZONTAL,
-                children=tuple(
-                    Leaf(area=areas[s.area_id]) for s in bottom_row_specs
-                ),
+                children=tuple(Leaf(area=areas[s.area_id]) for s in bottom_row_specs),
             )
 
         root = Split(
@@ -195,3 +188,40 @@ class LayoutTree:
 
     def __repr__(self) -> str:
         return f"LayoutTree(root={self._root!r})"
+
+    # ----- Regions --------------------------------------------------
+
+    def find_regions(self) -> tuple[Region, ...]:
+        """Group the Areas of this tree into Regions by Placement.
+
+        The method is purely structural: it does not compute any
+        geometric bounds. Every returned Region has a placeholder
+        Bounds (zero rectangle). The real geometry is filled in by
+        the rendering layer once the widgets have been materialized.
+
+        Regions are returned in a stable, documented order:
+
+            LEFT, CENTRAL, RIGHT, BOTTOM
+
+        A Placement that has no Area in this tree produces no Region.
+        Every Area in the tree belongs to exactly one Region.
+        """
+        regions: list[Region] = []
+        for placement in (
+            Placement.LEFT,
+            Placement.CENTRAL,
+            Placement.RIGHT,
+            Placement.BOTTOM,
+        ):
+            areas = tuple(leaf.area for leaf in self.leaves() if leaf.area.placement is placement)
+            if not areas:
+                continue
+            regions.append(
+                Region(
+                    region_id=placement.value,
+                    bounds=Bounds(),
+                    areas=areas,
+                    semantic_role=placement,
+                )
+            )
+        return tuple(regions)
