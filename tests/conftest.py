@@ -7,6 +7,7 @@ from collections.abc import Callable
 import pytest
 from PySide6.QtWidgets import QApplication
 
+from cranioz.ui.editors.builtin.test_editor import DummyEditor
 from cranioz.ui.theme.service import ThemeName, ThemeService
 from cranioz.ui.toolbars.specification import (
     ToolbarOrientation,
@@ -53,6 +54,18 @@ def tool_registry() -> ToolRegistry:
     registry.register("tool.toggle", ToggleTool)
     return registry
 
+
+@pytest.fixture
+def make_test_editor() -> Callable[..., DummyEditor]:
+    """Factory to build TestEditor instances with a given editor_id."""
+
+    def _factory(
+        editor_id: str = "editor.test",
+        title: str = "Test Editor",
+    ) -> DummyEditor:
+        return DummyEditor(editor_id=editor_id, title=title)
+
+    return _factory
 
 # ----- Toolbar spec factory ------------------------------------------
 
