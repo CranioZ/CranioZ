@@ -13,6 +13,9 @@ Rules:
   responsibility of the LayoutBuilder.
 - The manager does not decide visibility, activation, or layout.
   It only tracks which Areas exist in this Workspace instance.
+- The manager does not enforce the "at least one CENTRAL Area"
+  invariant by itself, but it exposes helpers (count_by_placement,
+  has_central) that the Workspace uses to enforce it.
 
 The AreaManager is per-Workspace. Two Workspaces have two managers.
 """
@@ -20,6 +23,7 @@ The AreaManager is per-Workspace. Two Workspaces have two managers.
 from __future__ import annotations
 
 from cranioz.ui.workspace.areas.area import Area
+from cranioz.ui.workspace.areas.placement import Placement
 
 
 class AreaManagerError(ValueError):
@@ -77,6 +81,16 @@ class AreaManager:
     def area_count(self) -> int:
         """Return the number of registered Areas."""
         return len(self._areas)
+
+    def count_by_placement(self, placement: Placement) -> int:
+        """Return the number of registered Areas with the given placement."""
+        return sum(
+            1 for area in self._areas.values() if area.placement is placement
+        )
+
+    def has_central(self) -> bool:
+        """Return True if at least one CENTRAL Area is registered."""
+        return self.count_by_placement(Placement.CENTRAL) > 0
 
     def clear(self) -> None:
         """Remove all registered Areas.

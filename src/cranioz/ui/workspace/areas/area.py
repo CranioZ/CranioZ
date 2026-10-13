@@ -4,20 +4,24 @@ An Area is a structural container that hosts Editors. It provides
 the space where Editors are placed; it does not decide where it is
 placed within the Workspace.
 
-The Area manages its own internal Editor Layout Tree. The same N-ary
-split model used by the Workspace's Area Layout Tree applies here,
-but at the Editor level.
-
 Rules:
-- An Area has a stable id and a title.
+- An Area has a stable id, a title, and a placement.
+- The placement expresses the Area's semantic role in the Workspace
+  (CENTRAL, LEFT, RIGHT, BOTTOM). It is a property of the Area,
+  because the Area needs to know its role to be rendered correctly
+  even when empty.
 - The Area does not know where it is placed in the Workspace. Placement
-  is construction metadata owned by the LayoutTree, not by the Area.
+  is a semantic role, not a position. Positions are decided by the
+  LayoutTree.
 - The Area does not know what its Editors do. It provides add/remove
   and activation, nothing more.
 - The Area does not materialize Toolbars. Toolbars are internal to
   Editors (see ADR-0002).
 - The Area does not know about Modules, Scenes, Commands, or the
   Workspace. It is a UI container.
+- An Area may be empty (zero Editors). This is a valid state,
+  especially for the CENTRAL Area, which must always exist as a
+  container even when it hosts nothing.
 
 This is a pure UI container. It has no Qt dependency at this level;
 the widget materialization is the LayoutRenderer's job.
@@ -26,6 +30,7 @@ the widget materialization is the LayoutRenderer's job.
 from __future__ import annotations
 
 from cranioz.ui.editors.base_editor import Editor
+from cranioz.ui.workspace.areas.placement import Placement
 
 
 class AreaError(ValueError):
@@ -35,7 +40,12 @@ class AreaError(ValueError):
 class Area:
     """A structural container that hosts Editors."""
 
-    def __init__(self, area_id: str, title: str) -> None:
+    def __init__(
+        self,
+        area_id: str,
+        title: str,
+        placement: Placement,
+    ) -> None:
         if not area_id:
             raise AreaError("area_id must not be empty")
         if not title:
@@ -43,6 +53,7 @@ class Area:
 
         self._area_id = area_id
         self._title = title
+        self._placement = placement
         self._editors: list[Editor] = []
         self._active_editor_id: str | None = None
         self._visible = True
@@ -56,6 +67,10 @@ class Area:
     @property
     def title(self) -> str:
         return self._title
+
+    @property
+    def placement(self) -> Placement:
+        return self._placement
 
     # ----- Visibility -------------------------------------------------
 
@@ -92,6 +107,8 @@ class Area:
         Returns the removed Editor, or None if not found.
         If the removed Editor was active, the next hosted Editor
         becomes active. If no Editors remain, the active id is cleared.
+        Removing the last Editor does NOT remove the Area. An empty
+        Area is a valid state, especially for the CENTRAL Area.
         """
         for index, editor in enumerate(self._editors):
             if editor.editor_id == editor_id:
@@ -122,6 +139,10 @@ class Area:
         """Return the number of hosted Editors."""
         return len(self._editors)
 
+    def is_empty(self) -> bool:
+        """Return True if the Area hosts no Editors."""
+        return not self._editors
+
     # ----- Active Editor ---------------------------------------------
 
     @property
@@ -151,6 +172,7 @@ class Area:
         return (
             f"Area(area_id={self._area_id!r}, "
             f"title={self._title!r}, "
+            f"placement={self._placement.value!r}, "
             f"visible={self._visible}, "
             f"editors={len(self._editors)}, "
             f"active={self._active_editor_id!r})"
