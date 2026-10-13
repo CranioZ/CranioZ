@@ -45,11 +45,10 @@ from cranioz.ui.workspace.layout.layout_renderer import (
     LayoutRenderer,
     LayoutRendererError,
 )
-from cranioz.ui.workspace.layout.layout_tree import Leaf, Split
+from cranioz.ui.workspace.layout.layout_tree import Leaf
 from cranioz.ui.workspace.specs.area_spec import AreaSpec
 from cranioz.ui.workspace.specs.editor_layout_spec import (
     EditorLayoutSpec,
-    SplitDirection,
 )
 from cranioz.ui.workspace.specs.module_ui_spec import ModuleUISpec
 
@@ -123,9 +122,7 @@ def renderer(
 # ----- Single Leaf --------------------------------------------------
 
 
-def test_render_single_leaf_returns_area_widget(
-    qtbot, renderer: LayoutRenderer
-) -> None:
+def test_render_single_leaf_returns_area_widget(qtbot, renderer: LayoutRenderer) -> None:
     result = _build_result(
         _area("area.central", Placement.CENTRAL, _leaf("editor.patient")),
     )
@@ -148,9 +145,7 @@ def test_render_leaf_tree_root_is_leaf(
 # ----- Horizontal Split ---------------------------------------------
 
 
-def test_render_horizontal_split_returns_qsplitter(
-    qtbot, renderer: LayoutRenderer
-) -> None:
+def test_render_horizontal_split_returns_qsplitter(qtbot, renderer: LayoutRenderer) -> None:
     result = _build_result(
         _area("area.left", Placement.LEFT, _leaf("editor.object_list")),
         _area("area.central", Placement.CENTRAL, _leaf("editor.viewport_3d")),
@@ -164,9 +159,7 @@ def test_render_horizontal_split_returns_qsplitter(
     assert root.count() == 3
 
 
-def test_render_horizontal_split_children_order(
-    qtbot, renderer: LayoutRenderer
-) -> None:
+def test_render_horizontal_split_children_order(qtbot, renderer: LayoutRenderer) -> None:
     result = _build_result(
         _area("area.left", Placement.LEFT, _leaf("editor.object_list")),
         _area("area.central", Placement.CENTRAL, _leaf("editor.viewport_3d")),
@@ -187,9 +180,7 @@ def test_render_horizontal_split_children_order(
 # ----- Vertical Split -----------------------------------------------
 
 
-def test_render_vertical_split_returns_qsplitter(
-    qtbot, renderer: LayoutRenderer
-) -> None:
+def test_render_vertical_split_returns_qsplitter(qtbot, renderer: LayoutRenderer) -> None:
     result = _build_result(
         _area("area.central", Placement.CENTRAL, _leaf("editor.viewport_3d")),
         _area("area.bottom", Placement.BOTTOM, _leaf("editor.console")),
@@ -205,9 +196,7 @@ def test_render_vertical_split_returns_qsplitter(
 # ----- Nested Splits ------------------------------------------------
 
 
-def test_render_four_areas_has_nested_splitters(
-    qtbot, renderer: LayoutRenderer
-) -> None:
+def test_render_four_areas_has_nested_splitters(qtbot, renderer: LayoutRenderer) -> None:
     result = _build_result(
         _area("area.left", Placement.LEFT, _leaf("editor.object_list")),
         _area("area.central", Placement.CENTRAL, _leaf("editor.viewport_3d")),
@@ -237,9 +226,7 @@ def test_render_four_areas_has_nested_splitters(
 # ----- Caching ------------------------------------------------------
 
 
-def test_render_reuses_area_widgets_from_cache(
-    qtbot, renderer: LayoutRenderer
-) -> None:
+def test_render_reuses_area_widgets_from_cache(qtbot, renderer: LayoutRenderer) -> None:
     result = _build_result(
         _area("area.central", Placement.CENTRAL, _leaf("editor.patient")),
     )
@@ -250,9 +237,7 @@ def test_render_reuses_area_widgets_from_cache(
     assert root_first is root_second
 
 
-def test_cached_area_widget_returns_widget(
-    qtbot, renderer: LayoutRenderer
-) -> None:
+def test_cached_area_widget_returns_widget(qtbot, renderer: LayoutRenderer) -> None:
     result = _build_result(
         _area("area.left", Placement.LEFT, _leaf("editor.object_list")),
         _area("area.central", Placement.CENTRAL, _leaf("editor.viewport_3d")),
@@ -271,9 +256,7 @@ def test_cached_area_widget_returns_widget(
     assert unknown is None
 
 
-def test_clear_cache_discards_widgets(
-    qtbot, renderer: LayoutRenderer
-) -> None:
+def test_clear_cache_discards_widgets(qtbot, renderer: LayoutRenderer) -> None:
     result = _build_result(
         _area("area.central", Placement.CENTRAL, _leaf("editor.patient")),
     )
@@ -284,9 +267,7 @@ def test_clear_cache_discards_widgets(
     assert renderer.cached_area_widget("area.central") is None
 
 
-def test_render_after_clear_cache_creates_fresh_widgets(
-    qtbot, renderer: LayoutRenderer
-) -> None:
+def test_render_after_clear_cache_creates_fresh_widgets(qtbot, renderer: LayoutRenderer) -> None:
     result = _build_result(
         _area("area.central", Placement.CENTRAL, _leaf("editor.patient")),
     )

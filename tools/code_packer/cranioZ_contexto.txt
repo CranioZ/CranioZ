@@ -25859,6 +25859,99 @@ FILE: src\cranioz\infrastructure\__init__.py
 FILE: src\cranioz\infrastructure\i18n\catalog_loader.py
 ======================================================================
 
+"""CatalogLoader.
+
+Loads translation catalog files from disk.
+
+A catalog is a JSON file organized by language and functional area,
+for example:
+
+    translations/en/core.json
+    translations/pt-BR/workspace.json
+
+This module is intentionally minimal:
+
+- It reads and parses a single JSON file.
+- It does not cache.
+- It does not decide which catalogs to load.
+- It does not know about the TranslationService or the registry.
+
+Caching and decision-making belong to the TranslationCatalogRegistry.
+
+The loader does not validate the catalog structure beyond what the
+JSON parser requires. Semantic validation is the responsibility of
+the TranslationValidator (a separate tool, not part of the runtime).
+"""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+from typing import Any
+
+
+class CatalogLoaderError(Exception):
+    """Raised when a catalog file cannot be read or parsed."""
+
+
+class CatalogLoader:
+    """Loads translation catalog files from a base directory.
+
+    The base directory is the root of the translations tree, for
+    example: src/cranioz/translations.
+    """
+
+    def __init__(self, base_dir: Path) -> None:
+        if not base_dir.exists():
+            raise CatalogLoaderError(f"catalog base directory not found: {base_dir}")
+        if not base_dir.is_dir():
+            raise CatalogLoaderError(
+                f"catalog base path is not a directory: {base_dir}"
+            )
+        self._base_dir = base_dir
+
+    @property
+    def base_dir(self) -> Path:
+        """Return the base directory for translation catalogs."""
+        return self._base_dir
+
+    def load(self, language: str, area: str) -> dict[str, Any]:
+        """Load a catalog for the given language and functional area.
+
+        Args:
+            language: BCP 47 language identifier (e.g. "en", "pt-BR").
+            area: functional area (e.g. "core", "workspace").
+
+        Returns:
+            The parsed JSON contents as a dict.
+
+        Raises:
+            CatalogLoaderError: if the file is missing, unreadable,
+                malformed, or does not contain a JSON object.
+        """
+        if not language:
+            raise CatalogLoaderError("language must not be empty")
+        if not area:
+            raise CatalogLoaderError("area must not be empty")
+
+        path = self._base_dir / language / f"{area}.json"
+
+        if not path.exists():
+            raise CatalogLoaderError(f"catalog file not found: {path}")
+
+        try:
+            with path.open("r", encoding="utf-8") as fh:
+                data = json.load(fh)
+        except json.JSONDecodeError as exc:
+            raise CatalogLoaderError(f"invalid JSON in {path}: {exc}") from exc
+        except OSError as exc:
+            raise CatalogLoaderError(f"cannot read {path}: {exc}") from exc
+
+        if not isinstance(data, dict):
+            raise CatalogLoaderError(
+                f"catalog must be a JSON object: {path}"
+            )
+        return data
 
 
 
@@ -25866,6 +25959,98 @@ FILE: src\cranioz\infrastructure\i18n\catalog_loader.py
 FILE: src\cranioz\infrastructure\i18n\catalog_registry.py
 ======================================================================
 
+"""TranslationCatalogRegistry.
+
+Locates, loads, and caches translation catalogs by language and
+functional area.
+
+Design rules:
+
+- Catalogs are loaded on demand. Nothing is loaded at construction.
+- Loaded catalogs are cached in memory, keyed by (language, area).
+- A failed load is not cached: the next request will retry.
+- The registry does not decide the active language. That is the
+  TranslationService's responsibility.
+- The registry does not merge catalogs. It returns the catalog for
+  a single (language, area) pair. The TranslationService decides how
+  to resolve a fully qualified key across areas.
+- The registry supports explicit cache invalidation for development
+  and testing.
+
+The registry is a thin layer over the CatalogLoader. Its only added
+value is caching and the (language, area) key.
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+from cranioz.infrastructure.i18n.catalog_loader import (
+    CatalogLoader,
+    CatalogLoaderError,
+)
+
+
+class CatalogRegistryError(Exception):
+    """Raised when a catalog cannot be resolved."""
+
+
+class TranslationCatalogRegistry:
+    """Caches translation catalogs by (language, area)."""
+
+    def __init__(self, loader: CatalogLoader) -> None:
+        self._loader = loader
+        self._cache: dict[tuple[str, str], dict[str, Any]] = {}
+
+    # ----- Public API -----------------------------------------------
+
+    def get(self, language: str, area: str) -> dict[str, Any]:
+        """Return the catalog for (language, area).
+
+        Loads the catalog on first request and caches it. Subsequent
+        requests for the same pair return the cached instance.
+
+        Raises:
+            CatalogRegistryError: if the catalog cannot be loaded.
+        """
+        key = (language, area)
+        cached = self._cache.get(key)
+        if cached is not None:
+            return cached
+
+        try:
+            catalog = self._loader.load(language, area)
+        except CatalogLoaderError as exc:
+            raise CatalogRegistryError(
+                f"cannot load catalog for language={language!r} "
+                f"area={area!r}: {exc}"
+            ) from exc
+
+        self._cache[key] = catalog
+        return catalog
+
+    def has(self, language: str, area: str) -> bool:
+        """Return True if the catalog is currently cached."""
+        return (language, area) in self._cache
+
+    def invalidate(self, language: str, area: str) -> None:
+        """Remove a single entry from the cache.
+
+        No-op if the entry is not cached.
+        """
+        self._cache.pop((language, area), None)
+
+    def clear(self) -> None:
+        """Remove all cached catalogs.
+
+        Used during development and testing, or when the underlying
+        catalog files change on disk and need to be reloaded.
+        """
+        self._cache.clear()
+
+    def cached_keys(self) -> tuple[tuple[str, str], ...]:
+        """Return the (language, area) pairs currently cached."""
+        return tuple(self._cache.keys())
 
 
 
@@ -25873,13 +26058,311 @@ FILE: src\cranioz\infrastructure\i18n\catalog_registry.py
 FILE: src\cranioz\infrastructure\i18n\instance.py
 ======================================================================
 
+"""Global TranslationService instance (controlled singleton).
 
+Widgets and UI code call ``get_translation_service()`` directly,
+without receiving the service through a constructor. This avoids
+threading the service through every widget's __init__.
+
+To keep tests deterministic, the singleton is *controlled*:
+
+- ``configure(service)`` replaces the current instance.
+- ``reset()`` restores the default (an IdentityTranslationService).
+- A test can install a controlled service in a fixture and reset
+  it at teardown.
+
+The module does not do any I/O at import time. The default instance
+is created lazily on first access.
+"""
+
+from __future__ import annotations
+
+from cranioz.infrastructure.i18n.translation_service import (
+    IdentityTranslationService,
+    TranslationService,
+)
+
+_instance: TranslationService | None = None
+
+
+def get_translation_service() -> TranslationService:
+    """Return the current global TranslationService.
+
+    If no service has been configured yet, a default
+    IdentityTranslationService is created and stored. The default
+    returns the source text unchanged, which is safe: it never
+    returns an internal key.
+    """
+    global _instance  # noqa: PLW0603
+    if _instance is None:
+        _instance = IdentityTranslationService()
+    return _instance
+
+
+def configure(service: TranslationService) -> None:
+    """Install a new global TranslationService.
+
+    Typically called once at application boot, after the catalogs
+    have been discovered. It may also be called from tests to install
+    a service backed by a controlled registry.
+
+    Replaces the previous instance. The previous instance is not
+    disposed: the TranslationService contract has no dispose method.
+    """
+    global _instance  # noqa: PLW0603
+    _instance = service
+
+
+def reset() -> None:
+    """Restore the default (IdentityTranslationService).
+
+    Intended for tests: a fixture may call reset() at teardown so
+    that subsequent tests do not see a leaked service.
+    """
+    global _instance  # noqa: PLW0603
+    _instance = None
 
 
 ======================================================================
 FILE: src\cranioz\infrastructure\i18n\translation_service.py
 ======================================================================
 
+"""TranslationService.
+
+Resolves translation keys to localized strings.
+
+This module defines:
+
+- The ``TranslationService`` contract, as a Protocol.
+- A concrete implementation, ``CatalogTranslationService``, backed
+  by a TranslationCatalogRegistry.
+- An ``IdentityTranslationService``, useful for tests and for the
+  early phase of the application before catalogs exist.
+
+The public API is a single method::
+
+    service.tr(key, source_text, **params)
+
+The ``source_text`` argument is mandatory (see the i18n documentation
+§5). It provides a last-resort fallback when the key cannot be
+resolved through the catalogs.
+
+Fallback sequence (i18n doc §8):
+
+1. Look up the message in the active language catalog.
+2. If unavailable, look up the message in the English source catalog.
+3. If unavailable, use the required English ``source_text``.
+4. If no usable text can be produced, use a safe generic message.
+
+Today the service supports simple named-parameter interpolation
+("Hello {name}"). ICU MessageFormat (pluralization, select, etc.) is
+intentionally not implemented yet: no message in the codebase
+requires it. It will be added when the first plural message appears.
+"""
+
+from __future__ import annotations
+
+import logging
+from typing import Any, Protocol, runtime_checkable
+
+from cranioz.infrastructure.i18n.catalog_registry import (
+    CatalogRegistryError,
+    TranslationCatalogRegistry,
+)
+
+_logger = logging.getLogger(__name__)
+
+SOURCE_LANGUAGE = "en"
+
+# A safe generic message used as a last-resort fallback (step 4 of
+# the fallback sequence). It is intentionally not translated: if the
+# translation system cannot produce text, we must not depend on it.
+_GENERIC_FALLBACK = "[translation unavailable]"
+
+
+@runtime_checkable
+class TranslationService(Protocol):
+    """Contract for a translation service.
+
+    Implementations must be able to:
+    - return the active language;
+    - change the active language;
+    - resolve a translation key with a mandatory English source text.
+    """
+
+    @property
+    def language(self) -> str: ...
+
+    def set_language(self, language: str) -> None: ...
+
+    def tr(self, key: str, source_text: str, **params: Any) -> str: ...
+
+
+class CatalogTranslationService:
+    """TranslationService backed by a TranslationCatalogRegistry.
+
+    Keys are namespaced by functional area:
+
+        "core.app.name"       → area "core",     path ["app", "name"]
+        "workspace.area.x"    → area "workspace", path ["area", "x"]
+
+    The first segment of the key selects the catalog. The remaining
+    segments navigate the catalog tree to find an entry with a
+    "message" field.
+
+    If the key cannot be resolved through the active language catalog,
+    the English catalog is tried. If that fails too, the required
+    ``source_text`` is used. If even that is empty, a generic fallback
+    message is returned and a diagnostic is logged.
+    """
+
+    def __init__(
+        self,
+        registry: TranslationCatalogRegistry,
+        language: str = SOURCE_LANGUAGE,
+    ) -> None:
+        if not language:
+            raise ValueError("language must not be empty")
+        self._registry = registry
+        self._language = language
+
+    # ----- Language management --------------------------------------
+
+    @property
+    def language(self) -> str:
+        return self._language
+
+    def set_language(self, language: str) -> None:
+        """Change the active language.
+
+        No catalogs are loaded here: they are loaded on demand by the
+        registry. Changing the language is therefore cheap.
+
+        Raises ValueError if the language is empty.
+        """
+        if not language:
+            raise ValueError("language must not be empty")
+        self._language = language
+
+    # ----- Translation ----------------------------------------------
+
+    def tr(self, key: str, source_text: str, **params: Any) -> str:
+        """Resolve a translation key.
+
+        Args:
+            key: semantic translation key, for example
+                "workspace.area.placeholder.empty".
+            source_text: mandatory English source text. Used as the
+                last-resort fallback when the key is not resolvable
+                through the catalogs.
+            **params: named parameters for interpolation.
+
+        Returns:
+            The localized string, with parameters interpolated.
+        """
+        if not key:
+            raise ValueError("key must not be empty")
+
+        message = self._resolve(key, source_text)
+
+        try:
+            return message.format(**params)
+        except (KeyError, IndexError, ValueError) as exc:
+            _logger.warning(
+                "translation interpolation failed for key=%r: %s", key, exc
+            )
+            # Interpolation failure is a fallback event. Return the
+            # source text unformatted so the user still sees something.
+            return source_text or _GENERIC_FALLBACK
+
+    # ----- Internals ------------------------------------------------
+
+    def _resolve(self, key: str, source_text: str) -> str:
+        """Apply the fallback sequence to resolve a key to a message."""
+        message = self._lookup(self._language, key)
+        if message is not None:
+            return message
+
+        if self._language != SOURCE_LANGUAGE:
+            message = self._lookup(SOURCE_LANGUAGE, key)
+            if message is not None:
+                return message
+
+        if source_text:
+            return source_text
+
+        _logger.error(
+            "no usable translation for key=%r (language=%r)",
+            key,
+            self._language,
+        )
+        return _GENERIC_FALLBACK
+
+    def _lookup(self, language: str, key: str) -> str | None:
+        """Look up a key in the catalog of the given language.
+
+        Returns the message string, or None if the catalog or key is
+        unavailable.
+        """
+        area, *path = key.split(".")
+        if not area or not path:
+            return None
+
+        try:
+            catalog = self._registry.get(language, area)
+        except CatalogRegistryError:
+            return None
+
+        node: Any = catalog
+        for segment in path:
+            if not isinstance(node, dict):
+                return None
+            node = node.get(segment)
+            if node is None:
+                return None
+
+        if isinstance(node, dict):
+            message = node.get("message")
+            if isinstance(message, str):
+                return message
+
+        return None
+
+
+class IdentityTranslationService:
+    """TranslationService that returns the source_text unchanged.
+
+    Useful for:
+    - Tests that do not care about translations.
+    - The early phase of the application before catalogs exist.
+    - Fallback when no catalog registry is available.
+
+    It supports the language property and set_language() so that
+    callers see a consistent API, but changing the language has no
+    effect on the returned text.
+    """
+
+    def __init__(self, language: str = SOURCE_LANGUAGE) -> None:
+        if not language:
+            raise ValueError("language must not be empty")
+        self._language = language
+
+    @property
+    def language(self) -> str:
+        return self._language
+
+    def set_language(self, language: str) -> None:
+        if not language:
+            raise ValueError("language must not be empty")
+        self._language = language
+
+    def tr(self, key: str, source_text: str, **params: Any) -> str:
+        if not key:
+            raise ValueError("key must not be empty")
+        try:
+            return source_text.format(**params)
+        except (KeyError, IndexError, ValueError):
+            return source_text or _GENERIC_FALLBACK
 
 
 
@@ -25887,6 +26370,55 @@ FILE: src\cranioz\infrastructure\i18n\translation_service.py
 FILE: src\cranioz\infrastructure\i18n\__init__.py
 ======================================================================
 
+"""CranioZ internationalization (i18n) infrastructure.
+
+Public entry points:
+
+- ``get_translation_service()``: return the active global service.
+- ``configure(service)``: install a service (typically at boot).
+- ``reset()``: restore the default (used by tests).
+- ``tr(key, source_text, **params)``: convenience wrapper that calls
+  the active service.
+
+Usage in UI code::
+
+    from cranioz.infrastructure.i18n import tr
+
+    label = QLabel(tr("core.app.name", "CranioZ"))
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+from cranioz.infrastructure.i18n.instance import (
+    configure,
+    get_translation_service,
+    reset,
+)
+from cranioz.infrastructure.i18n.translation_service import (
+    CatalogTranslationService,
+    IdentityTranslationService,
+    TranslationService,
+)
+
+__all__ = [
+    "CatalogTranslationService",
+    "IdentityTranslationService",
+    "TranslationService",
+    "configure",
+    "get_translation_service",
+    "reset",
+    "tr",
+]
+
+
+def tr(key: str, source_text: str, **params: Any) -> str:
+    """Convenience wrapper around the active TranslationService.
+
+    Calls ``get_translation_service().tr(key, source_text, **params)``.
+    """
+    return get_translation_service().tr(key, source_text, **params)
 
 
 
@@ -28302,9 +28834,9 @@ class LayoutRenderer:
         return splitter
 
     def _reconcile_children(
-        self,
-        splitter: QSplitter,
-        split: Split,
+            self,
+            splitter: QSplitter,
+            split: Split,
     ) -> None:
         """Ensure the splitter's children match the split's children.
 
@@ -28322,12 +28854,20 @@ class LayoutRenderer:
             self._render_node(child) for child in split.children
         ]
 
+        # Collect the widgets currently attached to the splitter.
+        # QSplitter.widget(i) is typed as QWidget | None, so we filter
+        # out None values explicitly. This is not merely a typing fix:
+        # it protects the loop below from a None that would otherwise
+        # break .setParent().
+        current_widgets: list[QWidget] = []
+        for i in range(splitter.count()):
+            widget = splitter.widget(i)
+            if widget is not None:
+                current_widgets.append(widget)
+
         # Detach widgets that should no longer be children of this
         # splitter. We do not destroy them here: they may still be in
         # the area_widgets cache and reused later.
-        current_widgets: list[QWidget] = [
-            splitter.widget(i) for i in range(splitter.count())
-        ]
         for widget in current_widgets:
             if widget not in expected_widgets:
                 widget.setParent(None)
@@ -28360,6 +28900,7 @@ class LayoutRenderer:
         raise LayoutRendererError(
             f"unknown split direction: {direction!r}"
         )
+
 
 
 ======================================================================
@@ -30042,11 +30583,10 @@ from cranioz.ui.workspace.layout.layout_renderer import (
     LayoutRenderer,
     LayoutRendererError,
 )
-from cranioz.ui.workspace.layout.layout_tree import Leaf, Split
+from cranioz.ui.workspace.layout.layout_tree import Leaf
 from cranioz.ui.workspace.specs.area_spec import AreaSpec
 from cranioz.ui.workspace.specs.editor_layout_spec import (
     EditorLayoutSpec,
-    SplitDirection,
 )
 from cranioz.ui.workspace.specs.module_ui_spec import ModuleUISpec
 
@@ -30309,6 +30849,7 @@ def test_render_invalid_node_raises(renderer: LayoutRenderer) -> None:
 
     with pytest.raises(LayoutRendererError, match="unknown layout node"):
         renderer.render(FakeTree())  # type: ignore[arg-type]
+
 
 
 ======================================================================

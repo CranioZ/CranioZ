@@ -101,9 +101,7 @@ def test_nested_split_is_valid() -> None:
 
     inner_left = EditorLayoutSpec.split(SplitDirection.VERTICAL, (a, b))
     inner_right = EditorLayoutSpec.split(SplitDirection.VERTICAL, (c, d))
-    outer = EditorLayoutSpec.split(
-        SplitDirection.HORIZONTAL, (inner_left, inner_right)
-    )
+    outer = EditorLayoutSpec.split(SplitDirection.HORIZONTAL, (inner_left, inner_right))
 
     assert outer.type is LayoutType.SPLIT
     assert len(outer.children) == 2

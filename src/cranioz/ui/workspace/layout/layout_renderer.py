@@ -171,9 +171,9 @@ class LayoutRenderer:
         return splitter
 
     def _reconcile_children(
-        self,
-        splitter: QSplitter,
-        split: Split,
+            self,
+            splitter: QSplitter,
+            split: Split,
     ) -> None:
         """Ensure the splitter's children match the split's children.
 
@@ -191,12 +191,20 @@ class LayoutRenderer:
             self._render_node(child) for child in split.children
         ]
 
+        # Collect the widgets currently attached to the splitter.
+        # QSplitter.widget(i) is typed as QWidget | None, so we filter
+        # out None values explicitly. This is not merely a typing fix:
+        # it protects the loop below from a None that would otherwise
+        # break .setParent().
+        current_widgets: list[QWidget] = []
+        for i in range(splitter.count()):
+            widget = splitter.widget(i)
+            if widget is not None:
+                current_widgets.append(widget)
+
         # Detach widgets that should no longer be children of this
         # splitter. We do not destroy them here: they may still be in
         # the area_widgets cache and reused later.
-        current_widgets: list[QWidget] = [
-            splitter.widget(i) for i in range(splitter.count())
-        ]
         for widget in current_widgets:
             if widget not in expected_widgets:
                 widget.setParent(None)

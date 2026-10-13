@@ -23,9 +23,7 @@ def _area(area_id: str, placement: Placement, editor_id: str) -> AreaSpec:
 
 
 def test_single_central_is_valid() -> None:
-    spec = ModuleUISpec(
-        areas=(_area("area.central", Placement.CENTRAL, "editor.a"),)
-    )
+    spec = ModuleUISpec(areas=(_area("area.central", Placement.CENTRAL, "editor.a"),))
     assert len(spec.areas) == 1
     assert spec.overlays == ()
 

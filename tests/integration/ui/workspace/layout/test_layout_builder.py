@@ -45,6 +45,7 @@ What these tests cover:
   (ADR-0002 §2.3).
 - Invalid argument types raise TypeError.
 """
+
 from __future__ import annotations
 
 import re

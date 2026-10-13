@@ -179,6 +179,8 @@ exclude = [
     ".mypy_cache",
     ".ruff_cache",
     ".pytest_cache",
+    "tools/code_packer",
+    "tools/folder_tree",
 ]
 
 [tool.ruff.lint]
@@ -207,7 +209,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["PLR2004", "S101", "S105", "S106", "RUF100"]
+"tests/**" = ["S101", "S105", "S106", "RUF100"]
 "__init__.py" = ["F401"]  # re-exports
 
 [tool.ruff.lint.isort]

@@ -23,9 +23,7 @@ def test_initialize_creates_directory(tmp_path: Path) -> None:
     assert resolver.project_root == target
 
 
-def test_initialize_uses_default_when_none(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_initialize_uses_default_when_none(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(Path, "home", classmethod(lambda cls: tmp_path))
     resolver = ProjectPathResolver()
 

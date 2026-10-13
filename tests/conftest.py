@@ -67,6 +67,7 @@ def make_test_editor() -> Callable[..., DummyEditor]:
 
     return _factory
 
+
 # ----- Toolbar spec factory ------------------------------------------
 
 
