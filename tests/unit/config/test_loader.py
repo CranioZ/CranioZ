@@ -21,7 +21,7 @@ def defaults_dir(tmp_path: Path) -> Path:
                 "app": {
                     "name": "CranioZ",
                     "version": "0.1.0",
-                    "language": "pt-BR",
+                    "language": "pt-BR-BR",
                     "theme": "dark",
                     "recent_projects_limit": 10,
                 },
@@ -51,7 +51,7 @@ def defaults_dir(tmp_path: Path) -> Path:
 def test_load_returns_config(defaults_dir: Path) -> None:
     cfg = ConfigurationLoader(defaults_dir).load()
     assert cfg.app.name == "CranioZ"
-    assert cfg.app.language == "pt-BR"
+    assert cfg.app.language == "pt-BR-BR"
     assert cfg.app.theme == "dark"
     assert cfg.app.recent_projects_limit == 10
     assert cfg.logging.level == "INFO"
@@ -71,7 +71,7 @@ def test_missing_paths_json_raises(tmp_path: Path) -> None:
                 "app": {
                     "name": "CranioZ",
                     "version": "0.1.0",
-                    "language": "pt-BR",
+                    "language": "pt-BR-BR",
                     "theme": "dark",
                     "recent_projects_limit": 10,
                 },
