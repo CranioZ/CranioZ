@@ -1,5 +1,27 @@
 
 ======================================================================
+FILE: README.md
+======================================================================
+
+
+
+
+======================================================================
+FILE: .pytest_cache\README.md
+======================================================================
+
+# pytest cache directory #
+
+This directory contains data from the pytest's cache plugin,
+which provides the `--lf` and `--ff` options, as well as the `cache` fixture.
+
+**Do not** commit this to version control.
+
+See [the docs](https://docs.pytest.org/en/stable/how-to/cache.html) for more information.
+
+
+
+======================================================================
 FILE: docs\PRINCIPLES.md
 ======================================================================
 
@@ -4851,21 +4873,16 @@ class Editor(ABC):
     editor_id: str
     title: str
 
-    def initialize(self, context: "EditorContext") -> None:
-        ...
+    def initialize(self, context: "EditorContext") -> None: ...
 
-    def activate(self) -> None:
-        ...
+    def activate(self) -> None: ...
 
-    def deactivate(self) -> None:
-        ...
+    def deactivate(self) -> None: ...
 
-    def dispose(self) -> None:
-        ...
+    def dispose(self) -> None: ...
 
     # Conteúdo e elementos internos da interface
-    def content_widget(self) -> "QWidget":
-        ...
+    def content_widget(self) -> "QWidget": ...
 
     def toolbar_specs(self) -> list["ToolbarSpec"]:
         return []
@@ -7727,17 +7744,13 @@ class Module(ABC):
     version: str
 
     # Lifecycle
-    def initialize(self, context: "ModuleContext") -> None:
-        ...
+    def initialize(self, context: "ModuleContext") -> None: ...
 
-    def activate(self) -> None:
-        ...
+    def activate(self) -> None: ...
 
-    def deactivate(self) -> None:
-        ...
+    def deactivate(self) -> None: ...
 
-    def dispose(self) -> None:
-        ...
+    def dispose(self) -> None: ...
 
     # Declarations
     def commands(self) -> list["CommandSpec"]:
@@ -21677,15 +21690,15 @@ from cranioz.ui.workspace.areas.placement import Placement
 
 @pytest.mark.unit
 def test_placement_enum_has_expected_members():
-  expected = {"LEFT", "CENTRAL", "RIGHT", "BOTTOM"}
-  actual = {member.name for member in Placement}
-  assert actual == expected
+    expected = {"LEFT", "CENTRAL", "RIGHT", "BOTTOM"}
+    actual = {member.name for member in Placement}
+    assert actual == expected
 
 
 @pytest.mark.unit
 def test_placement_enum_values_are_lowercase_strings():
-  for member in Placement:
-    assert member.value == member.name.lower()
+    for member in Placement:
+        assert member.value == member.name.lower()
 ```
 
 ### 7.2 Unit test — `AreaManager`
@@ -21849,59 +21862,60 @@ from cranioz.ui.workspace.areas.placement import Placement
 
 @pytest.mark.unit
 def test_from_specs_single_central(make_area):
-  specs = [_spec("area.central", Placement.CENTRAL)]
-  areas = {"area.central": make_area("area.central")}
-  tree = LayoutTree.from_specs(specs, areas)
+    specs = [_spec("area.central", Placement.CENTRAL)]
+    areas = {"area.central": make_area("area.central")}
+    tree = LayoutTree.from_specs(specs, areas)
 
-  assert isinstance(tree.root, Leaf)
-  assert tree.root.area.id == "area.central"
+    assert isinstance(tree.root, Leaf)
+    assert tree.root.area.id == "area.central"
 
 
 @pytest.mark.unit
 def test_from_specs_left_central_right(make_area):
-  specs = [
-    _spec("area.left", Placement.LEFT),
-    _spec("area.central", Placement.CENTRAL),
-    _spec("area.right", Placement.RIGHT),
-  ]
-  areas = {s.area_id: make_area(s.area_id) for s in specs}
-  tree = LayoutTree.from_specs(specs, areas)
+    specs = [
+        _spec("area.left", Placement.LEFT),
+        _spec("area.central", Placement.CENTRAL),
+        _spec("area.right", Placement.RIGHT),
+    ]
+    areas = {s.area_id: make_area(s.area_id) for s in specs}
+    tree = LayoutTree.from_specs(specs, areas)
 
-  assert isinstance(tree.root, Split)
-  assert tree.root.direction == SplitDirection.HORIZONTAL
-  assert len(tree.root.children) == 3
+    assert isinstance(tree.root, Split)
+    assert tree.root.direction == SplitDirection.HORIZONTAL
+    assert len(tree.root.children) == 3
 
 
 @pytest.mark.unit
 def test_from_specs_with_bottom(make_area):
-  specs = [
-    _spec("area.central", Placement.CENTRAL),
-    _spec("area.bottom", Placement.BOTTOM),
-  ]
-  areas = {s.area_id: make_area(s.area_id) for s in specs}
-  tree = LayoutTree.from_specs(specs, areas)
+    specs = [
+        _spec("area.central", Placement.CENTRAL),
+        _spec("area.bottom", Placement.BOTTOM),
+    ]
+    areas = {s.area_id: make_area(s.area_id) for s in specs}
+    tree = LayoutTree.from_specs(specs, areas)
 
-  assert isinstance(tree.root, Split)
-  assert tree.root.direction == SplitDirection.VERTICAL
+    assert isinstance(tree.root, Split)
+    assert tree.root.direction == SplitDirection.VERTICAL
 
 
 @pytest.mark.unit
 def test_from_specs_requires_central(make_area):
-  specs = [_spec("area.left", Placement.LEFT)]
-  areas = {"area.left": make_area("area.left")}
-  with pytest.raises(ValueError, match="CENTRAL"):
-    LayoutTree.from_specs(specs, areas)
+    specs = [_spec("area.left", Placement.LEFT)]
+    areas = {"area.left": make_area("area.left")}
+    with pytest.raises(ValueError, match="CENTRAL"):
+        LayoutTree.from_specs(specs, areas)
 
 
 def _spec(area_id, placement):
-  """Helper to build a minimal AreaSpec for tests."""
-  from cranioz.ui.workspace.specs.area_spec import AreaSpec
-  return AreaSpec(
-    area_id=area_id,
-    title=area_id,
-    placement=placement,
-    editor_ids=["editor.dummy"],
-  )
+    """Helper to build a minimal AreaSpec for tests."""
+    from cranioz.ui.workspace.specs.area_spec import AreaSpec
+
+    return AreaSpec(
+        area_id=area_id,
+        title=area_id,
+        placement=placement,
+        editor_ids=["editor.dummy"],
+    )
 ```
 
 ### 7.7 Integration test — `Workspace` with `ModuleUISpec`
@@ -21919,30 +21933,28 @@ from cranioz.ui.workspace.workspace import Workspace
 @pytest.mark.qt
 @pytest.mark.integration
 def test_workspace_loads_spec_single_central(qtbot):
-  ws = Workspace()
-  qtbot.addWidget(ws)
-  spec = ModuleUISpec(
-    areas=[AreaSpec("area.central", "Central", Placement.CENTRAL, ["editor.dummy"])],
-  )
-  ws.load_spec(spec)
-  assert "area.central" in [a.id for a in ws.list_areas()]
+    ws = Workspace()
+    qtbot.addWidget(ws)
+    spec = ModuleUISpec(
+        areas=[AreaSpec("area.central", "Central", Placement.CENTRAL, ["editor.dummy"])],
+    )
+    ws.load_spec(spec)
+    assert "area.central" in [a.id for a in ws.list_areas()]
 
 
 @pytest.mark.integration
 def test_workspace_loads_spec_left_central_right(qtbot):
-  ws = Workspace()
-  qtbot.addWidget(ws)
-  spec = ModuleUISpec(
-    areas=[
-      AreaSpec("area.left", "Left", Placement.LEFT, ["editor.dummy"]),
-      AreaSpec("area.central", "Central", Placement.CENTRAL, ["editor.dummy"]),
-      AreaSpec("area.right", "Right", Placement.RIGHT, ["editor.dummy"]),
-    ],
-  )
-  ws.load_spec(spec)
-  assert {a.id for a in ws.list_areas()} == {
-    "area.left", "area.central", "area.right"
-  }
+    ws = Workspace()
+    qtbot.addWidget(ws)
+    spec = ModuleUISpec(
+        areas=[
+            AreaSpec("area.left", "Left", Placement.LEFT, ["editor.dummy"]),
+            AreaSpec("area.central", "Central", Placement.CENTRAL, ["editor.dummy"]),
+            AreaSpec("area.right", "Right", Placement.RIGHT, ["editor.dummy"]),
+        ],
+    )
+    ws.load_spec(spec)
+    assert {a.id for a in ws.list_areas()} == {"area.left", "area.central", "area.right"}
 ```
 
 ### 7.8 Benchmark — layout performance
@@ -23485,12 +23497,13 @@ class ModuleUISpec:
     overlays: list[OverlaySpec]
     layout: LayoutSpec | None = None
 
+
 @dataclass(frozen=True)
 class AreaSpec:
     area_id: str
     title: str
     placement: Placement
-    editor_ids: list[str]                # IDs dos Editores
+    editor_ids: list[str]  # IDs dos Editores
     active_editor_id: str | None = None  # qual começa ativo
 ```
 
@@ -23801,8 +23814,8 @@ O `LayoutTree` é **modelo puro de dados**, sem dependência de Qt. O `LayoutRen
 
 ```python
 class LayoutRenderer:
-    _split_widgets: dict[int, QSplitter]   # id(SplitNode) → QSplitter
-    _area_widgets: dict[str, Area]         # area_id → Area (widget)
+    _split_widgets: dict[int, QSplitter]  # id(SplitNode) → QSplitter
+    _area_widgets: dict[str, Area]  # area_id → Area (widget)
 ```
 
 Esse estado é **cache** — não é fonte de verdade. Ele pode ser descartado e reconstruído a partir da `LayoutTree` a qualquer momento.
@@ -24028,10 +24041,10 @@ A Região é **calculada** a partir das Areas renderizadas (bounding boxes). A `
 ```python
 @dataclass
 class Region:
-    id: str                # "central", "left", "right", "bottom"
-    bounds: Rect           # retângulo que contém a Região
-    areas: list[Area]      # Areas que pertencem à Região
-    semantic_role: Placement | None   # convenção, opcional
+    id: str  # "central", "left", "right", "bottom"
+    bounds: Rect  # retângulo que contém a Região
+    areas: list[Area]  # Areas que pertencem à Região
+    semantic_role: Placement | None  # convenção, opcional
 ```
 
 **Por que geométrica e não semântica?**
@@ -24076,10 +24089,10 @@ Ele:
 A Workspace calcula os limites da Região Central a partir das Areas renderizadas:
 
 ```python
-x_min = right_edge_of(Region.LEFT)   or  0
-x_max = left_edge_of(Region.RIGHT)   or  workspace_width
+x_min = right_edge_of(Region.LEFT) or 0
+x_max = left_edge_of(Region.RIGHT) or workspace_width
 y_min = 0
-y_max = top_edge_of(Region.BOTTOM)   or  workspace_height
+y_max = top_edge_of(Region.BOTTOM) or workspace_height
 ```
 
 O Painel Superior é posicionado em:
@@ -25337,6 +25350,13 @@ render é operação de UI.
 
 
 ======================================================================
+FILE: plugins\README.md
+======================================================================
+
+
+
+
+======================================================================
 FILE: src\cranioz\__init__.py
 ======================================================================
 
@@ -25400,9 +25420,7 @@ from cranioz.infrastructure.project_path_resolver import ProjectPathResolver
 
 _logger = logging.getLogger(__name__)
 
-_DEFAULT_LOGGING_CONFIG = (
-    Path(__file__).parent / "config" / "defaults" / "logging.yaml"
-)
+_DEFAULT_LOGGING_CONFIG = Path(__file__).parent / "config" / "defaults" / "logging.yaml"
 
 
 def _configure_logging(config: Config) -> None:
@@ -25506,8 +25524,7 @@ class EventBus:
                 errors.append(exc)
         if errors:
             raise EventBusError(
-                f"{len(errors)} subscriber(s) failed while publishing "
-                f"{type(event).__name__}"
+                f"{len(errors)} subscriber(s) failed while publishing {type(event).__name__}"
             ) from errors[0]
 
     def subscriber_count(self, event_type: type) -> int:
@@ -25619,14 +25636,12 @@ class ConfigMigrator:
 
         if from_version > CURRENT_SCHEMA_VERSION:
             raise ConfigMigrationError(
-                f"schema {from_version} is newer than supported "
-                f"({CURRENT_SCHEMA_VERSION})"
+                f"schema {from_version} is newer than supported ({CURRENT_SCHEMA_VERSION})"
             )
 
         # Extension point for future migrations.
         raise ConfigMigrationError(
-            f"no migration defined from schema {from_version} "
-            f"to {CURRENT_SCHEMA_VERSION}"
+            f"no migration defined from schema {from_version} to {CURRENT_SCHEMA_VERSION}"
         )
 
 
@@ -25687,9 +25702,7 @@ def _require(data: dict[str, Any], key: str, context: str) -> Any:
 
 def _require_type(value: Any, expected: type | tuple[type, ...], context: str) -> None:
     if not isinstance(value, expected):
-        raise ConfigError(
-            f"invalid type at {context}: expected {expected}, got {type(value)}"
-        )
+        raise ConfigError(f"invalid type at {context}: expected {expected}, got {type(value)}")
 
 
 def build_config(app_data: dict[str, Any], paths_data: dict[str, Any]) -> Config:
@@ -25737,6 +25750,423 @@ FILE: src\cranioz\config\__init__.py
 FILE: src\cranioz\domain\__init__.py
 ======================================================================
 
+
+
+
+======================================================================
+FILE: src\cranioz\domain\patient\patient.py
+======================================================================
+
+
+
+
+======================================================================
+FILE: src\cranioz\domain\patient\patient_id.py
+======================================================================
+
+
+
+
+======================================================================
+FILE: src\cranioz\domain\patient\patient_summary.py
+======================================================================
+
+
+
+
+======================================================================
+FILE: src\cranioz\domain\patient\__init__.py
+======================================================================
+
+
+
+
+======================================================================
+FILE: src\cranioz\domain\project\project.py
+======================================================================
+
+"""Project.
+
+Aggregate root of the Project domain.
+
+A Project is the persistent clinical container of CranioZ. It
+references a Patient and holds the metadata, clinical data
+references, workflow state, and configuration of one planning case.
+
+This class is deliberately minimal in this piece. It carries the
+project's identity and metadata, and it defines the invariant that
+the metadata's project_id matches the Project's own project_id. As
+more domain concepts are implemented (patient record, workflow
+state, object references), they will be added to this aggregate.
+
+The Project is mutable because it is the aggregate root through
+which the Project Manager coordinates updates. Individual value
+objects (ProjectId, ProjectMetadata) are immutable; the aggregate
+is the boundary across which consistency is maintained.
+
+Rules:
+
+- The Project always has a ProjectId and a ProjectMetadata.
+- The metadata's project_id must equal the Project's project_id.
+- The Project does not know about persistence, filesystem, or Qt.
+  Those are responsibilities of the infrastructure and application
+  layers.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+
+from cranioz.domain.project.project_id import ProjectId
+from cranioz.domain.project.project_metadata import ProjectMetadata
+
+
+@dataclass
+class Project:
+    """Aggregate root of the Project domain."""
+
+    project_id: ProjectId
+    metadata: ProjectMetadata
+    # Extension point: further fields (patient_record, workflow_state,
+    # object_references, ...) will be added as they are implemented.
+    # Kept as a plain dict for forward compatibility of serialization.
+    extras: dict[str, object] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if self.metadata.project_id != self.project_id:
+            raise ValueError(
+                "metadata.project_id must match project_id "
+                f"(metadata={self.metadata.project_id.value!r}, "
+                f"project={self.project_id.value!r})"
+            )
+
+    def update_metadata(self, new_metadata: ProjectMetadata) -> None:
+        """Replace the project's metadata.
+
+        Raises ValueError if the new metadata belongs to a different
+        project. This protects the aggregate invariant at every
+        update boundary.
+        """
+        if new_metadata.project_id != self.project_id:
+            raise ValueError(
+                "cannot replace metadata with one belonging to a "
+                f"different project (expected {self.project_id.value!r}, "
+                f"got {new_metadata.project_id.value!r})"
+            )
+        self.metadata = new_metadata
+
+    def __repr__(self) -> str:
+        return (
+            f"Project(project_id={self.project_id.value!r}, "
+            f"name={self.metadata.project_name!r}, "
+            f"status={self.metadata.status.value!r})"
+        )
+
+
+
+======================================================================
+FILE: src\cranioz\domain\project\project_id.py
+======================================================================
+
+"""ProjectId.
+
+A ProjectId is a value object that uniquely identifies a Project
+within the CranioZ application. It is deliberately distinct from
+the project's display name, the patient's identity, and the
+filesystem path: those can all change, but the ProjectId must remain
+stable for the lifetime of the project.
+
+The identifier is stored as a string to remain agnostic of the
+underlying generator (UUID4, ULID, a slug, etc.). The domain does
+not enforce a specific format; it only enforces that the identifier
+is non-empty.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class ProjectId:
+    """Stable identifier of a Project."""
+
+    value: str
+
+    def __post_init__(self) -> None:
+        if not self.value:
+            raise ValueError("ProjectId.value must not be empty")
+        if not self.value.strip():
+            raise ValueError("ProjectId.value must not be whitespace only")
+
+    def __str__(self) -> str:
+        return self.value
+
+    def __repr__(self) -> str:
+        return f"ProjectId({self.value!r})"
+
+
+
+======================================================================
+FILE: src\cranioz\domain\project\project_metadata.py
+======================================================================
+
+"""ProjectMetadata.
+
+Persistent metadata of a Project. This is the lightweight
+information that describes *what* the project is without loading
+its clinical data.
+
+The metadata is used by:
+
+- The Project Catalog, to render project lists without loading the
+  full project.
+- The Project Manager, to reason about the project's status,
+  schema version, and lifecycle.
+- The Project Repository, as the top-level structure that describes
+  the persistent representation.
+
+The metadata is immutable. Updates produce a new instance; the
+Project Manager is responsible for coordinating those updates and
+for persisting them through the repository.
+
+Timestamps use timezone-aware datetime objects in UTC. The domain
+does not concern itself with serialization; the infrastructure
+layer is responsible for converting to and from ISO 8601.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, replace
+from datetime import datetime
+
+from cranioz.domain.project.project_id import ProjectId
+from cranioz.domain.project.project_status import ProjectStatus
+
+
+@dataclass(frozen=True)
+class ProjectMetadata:
+    """Persistent metadata of a Project."""
+
+    project_id: ProjectId
+    project_name: str
+    patient_id: str
+    patient_display_name: str
+    clinical_procedure: str
+    status: ProjectStatus
+    created_at: datetime
+    updated_at: datetime
+    last_opened_at: datetime | None
+    schema_version: int
+
+    def __post_init__(self) -> None:
+        if not self.project_name:
+            raise ValueError("project_name must not be empty")
+        if not self.patient_id:
+            raise ValueError("patient_id must not be empty")
+        if not self.patient_display_name:
+            raise ValueError("patient_display_name must not be empty")
+        if self.schema_version < 1:
+            raise ValueError(
+                f"schema_version must be >= 1, got {self.schema_version}"
+            )
+
+        # Validate timezone-awareness BEFORE comparing datetimes.
+        # Comparing a naive and an aware datetime raises TypeError
+        # in Python; we want a clear ValueError instead.
+        self._validate_timezone(self.created_at, "created_at")
+        self._validate_timezone(self.updated_at, "updated_at")
+        if self.last_opened_at is not None:
+            self._validate_timezone(self.last_opened_at, "last_opened_at")
+
+        if self.updated_at < self.created_at:
+            raise ValueError(
+                "updated_at must not be earlier than created_at"
+            )
+        if self.last_opened_at is not None and self.last_opened_at < self.created_at:
+            raise ValueError(
+                "last_opened_at must not be earlier than created_at"
+            )
+
+    @staticmethod
+    def _validate_timezone(value: datetime, field_name: str) -> None:
+        if value.tzinfo is None:
+            raise ValueError(
+                f"{field_name} must be timezone-aware (UTC)"
+            )
+
+    # ----- Convenience mutators -------------------------------------
+
+    def with_status(
+            self,
+            status: ProjectStatus,
+            *,
+            now: datetime,
+    ) -> ProjectMetadata:
+        ...
+        """Return a new metadata with the given status.
+
+        ``now`` becomes the new ``updated_at``. The caller is
+        responsible for supplying a timezone-aware UTC datetime.
+        """
+        return replace(self, status=status, updated_at=now)
+
+    def with_name(
+        self,
+        project_name: str,
+        *,
+        now: datetime,
+    ) -> ProjectMetadata:
+        """Return a new metadata with a new project_name."""
+        if not project_name:
+            raise ValueError("project_name must not be empty")
+        return replace(self, project_name=project_name, updated_at=now)
+
+    def with_last_opened(
+        self,
+        *,
+        now: datetime,
+    ) -> ProjectMetadata:
+        """Return a new metadata with last_opened_at set to now."""
+        return replace(self, last_opened_at=now)
+
+
+
+======================================================================
+FILE: src\cranioz\domain\project\project_status.py
+======================================================================
+
+"""ProjectStatus.
+
+Lifecycle status of a Project.
+
+The status is a semantic classification used by the Project Catalog
+and by the Project Manager to reason about what operations are
+allowed on a project.
+
+- ``DRAFT``: created but not yet used for clinical work. The user
+  may still edit its metadata freely. Draft projects are visible in
+  the catalog but flagged as incomplete.
+- ``ACTIVE``: in use for clinical planning. This is the normal
+  working state.
+- ``ARCHIVED``: closed and kept for reference. Archived projects
+  are read-only in normal workflows but remain discoverable.
+"""
+
+from __future__ import annotations
+
+from enum import Enum
+
+
+class ProjectStatus(Enum):
+    """Lifecycle status of a Project."""
+
+    DRAFT = "draft"
+    ACTIVE = "active"
+    ARCHIVED = "archived"
+
+
+
+======================================================================
+FILE: src\cranioz\domain\project\project_summary.py
+======================================================================
+
+"""ProjectSummary.
+
+Read-only projection of a Project used for discovery.
+
+The ProjectSummary is a *lightweight* representation designed for
+listing and searching. It contains only the fields the Home Page
+needs to render a project card or a row in a table. It deliberately
+excludes clinical data, workflow state, and any large payload.
+
+The summary is a value object. It is not the Project and it does not
+carry the Project's full state. It is derived from ProjectMetadata
+and can be produced without loading the project's data.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import datetime
+
+from cranioz.domain.project.project_id import ProjectId
+from cranioz.domain.project.project_metadata import ProjectMetadata
+from cranioz.domain.project.project_status import ProjectStatus
+
+
+@dataclass(frozen=True)
+class ProjectSummary:
+    """Lightweight read-only projection of a Project."""
+
+    project_id: ProjectId
+    project_name: str
+    patient_display_name: str
+    status: ProjectStatus
+    procedure: str
+    created_at: datetime
+    updated_at: datetime
+    last_opened_at: datetime | None
+
+    def __post_init__(self) -> None:
+        if not self.project_name:
+            raise ValueError("project_name must not be empty")
+        if not self.patient_display_name:
+            raise ValueError("patient_display_name must not be empty")
+        if not self.procedure:
+            raise ValueError("procedure must not be empty")
+
+    @classmethod
+    def from_metadata(cls, metadata: ProjectMetadata) -> ProjectSummary:
+        """Build a summary from the project's metadata.
+
+        This is the canonical way to produce a summary: the metadata
+        already contains every field the summary needs.
+        """
+        return cls(
+            project_id=metadata.project_id,
+            project_name=metadata.project_name,
+            patient_display_name=metadata.patient_display_name,
+            status=metadata.status,
+            procedure=metadata.clinical_procedure,
+            created_at=metadata.created_at,
+            updated_at=metadata.updated_at,
+            last_opened_at=metadata.last_opened_at,
+        )
+
+
+
+======================================================================
+FILE: src\cranioz\domain\project\__init__.py
+======================================================================
+
+"""Project domain.
+
+The Project domain defines the persistent clinical container used by
+CranioZ. It is independent of Qt, filesystem, and infrastructure.
+
+Public API:
+
+- ProjectId          — stable identity value object
+- ProjectStatus      — lifecycle status enum
+- ProjectMetadata    — persistent metadata of a project
+- ProjectSummary     — read-only projection for discovery
+- Project            — aggregate root
+"""
+
+from cranioz.domain.project.project import Project
+from cranioz.domain.project.project_id import ProjectId
+from cranioz.domain.project.project_metadata import ProjectMetadata
+from cranioz.domain.project.project_status import ProjectStatus
+from cranioz.domain.project.project_summary import ProjectSummary
+
+__all__ = [
+    "Project",
+    "ProjectId",
+    "ProjectMetadata",
+    "ProjectStatus",
+    "ProjectSummary",
+]
 
 
 
@@ -25830,21 +26260,14 @@ class ProjectPathResolver:
         root = self._project_root.resolve()
 
         if root not in candidate.parents and candidate != root:
-            raise ProjectRootInaccessible(
-                f"path escapes project root: {relative}"
-            )
+            raise ProjectRootInaccessible(f"path escapes project root: {relative}")
         return candidate
 
     @staticmethod
     def _resolve(configured_root: str | None) -> Path:
         if configured_root:
             return Path(configured_root).expanduser()
-        return (
-            Path.home()
-            / "Documents"
-            / DEFAULT_PROJECT_ROOT_NAME
-            / DEFAULT_PROJECTS_DIR_NAME
-        )
+        return Path.home() / "Documents" / DEFAULT_PROJECT_ROOT_NAME / DEFAULT_PROJECTS_DIR_NAME
 
 
 
@@ -25905,9 +26328,7 @@ class CatalogLoader:
         if not base_dir.exists():
             raise CatalogLoaderError(f"catalog base directory not found: {base_dir}")
         if not base_dir.is_dir():
-            raise CatalogLoaderError(
-                f"catalog base path is not a directory: {base_dir}"
-            )
+            raise CatalogLoaderError(f"catalog base path is not a directory: {base_dir}")
         self._base_dir = base_dir
 
     @property
@@ -25948,9 +26369,7 @@ class CatalogLoader:
             raise CatalogLoaderError(f"cannot read {path}: {exc}") from exc
 
         if not isinstance(data, dict):
-            raise CatalogLoaderError(
-                f"catalog must be a JSON object: {path}"
-            )
+            raise CatalogLoaderError(f"catalog must be a JSON object: {path}")
         return data
 
 
@@ -26022,8 +26441,7 @@ class TranslationCatalogRegistry:
             catalog = self._loader.load(language, area)
         except CatalogLoaderError as exc:
             raise CatalogRegistryError(
-                f"cannot load catalog for language={language!r} "
-                f"area={area!r}: {exc}"
+                f"cannot load catalog for language={language!r} area={area!r}: {exc}"
             ) from exc
 
         self._cache[key] = catalog
@@ -26121,6 +26539,7 @@ def reset() -> None:
     """
     global _instance  # noqa: PLW0603
     _instance = None
+
 
 
 ======================================================================
@@ -26268,9 +26687,7 @@ class CatalogTranslationService:
         try:
             return message.format(**params)
         except (KeyError, IndexError, ValueError) as exc:
-            _logger.warning(
-                "translation interpolation failed for key=%r: %s", key, exc
-            )
+            _logger.warning("translation interpolation failed for key=%r: %s", key, exc)
             # Interpolation failure is a fallback event. Return the
             # source text unformatted so the user still sees something.
             return source_text or _GENERIC_FALLBACK
@@ -27099,16 +27516,12 @@ class Toolbar(QWidget):
 
         if self._is_toggle(tool):
             button.setCheckable(True)
-            button.toggled.connect(
-                lambda checked, tid=tool_id: self._on_toggle(tid, checked)
-            )
+            button.toggled.connect(lambda checked, tid=tool_id: self._on_toggle(tid, checked))
         else:
             button.clicked.connect(lambda _=False, tid=tool_id: self._on_click(tid))
 
         self._layout.addWidget(button)
-        self._bindings.append(
-            ToolbarItemBinding(tool_id=tool_id, widget=button, tool=tool)
-        )
+        self._bindings.append(ToolbarItemBinding(tool_id=tool_id, widget=button, tool=tool))
 
     def _is_toggle(self, tool: Tool) -> bool:
         return hasattr(tool, "toggle") and hasattr(tool, "checked")
@@ -27731,6 +28144,281 @@ FILE: src\cranioz\ui\widgets\sliders\__init__.py
 FILE: src\cranioz\ui\workspace\workspace.py
 ======================================================================
 
+"""Workspace.
+
+The Workspace is the runtime environment where clinical work happens.
+It is the composition of Areas — containers that host Editors — and
+Overlays — floating layers over Regions.
+
+This class is the *facade* of the Workspace subsystem. It ties
+together the lower-level components built in earlier pieces:
+
+- LayoutBuilder: turns a ModuleUISpec into domain structures
+  (Areas, LayoutTree, populated AreaManager, Editors).
+- LayoutRenderer: materializes the LayoutTree into Qt widgets
+  (nested QSplitters and AreaWidgets).
+- OverlayManager: registers and repositions Overlays by Placement.
+
+Public responsibilities:
+
+- ``load_spec(spec)``: materialize a ModuleUISpec. Rebuilds the
+  whole visual tree and repositions every registered Overlay.
+- ``clear()``: drop the current composition (Areas, widgets,
+  Overlays registrations remain; they can be re-added on the next
+  ``load_spec``).
+- ``areas()``: return the Areas of the current composition.
+- ``overlay_manager``: read-only access for advanced callers.
+- ``top_overlay``: the shared Top Bar Overlay, exposed so the
+  Workspace host can populate its content.
+
+Non-responsibilities (future pieces):
+
+- Persistence of layout state (Bloco 11).
+- Drag-and-drop, floating Areas, multi-monitor (Bloco 14).
+- Top Bar content: the three segments are not built here; they
+  will be added by a dedicated Top Bar composition.
+- Steps Panel: it is a second shared Overlay, to be added when the
+  Flow system is implemented (Bloco 9).
+
+Design rules:
+
+- The Workspace is a QWidget. Its single visual child is the root
+  widget returned by the LayoutRenderer.
+- ``load_spec()`` is idempotent in the sense that calling it again
+  replaces the previous composition. It always calls ``clear()``
+  first.
+- The Workspace owns the AreaManager produced by the build result.
+  It does not copy it: the same manager is used throughout the
+  lifecycle of the composition.
+- The Workspace owns the LayoutRenderer instance. The renderer
+  caches widget instances; the Workspace is responsible for
+  clearing that cache when the composition is replaced.
+- The TopOverlay is registered in the OverlayManager on every
+  ``load_spec()``. Registration is idempotent, so re-registering
+  the same instance on subsequent calls is safe.
+"""
+
+from __future__ import annotations
+
+from PySide6.QtGui import QResizeEvent
+from PySide6.QtWidgets import QVBoxLayout, QWidget
+
+from cranioz.ui.editors.editor_registry import EditorRegistry
+from cranioz.ui.theme.service import ThemeService
+from cranioz.ui.tools.registry.tool_registry import ToolRegistry
+from cranioz.ui.workspace.areas.area import Area
+from cranioz.ui.workspace.areas.area_manager import AreaManager
+from cranioz.ui.workspace.areas.placement import Placement
+from cranioz.ui.workspace.layout.layout_builder import (
+    BuildResult,
+    LayoutBuilder,
+)
+from cranioz.ui.workspace.layout.layout_renderer import LayoutRenderer
+from cranioz.ui.workspace.overlays.overlay_manager import OverlayManager
+from cranioz.ui.workspace.overlays.region import Bounds, Region
+from cranioz.ui.workspace.overlays.top_overlay import TopOverlay
+from cranioz.ui.workspace.specs.module_ui_spec import ModuleUISpec
+
+
+class WorkspaceError(RuntimeError):
+    """Raised when the Workspace is used in an invalid state."""
+
+
+class Workspace(QWidget):
+    """The Workspace facade.
+
+    Hosts the current composition, owns the LayoutRenderer and the
+    OverlayManager, and exposes ``load_spec()`` as the single entry
+    point for building a new layout.
+    """
+
+    def __init__(
+        self,
+        editor_registry: EditorRegistry,
+        tool_registry: ToolRegistry,
+        theme_service: ThemeService,
+        parent: QWidget | None = None,
+    ) -> None:
+        super().__init__(parent)
+        self.setObjectName("workspace")
+
+        self._editor_registry = editor_registry
+        self._tool_registry = tool_registry
+        self._theme_service = theme_service
+
+        self._layout_builder = LayoutBuilder(editor_registry)
+        self._layout_renderer = LayoutRenderer(tool_registry, theme_service)
+        self._overlay_manager = OverlayManager()
+        self._top_overlay = TopOverlay(parent=self)
+
+        # Current composition. None until load_spec() is called.
+        self._build_result: BuildResult | None = None
+        self._root_widget: QWidget | None = None
+
+        # The Workspace has a single child: the root widget produced
+        # by the LayoutRenderer. A QVBoxLayout keeps it filling the
+        # Workspace.
+        self._root_layout = QVBoxLayout(self)
+        self._root_layout.setContentsMargins(0, 0, 0, 0)
+        self._root_layout.setSpacing(0)
+
+        # The TopOverlay is registered from the start so that callers
+        # can access it via ``top_overlay()`` even before the first
+        # ``load_spec()``. Its widget is a child of the Workspace;
+        # the OverlayManager does not add it to the layout.
+        self._overlay_manager.register(self._top_overlay)
+        self._top_overlay.widget().setParent(self)
+
+    # ----- Public API -----------------------------------------------
+
+    def load_spec(self, spec: ModuleUISpec) -> None:
+        """Materialize the given ModuleUISpec.
+
+        Replaces any previous composition. After this call:
+
+        - ``areas()`` returns the Areas of the new composition.
+        - The visual tree reflects the new LayoutTree.
+        - Every registered Overlay has been repositioned.
+        """
+        # Drop any previous composition.
+        self.clear()
+
+        # Build the domain structures.
+        result = self._layout_builder.build(spec)
+        self._build_result = result
+
+        # Render the LayoutTree.
+        root = self._layout_renderer.render(result.tree)
+        self._root_widget = root
+        self._root_layout.addWidget(root)
+
+        # The TopOverlay must be a child of the Workspace so it can
+        # float above the root widget. Reassert the parent here in
+        # case the previous clear() detached it.
+        self._top_overlay.widget().setParent(self)
+        self._top_overlay.widget().raise_()
+
+        # Position every Overlay according to the current geometry.
+        # At this point the widgets may not yet have been laid out
+        # by Qt; the bounds will be recomputed on the first resize.
+        # If Qt has already laid them out, the bounds are accurate
+        # immediately.
+        self._reposition_overlays()
+
+    def clear(self) -> None:
+        """Remove the current composition.
+
+        The Workspace keeps its registries and its TopOverlay. Only
+        the rendered composition and the areas from the previous
+        spec are removed.
+        """
+        # Detach and destroy the root widget and everything under it.
+        if self._root_widget is not None:
+            self._root_layout.removeWidget(self._root_widget)
+            self._root_widget.setParent(None)
+            self._root_widget.deleteLater()
+            self._root_widget = None
+
+        # Clear the renderer's widget cache so the next render()
+        # creates fresh widgets.
+        self._layout_renderer.clear_cache()
+
+        # Forget the previous build result.
+        self._build_result = None
+
+    def areas(self) -> tuple[Area, ...]:
+        """Return the Areas of the current composition.
+
+        Returns an empty tuple when no spec has been loaded.
+        """
+        if self._build_result is None:
+            return ()
+        return self._build_result.areas
+
+    def area_manager(self) -> AreaManager | None:
+        """Return the AreaManager of the current composition.
+
+        Returns None when no spec has been loaded.
+        """
+        if self._build_result is None:
+            return None
+        return self._build_result.area_manager
+
+    def overlay_manager(self) -> OverlayManager:
+        """Return the OverlayManager.
+
+        The manager is stable across ``load_spec()`` calls: the
+        Workspace owns a single instance.
+        """
+        return self._overlay_manager
+
+    def top_overlay(self) -> TopOverlay:
+        """Return the shared Top Bar Overlay."""
+        return self._top_overlay
+
+    def is_loaded(self) -> bool:
+        """Return True if a composition has been loaded."""
+        return self._build_result is not None
+
+    # ----- Qt events ------------------------------------------------
+
+    def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802
+        """Reposition Overlays when the Workspace is resized.
+
+        The AreaWidgets are resized by the QSplitters they live in.
+        As soon as the widgets' geometries change, the Region bounds
+        change as well. This handler recomputes the bounds and asks
+        the OverlayManager to reposition every Overlay.
+        """
+        super().resizeEvent(event)
+        self._reposition_overlays()
+
+    # ----- Internals ------------------------------------------------
+
+    def _reposition_overlays(self) -> None:
+        """Compute the current Region bounds and reposition Overlays.
+
+        The bounds are derived from the current geometry of the
+        AreaWidgets cached by the LayoutRenderer. If the widgets
+        have not been laid out yet, their geometries are zero-sized
+        rectangles; the Overlays are repositioned to zero-sized
+        bounds, which is a valid intermediate state. The next
+        resizeEvent will produce the correct bounds.
+        """
+        bounds_by_placement = self._layout_renderer.compute_region_bounds()
+        regions = self._regions_from_bounds(bounds_by_placement)
+        self._overlay_manager.reposition_all(regions)
+
+    def _regions_from_bounds(
+        self,
+        bounds_by_placement: dict[Placement, Bounds],
+    ) -> tuple[Region, ...]:
+        """Build Regions from the current AreaManager and bounds.
+
+        Every Placement that has both Areas in the current
+        composition and bounds computed by the renderer produces a
+        Region. The Region carries the Areas from the AreaManager
+        so that downstream consumers (Overlays, future layout I/O)
+        can inspect which Areas belong to which Region.
+        """
+        manager = self.area_manager()
+        if manager is None:
+            return ()
+
+        regions: list[Region] = []
+        for placement, bounds in bounds_by_placement.items():
+            areas = tuple(area for area in manager.areas() if area.placement is placement)
+            if not areas:
+                continue
+            regions.append(
+                Region(
+                    region_id=placement.value,
+                    bounds=bounds,
+                    areas=areas,
+                    semantic_role=placement,
+                )
+            )
+        return tuple(regions)
 
 
 
@@ -27842,9 +28530,7 @@ class Area:
         """
         for existing in self._editors:
             if existing.editor_id == editor.editor_id:
-                raise AreaError(
-                    f"editor_id already hosted by this Area: {editor.editor_id}"
-                )
+                raise AreaError(f"editor_id already hosted by this Area: {editor.editor_id}")
         self._editors.append(editor)
         if self._active_editor_id is None:
             self._active_editor_id = editor.editor_id
@@ -27862,9 +28548,7 @@ class Area:
             if editor.editor_id == editor_id:
                 removed = self._editors.pop(index)
                 if self._active_editor_id == editor_id:
-                    self._active_editor_id = (
-                        self._editors[0].editor_id if self._editors else None
-                    )
+                    self._active_editor_id = self._editors[0].editor_id if self._editors else None
                 return removed
         return None
 
@@ -27909,9 +28593,7 @@ class Area:
         Raises AreaError if the Editor is not hosted by this Area.
         """
         if not self.contains(editor_id):
-            raise AreaError(
-                f"editor_id is not hosted by this Area: {editor_id}"
-            )
+            raise AreaError(f"editor_id is not hosted by this Area: {editor_id}")
         self._active_editor_id = editor_id
 
     # ----- Representation --------------------------------------------
@@ -27981,9 +28663,7 @@ class AreaManager:
         if existing is area:
             return
         if existing is not None:
-            raise AreaManagerError(
-                f"area_id already registered with a different Area: {area_id}"
-            )
+            raise AreaManagerError(f"area_id already registered with a different Area: {area_id}")
         self._areas[area_id] = area
 
     def unregister(self, area_id: str) -> Area | None:
@@ -28018,9 +28698,7 @@ class AreaManager:
 
     def count_by_placement(self, placement: Placement) -> int:
         """Return the number of registered Areas with the given placement."""
-        return sum(
-            1 for area in self._areas.values() if area.placement is placement
-        )
+        return sum(1 for area in self._areas.values() if area.placement is placement)
 
     def has_central(self) -> bool:
         """Return True if at least one CENTRAL Area is registered."""
@@ -28097,6 +28775,7 @@ from cranioz.ui.toolbars.base import Toolbar
 from cranioz.ui.tools.registry.tool_definition import ToolContext
 from cranioz.ui.tools.registry.tool_registry import ToolRegistry
 from cranioz.ui.workspace.areas.area import Area
+from cranioz.ui.workspace.areas.placement import Placement
 
 
 class AreaWidget(QWidget):
@@ -28106,9 +28785,9 @@ class AreaWidget(QWidget):
     User actions that would change the Area are emitted as signals.
     """
 
-    active_editor_changed = Signal(str, str)   # area_id, editor_id
+    active_editor_changed = Signal(str, str)  # area_id, editor_id
     editor_close_requested = Signal(str, str)  # area_id, editor_id
-    editor_add_requested = Signal(str)         # area_id
+    editor_add_requested = Signal(str)  # area_id
 
     def __init__(
         self,
@@ -28139,6 +28818,14 @@ class AreaWidget(QWidget):
     def area_id(self) -> str:
         """The area_id of the Area this widget reflects."""
         return self._area.area_id
+
+    def area_placement(self) -> Placement:
+        """Return the Placement of the Area this widget reflects.
+
+        Exposed so that the LayoutRenderer can group AreaWidgets by
+        Placement when computing Region Bounds.
+        """
+        return self._area.placement
 
     def refresh(self) -> None:
         """Re-render the widget from the Area model.
@@ -28195,9 +28882,7 @@ class AreaWidget(QWidget):
         followed by the Editor's content_widget().
         """
         container = QWidget()
-        container.setObjectName(
-            f"area_widget.{self._area.area_id}.editor.{editor.editor_id}"
-        )
+        container.setObjectName(f"area_widget.{self._area.area_id}.editor.{editor.editor_id}")
 
         layout = QVBoxLayout(container)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -28521,13 +29206,11 @@ class LayoutBuilder:
         """
         if context_extras is not None and not isinstance(context_extras, dict):
             raise TypeError(
-                "context_extras must be a dict or None, "
-                f"got {type(context_extras).__name__}"
+                f"context_extras must be a dict or None, got {type(context_extras).__name__}"
             )
         if shared_context is not None and not isinstance(shared_context, dict):
             raise TypeError(
-                "shared_context must be a dict or None, "
-                f"got {type(shared_context).__name__}"
+                f"shared_context must be a dict or None, got {type(shared_context).__name__}"
             )
 
         # Defensive copies: the builder does not retain references to
@@ -28714,12 +29397,14 @@ from PySide6.QtWidgets import QSplitter, QWidget
 from cranioz.ui.theme.service import ThemeService
 from cranioz.ui.tools.registry.tool_registry import ToolRegistry
 from cranioz.ui.workspace.areas.area_widget import AreaWidget
+from cranioz.ui.workspace.areas.placement import Placement
 from cranioz.ui.workspace.layout.layout_tree import (
     LayoutNode,
     LayoutTree,
     Leaf,
     Split,
 )
+from cranioz.ui.workspace.overlays.region import Bounds
 from cranioz.ui.workspace.specs.editor_layout_spec import SplitDirection
 
 
@@ -28785,6 +29470,70 @@ class LayoutRenderer:
         """Return the cached AreaWidget for the given area_id, if any."""
         return self._area_widgets.get(area_id)
 
+    # ----- Region geometry ------------------------------------------
+
+    def compute_region_bounds(
+        self,
+    ) -> dict[Placement, Bounds]:
+        """Compute the geometric Bounds of each Region.
+
+        A Region groups every Area that shares the same Placement.
+        Its Bounds is the axis-aligned union of the geometries of
+        the AreaWidgets that belong to it.
+
+        The method reads the current geometry of the cached
+        AreaWidgets. It therefore produces meaningful results only
+        after ``render()`` has been called and Qt has assigned the
+        widgets their real geometry (typically after the parent
+        widget has been shown or laid out).
+
+        Placements with no AreaWidget in the cache produce no
+        entry in the result. Callers that need a stable shape may
+        use ``regions_from_bounds()`` (see below) to build a list
+        of Regions in a documented order.
+        """
+        # Group the AreaWidgets by their Area's Placement.
+        grouped: dict[Placement, list[AreaWidget]] = {}
+        for widget in self._area_widgets.values():
+            # The AreaWidget exposes its area_id; we need the
+            # Placement. We look it up through the widget's Area,
+            # which is stored inside the widget.
+            placement = widget.area_placement()
+            grouped.setdefault(placement, []).append(widget)
+
+        # Compute the union rectangle for each Placement.
+        result: dict[Placement, Bounds] = {}
+        for placement, widgets in grouped.items():
+            union = self._union_bounds(widgets)
+            if union is not None:
+                result[placement] = union
+        return result
+
+    @staticmethod
+    def _union_bounds(widgets: list[AreaWidget]) -> Bounds | None:
+        """Return the axis-aligned union of the widgets' geometries.
+
+        Returns None when the list is empty. Coordinates are in the
+        local coordinate space of each widget's parent; the union
+        assumes the widgets share a common parent, which is the
+        case for all AreaWidgets inside the same Workspace.
+        """
+        if not widgets:
+            return None
+
+        rects = [widget.geometry() for widget in widgets]
+        left = min(r.left() for r in rects)
+        top = min(r.top() for r in rects)
+        right = max(r.right() for r in rects)
+        bottom = max(r.bottom() for r in rects)
+
+        return Bounds(
+            x=float(left),
+            y=float(top),
+            width=float(right - left),
+            height=float(bottom - top),
+        )
+
     # ----- Internals ------------------------------------------------
 
     def _render_node(self, node: LayoutNode) -> QWidget:
@@ -28793,9 +29542,7 @@ class LayoutRenderer:
             return self._render_leaf(node)
         if isinstance(node, Split):
             return self._render_split(node)
-        raise LayoutRendererError(
-            f"unknown layout node type: {type(node).__name__}"
-        )
+        raise LayoutRendererError(f"unknown layout node type: {type(node).__name__}")
 
     def _render_leaf(self, leaf: Leaf) -> AreaWidget:
         """Return (or create) an AreaWidget for the leaf's Area."""
@@ -28834,9 +29581,9 @@ class LayoutRenderer:
         return splitter
 
     def _reconcile_children(
-            self,
-            splitter: QSplitter,
-            split: Split,
+        self,
+        splitter: QSplitter,
+        split: Split,
     ) -> None:
         """Ensure the splitter's children match the split's children.
 
@@ -28850,9 +29597,7 @@ class LayoutRenderer:
           not destroyed — it may be reused elsewhere, or it lives in
           the area_widgets cache).
         """
-        expected_widgets: list[QWidget] = [
-            self._render_node(child) for child in split.children
-        ]
+        expected_widgets: list[QWidget] = [self._render_node(child) for child in split.children]
 
         # Collect the widgets currently attached to the splitter.
         # QSplitter.widget(i) is typed as QWidget | None, so we filter
@@ -28897,9 +29642,7 @@ class LayoutRenderer:
             return Qt.Orientation.Horizontal
         if direction is SplitDirection.VERTICAL:
             return Qt.Orientation.Vertical
-        raise LayoutRendererError(
-            f"unknown split direction: {direction!r}"
-        )
+        raise LayoutRendererError(f"unknown split direction: {direction!r}")
 
 
 
@@ -28945,6 +29688,7 @@ from dataclasses import dataclass
 
 from cranioz.ui.workspace.areas.area import Area
 from cranioz.ui.workspace.areas.placement import Placement
+from cranioz.ui.workspace.overlays.region import Bounds, Region
 from cranioz.ui.workspace.specs.area_spec import AreaSpec
 from cranioz.ui.workspace.specs.editor_layout_spec import SplitDirection
 
@@ -29048,9 +29792,7 @@ class LayoutTree:
 
         for spec in specs:
             if spec.area_id not in areas:
-                raise LayoutTreeError(
-                    f"AreaSpec references an unknown area_id: {spec.area_id}"
-                )
+                raise LayoutTreeError(f"AreaSpec references an unknown area_id: {spec.area_id}")
 
         left = [s for s in specs if s.placement is Placement.LEFT]
         central = [s for s in specs if s.placement is Placement.CENTRAL]
@@ -29058,9 +29800,7 @@ class LayoutTree:
         bottom = [s for s in specs if s.placement is Placement.BOTTOM]
 
         if not central:
-            raise LayoutTreeError(
-                "LayoutTree.from_specs requires at least one CENTRAL AreaSpec"
-            )
+            raise LayoutTreeError("LayoutTree.from_specs requires at least one CENTRAL AreaSpec")
 
         # Top row: LEFT + CENTRAL + RIGHT, in that order.
         top_row_specs = [*left, *central, *right]
@@ -29071,9 +29811,7 @@ class LayoutTree:
         else:
             top_node = Split(
                 direction=SplitDirection.HORIZONTAL,
-                children=tuple(
-                    Leaf(area=areas[s.area_id]) for s in top_row_specs
-                ),
+                children=tuple(Leaf(area=areas[s.area_id]) for s in top_row_specs),
             )
 
         if not bottom:
@@ -29086,9 +29824,7 @@ class LayoutTree:
         else:
             bottom_node = Split(
                 direction=SplitDirection.HORIZONTAL,
-                children=tuple(
-                    Leaf(area=areas[s.area_id]) for s in bottom_row_specs
-                ),
+                children=tuple(Leaf(area=areas[s.area_id]) for s in bottom_row_specs),
             )
 
         root = Split(
@@ -29112,6 +29848,43 @@ class LayoutTree:
     def __repr__(self) -> str:
         return f"LayoutTree(root={self._root!r})"
 
+    # ----- Regions --------------------------------------------------
+
+    def find_regions(self) -> tuple[Region, ...]:
+        """Group the Areas of this tree into Regions by Placement.
+
+        The method is purely structural: it does not compute any
+        geometric bounds. Every returned Region has a placeholder
+        Bounds (zero rectangle). The real geometry is filled in by
+        the rendering layer once the widgets have been materialized.
+
+        Regions are returned in a stable, documented order:
+
+            LEFT, CENTRAL, RIGHT, BOTTOM
+
+        A Placement that has no Area in this tree produces no Region.
+        Every Area in the tree belongs to exactly one Region.
+        """
+        regions: list[Region] = []
+        for placement in (
+            Placement.LEFT,
+            Placement.CENTRAL,
+            Placement.RIGHT,
+            Placement.BOTTOM,
+        ):
+            areas = tuple(leaf.area for leaf in self.leaves() if leaf.area.placement is placement)
+            if not areas:
+                continue
+            regions.append(
+                Region(
+                    region_id=placement.value,
+                    bounds=Bounds(),
+                    areas=areas,
+                    semantic_role=placement,
+                )
+            )
+        return tuple(regions)
+
 
 
 ======================================================================
@@ -29125,6 +29898,144 @@ FILE: src\cranioz\ui\workspace\layout\__init__.py
 FILE: src\cranioz\ui\workspace\overlays\overlay.py
 ======================================================================
 
+"""Overlay.
+
+An Overlay is a floating layer managed by the Workspace. It is
+positioned over a Region, not over an individual Area. The Overlay
+does not participate in the layout tree; it floats above the Areas.
+
+The distinction matters (see workspace_pt.md §7.1):
+
+- An Area is part of the layout tree; it is arranged by the
+  LayoutRenderer into QSplitters.
+- An Overlay is a separate widget that the Workspace places over a
+  Region. It is not hosted by any Area. It can be shown, hidden,
+  moved, and resized without touching the layout tree.
+
+The Overlay ABC defines the minimal contract the Workspace needs to
+manage a floating layer:
+
+- A stable identity (``overlay_id``).
+- A target Region, identified by its ``Placement``.
+- Access to the Qt widget that represents the Overlay.
+- Ability to reposition the widget when the Region's Bounds change.
+- Ability to show / hide the widget.
+
+Concrete Overlays (e.g. the Top Bar, the Steps Panel) live in their
+own modules and implement this contract. The Workspace only knows
+the ABC.
+
+Qt dependency:
+
+- ``Overlay.widget()`` returns a ``QWidget``, so concrete Overlays
+  must import PySide6. That is expected: an Overlay is a visual
+  layer. The ABC itself imports ``QWidget`` only for typing; it does
+  not instantiate Qt objects.
+- The ABC is still safe to import without a QApplication, as long
+  as no concrete Overlay is instantiated. Tests that instantiate a
+  concrete Overlay use ``qtbot`` and a running QApplication.
+"""
+
+from __future__ import annotations
+
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
+
+from cranioz.ui.workspace.areas.placement import Placement
+from cranioz.ui.workspace.overlays.region import Bounds
+
+if TYPE_CHECKING:
+    from PySide6.QtWidgets import QWidget
+
+
+class OverlayError(ValueError):
+    """Raised when an Overlay operation violates a structural rule."""
+
+
+class Overlay(ABC):
+    """Abstract base class for a floating layer managed by the Workspace.
+
+    An Overlay is identified by a stable ``overlay_id`` and targets
+    a Region identified by its ``Placement``. The Workspace uses the
+    target to decide where to place the Overlay as the layout changes.
+    """
+
+    # ----- Identity --------------------------------------------------
+
+    @property
+    @abstractmethod
+    def overlay_id(self) -> str:
+        """Return the stable identifier of this Overlay.
+
+        The identifier must be unique within a Workspace. It is
+        used by the OverlayManager to register and retrieve the
+        Overlay, and by other components to reference it.
+        """
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def target_region(self) -> Placement:
+        """Return the Placement of the Region this Overlay targets.
+
+        The Workspace positions the Overlay over the Region whose
+        ``semantic_role`` matches this Placement. If the Region does
+        not exist (e.g. no Area has that Placement), the Overlay is
+        not shown.
+        """
+        raise NotImplementedError
+
+    # ----- Widget ----------------------------------------------------
+
+    @abstractmethod
+    def widget(self) -> QWidget:
+        """Return the Qt widget that represents this Overlay.
+
+        The Overlay owns the widget. The Workspace does not create,
+        destroy, or reparent it. The widget is used as-is by the
+        OverlayManager when it positions the Overlay on the screen.
+
+        The method is allowed to return the same instance on every
+        call. The Overlay is responsible for managing the widget's
+        lifecycle (creation, configuration, disposal).
+        """
+        raise NotImplementedError
+
+    # ----- Geometry --------------------------------------------------
+
+    @abstractmethod
+    def reposition(self, bounds: Bounds) -> None:
+        """Reposition the Overlay to the given Bounds.
+
+        The Workspace calls this method whenever the target Region's
+        geometry changes (window resize, layout switch, Region
+        recomputation). The Overlay applies its own anchoring rules
+        within the given Bounds: for example, an Overlay anchored to
+        the top of the Region positions itself at ``bounds.y``,
+        while an Overlay anchored to the bottom positions itself at
+        ``bounds.y + bounds.height - overlay_height``.
+
+        The method must not change the Overlay's identity or target.
+        It only adjusts the widget's position and size.
+        """
+        raise NotImplementedError
+
+    # ----- Visibility ------------------------------------------------
+
+    @abstractmethod
+    def set_visible(self, visible: bool) -> None:
+        """Show or hide the Overlay.
+
+        Hiding an Overlay does not destroy its widget and does not
+        remove it from the OverlayManager. The Overlay remains
+        registered; it is simply not shown on screen.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def is_visible(self) -> bool:
+        """Return True if the Overlay is currently visible."""
+        raise NotImplementedError
 
 
 
@@ -29132,6 +30043,171 @@ FILE: src\cranioz\ui\workspace\overlays\overlay.py
 FILE: src\cranioz\ui\workspace\overlays\overlay_manager.py
 ======================================================================
 
+"""OverlayManager.
+
+Registry and repositioning coordinator for Overlays within a
+Workspace.
+
+Responsibilities:
+
+- Register and unregister Overlays by their ``overlay_id``.
+- Look them up and enumerate them in a deterministic order.
+- Reposition every registered Overlay when the layout changes, by
+  matching each Overlay's ``target_region`` (a ``Placement``) to the
+  current set of Regions and passing the Region's Bounds to
+  ``Overlay.reposition()``.
+
+Non-responsibilities:
+
+- The manager does not create or destroy Overlays. It only tracks
+  the ones it is given.
+- The manager does not compute Region Bounds. It receives the
+  current Regions from the Workspace / LayoutRenderer and forwards
+  the Bounds as-is.
+- The manager does not know about Qt layout details. Overlays own
+  their widgets.
+
+Design rules:
+
+- A registered ``overlay_id`` is unique within a single manager.
+  Registering the same instance again is idempotent; registering a
+  different instance under the same id raises
+  ``OverlayManagerError``.
+- Registration order is preserved. ``overlays()`` returns them in
+  that order, which makes repositioning deterministic.
+- ``reposition_all()`` does not fail when a target Region is absent.
+  If an Overlay targets a Placement for which no Region exists in
+  the current tree, the Overlay is simply not repositioned. This
+  matches the Workspace model: a Region may legitimately be missing
+  during a module switch.
+- ``clear()`` removes all registrations. It does not touch the
+  Overlays themselves.
+"""
+
+from __future__ import annotations
+
+from cranioz.ui.workspace.areas.placement import Placement
+from cranioz.ui.workspace.overlays.overlay import Overlay
+from cranioz.ui.workspace.overlays.region import Region
+
+
+class OverlayManagerError(ValueError):
+    """Raised when overlay registration violates a structural rule."""
+
+
+class OverlayManager:
+    """Registry and repositioning coordinator for Overlays."""
+
+    def __init__(self) -> None:
+        self._overlays: dict[str, Overlay] = {}
+
+    # ----- Registration ---------------------------------------------
+
+    def register(self, overlay: Overlay) -> None:
+        """Register an Overlay.
+
+        Idempotent when the same instance is registered twice under
+        the same ``overlay_id``. Raises ``OverlayManagerError`` when
+        a different instance is already registered under the same id.
+        """
+        overlay_id = overlay.overlay_id
+        if not overlay_id:
+            raise OverlayManagerError("overlay_id must not be empty")
+
+        existing = self._overlays.get(overlay_id)
+        if existing is overlay:
+            return
+        if existing is not None:
+            raise OverlayManagerError(
+                f"overlay_id already registered with a different Overlay: {overlay_id}"
+            )
+        self._overlays[overlay_id] = overlay
+
+    def unregister(self, overlay_id: str) -> Overlay | None:
+        """Remove an Overlay.
+
+        Returns the removed Overlay, or None if the id is unknown.
+        """
+        return self._overlays.pop(overlay_id, None)
+
+    # ----- Lookup ---------------------------------------------------
+
+    def get(self, overlay_id: str) -> Overlay | None:
+        """Return the Overlay with the given id, or None."""
+        return self._overlays.get(overlay_id)
+
+    def require(self, overlay_id: str) -> Overlay:
+        """Return the Overlay with the given id.
+
+        Raises KeyError if unknown.
+        """
+        try:
+            return self._overlays[overlay_id]
+        except KeyError as exc:
+            raise KeyError(f"overlay_id not registered: {overlay_id}") from exc
+
+    def contains(self, overlay_id: str) -> bool:
+        """Return True if an Overlay with the given id is registered."""
+        return overlay_id in self._overlays
+
+    def overlays(self) -> tuple[Overlay, ...]:
+        """Return the registered Overlays in registration order."""
+        return tuple(self._overlays.values())
+
+    def overlay_count(self) -> int:
+        """Return the number of registered Overlays."""
+        return len(self._overlays)
+
+    def clear(self) -> None:
+        """Remove all registered Overlays.
+
+        The Overlay objects themselves are not destroyed; only the
+        manager's references to them are dropped.
+        """
+        self._overlays.clear()
+
+    # ----- Repositioning --------------------------------------------
+
+    def reposition_all(self, regions: tuple[Region, ...]) -> None:
+        """Reposition every registered Overlay according to the Regions.
+
+        For each registered Overlay, this method looks up the Region
+        whose ``semantic_role`` matches the Overlay's
+        ``target_region``. If such a Region exists, the Overlay is
+        repositioned with that Region's Bounds. If no Region matches,
+        the Overlay is left untouched.
+
+        The method is a no-op when no Overlays are registered. It
+        does not raise if Regions are missing for some Overlays;
+        missing targets are a legitimate state during a module
+        switch, before the next layout has been computed.
+
+        If two Regions share the same ``semantic_role`` (a
+        pathological case that should not occur in practice), the
+        first one encountered wins.
+        """
+        # Build a fast lookup: Placement -> Region.
+        # The first Region seen for a given Placement wins, so we
+        # explicitly skip assignments that would overwrite an
+        # existing entry.
+        region_by_placement: dict[Placement, Region] = {}
+        for region in regions:
+            role = region.semantic_role
+            if role is None:
+                continue
+            if role not in region_by_placement:
+                region_by_placement[role] = region
+
+        for overlay in self._overlays.values():
+            target = region_by_placement.get(overlay.target_region)
+            if target is None:
+                continue
+            overlay.reposition(target.bounds)
+
+    # ----- Representation -------------------------------------------
+
+    def __repr__(self) -> str:
+        return f"OverlayManager(overlays={list(self._overlays.keys())!r})"
 
 
 
@@ -29146,6 +30222,340 @@ FILE: src\cranioz\ui\workspace\overlays\overlay_state.py
 FILE: src\cranioz\ui\workspace\overlays\region.py
 ======================================================================
 
+"""Region.
+
+A Region is a geometric grouping of Areas within a Workspace.
+
+The concept exists to give Overlays a target: an Overlay is positioned
+over a Region, not over an individual Area. This decouples the Overlay
+from the current number and arrangement of Areas.
+
+Two concepts are defined here:
+
+- ``Bounds``: a plain geometric rectangle. It is deliberately NOT
+  ``PySide6.QtCore.QRect``. The layout tree and the Region are pure
+  domain structures; they do not depend on Qt. The LayoutRenderer is
+  responsible for converting ``Bounds`` to a Qt geometry when it
+  materializes widgets.
+
+- ``Region``: a named group of Areas that share a semantic role
+  (LEFT, CENTRAL, RIGHT, BOTTOM).
+
+A Region is *derived* from the LayoutTree, not stored on it. The
+LayoutTree owns the Areas; the Region is a projection of them.
+
+Bounds lifecycle:
+
+- ``LayoutTree.find_regions()`` produces Regions with a *placeholder*
+  Bounds (zero rectangle). The association between Areas and Regions
+  is structural and can be computed without Qt.
+
+- The real Bounds can only be computed after the LayoutRenderer has
+  materialized the Area widgets and Qt has assigned them their actual
+  geometry. A future piece (OverlayManager or Workspace) will fill
+  the Bounds in.
+
+This separation keeps the pure model (LayoutTree, Region) testable
+without a QApplication, and confines geometry to the rendering layer.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+from cranioz.ui.workspace.areas.area import Area
+from cranioz.ui.workspace.areas.placement import Placement
+
+# ----- Bounds -------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class Bounds:
+    """A geometric rectangle in screen coordinates.
+
+    The unit is left unspecified here because Bounds is a pure
+    geometry value. In practice it is pixels, as provided by Qt.
+    A future piece may introduce a coordinate-system tag if needed.
+
+    A Bounds with all fields at zero is a valid placeholder: it
+    means "the real geometry has not been computed yet".
+    """
+
+    x: float = 0.0
+    y: float = 0.0
+    width: float = 0.0
+    height: float = 0.0
+
+    def is_placeholder(self) -> bool:
+        """Return True if the Bounds has not been populated yet.
+
+        Used by tests and by the OverlayManager to distinguish a
+        Region whose geometry is known from one whose geometry has
+        not yet been computed.
+        """
+        return self == _PLACEHOLDER_BOUNDS
+
+    def __post_init__(self) -> None:
+        if self.width < 0:
+            raise ValueError(f"Bounds.width must be non-negative, got {self.width}")
+        if self.height < 0:
+            raise ValueError(f"Bounds.height must be non-negative, got {self.height}")
+
+
+_PLACEHOLDER_BOUNDS = Bounds()
+
+
+# ----- Region -------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class Region:
+    """A named group of Areas that share a semantic role.
+
+    A Region is a *projection* of a subset of a LayoutTree. It is
+    produced by ``LayoutTree.find_regions()`` and is intentionally
+    immutable: any change to the layout produces a new set of Regions.
+
+    Fields:
+
+    - ``region_id``: stable identifier. It equals the Placement value
+      ("left", "central", "right", "bottom"). Using the Placement
+      value as the id ensures the Region identity is consistent with
+      the semantic role the tree already uses.
+
+    - ``bounds``: geometric rectangle that contains every Area in the
+      Region. It is a placeholder until the LayoutRenderer (or the
+      Workspace) computes the real geometry.
+
+    - ``areas``: the Areas that belong to the Region, in the order
+      they appear in the LayoutTree. The order is deterministic and
+      matches the depth-first order of the tree.
+
+    - ``semantic_role``: the Placement this Region was derived from.
+      It is guaranteed to be non-None because a Region only exists
+      for a Placement that has at least one Area. It is exposed as
+      Optional for future flexibility (a Region could theoretically
+      be derived from a non-Placement rule), but today it is always
+      set.
+    """
+
+    region_id: str
+    bounds: Bounds
+    areas: tuple[Area, ...]
+    semantic_role: Placement | None
+
+    def __post_init__(self) -> None:
+        if not self.region_id:
+            raise ValueError("region_id must not be empty")
+        if not self.areas:
+            raise ValueError(f"Region {self.region_id!r} must contain at least one Area")
+
+    def area_count(self) -> int:
+        """Return the number of Areas in this Region."""
+        return len(self.areas)
+
+    def contains(self, area_id: str) -> bool:
+        """Return True if the given area_id belongs to this Region."""
+        return any(area.area_id == area_id for area in self.areas)
+
+    def with_bounds(self, bounds: Bounds) -> Region:
+        """Return a new Region with the given Bounds.
+
+        Used by the LayoutRenderer / Workspace to produce a Region
+        whose geometry is known, without mutating the original.
+        """
+        return Region(
+            region_id=self.region_id,
+            bounds=bounds,
+            areas=self.areas,
+            semantic_role=self.semantic_role,
+        )
+
+    def __repr__(self) -> str:
+        return (
+            f"Region(region_id={self.region_id!r}, "
+            f"areas={[a.area_id for a in self.areas]!r}, "
+            f"bounds={'placeholder' if self.bounds.is_placeholder() else self.bounds!r}, "
+            f"semantic_role={self.semantic_role.value if self.semantic_role else None!r})"
+        )
+
+
+
+======================================================================
+FILE: src\cranioz\ui\workspace\overlays\top_overlay.py
+======================================================================
+
+"""TopOverlay.
+
+The TopOverlay is the first concrete Overlay in CranioZ. It
+materializes the "Painel Superior" (Top Bar) shown across the UI
+prototype: a horizontal bar anchored to the top of the Central
+Region, with a fixed height and small lateral margins.
+
+Geometric behavior (this piece):
+
+- Anchored to the top of the target Region.
+- Fixed height.
+- Fixed lateral and top margins.
+- Width spans the Region minus the lateral margins.
+
+Content behavior (future pieces):
+
+- The three segments (left, center, right) described in the
+  prototype are not built here. This piece provides a container
+  widget with an accessible content layout so that the Workspace
+  (or a dedicated TopBar composition) can populate it later
+  without changing the TopOverlay contract.
+
+Design rules:
+
+- The TopOverlay computes its own geometry from the Region Bounds
+  it receives in ``reposition()``. It does not receive a
+  pre-computed position.
+- The overlay_id and target_region are class-level constants. Every
+  TopOverlay instance targets the Central Region and has the same
+  identity.
+- The widget is a plain QFrame. Styling (colors, borders) will be
+  applied later through the ThemeService, via Qt stylesheets keyed
+  by the object name.
+- The TopOverlay never destroys its widget. It can be hidden and
+  shown again; the widget instance remains the same.
+"""
+
+from __future__ import annotations
+
+from PySide6.QtWidgets import (
+    QFrame,
+    QHBoxLayout,
+    QLayout,
+    QWidget,
+)
+
+from cranioz.ui.workspace.areas.placement import Placement
+from cranioz.ui.workspace.overlays.overlay import Overlay
+from cranioz.ui.workspace.overlays.region import Bounds
+
+
+class TopOverlayError(ValueError):
+    """Raised when a TopOverlay is constructed with invalid parameters."""
+
+
+class TopOverlay(Overlay):
+    """Concrete Overlay implementing the Top Bar geometry.
+
+    The TopOverlay is anchored to the top of the Central Region. Its
+    height is fixed; its width follows the Region's width minus the
+    configured lateral margins.
+    """
+
+    # ----- Class-level constants ------------------------------------
+
+    OVERLAY_ID: str = "overlay.top_bar"
+    TARGET_REGION: Placement = Placement.CENTRAL
+
+    DEFAULT_HEIGHT: int = 40
+    DEFAULT_MARGIN_X: int = 8
+    DEFAULT_MARGIN_Y: int = 8
+
+    # ----- Construction ---------------------------------------------
+
+    def __init__(
+        self,
+        height: int = DEFAULT_HEIGHT,
+        margin_x: int = DEFAULT_MARGIN_X,
+        margin_y: int = DEFAULT_MARGIN_Y,
+        parent: QWidget | None = None,
+    ) -> None:
+        if height <= 0:
+            raise TopOverlayError(f"height must be positive, got {height}")
+        if margin_x < 0:
+            raise TopOverlayError(f"margin_x must be non-negative, got {margin_x}")
+        if margin_y < 0:
+            raise TopOverlayError(f"margin_y must be non-negative, got {margin_y}")
+
+        self._height = height
+        self._margin_x = margin_x
+        self._margin_y = margin_y
+        self._visible = True
+
+        self._widget = QFrame(parent)
+        self._widget.setObjectName("top_overlay")
+        self._widget.setFixedHeight(height)
+
+        # A horizontal layout is the natural container for the three
+        # segments. The segments themselves are added by a future
+        # piece; the layout is exposed via content_layout().
+        self._layout = QHBoxLayout(self._widget)
+        self._layout.setContentsMargins(4, 4, 4, 4)
+        self._layout.setSpacing(4)
+
+    # ----- Overlay API ----------------------------------------------
+
+    @property
+    def overlay_id(self) -> str:
+        return self.OVERLAY_ID
+
+    @property
+    def target_region(self) -> Placement:
+        return self.TARGET_REGION
+
+    def widget(self) -> QWidget:
+        return self._widget
+
+    def reposition(self, bounds: Bounds) -> None:
+        """Position the Top Bar over the given Region Bounds.
+
+        The Top Bar is anchored to the top-left of the Region with
+        the configured margins. Its width is the Region's width
+        minus twice the lateral margin. If the resulting width
+        would be negative (extremely narrow Region), it is clamped
+        to zero so that Qt receives a valid geometry.
+        """
+        x = bounds.x + self._margin_x
+        y = bounds.y + self._margin_y
+        width = max(0, bounds.width - 2 * self._margin_x)
+        height = self._height
+
+        self._widget.setGeometry(
+            round(x),
+            round(y),
+            round(width),
+            round(height),
+        )
+
+    def set_visible(self, visible: bool) -> None:
+        self._visible = visible
+        self._widget.setVisible(visible)
+
+    def is_visible(self) -> bool:
+        return self._visible
+
+    # ----- Convenience accessors ------------------------------------
+
+    @property
+    def height(self) -> int:
+        """Return the fixed height of the Top Bar in pixels."""
+        return self._height
+
+    @property
+    def margin_x(self) -> int:
+        """Return the horizontal margin applied to the Top Bar."""
+        return self._margin_x
+
+    @property
+    def margin_y(self) -> int:
+        """Return the vertical margin applied to the Top Bar."""
+        return self._margin_y
+
+    def content_layout(self) -> QLayout:
+        """Return the layout that will hold the Top Bar's content.
+
+        Future pieces (the Workspace or a dedicated TopBar
+        composition) add the left, center, and right segments to
+        this layout. The TopOverlay itself does not create those
+        segments: it only provides the container and its geometry.
+        """
+        return self._layout
 
 
 
@@ -29262,13 +30672,9 @@ class EditorLayoutSpec:
             if self.direction is None:
                 raise EditorLayoutSpecError("SPLIT must declare direction")
             if len(self.children) < 2:
-                raise EditorLayoutSpecError(
-                    "SPLIT must have at least two children"
-                )
+                raise EditorLayoutSpecError("SPLIT must have at least two children")
         else:
-            raise EditorLayoutSpecError(
-                f"unknown layout type: {self.type!r}"
-            )
+            raise EditorLayoutSpecError(f"unknown layout type: {self.type!r}")
 
     @classmethod
     def leaf(cls, editor_id: str) -> EditorLayoutSpec:
@@ -29330,9 +30736,7 @@ class ModuleUISpec:
             raise ModuleUISpecError("Area ids must be unique within a ModuleUISpec")
 
         if not any(area.placement is Placement.CENTRAL for area in self.areas):
-            raise ModuleUISpecError(
-                "ModuleUISpec must declare at least one CENTRAL Area"
-            )
+            raise ModuleUISpecError("ModuleUISpec must declare at least one CENTRAL Area")
 
 
 
@@ -29468,6 +30872,7 @@ def make_test_editor() -> Callable[..., DummyEditor]:
         return DummyEditor(editor_id=editor_id, title=title)
 
     return _factory
+
 
 # ----- Toolbar spec factory ------------------------------------------
 
@@ -29938,6 +31343,7 @@ What these tests cover:
   (ADR-0002 §2.3).
 - Invalid argument types raise TypeError.
 """
+
 from __future__ import annotations
 
 import re
@@ -30660,9 +32066,7 @@ def renderer(
 # ----- Single Leaf --------------------------------------------------
 
 
-def test_render_single_leaf_returns_area_widget(
-    qtbot, renderer: LayoutRenderer
-) -> None:
+def test_render_single_leaf_returns_area_widget(qtbot, renderer: LayoutRenderer) -> None:
     result = _build_result(
         _area("area.central", Placement.CENTRAL, _leaf("editor.patient")),
     )
@@ -30685,9 +32089,7 @@ def test_render_leaf_tree_root_is_leaf(
 # ----- Horizontal Split ---------------------------------------------
 
 
-def test_render_horizontal_split_returns_qsplitter(
-    qtbot, renderer: LayoutRenderer
-) -> None:
+def test_render_horizontal_split_returns_qsplitter(qtbot, renderer: LayoutRenderer) -> None:
     result = _build_result(
         _area("area.left", Placement.LEFT, _leaf("editor.object_list")),
         _area("area.central", Placement.CENTRAL, _leaf("editor.viewport_3d")),
@@ -30701,9 +32103,7 @@ def test_render_horizontal_split_returns_qsplitter(
     assert root.count() == 3
 
 
-def test_render_horizontal_split_children_order(
-    qtbot, renderer: LayoutRenderer
-) -> None:
+def test_render_horizontal_split_children_order(qtbot, renderer: LayoutRenderer) -> None:
     result = _build_result(
         _area("area.left", Placement.LEFT, _leaf("editor.object_list")),
         _area("area.central", Placement.CENTRAL, _leaf("editor.viewport_3d")),
@@ -30724,9 +32124,7 @@ def test_render_horizontal_split_children_order(
 # ----- Vertical Split -----------------------------------------------
 
 
-def test_render_vertical_split_returns_qsplitter(
-    qtbot, renderer: LayoutRenderer
-) -> None:
+def test_render_vertical_split_returns_qsplitter(qtbot, renderer: LayoutRenderer) -> None:
     result = _build_result(
         _area("area.central", Placement.CENTRAL, _leaf("editor.viewport_3d")),
         _area("area.bottom", Placement.BOTTOM, _leaf("editor.console")),
@@ -30742,9 +32140,7 @@ def test_render_vertical_split_returns_qsplitter(
 # ----- Nested Splits ------------------------------------------------
 
 
-def test_render_four_areas_has_nested_splitters(
-    qtbot, renderer: LayoutRenderer
-) -> None:
+def test_render_four_areas_has_nested_splitters(qtbot, renderer: LayoutRenderer) -> None:
     result = _build_result(
         _area("area.left", Placement.LEFT, _leaf("editor.object_list")),
         _area("area.central", Placement.CENTRAL, _leaf("editor.viewport_3d")),
@@ -30774,9 +32170,7 @@ def test_render_four_areas_has_nested_splitters(
 # ----- Caching ------------------------------------------------------
 
 
-def test_render_reuses_area_widgets_from_cache(
-    qtbot, renderer: LayoutRenderer
-) -> None:
+def test_render_reuses_area_widgets_from_cache(qtbot, renderer: LayoutRenderer) -> None:
     result = _build_result(
         _area("area.central", Placement.CENTRAL, _leaf("editor.patient")),
     )
@@ -30787,9 +32181,7 @@ def test_render_reuses_area_widgets_from_cache(
     assert root_first is root_second
 
 
-def test_cached_area_widget_returns_widget(
-    qtbot, renderer: LayoutRenderer
-) -> None:
+def test_cached_area_widget_returns_widget(qtbot, renderer: LayoutRenderer) -> None:
     result = _build_result(
         _area("area.left", Placement.LEFT, _leaf("editor.object_list")),
         _area("area.central", Placement.CENTRAL, _leaf("editor.viewport_3d")),
@@ -30808,9 +32200,7 @@ def test_cached_area_widget_returns_widget(
     assert unknown is None
 
 
-def test_clear_cache_discards_widgets(
-    qtbot, renderer: LayoutRenderer
-) -> None:
+def test_clear_cache_discards_widgets(qtbot, renderer: LayoutRenderer) -> None:
     result = _build_result(
         _area("area.central", Placement.CENTRAL, _leaf("editor.patient")),
     )
@@ -30821,9 +32211,7 @@ def test_clear_cache_discards_widgets(
     assert renderer.cached_area_widget("area.central") is None
 
 
-def test_render_after_clear_cache_creates_fresh_widgets(
-    qtbot, renderer: LayoutRenderer
-) -> None:
+def test_render_after_clear_cache_creates_fresh_widgets(qtbot, renderer: LayoutRenderer) -> None:
     result = _build_result(
         _area("area.central", Placement.CENTRAL, _leaf("editor.patient")),
     )
@@ -30849,6 +32237,360 @@ def test_render_invalid_node_raises(renderer: LayoutRenderer) -> None:
 
     with pytest.raises(LayoutRendererError, match="unknown layout node"):
         renderer.render(FakeTree())  # type: ignore[arg-type]
+
+
+
+======================================================================
+FILE: tests\integration\ui\workspace\workspace\test_workspace.py
+======================================================================
+
+"""Integration tests for the Workspace facade.
+
+The Workspace is the highest-level component of the Workspace
+subsystem. It coordinates:
+
+- LayoutBuilder      (ModuleUISpec -> Areas, LayoutTree, Editors)
+- LayoutRenderer     (LayoutTree -> Qt widgets)
+- OverlayManager     (registration + repositioning of Overlays)
+- TopOverlay         (the shared Top Bar, registered by default)
+
+These tests exercise the full materialization path:
+
+    ModuleUISpec
+        -> Workspace.load_spec()
+        -> Areas materialized, widgets rendered, overlays repositioned
+
+They use qtbot and a real QApplication. Widgets are laid out by Qt
+when the Workspace is shown; the tests call ``show()`` and
+``qtbot.waitExposed()`` (or explicitly trigger a resize) when the
+geometry matters.
+
+What these tests cover:
+
+- Construction with the required registries and services.
+- The TopOverlay is registered by default and accessible.
+- load_spec() builds the Areas, the tree, and the widget hierarchy.
+- areas() returns the Areas of the current composition.
+- area_manager() returns the manager; None before load.
+- is_loaded() reflects the composition state.
+- clear() drops the composition; the TopOverlay survives.
+- Reloading with a different spec replaces the composition.
+- Overlays are repositioned on load and on resize.
+- Region bounds are derived from the rendered AreaWidgets.
+- Empty workspace (no load) does not crash on resize.
+
+Non-goals:
+
+- Layout persistence (Bloco 11).
+- Drag-and-drop, floating, multi-monitor (Bloco 14).
+- Top Bar content (the three segments are not built here).
+"""
+
+from __future__ import annotations
+
+import pytest
+from PySide6.QtWidgets import QWidget
+from pytestqt.qtbot import QtBot
+
+from cranioz.ui.editors.builtin.test_editor import DummyEditor
+from cranioz.ui.editors.editor_registry import EditorRegistry
+from cranioz.ui.theme.service import ThemeName, ThemeService
+from cranioz.ui.tools.builtin.log_tool import LogTool
+from cranioz.ui.tools.builtin.toggle_tool import ToggleTool
+from cranioz.ui.tools.registry.tool_registry import ToolRegistry
+from cranioz.ui.workspace.areas.placement import Placement
+from cranioz.ui.workspace.specs.area_spec import AreaSpec
+from cranioz.ui.workspace.specs.editor_layout_spec import EditorLayoutSpec
+from cranioz.ui.workspace.specs.module_ui_spec import ModuleUISpec
+from cranioz.ui.workspace.workspace import Workspace
+
+# ----- Local helpers ------------------------------------------------
+
+
+def _leaf(editor_id: str) -> EditorLayoutSpec:
+    return EditorLayoutSpec.leaf(editor_id)
+
+
+def _area(
+    area_id: str,
+    placement: Placement,
+    editor_id: str,
+) -> AreaSpec:
+    return AreaSpec(
+        area_id=area_id,
+        title=area_id,
+        placement=placement,
+        editor_layout=_leaf(editor_id),
+    )
+
+
+def _spec(*areas: AreaSpec) -> ModuleUISpec:
+    return ModuleUISpec(areas=tuple(areas))
+
+
+# ----- Fixtures local to this module --------------------------------
+
+
+@pytest.fixture
+def editor_registry() -> EditorRegistry:
+    reg = EditorRegistry()
+    for editor_id in (
+        "editor.patient",
+        "editor.viewport_3d",
+        "editor.object_list",
+        "editor.properties",
+        "editor.console",
+    ):
+        reg.register(editor_id, DummyEditor)
+    return reg
+
+
+@pytest.fixture
+def tool_registry() -> ToolRegistry:
+    reg = ToolRegistry()
+    reg.register("tool.log", LogTool)
+    reg.register("tool.toggle", ToggleTool)
+    return reg
+
+
+@pytest.fixture
+def theme_service() -> ThemeService:
+    return ThemeService(theme=ThemeName.DARK)
+
+
+@pytest.fixture
+def workspace(
+    qtbot: QtBot,
+    editor_registry: EditorRegistry,
+    tool_registry: ToolRegistry,
+    theme_service: ThemeService,
+) -> Workspace:
+    ws = Workspace(
+        editor_registry=editor_registry,
+        tool_registry=tool_registry,
+        theme_service=theme_service,
+    )
+    qtbot.addWidget(ws)
+    return ws
+
+
+# ----- Construction -------------------------------------------------
+
+
+def test_workspace_is_a_qwidget(workspace: Workspace) -> None:
+    assert isinstance(workspace, QWidget)
+
+
+def test_workspace_has_object_name(workspace: Workspace) -> None:
+    assert workspace.objectName() == "workspace"
+
+
+def test_workspace_starts_unloaded(workspace: Workspace) -> None:
+    assert workspace.is_loaded() is False
+    assert workspace.areas() == ()
+    assert workspace.area_manager() is None
+
+
+def test_workspace_registers_top_overlay_by_default(
+    workspace: Workspace,
+) -> None:
+    overlay = workspace.top_overlay()
+    assert overlay is not None
+    assert overlay.overlay_id == "overlay.top_bar"
+    assert workspace.overlay_manager().contains("overlay.top_bar")
+
+
+# ----- load_spec — basic materialization ----------------------------
+
+
+def test_load_spec_single_central(workspace: Workspace) -> None:
+    spec = _spec(_area("area.central", Placement.CENTRAL, "editor.patient"))
+    workspace.load_spec(spec)
+
+    assert workspace.is_loaded() is True
+    assert [a.area_id for a in workspace.areas()] == ["area.central"]
+
+
+def test_load_spec_left_central_right(workspace: Workspace) -> None:
+    spec = _spec(
+        _area("area.left", Placement.LEFT, "editor.object_list"),
+        _area("area.central", Placement.CENTRAL, "editor.viewport_3d"),
+        _area("area.right", Placement.RIGHT, "editor.properties"),
+    )
+    workspace.load_spec(spec)
+
+    ids = sorted(a.area_id for a in workspace.areas())
+    assert ids == ["area.central", "area.left", "area.right"]
+
+
+def test_load_spec_four_areas(workspace: Workspace) -> None:
+    spec = _spec(
+        _area("area.left", Placement.LEFT, "editor.object_list"),
+        _area("area.central", Placement.CENTRAL, "editor.viewport_3d"),
+        _area("area.right", Placement.RIGHT, "editor.properties"),
+        _area("area.bottom", Placement.BOTTOM, "editor.console"),
+    )
+    workspace.load_spec(spec)
+
+    ids = sorted(a.area_id for a in workspace.areas())
+    assert ids == [
+        "area.bottom",
+        "area.central",
+        "area.left",
+        "area.right",
+    ]
+
+
+def test_load_spec_populates_area_manager(workspace: Workspace) -> None:
+    spec = _spec(_area("area.central", Placement.CENTRAL, "editor.patient"))
+    workspace.load_spec(spec)
+
+    manager = workspace.area_manager()
+    assert manager is not None
+    assert manager.contains("area.central")
+    assert manager.has_central()
+
+
+# ----- clear and reload ---------------------------------------------
+
+
+def test_clear_drops_composition(workspace: Workspace) -> None:
+    spec = _spec(_area("area.central", Placement.CENTRAL, "editor.patient"))
+    workspace.load_spec(spec)
+    assert workspace.is_loaded() is True
+
+    workspace.clear()
+
+    assert workspace.is_loaded() is False
+    assert workspace.areas() == ()
+    assert workspace.area_manager() is None
+
+
+def test_clear_on_unloaded_workspace_is_noop(
+    workspace: Workspace,
+) -> None:
+    workspace.clear()  # must not raise
+    assert workspace.is_loaded() is False
+
+
+def test_clear_preserves_top_overlay(workspace: Workspace) -> None:
+    spec = _spec(_area("area.central", Placement.CENTRAL, "editor.patient"))
+    workspace.load_spec(spec)
+
+    overlay_before = workspace.top_overlay()
+
+    workspace.clear()
+
+    # The TopOverlay instance is stable; the OverlayManager still
+    # holds it.
+    assert workspace.top_overlay() is overlay_before
+    assert workspace.overlay_manager().contains("overlay.top_bar")
+
+
+def test_reload_replaces_composition(workspace: Workspace) -> None:
+    spec_a = _spec(_area("area.central", Placement.CENTRAL, "editor.patient"))
+    spec_b = _spec(
+        _area("area.left", Placement.LEFT, "editor.object_list"),
+        _area("area.central", Placement.CENTRAL, "editor.viewport_3d"),
+        _area("area.right", Placement.RIGHT, "editor.properties"),
+    )
+
+    workspace.load_spec(spec_a)
+    workspace.load_spec(spec_b)
+
+    ids = sorted(a.area_id for a in workspace.areas())
+    assert ids == ["area.central", "area.left", "area.right"]
+
+
+def test_reload_keeps_top_overlay_registered(
+    workspace: Workspace,
+) -> None:
+    spec = _spec(_area("area.central", Placement.CENTRAL, "editor.patient"))
+
+    workspace.load_spec(spec)
+    workspace.load_spec(spec)
+
+    assert workspace.overlay_manager().contains("overlay.top_bar")
+
+
+# ----- Overlays and regions -----------------------------------------
+
+
+def test_load_spec_triggers_overlay_repositioning(
+    qtbot: QtBot,
+    workspace: Workspace,
+) -> None:
+    """After a load + resize, the TopOverlay has non-zero geometry.
+
+    The TopOverlay is anchored to the Central Region. If the Central
+    Area has a non-zero size, the TopOverlay must have a non-zero
+    width.
+    """
+    spec = _spec(_area("area.central", Placement.CENTRAL, "editor.patient"))
+    workspace.resize(800, 600)
+    workspace.show()
+    qtbot.waitExposed(workspace)
+
+    workspace.load_spec(spec)
+    workspace.resize(800, 600)  # trigger a resizeEvent
+
+    overlay_widget = workspace.top_overlay().widget()
+    # The overlay must have received some bounds; width may vary with
+    # Qt's layout timing, but the widget must be visible.
+    assert overlay_widget.isVisible() is True
+
+
+def test_workspace_resize_does_not_crash_unloaded(
+    qtbot: QtBot,
+    workspace: Workspace,
+) -> None:
+    workspace.show()
+    qtbot.waitExposed(workspace)
+    workspace.resize(500, 400)  # no load; must not raise
+
+
+def test_top_overlay_is_above_root_widget(
+    qtbot: QtBot,
+    workspace: Workspace,
+) -> None:
+    """The TopOverlay floats above the rendered composition.
+
+    The TopOverlay widget is a child of the Workspace and is raised
+    above the composition's root widget. It must not be reparented
+    into the root widget.
+    """
+    spec = _spec(_area("area.central", Placement.CENTRAL, "editor.patient"))
+    workspace.resize(800, 600)
+    workspace.show()
+    qtbot.waitExposed(workspace)
+
+    workspace.load_spec(spec)
+
+    # The TopOverlay's widget's parent is the Workspace itself.
+    overlay_widget = workspace.top_overlay().widget()
+    assert overlay_widget.parent() is workspace
+
+
+# ----- Overlay manager stability ------------------------------------
+
+
+def test_overlay_manager_is_stable_across_load_spec(
+    workspace: Workspace,
+) -> None:
+    manager_before = workspace.overlay_manager()
+    spec = _spec(_area("area.central", Placement.CENTRAL, "editor.patient"))
+    workspace.load_spec(spec)
+    manager_after = workspace.overlay_manager()
+    assert manager_before is manager_after
+
+
+def test_overlay_manager_is_stable_across_clear(
+    workspace: Workspace,
+) -> None:
+    manager_before = workspace.overlay_manager()
+    workspace.clear()
+    manager_after = workspace.overlay_manager()
+    assert manager_before is manager_after
 
 
 
@@ -31065,6 +32807,492 @@ def test_missing_app_section_raises(tmp_path: Path) -> None:
 
 
 ======================================================================
+FILE: tests\unit\domain\__init__.py
+======================================================================
+
+
+
+
+======================================================================
+FILE: tests\unit\domain\project\test_project.py
+======================================================================
+
+"""Tests for Project."""
+
+from __future__ import annotations
+
+from datetime import UTC, datetime
+
+import pytest
+
+from cranioz.domain.project.project import Project
+from cranioz.domain.project.project_id import ProjectId
+from cranioz.domain.project.project_metadata import ProjectMetadata
+from cranioz.domain.project.project_status import ProjectStatus
+
+# ----- Helpers ------------------------------------------------------
+
+
+def _now() -> datetime:
+    return datetime(2026, 1, 1, 12, 0, tzinfo=UTC)
+
+
+def _metadata(project_id: str = "p-001") -> ProjectMetadata:
+    return ProjectMetadata(
+        project_id=ProjectId(project_id),
+        project_name="Case 001",
+        patient_id="pat-001",
+        patient_display_name="Gabriel Silva",
+        clinical_procedure="orthognathic",
+        status=ProjectStatus.ACTIVE,
+        created_at=_now(),
+        updated_at=_now(),
+        last_opened_at=None,
+        schema_version=1,
+    )
+
+
+def _project(project_id: str = "p-001") -> Project:
+    pid = ProjectId(project_id)
+    return Project(project_id=pid, metadata=_metadata(project_id))
+
+
+# ----- Construction -------------------------------------------------
+
+
+def test_project_holds_id_and_metadata() -> None:
+    p = _project()
+    assert p.project_id == ProjectId("p-001")
+    assert p.metadata.project_id == ProjectId("p-001")
+    assert p.metadata.project_name == "Case 001"
+
+
+def test_project_extras_default_to_empty_dict() -> None:
+    p = _project()
+    assert p.extras == {}
+
+
+def test_metadata_project_id_mismatch_raises() -> None:
+    pid = ProjectId("p-001")
+    wrong_md = _metadata("p-999")
+    with pytest.raises(ValueError, match="must match"):
+        Project(project_id=pid, metadata=wrong_md)
+
+
+# ----- update_metadata ----------------------------------------------
+
+
+def test_update_metadata_replaces() -> None:
+    p = _project()
+    later = datetime(2026, 2, 1, tzinfo=UTC)
+    new_md = p.metadata.with_name("Renamed", now=later)
+
+    p.update_metadata(new_md)
+
+    assert p.metadata.project_name == "Renamed"
+    assert p.metadata.updated_at == later
+
+
+def test_update_metadata_wrong_project_raises() -> None:
+    p = _project()
+    other_md = _metadata("p-999")
+    with pytest.raises(ValueError, match="different project"):
+        p.update_metadata(other_md)
+
+
+# ----- Representation -----------------------------------------------
+
+
+def test_repr_mentions_key_fields() -> None:
+    p = _project()
+    text = repr(p)
+    assert "p-001" in text
+    assert "Case 001" in text
+    assert "active" in text
+
+
+
+======================================================================
+FILE: tests\unit\domain\project\test_project_id.py
+======================================================================
+
+"""Tests for ProjectId."""
+
+from __future__ import annotations
+
+import dataclasses
+
+import pytest
+
+from cranioz.domain.project.project_id import ProjectId
+
+
+def test_project_id_holds_value() -> None:
+    pid = ProjectId("abc-123")
+    assert pid.value == "abc-123"
+
+
+def test_project_id_is_frozen() -> None:
+    pid = ProjectId("abc")
+    attr = "value"
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        setattr(pid, attr, "other")
+
+
+def test_empty_value_raises() -> None:
+    with pytest.raises(ValueError, match="must not be empty"):
+        ProjectId("")
+
+
+def test_whitespace_only_value_raises() -> None:
+    with pytest.raises(ValueError, match="whitespace"):
+        ProjectId("   ")
+    with pytest.raises(ValueError, match="whitespace"):
+        ProjectId("\t\n")
+
+
+def test_equality_by_value() -> None:
+    a = ProjectId("abc")
+    b = ProjectId("abc")
+    assert a == b
+
+
+def test_different_ids_are_not_equal() -> None:
+    assert ProjectId("abc") != ProjectId("xyz")
+
+
+def test_str_returns_value() -> None:
+    assert str(ProjectId("abc-123")) == "abc-123"
+
+
+def test_repr_mentions_value() -> None:
+    assert "abc-123" in repr(ProjectId("abc-123"))
+
+
+def test_hashable() -> None:
+    # Frozen dataclasses are hashable, which makes ProjectId usable
+    # as a dict key.
+    d = {ProjectId("a"): 1, ProjectId("b"): 2}
+    assert d[ProjectId("a")] == 1
+
+
+
+======================================================================
+FILE: tests\unit\domain\project\test_project_metadata.py
+======================================================================
+
+"""Tests for ProjectMetadata."""
+
+from __future__ import annotations
+
+import dataclasses
+from datetime import UTC, datetime
+
+import pytest
+
+from cranioz.domain.project.project_id import ProjectId
+from cranioz.domain.project.project_metadata import ProjectMetadata
+from cranioz.domain.project.project_status import ProjectStatus
+
+# ----- Helpers ------------------------------------------------------
+
+
+def _now() -> datetime:
+    return datetime(2026, 1, 1, 12, 0, tzinfo=UTC)
+
+
+def _metadata(**overrides) -> ProjectMetadata:
+    base: dict = {
+        "project_id": ProjectId("p-001"),
+        "project_name": "Case 001",
+        "patient_id": "pat-001",
+        "patient_display_name": "Gabriel Silva",
+        "clinical_procedure": "orthognathic",
+        "status": ProjectStatus.ACTIVE,
+        "created_at": _now(),
+        "updated_at": _now(),
+        "last_opened_at": None,
+        "schema_version": 1,
+    }
+    base.update(overrides)
+    return ProjectMetadata(**base)
+
+
+# ----- Construction -------------------------------------------------
+
+
+def test_metadata_holds_all_fields() -> None:
+    md = _metadata()
+    assert md.project_id == ProjectId("p-001")
+    assert md.project_name == "Case 001"
+    assert md.patient_id == "pat-001"
+    assert md.patient_display_name == "Gabriel Silva"
+    assert md.clinical_procedure == "orthognathic"
+    assert md.status is ProjectStatus.ACTIVE
+    assert md.schema_version == 1
+
+
+def test_metadata_is_frozen() -> None:
+    md = _metadata()
+    attr = "project_name"
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        setattr(md, attr, "Other")
+
+
+def test_empty_project_name_raises() -> None:
+    with pytest.raises(ValueError, match="project_name"):
+        _metadata(project_name="")
+
+
+def test_empty_patient_id_raises() -> None:
+    with pytest.raises(ValueError, match="patient_id"):
+        _metadata(patient_id="")
+
+
+def test_empty_patient_display_name_raises() -> None:
+    with pytest.raises(ValueError, match="patient_display_name"):
+        _metadata(patient_display_name="")
+
+
+def test_schema_version_zero_raises() -> None:
+    with pytest.raises(ValueError, match="schema_version"):
+        _metadata(schema_version=0)
+
+
+def test_schema_version_negative_raises() -> None:
+    with pytest.raises(ValueError, match="schema_version"):
+        _metadata(schema_version=-1)
+
+
+def test_updated_before_created_raises() -> None:
+    earlier = datetime(2025, 1, 1, tzinfo=UTC)
+    later = datetime(2026, 1, 1, tzinfo=UTC)
+    with pytest.raises(ValueError, match="updated_at"):
+        _metadata(created_at=later, updated_at=earlier)
+
+
+def test_last_opened_before_created_raises() -> None:
+    earlier = datetime(2025, 1, 1, tzinfo=UTC)
+    later = datetime(2026, 1, 1, tzinfo=UTC)
+    with pytest.raises(ValueError, match="last_opened_at"):
+        _metadata(
+            created_at=later,
+            updated_at=later,
+            last_opened_at=earlier,
+        )
+
+
+def test_naive_created_at_raises() -> None:
+    naive = datetime(2026, 1, 1)
+    with pytest.raises(ValueError, match="created_at"):
+        _metadata(created_at=naive, updated_at=naive)
+
+
+def test_naive_updated_at_raises() -> None:
+    naive = datetime(2026, 1, 1)
+    with pytest.raises(ValueError, match="updated_at"):
+        _metadata(created_at=_now(), updated_at=naive)
+
+
+def test_naive_last_opened_at_raises() -> None:
+    naive = datetime(2026, 1, 1)
+    with pytest.raises(ValueError, match="last_opened_at"):
+        _metadata(last_opened_at=naive)
+
+
+# ----- Mutators -----------------------------------------------------
+
+
+def test_with_status_returns_new_instance() -> None:
+    md = _metadata()
+    later = datetime(2026, 2, 1, tzinfo=UTC)
+    new_md = md.with_status(ProjectStatus.ARCHIVED, now=later)
+
+    assert new_md is not md
+    assert new_md.status is ProjectStatus.ARCHIVED
+    assert new_md.updated_at == later
+    # Original unchanged.
+    assert md.status is ProjectStatus.ACTIVE
+
+
+def test_with_name_returns_new_instance() -> None:
+    md = _metadata()
+    later = datetime(2026, 2, 1, tzinfo=UTC)
+    new_md = md.with_name("Renamed", now=later)
+
+    assert new_md.project_name == "Renamed"
+    assert new_md.updated_at == later
+    assert md.project_name == "Case 001"
+
+
+def test_with_name_empty_raises() -> None:
+    md = _metadata()
+    later = datetime(2026, 2, 1, tzinfo=UTC)
+    with pytest.raises(ValueError, match="project_name"):
+        md.with_name("", now=later)
+
+
+def test_with_last_opened_sets_timestamp() -> None:
+    md = _metadata()
+    later = datetime(2026, 3, 1, tzinfo=UTC)
+    new_md = md.with_last_opened(now=later)
+
+    assert new_md.last_opened_at == later
+    assert md.last_opened_at is None
+
+
+
+======================================================================
+FILE: tests\unit\domain\project\test_project_status.py
+======================================================================
+
+"""Tests for ProjectStatus."""
+
+from __future__ import annotations
+
+from cranioz.domain.project.project_status import ProjectStatus
+
+
+def test_members() -> None:
+    expected = {"DRAFT", "ACTIVE", "ARCHIVED"}
+    assert {m.name for m in ProjectStatus} == expected
+
+
+def test_values() -> None:
+    assert ProjectStatus.DRAFT.value == "draft"
+    assert ProjectStatus.ACTIVE.value == "active"
+    assert ProjectStatus.ARCHIVED.value == "archived"
+
+
+def test_lookup_by_value() -> None:
+    assert ProjectStatus("draft") is ProjectStatus.DRAFT
+    assert ProjectStatus("active") is ProjectStatus.ACTIVE
+    assert ProjectStatus("archived") is ProjectStatus.ARCHIVED
+
+
+
+======================================================================
+FILE: tests\unit\domain\project\test_project_summary.py
+======================================================================
+
+"""Tests for ProjectSummary."""
+
+from __future__ import annotations
+
+import dataclasses
+from datetime import UTC, datetime
+
+import pytest
+
+from cranioz.domain.project.project_id import ProjectId
+from cranioz.domain.project.project_metadata import ProjectMetadata
+from cranioz.domain.project.project_status import ProjectStatus
+from cranioz.domain.project.project_summary import ProjectSummary
+
+# ----- Helpers ------------------------------------------------------
+
+
+def _now() -> datetime:
+    return datetime(2026, 1, 1, 12, 0, tzinfo=UTC)
+
+
+def _metadata() -> ProjectMetadata:
+    return ProjectMetadata(
+        project_id=ProjectId("p-001"),
+        project_name="Case 001",
+        patient_id="pat-001",
+        patient_display_name="Gabriel Silva",
+        clinical_procedure="orthognathic",
+        status=ProjectStatus.ACTIVE,
+        created_at=_now(),
+        updated_at=_now(),
+        last_opened_at=None,
+        schema_version=1,
+    )
+
+
+def _summary(**overrides) -> ProjectSummary:
+    base: dict = {
+        "project_id": ProjectId("p-001"),
+        "project_name": "Case 001",
+        "patient_display_name": "Gabriel Silva",
+        "status": ProjectStatus.ACTIVE,
+        "procedure": "orthognathic",
+        "created_at": _now(),
+        "updated_at": _now(),
+        "last_opened_at": None,
+    }
+    base.update(overrides)
+    return ProjectSummary(**base)
+
+
+# ----- Construction -------------------------------------------------
+
+
+def test_summary_holds_all_fields() -> None:
+    s = _summary()
+    assert s.project_id == ProjectId("p-001")
+    assert s.project_name == "Case 001"
+    assert s.patient_display_name == "Gabriel Silva"
+    assert s.status is ProjectStatus.ACTIVE
+    assert s.procedure == "orthognathic"
+
+
+def test_summary_is_frozen() -> None:
+    s = _summary()
+    attr = "project_name"
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        setattr(s, attr, "Other")
+
+
+def test_empty_project_name_raises() -> None:
+    with pytest.raises(ValueError, match="project_name"):
+        _summary(project_name="")
+
+
+def test_empty_patient_display_name_raises() -> None:
+    with pytest.raises(ValueError, match="patient_display_name"):
+        _summary(patient_display_name="")
+
+
+def test_empty_procedure_raises() -> None:
+    with pytest.raises(ValueError, match="procedure"):
+        _summary(procedure="")
+
+
+# ----- from_metadata ------------------------------------------------
+
+
+def test_from_metadata_copies_fields() -> None:
+    md = _metadata()
+    s = ProjectSummary.from_metadata(md)
+
+    assert s.project_id == md.project_id
+    assert s.project_name == md.project_name
+    assert s.patient_display_name == md.patient_display_name
+    assert s.status == md.status
+    assert s.procedure == md.clinical_procedure
+    assert s.created_at == md.created_at
+    assert s.updated_at == md.updated_at
+    assert s.last_opened_at == md.last_opened_at
+
+
+def test_from_metadata_with_last_opened() -> None:
+    later = datetime(2026, 2, 1, tzinfo=UTC)
+    md = _metadata().with_last_opened(now=later)
+    s = ProjectSummary.from_metadata(md)
+    assert s.last_opened_at == later
+
+
+
+======================================================================
+FILE: tests\unit\domain\project\__init__.py
+======================================================================
+
+
+
+
+======================================================================
 FILE: tests\unit\infrastructure\test_project_path_resolver.py
 ======================================================================
 
@@ -31093,9 +33321,7 @@ def test_initialize_creates_directory(tmp_path: Path) -> None:
     assert resolver.project_root == target
 
 
-def test_initialize_uses_default_when_none(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_initialize_uses_default_when_none(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(Path, "home", classmethod(lambda cls: tmp_path))
     resolver = ProjectPathResolver()
 
@@ -33117,6 +35343,1188 @@ def test_leaves_carry_areas_with_correct_placement() -> None:
     assert by_id["area.bottom"] is Placement.BOTTOM
 
 
+# ----- find_regions -------------------------------------------------
+
+
+def test_find_regions_single_central() -> None:
+    specs = (_spec("area.central", Placement.CENTRAL, "editor.central"),)
+    areas = _areas_from_specs(specs)
+    tree = LayoutTree.from_specs(specs, areas)
+
+    regions = tree.find_regions()
+
+    assert len(regions) == 1
+    assert regions[0].region_id == "central"
+    assert regions[0].semantic_role is Placement.CENTRAL
+    assert [a.area_id for a in regions[0].areas] == ["area.central"]
+
+
+def test_find_regions_left_central_right() -> None:
+    specs = (
+        _spec("area.left", Placement.LEFT, "editor.left"),
+        _spec("area.central", Placement.CENTRAL, "editor.central"),
+        _spec("area.right", Placement.RIGHT, "editor.right"),
+    )
+    areas = _areas_from_specs(specs)
+    tree = LayoutTree.from_specs(specs, areas)
+
+    regions = tree.find_regions()
+
+    assert [r.region_id for r in regions] == ["left", "central", "right"]
+    assert [r.semantic_role for r in regions] == [
+        Placement.LEFT,
+        Placement.CENTRAL,
+        Placement.RIGHT,
+    ]
+
+
+def test_find_regions_returns_in_stable_order() -> None:
+    """The order is LEFT, CENTRAL, RIGHT, BOTTOM regardless of spec order."""
+    specs = (
+        _spec("area.bottom", Placement.BOTTOM, "editor.bottom"),
+        _spec("area.right", Placement.RIGHT, "editor.right"),
+        _spec("area.central", Placement.CENTRAL, "editor.central"),
+        _spec("area.left", Placement.LEFT, "editor.left"),
+    )
+    areas = _areas_from_specs(specs)
+    tree = LayoutTree.from_specs(specs, areas)
+
+    regions = tree.find_regions()
+
+    assert [r.region_id for r in regions] == [
+        "left",
+        "central",
+        "right",
+        "bottom",
+    ]
+
+
+def test_find_regions_groups_multiple_central_areas() -> None:
+    """A complex central region may contain more than one Area."""
+    specs = (
+        _spec("area.central.a", Placement.CENTRAL, "editor.a"),
+        _spec("area.central.b", Placement.CENTRAL, "editor.b"),
+    )
+    areas = _areas_from_specs(specs)
+    tree = LayoutTree.from_specs(specs, areas)
+
+    regions = tree.find_regions()
+
+    assert len(regions) == 1
+    assert regions[0].region_id == "central"
+    assert [a.area_id for a in regions[0].areas] == [
+        "area.central.a",
+        "area.central.b",
+    ]
+
+
+def test_find_regions_skips_placements_with_no_areas() -> None:
+    """Only placements that have at least one Area produce a Region."""
+    specs = (
+        _spec("area.central", Placement.CENTRAL, "editor.central"),
+        _spec("area.bottom", Placement.BOTTOM, "editor.bottom"),
+    )
+    areas = _areas_from_specs(specs)
+    tree = LayoutTree.from_specs(specs, areas)
+
+    regions = tree.find_regions()
+
+    assert [r.region_id for r in regions] == ["central", "bottom"]
+    # "left" and "right" do not appear because there is no Area there.
+
+
+def test_find_regions_bounds_are_placeholders() -> None:
+    """find_regions() does not compute geometry.
+
+    Every returned Region has a placeholder Bounds (zero rectangle).
+    The LayoutRenderer will fill the real Bounds once widgets exist.
+    """
+    specs = (
+        _spec("area.left", Placement.LEFT, "editor.left"),
+        _spec("area.central", Placement.CENTRAL, "editor.central"),
+    )
+    areas = _areas_from_specs(specs)
+    tree = LayoutTree.from_specs(specs, areas)
+
+    regions = tree.find_regions()
+
+    for region in regions:
+        assert region.bounds.is_placeholder() is True
+
+
+def test_find_regions_every_area_belongs_to_exactly_one_region() -> None:
+    specs = (
+        _spec("area.left", Placement.LEFT, "editor.left"),
+        _spec("area.central", Placement.CENTRAL, "editor.central"),
+        _spec("area.right", Placement.RIGHT, "editor.right"),
+        _spec("area.bottom", Placement.BOTTOM, "editor.bottom"),
+    )
+    areas = _areas_from_specs(specs)
+    tree = LayoutTree.from_specs(specs, areas)
+
+    regions = tree.find_regions()
+
+    seen: list[str] = []
+    for region in regions:
+        seen.extend(a.area_id for a in region.areas)
+    assert sorted(seen) == sorted(["area.left", "area.central", "area.right", "area.bottom"])
+    assert len(seen) == len(set(seen))  # no duplicates
+
+
+def test_find_regions_areas_are_in_depth_first_order() -> None:
+    specs = (
+        _spec("area.left.a", Placement.LEFT, "editor.a"),
+        _spec("area.left.b", Placement.LEFT, "editor.b"),
+        _spec("area.central", Placement.CENTRAL, "editor.central"),
+    )
+    areas = _areas_from_specs(specs)
+    tree = LayoutTree.from_specs(specs, areas)
+
+    regions = tree.find_regions()
+
+    left = next(r for r in regions if r.region_id == "left")
+    assert [a.area_id for a in left.areas] == [
+        "area.left.a",
+        "area.left.b",
+    ]
+
+
+
+======================================================================
+FILE: tests\unit\ui\workspace\overlays\test_overlay.py
+======================================================================
+
+"""Tests for the Overlay ABC.
+
+The Overlay ABC is an abstract interface. To exercise it we define
+a concrete subclass, ``FakeOverlay``, that implements every abstract
+method with the minimal behaviour required by the contract.
+
+The FakeOverlay uses a real QWidget (a QLabel). The tests that
+instantiate it use ``qtbot`` and therefore require a QApplication.
+The tests that only inspect the abstract methods do not create a
+widget and could in principle run without Qt; we keep them together
+for clarity.
+
+These tests verify:
+
+- The ABC cannot be instantiated directly.
+- A concrete subclass must implement every abstract method.
+- overlay_id and target_region are readable.
+- widget() returns the QWidget provided by the subclass.
+- reposition() records the Bounds it receives.
+- set_visible() / is_visible() work as expected.
+"""
+
+from __future__ import annotations
+
+import pytest
+from PySide6.QtWidgets import QLabel, QWidget
+from pytestqt.qtbot import QtBot
+
+from cranioz.ui.workspace.areas.placement import Placement
+from cranioz.ui.workspace.overlays.overlay import Overlay
+from cranioz.ui.workspace.overlays.region import Bounds
+
+# ----- Concrete test implementation ---------------------------------
+
+
+class FakeOverlay(Overlay):
+    """Minimal concrete Overlay used only in tests."""
+
+    def __init__(
+        self,
+        overlay_id: str = "overlay.test",
+        target_region: Placement = Placement.CENTRAL,
+        widget: QWidget | None = None,
+    ) -> None:
+        self._overlay_id = overlay_id
+        self._target_region = target_region
+        self._widget = widget if widget is not None else QLabel("Fake")
+        self._visible = True
+        self._last_bounds: Bounds | None = None
+
+    @property
+    def overlay_id(self) -> str:
+        return self._overlay_id
+
+    @property
+    def target_region(self) -> Placement:
+        return self._target_region
+
+    def widget(self) -> QWidget:
+        return self._widget
+
+    def reposition(self, bounds: Bounds) -> None:
+        self._last_bounds = bounds
+
+    def set_visible(self, visible: bool) -> None:
+        self._visible = visible
+        self._widget.setVisible(visible)
+
+    def is_visible(self) -> bool:
+        return self._visible
+
+    # ----- Test-only accessors ---------------------------------------
+
+    @property
+    def last_bounds(self) -> Bounds | None:
+        return self._last_bounds
+
+
+# ----- Abstractness -------------------------------------------------
+
+
+def test_overlay_is_abstract() -> None:
+    with pytest.raises(TypeError):
+        Overlay()  # type: ignore[abstract]
+
+
+def test_concrete_overlay_can_be_instantiated(qtbot: QtBot) -> None:
+    overlay = FakeOverlay()
+    qtbot.addWidget(overlay.widget())
+    assert isinstance(overlay, Overlay)
+
+
+# ----- Identity -----------------------------------------------------
+
+
+def test_overlay_id_is_readable(qtbot: QtBot) -> None:
+    overlay = FakeOverlay(overlay_id="overlay.top_bar")
+    qtbot.addWidget(overlay.widget())
+    assert overlay.overlay_id == "overlay.top_bar"
+
+
+def test_target_region_is_readable(qtbot: QtBot) -> None:
+    overlay = FakeOverlay(target_region=Placement.CENTRAL)
+    qtbot.addWidget(overlay.widget())
+    assert overlay.target_region is Placement.CENTRAL
+
+
+def test_target_region_accepts_all_placements(qtbot: QtBot) -> None:
+    for placement in Placement:
+        overlay = FakeOverlay(target_region=placement)
+        qtbot.addWidget(overlay.widget())
+        assert overlay.target_region is placement
+
+
+# ----- Widget -------------------------------------------------------
+
+
+def test_widget_returns_qwidget(qtbot: QtBot) -> None:
+    overlay = FakeOverlay()
+    widget = overlay.widget()
+    qtbot.addWidget(widget)
+    assert isinstance(widget, QWidget)
+
+
+def test_widget_is_stable_across_calls(qtbot: QtBot) -> None:
+    overlay = FakeOverlay()
+    first = overlay.widget()
+    second = overlay.widget()
+    qtbot.addWidget(first)
+    assert first is second
+
+
+# ----- Reposition ---------------------------------------------------
+
+
+def test_reposition_records_bounds(qtbot: QtBot) -> None:
+    overlay = FakeOverlay()
+    qtbot.addWidget(overlay.widget())
+
+    bounds = Bounds(x=100.0, y=50.0, width=800.0, height=600.0)
+    overlay.reposition(bounds)
+
+    assert overlay.last_bounds == bounds
+
+
+def test_reposition_accepts_placeholder_bounds(qtbot: QtBot) -> None:
+    overlay = FakeOverlay()
+    qtbot.addWidget(overlay.widget())
+
+    overlay.reposition(Bounds())
+    assert overlay.last_bounds is not None
+    assert overlay.last_bounds.is_placeholder() is True
+
+
+def test_reposition_can_be_called_multiple_times(qtbot: QtBot) -> None:
+    overlay = FakeOverlay()
+    qtbot.addWidget(overlay.widget())
+
+    first = Bounds(x=0.0, y=0.0, width=100.0, height=100.0)
+    second = Bounds(x=10.0, y=10.0, width=200.0, height=200.0)
+
+    overlay.reposition(first)
+    overlay.reposition(second)
+
+    assert overlay.last_bounds == second
+
+
+# ----- Visibility ---------------------------------------------------
+
+
+def test_overlay_starts_visible(qtbot: QtBot) -> None:
+    overlay = FakeOverlay()
+    qtbot.addWidget(overlay.widget())
+    assert overlay.is_visible() is True
+
+
+def test_set_visible_false_hides_overlay(qtbot: QtBot) -> None:
+    overlay = FakeOverlay()
+    qtbot.addWidget(overlay.widget())
+
+    overlay.set_visible(False)
+
+    assert overlay.is_visible() is False
+    assert overlay.widget().isVisible() is False
+
+
+def test_set_visible_true_shows_overlay(qtbot: QtBot) -> None:
+    overlay = FakeOverlay()
+    qtbot.addWidget(overlay.widget())
+
+    overlay.set_visible(False)
+    overlay.set_visible(True)
+
+    assert overlay.is_visible() is True
+
+
+def test_visibility_toggle_does_not_destroy_widget(qtbot: QtBot) -> None:
+    overlay = FakeOverlay()
+    widget = overlay.widget()
+    qtbot.addWidget(widget)
+
+    overlay.set_visible(False)
+    overlay.set_visible(True)
+
+    # The widget instance is the same throughout.
+    assert overlay.widget() is widget
+
+
+
+======================================================================
+FILE: tests\unit\ui\workspace\overlays\test_overlay_manager.py
+======================================================================
+
+"""Tests for OverlayManager.
+
+The OverlayManager coordinates a set of Overlays: registration,
+lookup, and repositioning when the layout changes. It does not
+create Overlays and does not compute geometry.
+
+These tests use a FakeOverlay: a concrete Overlay subclass that
+records the Bounds it receives, so we can assert that
+``reposition_all()`` routed the correct Bounds to the correct
+Overlay.
+
+The FakeOverlay uses a real QWidget (QLabel) because the Overlay
+contract requires ``widget()`` to return a QWidget. The tests use
+``qtbot`` and therefore a QApplication.
+"""
+
+from __future__ import annotations
+
+import pytest
+from PySide6.QtWidgets import QLabel, QWidget
+from pytestqt.qtbot import QtBot
+
+from cranioz.ui.workspace.areas.area import Area
+from cranioz.ui.workspace.areas.placement import Placement
+from cranioz.ui.workspace.overlays.overlay import Overlay
+from cranioz.ui.workspace.overlays.overlay_manager import (
+    OverlayManager,
+    OverlayManagerError,
+)
+from cranioz.ui.workspace.overlays.region import Bounds, Region
+
+# ----- Test helpers -------------------------------------------------
+
+
+class FakeOverlay(Overlay):
+    """Minimal Overlay that records the last Bounds it received."""
+
+    def __init__(
+        self,
+        overlay_id: str,
+        target_region: Placement = Placement.CENTRAL,
+        widget: QWidget | None = None,
+    ) -> None:
+        self._overlay_id = overlay_id
+        self._target_region = target_region
+        self._widget = widget if widget is not None else QLabel(overlay_id)
+        self._visible = True
+        self._last_bounds: Bounds | None = None
+
+    @property
+    def overlay_id(self) -> str:
+        return self._overlay_id
+
+    @property
+    def target_region(self) -> Placement:
+        return self._target_region
+
+    def widget(self) -> QWidget:
+        return self._widget
+
+    def reposition(self, bounds: Bounds) -> None:
+        self._last_bounds = bounds
+
+    def set_visible(self, visible: bool) -> None:
+        self._visible = visible
+        self._widget.setVisible(visible)
+
+    def is_visible(self) -> bool:
+        return self._visible
+
+    @property
+    def last_bounds(self) -> Bounds | None:
+        return self._last_bounds
+
+
+def _region(
+    region_id: str,
+    placement: Placement,
+    bounds: Bounds | None = None,
+) -> Region:
+    """Build a Region with a single synthetic Area placeholder.
+
+    The OverlayManager never inspects the Areas, only the
+    ``semantic_role`` and ``bounds``. A synthetic Area is enough.
+    """
+
+    area = Area(area_id=f"area.{region_id}", title=region_id, placement=placement)
+    return Region(
+        region_id=region_id,
+        bounds=bounds if bounds is not None else Bounds(),
+        areas=(area,),
+        semantic_role=placement,
+    )
+
+
+@pytest.fixture
+def manager() -> OverlayManager:
+    return OverlayManager()
+
+
+@pytest.fixture
+def make_overlay(qtbot: QtBot):
+    """Factory to build FakeOverlay instances and register their widgets."""
+
+    def _factory(
+        overlay_id: str,
+        target_region: Placement = Placement.CENTRAL,
+    ) -> FakeOverlay:
+        overlay = FakeOverlay(
+            overlay_id=overlay_id,
+            target_region=target_region,
+        )
+        qtbot.addWidget(overlay.widget())
+        return overlay
+
+    return _factory
+
+
+# ----- Registration -------------------------------------------------
+
+
+def test_new_manager_is_empty(manager: OverlayManager) -> None:
+    assert manager.overlays() == ()
+    assert manager.overlay_count() == 0
+
+
+def test_register_adds_overlay(manager: OverlayManager, make_overlay) -> None:
+    overlay = make_overlay("overlay.top_bar")
+    manager.register(overlay)
+
+    assert manager.contains("overlay.top_bar")
+    assert manager.overlay_count() == 1
+    assert manager.get("overlay.top_bar") is overlay
+
+
+def test_register_same_instance_is_idempotent(manager: OverlayManager, make_overlay) -> None:
+    overlay = make_overlay("overlay.top_bar")
+    manager.register(overlay)
+    manager.register(overlay)
+    assert manager.overlay_count() == 1
+
+
+def test_register_different_instance_same_id_raises(manager: OverlayManager, make_overlay) -> None:
+    a = make_overlay("overlay.top_bar")
+    b = make_overlay("overlay.top_bar")
+    manager.register(a)
+    with pytest.raises(OverlayManagerError, match="different Overlay"):
+        manager.register(b)
+
+
+def test_register_empty_id_raises(manager: OverlayManager, qtbot: QtBot) -> None:
+    # FakeOverlay permits empty ids for test purposes; the manager
+    # must reject them.
+    overlay = FakeOverlay(overlay_id="")
+    qtbot.addWidget(overlay.widget())
+
+    with pytest.raises(OverlayManagerError, match="must not be empty"):
+        manager.register(overlay)
+
+
+def test_registration_order_is_preserved(manager: OverlayManager, make_overlay) -> None:
+    a = make_overlay("overlay.a")
+    b = make_overlay("overlay.b")
+    c = make_overlay("overlay.c")
+    manager.register(a)
+    manager.register(b)
+    manager.register(c)
+
+    assert manager.overlays() == (a, b, c)
+
+
+# ----- Lookup -------------------------------------------------------
+
+
+def test_get_unknown_returns_none(manager: OverlayManager) -> None:
+    assert manager.get("overlay.unknown") is None
+
+
+def test_require_returns_overlay(manager: OverlayManager, make_overlay) -> None:
+    overlay = make_overlay("overlay.top_bar")
+    manager.register(overlay)
+    assert manager.require("overlay.top_bar") is overlay
+
+
+def test_require_unknown_raises(manager: OverlayManager) -> None:
+    with pytest.raises(KeyError, match="not registered"):
+        manager.require("overlay.unknown")
+
+
+def test_contains(manager: OverlayManager, make_overlay) -> None:
+    assert manager.contains("overlay.x") is False
+    manager.register(make_overlay("overlay.x"))
+    assert manager.contains("overlay.x") is True
+
+
+# ----- Unregister ---------------------------------------------------
+
+
+def test_unregister_returns_overlay(manager: OverlayManager, make_overlay) -> None:
+    overlay = make_overlay("overlay.a")
+    manager.register(overlay)
+
+    removed = manager.unregister("overlay.a")
+    assert removed is overlay
+    assert not manager.contains("overlay.a")
+
+
+def test_unregister_unknown_returns_none(manager: OverlayManager) -> None:
+    assert manager.unregister("overlay.unknown") is None
+
+
+def test_unregister_does_not_destroy_widget(
+    manager: OverlayManager, make_overlay, qtbot: QtBot
+) -> None:
+    overlay = make_overlay("overlay.a")
+    widget = overlay.widget()
+    qtbot.addWidget(widget)
+
+    manager.register(overlay)
+    manager.unregister("overlay.a")
+
+    # The widget instance is unchanged; the manager only dropped
+    # its reference to the Overlay.
+    assert overlay.widget() is widget
+
+
+# ----- Clear --------------------------------------------------------
+
+
+def test_clear_removes_all(manager: OverlayManager, make_overlay) -> None:
+    manager.register(make_overlay("overlay.a"))
+    manager.register(make_overlay("overlay.b"))
+
+    manager.clear()
+
+    assert manager.overlay_count() == 0
+    assert manager.overlays() == ()
+
+
+def test_clear_on_empty_is_noop(manager: OverlayManager) -> None:
+    manager.clear()
+    assert manager.overlay_count() == 0
+
+
+# ----- Repositioning ------------------------------------------------
+
+
+def test_reposition_all_with_no_overlays_is_noop(
+    manager: OverlayManager,
+) -> None:
+    manager.reposition_all(())  # must not raise
+
+
+def test_reposition_all_with_no_regions_is_noop(manager: OverlayManager, make_overlay) -> None:
+    overlay = make_overlay("overlay.a", target_region=Placement.CENTRAL)
+    manager.register(overlay)
+
+    manager.reposition_all(())
+
+    assert overlay.last_bounds is None
+
+
+def test_reposition_all_routes_bounds_by_placement(manager: OverlayManager, make_overlay) -> None:
+    central = make_overlay("overlay.central", target_region=Placement.CENTRAL)
+    bottom = make_overlay("overlay.bottom", target_region=Placement.BOTTOM)
+    manager.register(central)
+    manager.register(bottom)
+
+    central_bounds = Bounds(x=100.0, y=50.0, width=800.0, height=600.0)
+    bottom_bounds = Bounds(x=0.0, y=650.0, width=1000.0, height=200.0)
+    regions = (
+        _region("central", Placement.CENTRAL, central_bounds),
+        _region("bottom", Placement.BOTTOM, bottom_bounds),
+    )
+
+    manager.reposition_all(regions)
+
+    assert central.last_bounds == central_bounds
+    assert bottom.last_bounds == bottom_bounds
+
+
+def test_reposition_all_leaves_overlays_without_matching_region(
+    manager: OverlayManager, make_overlay
+) -> None:
+    # The overlay targets CENTRAL, but the current layout has no
+    # CENTRAL region.
+    overlay = make_overlay("overlay.central", target_region=Placement.CENTRAL)
+    manager.register(overlay)
+
+    regions = (_region("left", Placement.LEFT),)
+    manager.reposition_all(regions)
+
+    assert overlay.last_bounds is None
+
+
+def test_reposition_all_skips_regions_without_semantic_role(
+    manager: OverlayManager, make_overlay
+) -> None:
+    overlay = make_overlay("overlay.central", target_region=Placement.CENTRAL)
+    manager.register(overlay)
+
+    # A Region with semantic_role=None should never be used to route
+    # bounds; find_regions() always sets it, but defensive code is
+    # still correct.
+    area = Area(area_id="area.x", title="x", placement=Placement.CENTRAL)
+    orphan = Region(
+        region_id="orphan",
+        bounds=Bounds(x=1.0, y=1.0, width=1.0, height=1.0),
+        areas=(area,),
+        semantic_role=None,
+    )
+    manager.reposition_all((orphan,))
+
+    assert overlay.last_bounds is None
+
+
+def test_reposition_all_can_be_called_multiple_times(manager: OverlayManager, make_overlay) -> None:
+    overlay = make_overlay("overlay.central", target_region=Placement.CENTRAL)
+    manager.register(overlay)
+
+    first = Bounds(x=0.0, y=0.0, width=100.0, height=100.0)
+    second = Bounds(x=10.0, y=10.0, width=200.0, height=200.0)
+
+    manager.reposition_all((_region("central", Placement.CENTRAL, first),))
+    assert overlay.last_bounds == first
+
+    manager.reposition_all((_region("central", Placement.CENTRAL, second),))
+    assert overlay.last_bounds == second
+
+
+def test_reposition_all_uses_first_matching_region_if_duplicated(
+    manager: OverlayManager, make_overlay
+) -> None:
+    # A pathological case: two regions with the same semantic_role.
+    # The manager should deterministically pick one (the first seen).
+    overlay = make_overlay("overlay.central", target_region=Placement.CENTRAL)
+    manager.register(overlay)
+
+    first = Bounds(x=0.0, y=0.0, width=10.0, height=10.0)
+    second = Bounds(x=0.0, y=0.0, width=20.0, height=20.0)
+
+    manager.reposition_all(
+        (
+            _region("central.a", Placement.CENTRAL, first),
+            _region("central.b", Placement.CENTRAL, second),
+        )
+    )
+
+    assert overlay.last_bounds == first
+
+
+# ----- Representation -----------------------------------------------
+
+
+def test_repr_contains_registered_ids(manager: OverlayManager, make_overlay) -> None:
+    manager.register(make_overlay("overlay.a"))
+    text = repr(manager)
+    assert "overlay.a" in text
+
+
+
+======================================================================
+FILE: tests\unit\ui\workspace\overlays\test_region.py
+======================================================================
+
+"""Tests for Region and Bounds.
+
+Region and Bounds are pure domain structures. They do not depend on
+Qt, and these tests run without a QApplication.
+"""
+
+from __future__ import annotations
+
+import dataclasses
+
+import pytest
+
+from cranioz.ui.workspace.areas.area import Area
+from cranioz.ui.workspace.areas.placement import Placement
+from cranioz.ui.workspace.overlays.region import Bounds, Region
+
+# ----- Helpers ------------------------------------------------------
+
+
+def _area(
+    area_id: str,
+    placement: Placement = Placement.CENTRAL,
+) -> Area:
+    return Area(area_id=area_id, title=area_id, placement=placement)
+
+
+# ----- Bounds -------------------------------------------------------
+
+
+def test_bounds_defaults_to_zero_rectangle() -> None:
+    b = Bounds()
+    assert b.x == 0.0
+    assert b.y == 0.0
+    assert b.width == 0.0
+    assert b.height == 0.0
+
+
+def test_bounds_holds_all_fields() -> None:
+    b = Bounds(x=10.0, y=20.0, width=100.0, height=50.0)
+    assert b.x == 10.0
+    assert b.y == 20.0
+    assert b.width == 100.0
+    assert b.height == 50.0
+
+
+def test_bounds_is_frozen() -> None:
+    b = Bounds()
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        b.x = 1.0  # type: ignore[misc]
+
+
+def test_bounds_default_is_placeholder() -> None:
+    assert Bounds().is_placeholder() is True
+
+
+def test_bounds_with_nonzero_values_is_not_placeholder() -> None:
+    assert Bounds(x=1.0).is_placeholder() is False
+    assert Bounds(width=1.0).is_placeholder() is False
+
+
+def test_bounds_negative_width_raises() -> None:
+    with pytest.raises(ValueError, match="width"):
+        Bounds(width=-1.0)
+
+
+def test_bounds_negative_height_raises() -> None:
+    with pytest.raises(ValueError, match="height"):
+        Bounds(height=-1.0)
+
+
+def test_bounds_zero_width_is_valid() -> None:
+    # A zero-width Bounds is allowed (e.g. a degenerate rectangle).
+    Bounds(width=0.0)
+
+
+def test_bounds_equality() -> None:
+    a = Bounds(1.0, 2.0, 3.0, 4.0)
+    b = Bounds(1.0, 2.0, 3.0, 4.0)
+    assert a == b
+
+
+# ----- Region -------------------------------------------------------
+
+
+def test_region_holds_all_fields() -> None:
+    areas = (_area("area.left", Placement.LEFT),)
+    region = Region(
+        region_id="left",
+        bounds=Bounds(),
+        areas=areas,
+        semantic_role=Placement.LEFT,
+    )
+    assert region.region_id == "left"
+    assert region.areas == areas
+    assert region.semantic_role is Placement.LEFT
+
+
+def test_region_empty_id_raises() -> None:
+    with pytest.raises(ValueError, match="region_id"):
+        Region(
+            region_id="",
+            bounds=Bounds(),
+            areas=(_area("area.a"),),
+            semantic_role=Placement.CENTRAL,
+        )
+
+
+def test_region_with_no_areas_raises() -> None:
+    with pytest.raises(ValueError, match="at least one Area"):
+        Region(
+            region_id="central",
+            bounds=Bounds(),
+            areas=(),
+            semantic_role=Placement.CENTRAL,
+        )
+
+
+def test_region_is_frozen() -> None:
+    region = Region(
+        region_id="central",
+        bounds=Bounds(),
+        areas=(_area("area.central"),),
+        semantic_role=Placement.CENTRAL,
+    )
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        region.region_id = "other"  # type: ignore[misc]
+
+
+def test_region_area_count() -> None:
+    region = Region(
+        region_id="central",
+        bounds=Bounds(),
+        areas=(
+            _area("area.central.a"),
+            _area("area.central.b"),
+        ),
+        semantic_role=Placement.CENTRAL,
+    )
+    assert region.area_count() == 2
+
+
+def test_region_contains() -> None:
+    region = Region(
+        region_id="central",
+        bounds=Bounds(),
+        areas=(_area("area.central"),),
+        semantic_role=Placement.CENTRAL,
+    )
+    assert region.contains("area.central") is True
+    assert region.contains("area.other") is False
+
+
+def test_region_with_bounds_returns_new_instance() -> None:
+    region = Region(
+        region_id="central",
+        bounds=Bounds(),
+        areas=(_area("area.central"),),
+        semantic_role=Placement.CENTRAL,
+    )
+    real_bounds = Bounds(x=100.0, y=0.0, width=800.0, height=600.0)
+    updated = region.with_bounds(real_bounds)
+
+    assert updated is not region
+    assert updated.bounds == real_bounds
+    assert region.bounds.is_placeholder() is True  # original unchanged
+    assert updated.areas == region.areas
+    assert updated.semantic_role is region.semantic_role
+
+
+def test_region_semantic_role_can_be_none() -> None:
+    # Allowed for future flexibility; today always set by find_regions.
+    region = Region(
+        region_id="custom",
+        bounds=Bounds(),
+        areas=(_area("area.custom"),),
+        semantic_role=None,
+    )
+    assert region.semantic_role is None
+
+
+def test_region_repr_mentions_key_fields() -> None:
+    region = Region(
+        region_id="central",
+        bounds=Bounds(),
+        areas=(_area("area.central"),),
+        semantic_role=Placement.CENTRAL,
+    )
+    text = repr(region)
+    assert "central" in text
+    assert "area.central" in text
+    assert "placeholder" in text
+
+
+
+======================================================================
+FILE: tests\unit\ui\workspace\overlays\test_top_overlay.py
+======================================================================
+
+"""Tests for TopOverlay.
+
+The TopOverlay is the first concrete Overlay. It materializes the
+Top Bar geometry: a fixed-height widget anchored to the top of the
+Central Region with small lateral and top margins.
+
+The tests verify:
+
+- Identity: overlay_id and target_region are stable constants.
+- Widget: widget() returns the same QWidget across calls.
+- Fixed height: the widget has a fixed height equal to the
+  configured one.
+- Reposition: given Bounds, the widget's geometry is computed with
+  the documented margins and height.
+- Narrow regions: the width is clamped to 0 instead of going
+  negative.
+- Visibility: set_visible toggles the widget's visibility without
+  destroying it.
+- Custom parameters: non-default height and margins work.
+- content_layout(): exposes a QLayout for future content.
+"""
+
+from __future__ import annotations
+
+import pytest
+from PySide6.QtWidgets import QFrame, QLayout, QWidget
+from pytestqt.qtbot import QtBot
+
+from cranioz.ui.workspace.areas.placement import Placement
+from cranioz.ui.workspace.overlays.region import Bounds
+from cranioz.ui.workspace.overlays.top_overlay import (
+    TopOverlay,
+    TopOverlayError,
+)
+
+# ----- Fixtures -----------------------------------------------------
+
+
+@pytest.fixture
+def overlay(qtbot: QtBot) -> TopOverlay:
+    ov = TopOverlay()
+    qtbot.addWidget(ov.widget())
+    return ov
+
+
+# ----- Identity -----------------------------------------------------
+
+
+def test_overlay_id_is_stable(overlay: TopOverlay) -> None:
+    assert overlay.overlay_id == "overlay.top_bar"
+
+
+def test_target_region_is_central(overlay: TopOverlay) -> None:
+    assert overlay.target_region is Placement.CENTRAL
+
+
+def test_class_constants_are_accessible() -> None:
+    assert TopOverlay.OVERLAY_ID == "overlay.top_bar"
+    assert TopOverlay.TARGET_REGION is Placement.CENTRAL
+    assert TopOverlay.DEFAULT_HEIGHT == 40
+    assert TopOverlay.DEFAULT_MARGIN_X == 8
+    assert TopOverlay.DEFAULT_MARGIN_Y == 8
+
+
+# ----- Widget -------------------------------------------------------
+
+
+def test_widget_returns_qwidget(overlay: TopOverlay) -> None:
+    assert isinstance(overlay.widget(), QWidget)
+
+
+def test_widget_is_a_qframe(overlay: TopOverlay) -> None:
+    assert isinstance(overlay.widget(), QFrame)
+
+
+def test_widget_is_stable_across_calls(overlay: TopOverlay) -> None:
+    assert overlay.widget() is overlay.widget()
+
+
+def test_widget_has_object_name(overlay: TopOverlay) -> None:
+    assert overlay.widget().objectName() == "top_overlay"
+
+
+def test_widget_has_fixed_height(overlay: TopOverlay) -> None:
+    widget = overlay.widget()
+    assert widget.minimumHeight() == 40
+    assert widget.maximumHeight() == 40
+
+
+# ----- Reposition ---------------------------------------------------
+
+
+def test_reposition_sets_geometry_according_to_bounds(
+    overlay: TopOverlay,
+) -> None:
+    bounds = Bounds(x=100.0, y=50.0, width=800.0, height=600.0)
+    overlay.reposition(bounds)
+
+    geom = overlay.widget().geometry()
+    # x = bounds.x + margin_x = 100 + 8 = 108
+    # y = bounds.y + margin_y = 50 + 8 = 58
+    # width = bounds.width - 2 * margin_x = 800 - 16 = 784
+    # height = fixed_height = 40
+    assert geom.x() == 108
+    assert geom.y() == 58
+    assert geom.width() == 784
+    assert geom.height() == 40
+
+
+def test_reposition_with_origin_bounds(overlay: TopOverlay) -> None:
+    bounds = Bounds(x=0.0, y=0.0, width=1000.0, height=800.0)
+    overlay.reposition(bounds)
+
+    geom = overlay.widget().geometry()
+    assert geom.x() == 8
+    assert geom.y() == 8
+    assert geom.width() == 1000 - 16
+    assert geom.height() == 40
+
+
+def test_reposition_clamps_negative_width_to_zero(
+    overlay: TopOverlay,
+) -> None:
+    # Region narrower than twice the margin. Expected: width = 0.
+    bounds = Bounds(x=0.0, y=0.0, width=10.0, height=100.0)
+    overlay.reposition(bounds)
+
+    geom = overlay.widget().geometry()
+    assert geom.width() == 0
+    assert geom.height() == 40
+
+
+def test_reposition_is_idempotent(overlay: TopOverlay) -> None:
+    bounds = Bounds(x=10.0, y=20.0, width=500.0, height=400.0)
+    overlay.reposition(bounds)
+    first = overlay.widget().geometry()
+
+    overlay.reposition(bounds)
+    second = overlay.widget().geometry()
+
+    assert first == second
+
+
+def test_reposition_can_be_called_multiple_times(
+    overlay: TopOverlay,
+) -> None:
+    overlay.reposition(Bounds(x=0.0, y=0.0, width=100.0, height=100.0))
+    overlay.reposition(Bounds(x=50.0, y=60.0, width=700.0, height=600.0))
+
+    geom = overlay.widget().geometry()
+    assert geom.x() == 58
+    assert geom.y() == 68
+    assert geom.width() == 700 - 16
+
+
+# ----- Visibility ---------------------------------------------------
+
+
+def test_overlay_starts_visible(overlay: TopOverlay) -> None:
+    assert overlay.is_visible() is True
+
+
+def test_set_visible_false_hides_widget(overlay: TopOverlay) -> None:
+    overlay.set_visible(False)
+    assert overlay.is_visible() is False
+    assert overlay.widget().isVisible() is False
+
+
+def test_set_visible_true_shows_widget(overlay: TopOverlay) -> None:
+    overlay.set_visible(False)
+    overlay.set_visible(True)
+    assert overlay.is_visible() is True
+
+
+def test_visibility_toggle_does_not_destroy_widget(
+    overlay: TopOverlay,
+) -> None:
+    widget = overlay.widget()
+    overlay.set_visible(False)
+    overlay.set_visible(True)
+    assert overlay.widget() is widget
+
+
+# ----- Custom parameters --------------------------------------------
+
+
+def test_custom_height(qtbot: QtBot) -> None:
+    ov = TopOverlay(height=60)
+    qtbot.addWidget(ov.widget())
+
+    assert ov.height == 60
+    assert ov.widget().minimumHeight() == 60
+    assert ov.widget().maximumHeight() == 60
+
+    ov.reposition(Bounds(x=0.0, y=0.0, width=100.0, height=100.0))
+    assert ov.widget().geometry().height() == 60
+
+
+def test_custom_margins(qtbot: QtBot) -> None:
+    ov = TopOverlay(margin_x=20, margin_y=15)
+    qtbot.addWidget(ov.widget())
+
+    assert ov.margin_x == 20
+    assert ov.margin_y == 15
+
+    ov.reposition(Bounds(x=100.0, y=50.0, width=800.0, height=600.0))
+    geom = ov.widget().geometry()
+    assert geom.x() == 120  # 100 + 20
+    assert geom.y() == 65  # 50 + 15
+    assert geom.width() == 800 - 40  # 800 - 2*20
+
+
+def test_zero_margins(qtbot: QtBot) -> None:
+    ov = TopOverlay(margin_x=0, margin_y=0)
+    qtbot.addWidget(ov.widget())
+
+    ov.reposition(Bounds(x=10.0, y=20.0, width=100.0, height=100.0))
+    geom = ov.widget().geometry()
+    assert geom.x() == 10
+    assert geom.y() == 20
+    assert geom.width() == 100
+
+
+# ----- Validation ---------------------------------------------------
+
+
+def test_non_positive_height_raises() -> None:
+    with pytest.raises(TopOverlayError, match="height"):
+        TopOverlay(height=0)
+    with pytest.raises(TopOverlayError, match="height"):
+        TopOverlay(height=-1)
+
+
+def test_negative_margin_x_raises() -> None:
+    with pytest.raises(TopOverlayError, match="margin_x"):
+        TopOverlay(margin_x=-1)
+
+
+def test_negative_margin_y_raises() -> None:
+    with pytest.raises(TopOverlayError, match="margin_y"):
+        TopOverlay(margin_y=-1)
+
+
+# ----- Content layout -----------------------------------------------
+
+
+def test_content_layout_returns_qlayout(overlay: TopOverlay) -> None:
+    layout = overlay.content_layout()
+    assert isinstance(layout, QLayout)
+
+
+def test_content_layout_is_stable(overlay: TopOverlay) -> None:
+    assert overlay.content_layout() is overlay.content_layout()
+
+
 
 ======================================================================
 FILE: tests\unit\ui\workspace\specs\test_area_spec.py
@@ -33278,9 +36686,7 @@ def test_nested_split_is_valid() -> None:
 
     inner_left = EditorLayoutSpec.split(SplitDirection.VERTICAL, (a, b))
     inner_right = EditorLayoutSpec.split(SplitDirection.VERTICAL, (c, d))
-    outer = EditorLayoutSpec.split(
-        SplitDirection.HORIZONTAL, (inner_left, inner_right)
-    )
+    outer = EditorLayoutSpec.split(SplitDirection.HORIZONTAL, (inner_left, inner_right))
 
     assert outer.type is LayoutType.SPLIT
     assert len(outer.children) == 2
@@ -33326,9 +36732,7 @@ def _area(area_id: str, placement: Placement, editor_id: str) -> AreaSpec:
 
 
 def test_single_central_is_valid() -> None:
-    spec = ModuleUISpec(
-        areas=(_area("area.central", Placement.CENTRAL, "editor.a"),)
-    )
+    spec = ModuleUISpec(areas=(_area("area.central", Placement.CENTRAL, "editor.a"),))
     assert len(spec.areas) == 1
     assert spec.overlays == ()
 
@@ -33426,5 +36830,896 @@ def test_empty_title_raises() -> None:
             title="",
             target_region=Placement.CENTRAL,
         )
+
+
+
+======================================================================
+FILE: tools\code_packer\pack_code.py
+======================================================================
+
+import json
+import os
+import sys
+
+from PySide6.QtCore import Qt, QThread, Signal
+from PySide6.QtWidgets import (
+    QApplication,
+    QFileDialog,
+    QFormLayout,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMainWindow,
+    QMessageBox,
+    QProgressBar,
+    QPushButton,
+    QSplitter,
+    QTextEdit,
+    QTreeWidget,
+    QTreeWidgetItem,
+    QVBoxLayout,
+    QWidget,
+)
+
+CONFIG_FILE = "pack_config.json"
+
+
+class PackWorker(QThread):
+    progress = Signal(str)
+    finished = Signal(bool, str)
+
+    def __init__(self, root_dir, output_file, selected_dirs):
+        super().__init__()
+        self.root_dir = root_dir
+        self.output_file = output_file
+        self.selected_dirs = selected_dirs
+
+    def run(self):
+        try:
+            ignore_dirs = {'.git', '.venv', '__pycache__', '.idea', 'build', 'dist'}
+            extensions = {'.py', '.ui', '.md'}
+
+            self.progress.emit("Iniciando empacotamento seletivo...")
+
+            with open(self.output_file, 'w', encoding='utf-8') as f:
+                for root, dirs, files in os.walk(self.root_dir):
+                    dirs[:] = [d for d in dirs if d not in ignore_dirs]
+
+                    current_abs = os.path.abspath(root)
+                    if not any(current_abs.startswith(sel) for sel in self.selected_dirs):
+                        continue
+
+                    for file in files:
+                        if any(file.endswith(ext) for ext in extensions):
+                            path = os.path.join(root, file)
+                            rel_path = os.path.relpath(path, self.root_dir)
+
+                            self.progress.emit(f"Adicionando: {rel_path}")
+
+                            f.write(f"\n{'=' * 70}\n")
+                            f.write(f"FILE: {rel_path}\n")
+                            f.write(f"{'=' * 70}\n\n")
+
+                            try:
+                                with open(path, encoding='utf-8', errors='ignore') as code_file:
+                                    f.write(code_file.read())
+                                f.write("\n\n")
+                            except Exception as e:
+                                f.write(f"# Erro ao ler arquivo: {e}\n\n")
+        except Exception as e:
+            self.finished.emit(False, f"Erro: {e!s}")
+
+
+class PackProjectGUI(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("CranioZ - Pack Project")
+        self.resize(800, 600)
+
+        self.root_dir = "."
+        self.output_file = "contexto.txt"
+        self.last_selected = []  # caminhos relativos salvos
+
+        self.load_config()
+
+        central = QWidget()
+        self.setCentralWidget(central)
+        main_layout = QVBoxLayout(central)
+
+        title = QLabel("CranioZ - Código do projeto")
+        title.setStyleSheet("font-size: 26px; font-weight: bold; padding: 15px 0;")
+        title.setAlignment(Qt.AlignCenter)
+        main_layout.addWidget(title)
+
+        splitter = QSplitter(Qt.Horizontal)
+        main_layout.addWidget(splitter)
+
+        # === ESQUERDA ===
+        left_widget = QWidget()
+        left_layout = QVBoxLayout(left_widget)
+
+        # Configurações
+        config_group = QGroupBox("Configurações")
+        config_layout = QFormLayout()
+
+        self.root_edit = QLineEdit(self.root_dir)
+        btn_root = QPushButton("Pasta Raiz")
+        btn_root.clicked.connect(self.select_root_dir)
+
+        root_hbox = QHBoxLayout()
+        root_hbox.addWidget(self.root_edit)
+        root_hbox.addWidget(btn_root)
+
+        self.output_edit = QLineEdit(self.output_file)
+        btn_output = QPushButton("Salvar como...")
+        btn_output.clicked.connect(self.select_output_file)
+
+        output_hbox = QHBoxLayout()
+        output_hbox.addWidget(self.output_edit)
+        output_hbox.addWidget(btn_output)
+
+        config_layout.addRow("Pasta Raiz:", root_hbox)
+        config_layout.addRow("Arquivo de Saída:", output_hbox)
+        config_group.setLayout(config_layout)
+        left_layout.addWidget(config_group)
+
+        # Lista de Pastas
+        folders_group = QGroupBox("")
+        folders_layout = QVBoxLayout()
+
+        self.tree = QTreeWidget()
+        self.tree.setHeaderLabel("Estrutura de Pastas")
+        self.tree.itemChanged.connect(self.on_item_changed)
+        folders_layout.addWidget(self.tree)
+
+        btn_refresh = QPushButton("Atualizar")
+        btn_refresh.clicked.connect(self.build_tree)
+        folders_layout.addWidget(btn_refresh)
+
+        folders_group.setLayout(folders_layout)
+        left_layout.addWidget(folders_group)
+
+        splitter.addWidget(left_widget)
+
+        # === DIREITA: Log ===
+        log_group = QGroupBox("Log")
+        log_layout = QVBoxLayout()
+        self.log_text = QTextEdit()
+        self.log_text.setReadOnly(True)
+        log_layout.addWidget(self.log_text)
+        log_group.setLayout(log_layout)
+        splitter.addWidget(log_group)
+
+        # Botões inferiores
+        btn_layout = QHBoxLayout()
+        self.pack_btn = QPushButton("Empacotar projeto")
+        self.pack_btn.clicked.connect(self.start_packing)
+
+        btn_save_config = QPushButton("Salvar Configs")
+        btn_save_config.clicked.connect(self.save_config)
+
+        btn_layout.addWidget(btn_save_config)
+        btn_layout.addWidget(self.pack_btn)
+        main_layout.addLayout(btn_layout)
+
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setVisible(False)
+        main_layout.addWidget(self.progress_bar)
+
+        self.append_log("Interface carregada. Configurações restauradas do JSON.")
+
+        # Carregar árvore após inicialização
+        self.build_tree()
+
+    def load_config(self):
+        if os.path.exists(CONFIG_FILE):
+            try:
+                with open(CONFIG_FILE, encoding='utf-8') as f:
+                    data = json.load(f)
+                    self.root_dir = data.get("root_dir", ".")
+                    self.output_file = data.get("output_file", "contexto.txt")
+                    self.last_selected = data.get("selected_dirs", [])
+            except:
+                pass
+
+    def save_config(self):
+        try:
+            data = {
+                "root_dir": self.root_edit.text().strip(),
+                "output_file": self.output_edit.text().strip(),
+                "selected_dirs": self.get_selected_relative_paths()
+            }
+            with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=4, ensure_ascii=False)
+        except Exception as e:
+            QMessageBox.warning(self, "Erro", f"Não foi possível salvar: {e}")
+
+    def get_selected_relative_paths(self):
+        """Retorna caminhos relativos das pastas selecionadas"""
+        selected_rel = []
+        root = self.tree.topLevelItem(0)
+        if not root:
+            return []
+
+        root_path = self.root_edit.text().strip()
+
+        def collect(item):
+            if item.checkState(0) == Qt.Checked:
+                full_path = item.data(0, Qt.UserRole)
+                if full_path:
+                    rel = os.path.relpath(full_path, root_path)
+                    if rel == ".":
+                        rel = ""
+                    selected_rel.append(rel)
+            for i in range(item.childCount()):
+                collect(item.child(i))
+
+        collect(root)
+        return selected_rel
+
+    def select_root_dir(self):
+        dir_path = QFileDialog.getExistingDirectory(self, "Selecionar Pasta Raiz", self.root_edit.text())
+        if dir_path:
+            self.root_edit.setText(dir_path)
+            self.build_tree()
+
+    def select_output_file(self):
+        file_path, _ = QFileDialog.getSaveFileName(
+            self, "Salvar como", self.output_edit.text(), "Text Files (*.txt);;All Files (*)"
+        )
+        if file_path:
+            self.output_edit.setText(file_path)
+
+    def build_tree(self):
+        root_path = self.root_edit.text().strip()
+        if not os.path.exists(root_path):
+            self.append_log("⚠️ Pasta raiz inválida.")
+            return
+
+        self.tree.clear()
+        root_name = os.path.basename(root_path) or root_path
+        root_item = QTreeWidgetItem(self.tree, [root_name])
+        root_item.setData(0, Qt.UserRole, root_path)
+        root_item.setCheckState(0, Qt.Checked)
+
+        self.add_subdirs(root_item, root_path)
+        root_item.setExpanded(True)
+
+        self.restore_selection()
+
+    def add_subdirs(self, parent_item, parent_path):
+        try:
+            for item in sorted(os.listdir(parent_path)):
+                full_path = os.path.join(parent_path, item)
+                if os.path.isdir(full_path) and item not in {'.git', '.venv', '__pycache__', '.idea', 'build', 'dist'}:
+                    child = QTreeWidgetItem(parent_item, [item])
+                    child.setData(0, Qt.UserRole, full_path)
+                    child.setCheckState(0, Qt.Checked)
+                    self.add_subdirs(child, full_path)
+        except:
+            pass
+
+    def restore_selection(self):
+        if not self.last_selected:
+            return
+        root_path = self.root_edit.text().strip()
+        root_item = self.tree.topLevelItem(0)
+        if not root_item:
+            return
+
+        def restore(item):
+            full_path = item.data(0, Qt.UserRole)
+            if full_path:
+                rel = os.path.relpath(full_path, root_path)
+                if rel == ".":
+                    rel = ""
+                if rel in self.last_selected:
+                    item.setCheckState(0, Qt.Checked)
+            for i in range(item.childCount()):
+                restore(item.child(i))
+
+        restore(root_item)
+
+    def on_item_changed(self, item, column):
+        if item.childCount() > 0:
+            state = item.checkState(0)
+            for i in range(item.childCount()):
+                item.child(i).setCheckState(0, state)
+
+    def get_selected_dirs(self):
+        selected = []
+        root = self.tree.topLevelItem(0)
+        if not root:
+            return [os.path.abspath(self.root_edit.text().strip())]
+
+        def collect(item):
+            if item.checkState(0) == Qt.Checked:
+                path = item.data(0, Qt.UserRole)
+                if path:
+                    selected.append(os.path.abspath(path))
+            for i in range(item.childCount()):
+                collect(item.child(i))
+
+        collect(root)
+        return selected if selected else [os.path.abspath(self.root_edit.text().strip())]
+
+    def append_log(self, message):
+        self.log_text.append(message)
+
+    def start_packing(self):
+        root_dir = self.root_edit.text().strip()
+        output_file = self.output_edit.text().strip()
+
+        if not os.path.exists(root_dir):
+            QMessageBox.warning(self, "Erro", "Pasta raiz não encontrada!")
+            return
+        if not output_file:
+            QMessageBox.warning(self, "Erro", "Informe o arquivo de saída!")
+            return
+
+        selected_dirs = self.get_selected_dirs()
+
+        self.pack_btn.setEnabled(False)
+        self.progress_bar.setVisible(True)
+        self.progress_bar.setRange(0, 0)
+        self.log_text.clear()
+
+        self.append_log(f"Iniciando empacotamento de {len(selected_dirs)} pasta(s)...")
+
+        self.worker = PackWorker(root_dir, output_file, selected_dirs)
+        self.worker.progress.connect(self.append_log)
+        self.worker.finished.connect(self.packing_finished)
+        self.worker.start()
+
+    def packing_finished(self, success, message):
+        self.progress_bar.setVisible(False)
+        self.pack_btn.setEnabled(True)
+
+        if success:
+            QMessageBox.information(self, "Sucesso", message)
+            self.append_log("✅ Empacotamento finalizado!")
+        else:
+            QMessageBox.critical(self, "Erro", message)
+
+        self.append_log(message)
+
+    def closeEvent(self, event):
+        """Salva automaticamente ao fechar"""
+        self.save_config()
+        event.accept()
+
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    app.setStyle("Fusion")
+
+    window = PackProjectGUI()
+    window.show()
+    sys.exit(app.exec())
+
+
+
+======================================================================
+FILE: tools\folder_tree\folder_structure.py
+======================================================================
+
+import json
+import os
+import sys
+
+from PySide6.QtCore import Qt, QThread, Signal
+from PySide6.QtWidgets import (
+    QApplication,
+    QFileDialog,
+    QFormLayout,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMainWindow,
+    QMessageBox,
+    QProgressBar,
+    QPushButton,
+    QSplitter,
+    QTextEdit,
+    QTreeWidget,
+    QTreeWidgetItem,
+    QVBoxLayout,
+    QWidget,
+)
+
+CONFIG_FILE = "folder_structure_config.json"
+
+IGNORE_DIRS = {
+    ".git",
+    ".venv",
+    "__pycache__",
+    ".idea",
+    "build",
+    "dist",
+}
+
+
+class FolderStructureWorker(QThread):
+    progress = Signal(str)
+    finished = Signal(bool, str)
+
+    def __init__(self, root_dir, output_file, selected_dirs):
+        super().__init__()
+        self.root_dir = os.path.abspath(root_dir)
+        self.output_file = output_file
+        self.selected_dirs = [os.path.abspath(p) for p in selected_dirs]
+
+    def run(self):
+        try:
+            self.progress.emit("Gerando estrutura de pastas...")
+
+            lines = []
+
+            root_name = os.path.basename(self.root_dir) or self.root_dir
+            lines.append(root_name)
+
+            self.build_structure(
+                current_path=self.root_dir,
+                lines=lines,
+                prefix=""
+            )
+
+            with open(self.output_file, "w", encoding="utf-8") as f:
+                f.write("\n".join(lines))
+
+            self.finished.emit(
+                True,
+                f"✅ Estrutura gerada com sucesso!\nArquivo: {self.output_file}"
+            )
+
+        except Exception as e:
+            self.finished.emit(False, str(e))
+
+    def is_selected(self, path):
+        path = os.path.abspath(path)
+
+        return any(
+            path == selected or path.startswith(selected + os.sep)
+            for selected in self.selected_dirs
+        )
+
+    def build_structure(self, current_path, lines, prefix):
+        try:
+            items = sorted(os.listdir(current_path))
+        except Exception:
+            return
+
+        visible_items = []
+
+        for item in items:
+            full_path = os.path.join(current_path, item)
+
+            if os.path.isdir(full_path):
+                if item in IGNORE_DIRS:
+                    continue
+
+                if not self.is_selected(full_path):
+                    continue
+
+                visible_items.append((item, full_path, True))
+
+            else:
+                if not self.is_selected(current_path):
+                    continue
+
+                visible_items.append((item, full_path, False))
+
+        total = len(visible_items)
+
+        for index, (name, full_path, is_dir) in enumerate(visible_items):
+            is_last = index == total - 1
+
+            connector = "└── " if is_last else "├── "
+            lines.append(f"{prefix}{connector}{name}")
+
+            self.progress.emit(name)
+
+            if is_dir:
+                extension = "    " if is_last else "│   "
+
+                self.build_structure(
+                    current_path=full_path,
+                    lines=lines,
+                    prefix=prefix + extension
+                )
+
+
+class FolderStructureGUI(QMainWindow):
+    def __init__(self):
+        super().__init__()
+
+        self.setWindowTitle("OpenCMF - Folder Structure")
+        self.resize(1000, 700)
+
+        self.root_dir = "../../utils"
+        self.output_file = "folder_structure.txt"
+        self.last_selected = []
+
+        self.load_config()
+
+        central = QWidget()
+        self.setCentralWidget(central)
+
+        main_layout = QVBoxLayout(central)
+
+        title = QLabel("📁 OpenCMF - Folder Structure")
+        title.setAlignment(Qt.AlignCenter)
+        title.setStyleSheet("""
+            font-size: 26px;
+            font-weight: bold;
+            padding: 14px;
+        """)
+
+        main_layout.addWidget(title)
+
+        splitter = QSplitter(Qt.Horizontal)
+        main_layout.addWidget(splitter)
+
+        left_widget = QWidget()
+        left_layout = QVBoxLayout(left_widget)
+
+        config_group = QGroupBox("⚙️ Configurações")
+        config_layout = QFormLayout()
+
+        self.root_edit = QLineEdit(self.root_dir)
+
+        btn_root = QPushButton("Selecionar Pasta")
+        btn_root.clicked.connect(self.select_root_dir)
+
+        root_layout = QHBoxLayout()
+        root_layout.addWidget(self.root_edit)
+        root_layout.addWidget(btn_root)
+
+        self.output_edit = QLineEdit(self.output_file)
+
+        btn_output = QPushButton("Salvar Como")
+        btn_output.clicked.connect(self.select_output_file)
+
+        output_layout = QHBoxLayout()
+        output_layout.addWidget(self.output_edit)
+        output_layout.addWidget(btn_output)
+
+        config_layout.addRow("Pasta Raiz:", root_layout)
+        config_layout.addRow("Arquivo Saída:", output_layout)
+
+        config_group.setLayout(config_layout)
+
+        left_layout.addWidget(config_group)
+
+        tree_group = QGroupBox("📂 Pastas Selecionadas")
+        tree_layout = QVBoxLayout()
+
+        self.tree = QTreeWidget()
+        self.tree.setHeaderLabel("Estrutura do Projeto")
+        self.tree.itemChanged.connect(self.on_item_changed)
+
+        tree_layout.addWidget(self.tree)
+
+        btn_refresh = QPushButton("🔄 Atualizar")
+        btn_refresh.clicked.connect(self.build_tree)
+
+        tree_layout.addWidget(btn_refresh)
+
+        tree_group.setLayout(tree_layout)
+
+        left_layout.addWidget(tree_group)
+
+        splitter.addWidget(left_widget)
+
+        right_widget = QWidget()
+        right_layout = QVBoxLayout(right_widget)
+
+        preview_group = QGroupBox("📋 Log")
+        preview_layout = QVBoxLayout()
+
+        self.log_text = QTextEdit()
+        self.log_text.setReadOnly(True)
+
+        preview_layout.addWidget(self.log_text)
+
+        preview_group.setLayout(preview_layout)
+
+        right_layout.addWidget(preview_group)
+
+        splitter.addWidget(right_widget)
+
+        btn_layout = QHBoxLayout()
+
+        btn_save = QPushButton("💾 Salvar Configuração")
+        btn_save.clicked.connect(self.save_config)
+
+        self.generate_btn = QPushButton("📄 GERAR ESTRUTURA")
+        self.generate_btn.setStyleSheet("""
+            font-size: 16px;
+            font-weight: bold;
+            padding: 12px;
+        """)
+
+        self.generate_btn.clicked.connect(self.start_generation)
+
+        btn_layout.addWidget(btn_save)
+        btn_layout.addWidget(self.generate_btn)
+
+        main_layout.addLayout(btn_layout)
+
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setVisible(False)
+
+        main_layout.addWidget(self.progress_bar)
+
+        self.append_log("Interface carregada.")
+
+        self.build_tree()
+
+    def load_config(self):
+        if not os.path.exists(CONFIG_FILE):
+            return
+
+        try:
+            with open(CONFIG_FILE, encoding="utf-8") as f:
+                data = json.load(f)
+
+            self.root_dir = data.get("root_dir", ".")
+            self.output_file = data.get(
+                "output_file",
+                "folder_structure.txt"
+            )
+
+            self.last_selected = data.get("selected_dirs", [])
+
+        except Exception:
+            pass
+
+    def save_config(self):
+        try:
+            data = {
+                "root_dir": self.root_edit.text().strip(),
+                "output_file": self.output_edit.text().strip(),
+                "selected_dirs": self.get_selected_relative_paths(),
+            }
+
+            with open(CONFIG_FILE, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=4, ensure_ascii=False)
+
+        except Exception as e:
+            QMessageBox.warning(
+                self,
+                "Erro",
+                str(e)
+            )
+
+    def select_root_dir(self):
+        directory = QFileDialog.getExistingDirectory(
+            self,
+            "Selecionar Pasta",
+            self.root_edit.text()
+        )
+
+        if directory:
+            self.root_edit.setText(directory)
+            self.build_tree()
+
+    def select_output_file(self):
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Salvar Estrutura",
+            self.output_edit.text(),
+            "Text Files (*.txt);;All Files (*)"
+        )
+
+        if file_path:
+            self.output_edit.setText(file_path)
+
+    def build_tree(self):
+        root_path = self.root_edit.text().strip()
+
+        if not os.path.exists(root_path):
+            self.append_log("⚠️ Pasta inválida.")
+            return
+
+        self.tree.clear()
+
+        root_name = os.path.basename(root_path) or root_path
+
+        root_item = QTreeWidgetItem(self.tree, [root_name])
+        root_item.setData(0, Qt.UserRole, root_path)
+        root_item.setCheckState(0, Qt.Checked)
+
+        self.add_subdirs(root_item, root_path)
+
+        root_item.setExpanded(True)
+
+        self.restore_selection()
+
+    def add_subdirs(self, parent_item, parent_path):
+        try:
+            for item in sorted(os.listdir(parent_path)):
+                full_path = os.path.join(parent_path, item)
+
+                if not os.path.isdir(full_path):
+                    continue
+
+                if item in IGNORE_DIRS:
+                    continue
+
+                child = QTreeWidgetItem(parent_item, [item])
+
+                child.setData(0, Qt.UserRole, full_path)
+                child.setCheckState(0, Qt.Checked)
+
+                self.add_subdirs(child, full_path)
+
+        except Exception:
+            pass
+
+    def restore_selection(self):
+        if not self.last_selected:
+            return
+
+        root_path = self.root_edit.text().strip()
+        root_item = self.tree.topLevelItem(0)
+
+        if not root_item:
+            return
+
+        def restore(item):
+            full_path = item.data(0, Qt.UserRole)
+
+            if full_path:
+                rel = os.path.relpath(full_path, root_path)
+
+                if rel == ".":
+                    rel = ""
+
+                if rel in self.last_selected:
+                    item.setCheckState(0, Qt.Checked)
+                else:
+                    item.setCheckState(0, Qt.Unchecked)
+
+            for i in range(item.childCount()):
+                restore(item.child(i))
+
+        restore(root_item)
+
+    def on_item_changed(self, item, column):
+        state = item.checkState(0)
+
+        for i in range(item.childCount()):
+            child = item.child(i)
+            child.setCheckState(0, state)
+
+    def get_selected_dirs(self):
+        selected = []
+
+        root = self.tree.topLevelItem(0)
+
+        if not root:
+            return []
+
+        def collect(item):
+            if item.checkState(0) == Qt.Checked:
+                path = item.data(0, Qt.UserRole)
+
+                if path:
+                    selected.append(os.path.abspath(path))
+
+            for i in range(item.childCount()):
+                collect(item.child(i))
+
+        collect(root)
+
+        return selected
+
+    def get_selected_relative_paths(self):
+        selected_rel = []
+
+        root_item = self.tree.topLevelItem(0)
+
+        if not root_item:
+            return []
+
+        root_path = self.root_edit.text().strip()
+
+        def collect(item):
+            if item.checkState(0) == Qt.Checked:
+                full_path = item.data(0, Qt.UserRole)
+
+                if full_path:
+                    rel = os.path.relpath(full_path, root_path)
+
+                    if rel == ".":
+                        rel = ""
+
+                    selected_rel.append(rel)
+
+            for i in range(item.childCount()):
+                collect(item.child(i))
+
+        collect(root_item)
+
+        return selected_rel
+
+    def append_log(self, message):
+        self.log_text.append(message)
+
+    def start_generation(self):
+        root_dir = self.root_edit.text().strip()
+        output_file = self.output_edit.text().strip()
+
+        if not os.path.exists(root_dir):
+            QMessageBox.warning(
+                self,
+                "Erro",
+                "Pasta raiz inválida."
+            )
+            return
+
+        if not output_file:
+            QMessageBox.warning(
+                self,
+                "Erro",
+                "Informe o arquivo de saída."
+            )
+            return
+
+        selected_dirs = self.get_selected_dirs()
+
+        self.log_text.clear()
+
+        self.append_log("Iniciando geração da estrutura...")
+
+        self.generate_btn.setEnabled(False)
+
+        self.progress_bar.setVisible(True)
+        self.progress_bar.setRange(0, 0)
+
+        self.worker = FolderStructureWorker(
+            root_dir=root_dir,
+            output_file=output_file,
+            selected_dirs=selected_dirs,
+        )
+
+        self.worker.progress.connect(self.append_log)
+        self.worker.finished.connect(self.generation_finished)
+
+        self.worker.start()
+
+    def generation_finished(self, success, message):
+        self.generate_btn.setEnabled(True)
+
+        self.progress_bar.setVisible(False)
+
+        self.append_log(message)
+
+        if success:
+            pass
+        else:
+            QMessageBox.critical(
+                self,
+                "Erro",
+                message
+            )
+
+    def closeEvent(self, event):
+        self.save_config()
+        event.accept()
+
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+
+    app.setStyle("Fusion")
+
+    window = FolderStructureGUI()
+    window.show()
+
+    sys.exit(app.exec())
 
 

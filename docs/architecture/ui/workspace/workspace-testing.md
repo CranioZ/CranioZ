@@ -138,7 +138,7 @@ tests/
 
 ## 6. Fixtures
 
-### 6.1 Global fixtures (`tests/conftest.py`)
+### 6.1 Global fixtures (`../../../../tests/conftest.py`)
 
 ```python
 import pytest

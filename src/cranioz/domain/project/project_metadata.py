@@ -54,9 +54,7 @@ class ProjectMetadata:
         if not self.patient_display_name:
             raise ValueError("patient_display_name must not be empty")
         if self.schema_version < 1:
-            raise ValueError(
-                f"schema_version must be >= 1, got {self.schema_version}"
-            )
+            raise ValueError(f"schema_version must be >= 1, got {self.schema_version}")
 
         # Validate timezone-awareness BEFORE comparing datetimes.
         # Comparing a naive and an aware datetime raises TypeError
@@ -67,28 +65,22 @@ class ProjectMetadata:
             self._validate_timezone(self.last_opened_at, "last_opened_at")
 
         if self.updated_at < self.created_at:
-            raise ValueError(
-                "updated_at must not be earlier than created_at"
-            )
+            raise ValueError("updated_at must not be earlier than created_at")
         if self.last_opened_at is not None and self.last_opened_at < self.created_at:
-            raise ValueError(
-                "last_opened_at must not be earlier than created_at"
-            )
+            raise ValueError("last_opened_at must not be earlier than created_at")
 
     @staticmethod
     def _validate_timezone(value: datetime, field_name: str) -> None:
         if value.tzinfo is None:
-            raise ValueError(
-                f"{field_name} must be timezone-aware (UTC)"
-            )
+            raise ValueError(f"{field_name} must be timezone-aware (UTC)")
 
     # ----- Convenience mutators -------------------------------------
 
     def with_status(
-            self,
-            status: ProjectStatus,
-            *,
-            now: datetime,
+        self,
+        status: ProjectStatus,
+        *,
+        now: datetime,
     ) -> ProjectMetadata:
         ...
         """Return a new metadata with the given status.
