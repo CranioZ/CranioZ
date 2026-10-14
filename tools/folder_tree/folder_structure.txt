@@ -1,380 +1,103 @@
 CranioZ
-├── docs
-│   ├── PRINCIPLES.md
-│   ├── README.md
-│   ├── adr
-│   │   ├── ADR-0001_Area_and_Editor.md
-│   │   ├── ADR-0002_EditorContext_and_Toolbar_Materialization.md
-│   │   ├── ADR-0003_UI_Widgets_and_Editor_Overlays.md
-│   │   ├── startup_project_opening_workflow.md
-│   │   └── startup_project_opening_workflow_pt.md
-│   ├── architecture
-│   │   ├── README.md
-│   │   ├── clinical_workflows
-│   │   │   ├── clinical_workflows.md
-│   │   │   ├── orthognathic_surgery
-│   │   │   │   ├── etapas.md
-│   │   │   │   └── osteotomy_patterns
-│   │   │   ├── steps_panel.md
-│   │   │   └── steps_panel_pt.md
-│   │   ├── commands
-│   │   │   └── commands.md
-│   │   ├── config
-│   │   │   └── folder_structure.md
-│   │   ├── domain
-│   │   ├── editors
-│   │   │   ├── List_of_editors.md
-│   │   │   ├── editors.md
-│   │   │   ├── editors_pt.md
-│   │   │   ├── folder_strutucture.md
-│   │   │   └── list_editors
-│   │   │       └── curved_mpr
-│   │   │           ├── curved_mpr.md
-│   │   │           └── tomography.md
-│   │   ├── home_page
-│   │   │   └── home_page.md
-│   │   ├── internationalization
-│   │   │   ├── folder_structure.md
-│   │   │   └── internationalization.md
-│   │   ├── main_window
-│   │   │   ├── main_windows.md
-│   │   │   └── main_windows_pt.md
-│   │   ├── modules
-│   │   │   ├── folder_strutucture.md
-│   │   │   ├── list_modules
-│   │   │   │   ├── align_objects
-│   │   │   │   │   └── strategy
-│   │   │   │   │       ├── automatic.md
-│   │   │   │   │       └── point_triangulation.md
-│   │   │   │   ├── cephalometric
-│   │   │   │   │   ├── cephalometric_landmark_localization.md
-│   │   │   │   │   ├── design_principles.md
-│   │   │   │   │   ├── list_of_points
-│   │   │   │   │   │   ├── import_export_list_points.md
-│   │   │   │   │   │   └── list_of_points.md
-│   │   │   │   │   ├── points_acquisitions_strategy
-│   │   │   │   │   │   ├── acquisition_of_cephalometric_landmarks_pt.md
-│   │   │   │   │   │   ├── automatic
-│   │   │   │   │   │   │   ├── bones.md
-│   │   │   │   │   │   │   ├── skin.md
-│   │   │   │   │   │   │   └── teeth.md
-│   │   │   │   │   │   └── box_reference
-│   │   │   │   │   │       └── box_reference.md
-│   │   │   │   │   └── tools
-│   │   │   │   │       └── tools.md
-│   │   │   │   ├── occlusion
-│   │   │   │   ├── osteotomy
-│   │   │   │   └── tomography
-│   │   │   │       ├── tomography.md
-│   │   │   │       └── tomography_pt.md
-│   │   │   ├── modules.md
-│   │   │   └── modules_pt.md
-│   │   ├── objects
-│   │   │   ├── datatypes.md
-│   │   │   ├── datatypes_pt.md
-│   │   │   ├── folder_structure.md
-│   │   │   ├── objects.md
-│   │   │   └── objects_pt.md
-│   │   ├── overview.md
-│   │   ├── overview_pt.md
-│   │   ├── project
-│   │   │   ├── folder_structure.md
-│   │   │   ├── project.md
-│   │   │   └── project_pt.md
-│   │   ├── scene
-│   │   │   ├── scene.md
-│   │   │   └── scene_pt.md
-│   │   ├── settings
-│   │   │   └── translations
-│   │   │       └── translations.md
-│   │   ├── toolbar
-│   │   │   ├── folder_structure.md
-│   │   │   ├── toolbar.md
-│   │   │   └── toolbar_pt.md
-│   │   ├── tools
-│   │   │   ├── architectural_principles.md
-│   │   │   ├── folder_structure.md
-│   │   │   ├── tools.md
-│   │   │   └── tools_pt.md
-│   │   └── workspace
-│   │       ├── folder_strututure
-│   │       │   └── folder_strutucture.md
-│   │       ├── implementation
-│   │       │   ├── workspace-implementation.md
-│   │       │   └── workspace-implementation_pt.md
-│   │       ├── workspace-testing.md
-│   │       ├── workspace_en.md
-│   │       └── workspace_pt.md
-│   ├── developer
-│   ├── development
-│   │   ├── Folder_ Struture_full.txt
-│   │   ├── Folder_ Struture_simple.txt
-│   │   ├── rep_git_hub
-│   │   └── tests.txt
-│   └── user
-├── src
-│   └── cranioz
-│       ├── __init__.py
-│       ├── __main__.py
-│       ├── application
-│       │   ├── __init__.py
-│       │   └── event_bus.py
-│       ├── assets
-│       │   └── __init__.py
-│       ├── config
-│       │   ├── __init__.py
-│       │   ├── defaults
-│       │   │   ├── app.json
-│       │   │   ├── logging.yaml
-│       │   │   └── paths.json
-│       │   ├── loader.py
-│       │   ├── migration.py
-│       │   └── schema.py
-│       ├── domain
-│       │   ├── __init__.py
-│       │   ├── patient
-│       │   │   ├── __init__.py
-│       │   │   ├── patient.py
-│       │   │   ├── patient_id.py
-│       │   │   └── patient_summary.py
-│       │   └── project
-│       │       ├── __init__.py
-│       │       ├── project.py
-│       │       ├── project_id.py
-│       │       ├── project_metadata.py
-│       │       ├── project_status.py
-│       │       └── project_summary.py
-│       ├── infrastructure
-│       │   ├── __init__.py
-│       │   ├── i18n
-│       │   │   ├── __init__.py
-│       │   │   ├── catalog_loader.py
-│       │   │   ├── catalog_registry.py
-│       │   │   ├── instance.py
-│       │   │   └── translation_service.py
-│       │   └── project_path_resolver.py
-│       ├── modules
-│       │   ├── __init__.py
-│       │   ├── base
-│       │   │   ├── __init__.py
-│       │   │   ├── module.py
-│       │   │   ├── module_context.py
-│       │   │   └── module_manifest.py
-│       │   ├── builtin
-│       │   │   ├── __init__.py
-│       │   │   └── test_modules
-│       │   │       ├── __init__.py
-│       │   │       ├── central_split.py
-│       │   │       ├── four_areas.py
-│       │   │       ├── left_central_right.py
-│       │   │       ├── no_central.py
-│       │   │       └── single.py
-│       │   ├── loader
-│       │   │   ├── __init__.py
-│       │   │   └── module_loader.py
-│       │   └── registry
-│       │       ├── __init__.py
-│       │       └── module_registry.py
-│       ├── py.typed
-│       ├── settings
-│       │   ├── __init__.py
-│       │   └── preferences.py
-│       ├── translations
-│       │   ├── dynamic_keys.json
-│       │   ├── en
-│       │   │   ├── cephalometry.json
-│       │   │   ├── core.json
-│       │   │   ├── homepage.json
-│       │   │   ├── osteotomy.json
-│       │   │   ├── patient.json
-│       │   │   ├── tomography.json
-│       │   │   └── workspace.json
-│       │   └── pt-BR
-│       │       ├── cephalometry.json
-│       │       ├── core.json
-│       │       ├── homepage.json
-│       │       ├── osteotomy.json
-│       │       ├── patient.json
-│       │       ├── tomography.json
-│       │       └── workspace.json
-│       └── ui
-│           ├── __init__.py
-│           ├── editors
-│           │   ├── __init__.py
-│           │   ├── base_editor.py
-│           │   ├── builtin
-│           │   │   ├── __init__.py
-│           │   │   └── test_editor.py
-│           │   ├── editor_catalog.py
-│           │   ├── editor_context.py
-│           │   ├── editor_manifest.py
-│           │   ├── editor_registry.py
-│           │   └── overlays
-│           │       ├── __init__.py
-│           │       ├── gizmos
-│           │       │   └── __init__.py
-│           │       └── rulers
-│           │           └── __init__.py
-│           ├── theme
-│           │   ├── __init__.py
-│           │   └── service.py
-│           ├── toolbars
-│           │   ├── __init__.py
-│           │   ├── base.py
-│           │   ├── item.py
-│           │   ├── specification.py
-│           │   └── state.py
-│           ├── tools
-│           │   ├── __init__.py
-│           │   ├── builtin
-│           │   │   ├── __init__.py
-│           │   │   ├── log_tool.py
-│           │   │   └── toggle_tool.py
-│           │   ├── catalog.py
-│           │   ├── registry
-│           │   │   ├── __init__.py
-│           │   │   ├── tool_definition.py
-│           │   │   └── tool_registry.py
-│           │   └── specification.py
-│           ├── widgets
-│           │   ├── __init__.py
-│           │   ├── buttons
-│           │   │   ├── __init__.py
-│           │   │   ├── icon_button.py
-│           │   │   └── primary_button.py
-│           │   ├── headers
-│           │   │   ├── __init__.py
-│           │   │   └── section_header.py
-│           │   └── sliders
-│           │       ├── __init__.py
-│           │       └── labeled_slider.py
-│           └── workspace
-│               ├── __init__.py
-│               ├── areas
-│               │   ├── __init__.py
-│               │   ├── area.py
-│               │   ├── area_manager.py
-│               │   ├── area_widget.py
-│               │   └── placement.py
-│               ├── layout
-│               │   ├── __init__.py
-│               │   ├── layout_builder.py
-│               │   ├── layout_io.py
-│               │   ├── layout_renderer.py
-│               │   ├── layout_state.py
-│               │   └── layout_tree.py
-│               ├── overlays
-│               │   ├── __init__.py
-│               │   ├── overlay.py
-│               │   ├── overlay_manager.py
-│               │   ├── overlay_state.py
-│               │   ├── region.py
-│               │   └── top_overlay.py
-│               ├── specs
-│               │   ├── __init__.py
-│               │   ├── area_spec.py
-│               │   ├── editor_layout_spec.py
-│               │   ├── module_ui_spec.py
-│               │   └── overlay_spec.py
-│               ├── structure
-│               │   ├── __init__.py
-│               │   └── top_bar.py
-│               └── workspace.py
-├── tests
-│   ├── conftest.py
-│   ├── data
-│   ├── infrastructure
-│   │   └── i18n
-│   │       ├── conftest.py
-│   │       ├── test_catalog_loader.py
-│   │       ├── test_catalog_registry.py
-│   │       └── test_translation_service.py
-│   ├── integration
-│   │   └── ui
-│   │       └── workspace
-│   │           ├── areas
-│   │           │   └── test_area_widget.py
-│   │           ├── layout
-│   │           │   ├── test_layout_builder.py
-│   │           │   └── test_layout_renderer.py
-│   │           └── workspace
-│   │               └── test_workspace.py
-│   └── unit
-│       ├── application
-│       │   └── test_event_bus.py
-│       ├── config
-│       │   └── test_loader.py
-│       ├── domain
-│       │   ├── __init__.py
-│       │   └── project
-│       │       ├── __init__.py
-│       │       ├── test_project.py
-│       │       ├── test_project_id.py
-│       │       ├── test_project_metadata.py
-│       │       ├── test_project_status.py
-│       │       └── test_project_summary.py
-│       ├── infrastructure
-│       │   ├── i18n
-│       │   └── test_project_path_resolver.py
-│       ├── modules
-│       ├── settings
-│       └── ui
-│           ├── editors
-│           │   ├── builtin
-│           │   │   ├── __init__.py
-│           │   │   └── test_dummy_editor.py
-│           │   ├── test_base_editor.py
-│           │   ├── test_editor_context.py
-│           │   └── test_editor_registry.py
-│           ├── theme
-│           │   ├── __init__.py
-│           │   └── test_service.py
-│           ├── toolbars
-│           │   ├── test_item.py
-│           │   ├── test_state.py
-│           │   ├── test_toolbar.py
-│           │   └── test_toolbars_specification.py
-│           ├── tools
-│           │   ├── builtin
-│           │   │   ├── test_log_tool.py
-│           │   │   └── test_toggle_tool.py
-│           │   ├── registry
-│           │   │   ├── test_tool_definition.py
-│           │   │   └── test_tool_registry.py
-│           │   └── test_tools_specification.py
-│           └── workspace
-│               ├── areas
-│               │   ├── test_area.py
-│               │   ├── test_area_manager.py
-│               │   └── test_placement.py
-│               ├── layout
-│               │   └── test_layout_tree.py
-│               ├── overlays
-│               │   ├── test_overlay.py
-│               │   ├── test_overlay_manager.py
-│               │   ├── test_region.py
-│               │   └── test_top_overlay.py
-│               └── specs
-│                   ├── test_area_spec.py
-│                   ├── test_editor_layout_spec.py
-│                   ├── test_module_ui_spec.py
-│                   └── test_overlay_spec.py
-└── tools
-    ├── code_packer
-    │   ├── cranioZ_contexto.txt
-    │   ├── pack_code.py
-    │   └── pack_config.json
-    ├── folder_tree
-    │   ├── folder_structure.py
-    │   ├── folder_structure.txt
-    │   └── folder_structure_config.json
-    └── i18n
-        ├── .ruff_cache
-        │   ├── .gitignore
-        │   ├── 0.16.9
-        │   └── CACHEDIR.TAG
-        ├── pyproject.toml
-        ├── src
-        │   └── cranioz_tools
-        │       └── i18n
-        └── tests
+└── docs
+    ├── PRINCIPLES.md
+    ├── README.md
+    ├── adr
+    │   ├── ADR-0001_Area_and_Editor.md
+    │   ├── ADR-0002_EditorContext_and_Toolbar_Materialization.md
+    │   ├── ADR-0003_UI_Widgets_and_Editor_Overlays.md
+    │   ├── ADR-0004_Patient_Domain.md
+    │   ├── startup_project_opening_workflow.md
+    ├── architecture
+    │   ├── README.md
+    │   ├── clinical_workflows
+    │   │   ├── clinical_workflows.md
+    │   │   ├── orthognathic_surgery
+    │   │   │   ├── etapas.md
+    │   │   │   └── osteotomy_patterns
+    │   │   └── steps_panel.md
+    │   ├── commands
+    │   │   └── commands.md
+    │   ├── config
+    │   │   └── folder_structure.md
+    │   ├── domain
+    │   │   ├── patient
+    │   │   │   └── patient.md
+    │   │   └── project
+    │   │       ├── folder_structure.md
+    │   │       └── project.md
+    │   ├── home_page
+    │   │   └── home_page.md
+    │   ├── internationalization
+    │   │   ├── folder_structure.md
+    │   │   └── internationalization.md
+    │   ├── main_window
+    │   │   └── main_windows.md
+    │   ├── modules
+    │   │   ├── folder_strutucture.md
+    │   │   ├── list_modules
+    │   │   │   ├── align_objects
+    │   │   │   │   └── strategy
+    │   │   │   │       ├── automatic.md
+    │   │   │   │       └── point_triangulation.md
+    │   │   │   ├── cephalometric
+    │   │   │   │   ├── cephalometric_landmark_localization.md
+    │   │   │   │   ├── design_principles.md
+    │   │   │   │   ├── list_of_points
+    │   │   │   │   │   ├── import_export_list_points.md
+    │   │   │   │   │   └── list_of_points.md
+    │   │   │   │   ├── points_acquisitions_strategy
+    │   │   │   │   │   ├── automatic
+    │   │   │   │   │   │   ├── bones.md
+    │   │   │   │   │   │   ├── skin.md
+    │   │   │   │   │   │   └── teeth.md
+    │   │   │   │   │   └── box_reference
+    │   │   │   │   │       └── box_reference.md
+    │   │   │   │   └── tools
+    │   │   │   │       └── tools.md
+    │   │   │   ├── occlusion
+    │   │   │   ├── osteotomy
+    │   │   │   └── tomography
+    │   │   │       ├── tomography.md
+    │   │   │       └── tomography_pt.md
+    │   │   └── modules.md
+    │   ├── objects
+    │   │   ├── datatypes.md
+    │   │   ├── folder_structure.md
+    │   │   └── objects.md
+    │   ├── overview.md
+    │   ├── scene
+    │   │   └── scene.md
+    │   ├── settings
+    │   └── ui
+    │       ├── appearance.md
+    │       ├── editors
+    │       │   ├── List_of_editors.md
+    │       │   ├── editors.md
+    │       │   ├── folder_strutucture.md
+    │       │   └── list_editors
+    │       │       └── curved_mpr
+    │       │           ├── curved_mpr.md
+    │       │           └── tomography.md
+    │       ├── toolbar
+    │       │   ├── folder_structure.md
+    │       │   └── toolbar.md
+    │       ├── tools
+    │       │   ├── architectural_principles.md
+    │       │   ├── folder_structure.md
+    │       │   └── tools.md
+    │       └── workspace
+    │           ├── folder_strututure
+    │           │   └── folder_strutucture.md
+    │           ├── implementation
+    │           │   ├── workspace-implementation.md
+    │           │   └── workspace-implementation_pt.md
+    │           ├── workspace-testing.md
+    │           └── workspace.md
+    ├── developer
+    ├── development
+    │   ├── Folder_ Struture_full.txt
+    │   ├── Folder_ Struture_simple.txt
+    │   ├── rep_git_hub
+    │   └── tests.txt
+    └── user
