@@ -23,7 +23,7 @@ from cranioz import __version__
 from cranioz.application.event_bus import EventBus
 from cranioz.config.loader import ConfigurationLoader
 from cranioz.config.schema import Config
-from cranioz.infrastructure.project_path_resolver import ProjectPathResolver
+from cranioz.infrastructure.app.app_path_resolver import AppPathResolver
 
 _logger = logging.getLogger(__name__)
 
@@ -44,9 +44,9 @@ def main() -> int:
     _configure_logging(config)
     _logger.info("CranioZ %s starting", __version__)
 
-    resolver = ProjectPathResolver()
-    resolver.initialize(config.paths.project_root)
-    _logger.info("Project root: %s", resolver.project_root)
+    app_paths = AppPathResolver()
+    app_paths.initialize(config.paths)
+    _logger.info("Projects root: %s", app_paths.projects_root)
 
     event_bus = EventBus()
     _logger.debug("Event bus initialized: %r", event_bus)
