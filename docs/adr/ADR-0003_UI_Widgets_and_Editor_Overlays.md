@@ -309,7 +309,7 @@ Rejected. It would remove these actions from the ToolRegistry, making them undis
 
 ## 6.4 All overlays as Workspace Overlays
 
-Rejected. Workspace Overlays (`workspace_en.md` §7) are floating layers over a Region of Areas. Gizmos inside a Viewport are internal to the Editor and belong to its content. Conflating the two would break the Workspace's single rule (`workspace_en.md` §1.2).
+Rejected. Workspace Overlays (`workspace.md` §7) are floating layers over a Region of Areas. Gizmos inside a Viewport are internal to the Editor and belong to its content. Conflating the two would break the Workspace's single rule (`workspace.md` §1.2).
 
 ## 6.5 Gizmos as generic widgets in `ui/widgets/`
 
