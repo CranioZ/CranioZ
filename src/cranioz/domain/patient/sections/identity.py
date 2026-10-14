@@ -59,15 +59,9 @@ class PatientIdentity:
         if not self.full_name.strip():
             raise ValueError("full_name must not be whitespace only")
         if self.social_name is not None and not self.social_name.strip():
-            raise ValueError(
-                "social_name must not be whitespace only when set"
-            )
+            raise ValueError("social_name must not be whitespace only when set")
         if self.photo_reference is not None:
             if not self.photo_reference:
-                raise ValueError(
-                    "photo_reference must not be empty when set"
-                )
+                raise ValueError("photo_reference must not be empty when set")
             if not self.photo_reference.strip():
-                raise ValueError(
-                    "photo_reference must not be whitespace only"
-                )
+                raise ValueError("photo_reference must not be whitespace only")
