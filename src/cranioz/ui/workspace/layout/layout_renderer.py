@@ -79,9 +79,11 @@ class LayoutRenderer:
         self,
         tool_registry: ToolRegistry,
         theme_service: ThemeService,
+        debug_colors: bool = False,
     ) -> None:
         self._tool_registry = tool_registry
         self._theme_service = theme_service
+        self._debug_colors = debug_colors
 
         # Caches. Keyed by the identity of the model object (id(Split))
         # or by the stable domain identifier (area_id).
@@ -207,6 +209,7 @@ class LayoutRenderer:
                 area=area,
                 tool_registry=self._tool_registry,
                 theme_service=self._theme_service,
+                debug_colors=self._debug_colors,
             )
             self._area_widgets[area.area_id] = widget
         return widget

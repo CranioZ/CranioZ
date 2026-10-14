@@ -54,6 +54,7 @@ Design rules:
 
 from __future__ import annotations
 
+from PySide6.QtCore import QTimer
 from PySide6.QtGui import QResizeEvent
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
@@ -91,6 +92,7 @@ class Workspace(QWidget):
         editor_registry: EditorRegistry,
         tool_registry: ToolRegistry,
         theme_service: ThemeService,
+        debug_colors: bool = False,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -99,9 +101,14 @@ class Workspace(QWidget):
         self._editor_registry = editor_registry
         self._tool_registry = tool_registry
         self._theme_service = theme_service
+        self._debug_colors = debug_colors
 
         self._layout_builder = LayoutBuilder(editor_registry)
-        self._layout_renderer = LayoutRenderer(tool_registry, theme_service)
+        self._layout_renderer = LayoutRenderer(
+            tool_registry,
+            theme_service,
+            debug_colors=debug_colors,
+        )
         self._overlay_manager = OverlayManager()
         self._top_overlay = TopOverlay(parent=self)
 
@@ -122,6 +129,15 @@ class Workspace(QWidget):
         # the OverlayManager does not add it to the layout.
         self._overlay_manager.register(self._top_overlay)
         self._top_overlay.widget().setParent(self)
+
+        if debug_colors:
+            # Neutral backdrop for the Workspace so Area colors
+            # stand out. Also paints the TopOverlay so it becomes
+            # visible during debug.
+            self.setStyleSheet("QWidget#workspace { background-color: #ffffff; }")
+            self._top_overlay.widget().setStyleSheet(
+                "QFrame#top_overlay { background-color: #fadbd8; border: 1px solid #e74c3c; }"
+            )
 
     # ----- Public API -----------------------------------------------
 
@@ -158,6 +174,13 @@ class Workspace(QWidget):
         # If Qt has already laid them out, the bounds are accurate
         # immediately.
         self._reposition_overlays()
+
+        # Also schedule a reposition after Qt has processed the
+        # current event loop iteration. This ensures the overlays
+        # are correctly positioned after the widget hierarchy has
+        # been laid out by Qt, which may not have happened yet at
+        # the moment load_spec() returns.
+        QTimer.singleShot(0, self._reposition_overlays)
 
     def clear(self) -> None:
         """Remove the current composition.
@@ -230,18 +253,17 @@ class Workspace(QWidget):
     # ----- Internals ------------------------------------------------
 
     def _reposition_overlays(self) -> None:
-        """Compute the current Region bounds and reposition Overlays.
-
-        The bounds are derived from the current geometry of the
-        AreaWidgets cached by the LayoutRenderer. If the widgets
-        have not been laid out yet, their geometries are zero-sized
-        rectangles; the Overlays are repositioned to zero-sized
-        bounds, which is a valid intermediate state. The next
-        resizeEvent will produce the correct bounds.
-        """
+        """Compute the current Region bounds and reposition Overlays."""
         bounds_by_placement = self._layout_renderer.compute_region_bounds()
         regions = self._regions_from_bounds(bounds_by_placement)
         self._overlay_manager.reposition_all(regions)
+
+        # Ensure the TopOverlay stays above the composition. Qt
+        # sometimes re-orders widgets when the layout is re-laid
+        # out, and the composition's child widgets can end up above
+        # the overlay. Raising the overlay after every reposition
+        # keeps it on top.
+        self._top_overlay.widget().raise_()
 
     def _regions_from_bounds(
         self,

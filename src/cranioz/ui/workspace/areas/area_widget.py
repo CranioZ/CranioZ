@@ -40,6 +40,7 @@ Structure of the produced widget:
 from __future__ import annotations
 
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import (
     QLabel,
     QTabWidget,
@@ -72,6 +73,7 @@ class AreaWidget(QWidget):
         area: Area,
         tool_registry: ToolRegistry,
         theme_service: ThemeService,
+        debug_colors: bool = False,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -81,12 +83,14 @@ class AreaWidget(QWidget):
 
         self.setObjectName(f"area_widget.{area.area_id}")
 
-        # The root layout is replaced on every refresh(). This keeps
-        # the widget in sync with the Area without tracking which
-        # sub-widgets exist.
+        # The root layout is created once and reused. refresh()
+        # clears its children and rebuilds them.
         self._root_layout = QVBoxLayout(self)
         self._root_layout.setContentsMargins(0, 0, 0, 0)
         self._root_layout.setSpacing(0)
+
+        if debug_colors:
+            self._apply_debug_background()
 
         self.refresh()
 
@@ -126,6 +130,39 @@ class AreaWidget(QWidget):
         self._root_layout.addWidget(self._build_tabs(editors))
 
     # ----- Internals ------------------------------------------------
+
+    def _apply_debug_background(self) -> None:
+        """Apply a soft background color based on Placement.
+
+        Used only for visual debugging. The color makes the
+        boundary of each Area visible so that layout issues can be
+        spotted at a glance. It does not affect production builds
+        when ``debug_colors`` is False.
+        """
+        palette = {
+            Placement.LEFT: "#dbe9f4",  # soft blue
+            Placement.CENTRAL: "#dff0d8",  # soft green
+            Placement.RIGHT: "#fcf3cf",  # soft yellow
+            Placement.BOTTOM: "#e8daef",  # soft lavender
+        }
+        color = palette.get(self._area.placement)
+        if color is None:
+            return
+
+        # 1. Palette so the widget paints the color even under dark
+        #    OS themes.
+        qcolor = QColor(color)
+        pal = self.palette()
+        pal.setColor(QPalette.ColorRole.Window, qcolor)
+        self.setPalette(pal)
+
+        # 2. Auto-fill so Qt paints the Window role.
+        self.setAutoFillBackground(True)
+
+        # 3. Styled background + stylesheet, so the color survives
+        #    inside a QSplitter.
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        self.setStyleSheet(f"QWidget#{self.objectName()} {{ background-color: {color}; }}")
 
     def _clear_layout(self) -> None:
         """Remove all widgets from the root layout and dispose them.
