@@ -1,110 +1,563 @@
 CranioZ
-└── tests
-    ├── __init__.py
-    ├── conftest.py
-    ├── data
-    ├── infrastructure
-    │   └── i18n
-    │       ├── conftest.py
-    │       ├── test_catalog_loader.py
-    │       ├── test_catalog_registry.py
-    │       └── test_translation_service.py
-    ├── integration
-    │   └── ui
-    │       └── workspace
-    │           ├── areas
-    │           │   └── test_area_widget.py
-    │           ├── layout
-    │           │   ├── test_layout_builder.py
-    │           │   └── test_layout_renderer.py
-    │           └── workspace
-    │               └── test_workspace.py
-    └── unit
-        ├── __init__.py
-        ├── application
-        │   └── test_event_bus.py
-        ├── config
-        │   └── test_loader.py
-        ├── domain
-        │   ├── __init__.py
-        │   ├── patient
-        │   │   ├── __init__.py
-        │   │   ├── enums
-        │   │   │   ├── __init__.py
-        │   │   │   ├── test_blood_type.py
-        │   │   │   ├── test_comorbidity_category.py
-        │   │   │   ├── test_document_type.py
-        │   │   │   ├── test_patient_race.py
-        │   │   │   ├── test_patient_sex.py
-        │   │   │   └── test_phone_kind.py
-        │   │   ├── sections
-        │   │   │   ├── __init__.py
-        │   │   │   ├── test_address.py
-        │   │   │   ├── test_antecedents.py
-        │   │   │   ├── test_comorbidities.py
-        │   │   │   ├── test_complaint.py
-        │   │   │   ├── test_documents.py
-        │   │   │   ├── test_filiation.py
-        │   │   │   ├── test_habits.py
-        │   │   │   ├── test_identity.py
-        │   │   │   └── test_medications.py
-        │   │   ├── test_patient.py
-        │   │   ├── test_patient_sex.py
-        │   │   ├── test_patient_summary.py
-        │   │   └── value_objects
-        │   │       ├── __init__.py
-        │   │       ├── test_patient_id.py
-        │   │       └── test_phone_number.py
-        │   └── project
-        │       ├── __init__.py
-        │       ├── test_project.py
-        │       ├── test_project_id.py
-        │       ├── test_project_metadata.py
-        │       ├── test_project_status.py
-        │       └── test_project_summary.py
-        ├── infrastructure
-        │   ├── i18n
-        │   └── test_project_path_resolver.py
-        ├── modules
-        ├── settings
-        └── ui
-            ├── editors
-            │   ├── builtin
-            │   │   ├── __init__.py
-            │   │   └── test_dummy_editor.py
-            │   ├── test_base_editor.py
-            │   ├── test_editor_context.py
-            │   └── test_editor_registry.py
-            ├── theme
-            │   ├── __init__.py
-            │   └── test_service.py
-            ├── toolbars
-            │   ├── test_item.py
-            │   ├── test_state.py
-            │   ├── test_toolbar.py
-            │   └── test_toolbars_specification.py
-            ├── tools
-            │   ├── builtin
-            │   │   ├── test_log_tool.py
-            │   │   └── test_toggle_tool.py
-            │   ├── registry
-            │   │   ├── test_tool_definition.py
-            │   │   └── test_tool_registry.py
-            │   └── test_tools_specification.py
-            └── workspace
-                ├── areas
-                │   ├── test_area.py
-                │   ├── test_area_manager.py
-                │   └── test_placement.py
-                ├── layout
-                │   └── test_layout_tree.py
-                ├── overlays
-                │   ├── test_overlay.py
-                │   ├── test_overlay_manager.py
-                │   ├── test_region.py
-                │   └── test_top_overlay.py
-                └── specs
-                    ├── test_area_spec.py
-                    ├── test_editor_layout_spec.py
-                    ├── test_module_ui_spec.py
-                    └── test_overlay_spec.py
+├── .benchmarks
+├── .gitignore
+├── .mypy_cache
+│   ├── .gitignore
+│   ├── 3.12
+│   │   └── cache.db
+│   └── CACHEDIR.TAG
+├── .pytest_cache
+│   ├── .gitignore
+│   ├── CACHEDIR.TAG
+│   ├── README.md
+│   └── v
+│       └── cache
+│           ├── lastfailed
+│           └── nodeids
+├── .python-version
+├── .ruff_cache
+│   ├── .gitignore
+│   ├── 0.16.9
+│   │   ├── 10326316172798160621
+│   │   ├── 10614605627070785775
+│   │   ├── 11171665550253351028
+│   │   ├── 11376065140599829768
+│   │   ├── 11629926835217846565
+│   │   ├── 11665753874505339045
+│   │   ├── 11702408460122364289
+│   │   ├── 11707967332317161728
+│   │   ├── 11889971903673283843
+│   │   ├── 11895896311784495778
+│   │   ├── 11949377426300189439
+│   │   ├── 12014998952289059025
+│   │   ├── 12238712962170651315
+│   │   ├── 12445954955492301804
+│   │   ├── 12457522740390451613
+│   │   ├── 12457903411398276172
+│   │   ├── 12473419363369107721
+│   │   ├── 1247502524523765453
+│   │   ├── 12803894654579336592
+│   │   ├── 12805767370830356761
+│   │   ├── 13474558880330438852
+│   │   ├── 13819379392550965660
+│   │   ├── 13877667343092926075
+│   │   ├── 13997520610808341236
+│   │   ├── 14124559465397101558
+│   │   ├── 14136727162854928405
+│   │   ├── 14206767786869807959
+│   │   ├── 1437372085772984924
+│   │   ├── 14416259443744125308
+│   │   ├── 14653393924847029577
+│   │   ├── 14828679908336408091
+│   │   ├── 14903097709080191270
+│   │   ├── 14950653756078280655
+│   │   ├── 15239532769794016747
+│   │   ├── 15419475389312746637
+│   │   ├── 15696253447130475352
+│   │   ├── 15962943949344423026
+│   │   ├── 16110855600364421241
+│   │   ├── 16204438524395665676
+│   │   ├── 1631430710528250935
+│   │   ├── 16598009528270152017
+│   │   ├── 16711004818620616229
+│   │   ├── 16764843275916820406
+│   │   ├── 17199596843283621271
+│   │   ├── 17734999400545001635
+│   │   ├── 17832083478342167242
+│   │   ├── 18023096776735424131
+│   │   ├── 18150261840590302147
+│   │   ├── 18323415674206442034
+│   │   ├── 18379560965361985029
+│   │   ├── 1909000565540374748
+│   │   ├── 2068433874241999396
+│   │   ├── 2119330735463439230
+│   │   ├── 2262285390102192015
+│   │   ├── 2327071471568116857
+│   │   ├── 2528140460162725103
+│   │   ├── 2782421323134159905
+│   │   ├── 2889850707973497962
+│   │   ├── 293950689855668414
+│   │   ├── 3077756008145521690
+│   │   ├── 3138653156896181992
+│   │   ├── 3201873305408100320
+│   │   ├── 3218502467763637932
+│   │   ├── 3324777140870591615
+│   │   ├── 3637820860251992246
+│   │   ├── 3778879716544981235
+│   │   ├── 3845325368291624599
+│   │   ├── 4578237168493285002
+│   │   ├── 5459661328021185860
+│   │   ├── 5868321572846790294
+│   │   ├── 5912835943153031627
+│   │   ├── 5929453234761365148
+│   │   ├── 6024929107377618082
+│   │   ├── 6052418778341103163
+│   │   ├── 6068038290720938188
+│   │   ├── 6193681333373492852
+│   │   ├── 6361256829325962937
+│   │   ├── 6371300982773100871
+│   │   ├── 6442065239487399362
+│   │   ├── 6504867238275379143
+│   │   ├── 6583599893140488448
+│   │   ├── 6672510762693243520
+│   │   ├── 7225228719943008181
+│   │   ├── 7449306442741747127
+│   │   ├── 7620769828382592042
+│   │   ├── 7675482826392310919
+│   │   ├── 7768434420250397663
+│   │   ├── 8025699021069042788
+│   │   ├── 8080415271407661797
+│   │   ├── 8181109390288596805
+│   │   ├── 8314816732228450197
+│   │   ├── 8315495922453907664
+│   │   ├── 8354404599648940417
+│   │   ├── 874714692492401465
+│   │   ├── 8899263924592826144
+│   │   ├── 9044446590588349208
+│   │   ├── 9368860987705616352
+│   │   ├── 9664609339198628951
+│   │   ├── 9727419800825818367
+│   │   ├── 9869407868860017245
+│   │   ├── 9965278069635563113
+│   │   └── 9973314785731616738
+│   └── CACHEDIR.TAG
+├── LICENSE
+├── README.md
+├── docs
+│   ├── GLOSSARY.md
+│   ├── PRINCIPLES.md
+│   ├── README.md
+│   ├── adr
+│   │   ├── ADR-0001_Area_and_Editor.md
+│   │   ├── ADR-0002_EditorContext_and_Toolbar_Materialization.md
+│   │   ├── ADR-0003_UI_Widgets_and_Editor_Overlays.md
+│   │   ├── ADR-0004_Patient_Domain.md
+│   │   ├── startup_project_opening_workflow.md
+│   │   └── startup_project_opening_workflow_pt.md
+│   ├── architecture
+│   │   ├── README.md
+│   │   ├── clinical_workflows
+│   │   │   ├── clinical_workflows.md
+│   │   │   ├── orthognathic_surgery
+│   │   │   │   ├── etapas.md
+│   │   │   │   └── osteotomy_patterns
+│   │   │   └── steps_panel.md
+│   │   ├── commands
+│   │   │   └── commands.md
+│   │   ├── config
+│   │   │   └── folder_structure.md
+│   │   ├── domain
+│   │   │   ├── patient
+│   │   │   │   └── patient.md
+│   │   │   └── project
+│   │   │       ├── folder_structure.md
+│   │   │       └── project.md
+│   │   ├── home_page
+│   │   │   └── home_page.md
+│   │   ├── internationalization
+│   │   │   ├── folder_structure.md
+│   │   │   └── internationalization.md
+│   │   ├── main_window
+│   │   │   └── main_window.md
+│   │   ├── modules
+│   │   │   ├── folder_structure.md
+│   │   │   ├── list_modules
+│   │   │   │   ├── align_objects
+│   │   │   │   │   └── strategy
+│   │   │   │   │       ├── automatic.md
+│   │   │   │   │       └── point_triangulation.md
+│   │   │   │   ├── cephalometric
+│   │   │   │   │   ├── cephalometric_landmark_localization.md
+│   │   │   │   │   ├── design_principles.md
+│   │   │   │   │   ├── list_of_points
+│   │   │   │   │   │   ├── import_export_list_points.md
+│   │   │   │   │   │   └── list_of_points.md
+│   │   │   │   │   ├── points_acquisitions_strategy
+│   │   │   │   │   │   ├── acquisition_of_cephalometric_landmarks_pt.md
+│   │   │   │   │   │   ├── automatic
+│   │   │   │   │   │   │   ├── bones.md
+│   │   │   │   │   │   │   ├── skin.md
+│   │   │   │   │   │   │   └── teeth.md
+│   │   │   │   │   │   └── box_reference
+│   │   │   │   │   │       └── box_reference.md
+│   │   │   │   │   └── tools
+│   │   │   │   │       └── tools.md
+│   │   │   │   ├── occlusion
+│   │   │   │   ├── osteotomy
+│   │   │   │   ├── professional
+│   │   │   │   │   └── professional.md
+│   │   │   │   └── tomography
+│   │   │   │       └── tomography.md
+│   │   │   └── modules.md
+│   │   ├── objects
+│   │   │   ├── datatypes.md
+│   │   │   ├── folder_structure.md
+│   │   │   └── objects.md
+│   │   ├── overview.md
+│   │   ├── scene
+│   │   │   └── scene.md
+│   │   ├── settings
+│   │   └── ui
+│   │       ├── appearance.md
+│   │       ├── editors
+│   │       │   ├── List_of_editors.md
+│   │       │   ├── editors.md
+│   │       │   ├── folder_structure.md
+│   │       │   └── list_editors
+│   │       │       └── curved_mpr
+│   │       │           ├── curved_mpr.md
+│   │       │           └── tomography.md
+│   │       ├── toolbar
+│   │       │   ├── folder_structure.md
+│   │       │   └── toolbar.md
+│   │       ├── tools
+│   │       │   ├── architectural_principles.md
+│   │       │   ├── folder_structure.md
+│   │       │   └── tools.md
+│   │       └── workspace
+│   │           ├── folder_strututure
+│   │           │   └── folder_structure.md
+│   │           ├── implementation
+│   │           │   └── workspace-implementation.md
+│   │           ├── workspace-testing.md
+│   │           └── workspace.md
+│   ├── developer
+│   ├── development
+│   │   ├── Folder_ Struture_full.txt
+│   │   ├── Folder_ Struture_simple.txt
+│   │   ├── rep_git_hub
+│   │   └── tests.txt
+│   └── user
+├── examples
+├── plugins
+│   ├── README.md
+│   ├── api
+│   └── examples
+├── pyproject.toml
+├── scripts
+│   └── debug_workspace.py
+├── src
+│   └── cranioz
+│       ├── __init__.py
+│       ├── __main__.py
+│       ├── application
+│       │   ├── __init__.py
+│       │   └── event_bus.py
+│       ├── assets
+│       │   └── __init__.py
+│       ├── config
+│       │   ├── __init__.py
+│       │   ├── defaults
+│       │   │   ├── app.json
+│       │   │   ├── logging.yaml
+│       │   │   └── paths.json
+│       │   ├── loader.py
+│       │   ├── migration.py
+│       │   └── schema.py
+│       ├── domain
+│       │   ├── __init__.py
+│       │   ├── patient
+│       │   │   ├── __init__.py
+│       │   │   ├── enums
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── blood_type.py
+│       │   │   │   ├── comorbidity_category.py
+│       │   │   │   ├── document_type.py
+│       │   │   │   ├── patient_race.py
+│       │   │   │   ├── patient_sex.py
+│       │   │   │   └── phone_kind.py
+│       │   │   ├── patient.py
+│       │   │   ├── patient_summary.py
+│       │   │   ├── sections
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── address.py
+│       │   │   │   ├── antecedents.py
+│       │   │   │   ├── comorbidities.py
+│       │   │   │   ├── complaint.py
+│       │   │   │   ├── documents.py
+│       │   │   │   ├── filiation.py
+│       │   │   │   ├── habits.py
+│       │   │   │   ├── identity.py
+│       │   │   │   └── medications.py
+│       │   │   └── value_objects
+│       │   │       ├── __init__.py
+│       │   │       ├── patient_id.py
+│       │   │       └── phone_number.py
+│       │   └── project
+│       │       ├── __init__.py
+│       │       ├── project.py
+│       │       ├── project_id.py
+│       │       ├── project_metadata.py
+│       │       ├── project_status.py
+│       │       └── project_summary.py
+│       ├── infrastructure
+│       │   ├── __init__.py
+│       │   ├── app
+│       │   │   ├── __init__.py
+│       │   │   └── app_path_resolver.py
+│       │   ├── i18n
+│       │   │   ├── __init__.py
+│       │   │   ├── catalog_loader.py
+│       │   │   ├── catalog_registry.py
+│       │   │   ├── instance.py
+│       │   │   └── translation_service.py
+│       │   └── project
+│       │       ├── __init__.py
+│       │       └── project_path_resolver.py
+│       ├── modules
+│       │   ├── __init__.py
+│       │   ├── base
+│       │   │   ├── __init__.py
+│       │   │   ├── module.py
+│       │   │   ├── module_context.py
+│       │   │   └── module_manifest.py
+│       │   ├── builtin
+│       │   │   ├── __init__.py
+│       │   │   └── test_modules
+│       │   │       ├── __init__.py
+│       │   │       ├── central_split.py
+│       │   │       ├── four_areas.py
+│       │   │       ├── left_central_right.py
+│       │   │       ├── no_central.py
+│       │   │       └── single.py
+│       │   ├── loader
+│       │   │   ├── __init__.py
+│       │   │   └── module_loader.py
+│       │   └── registry
+│       │       ├── __init__.py
+│       │       └── module_registry.py
+│       ├── py.typed
+│       ├── settings
+│       │   ├── __init__.py
+│       │   └── preferences.py
+│       ├── translations
+│       │   ├── dynamic_keys.json
+│       │   ├── en
+│       │   │   ├── cephalometry.json
+│       │   │   ├── core.json
+│       │   │   ├── homepage.json
+│       │   │   ├── osteotomy.json
+│       │   │   ├── patient.json
+│       │   │   ├── tomography.json
+│       │   │   └── workspace.json
+│       │   └── pt-BR
+│       │       ├── cephalometry.json
+│       │       ├── core.json
+│       │       ├── homepage.json
+│       │       ├── osteotomy.json
+│       │       ├── patient.json
+│       │       ├── tomography.json
+│       │       └── workspace.json
+│       └── ui
+│           ├── __init__.py
+│           ├── editors
+│           │   ├── __init__.py
+│           │   ├── base_editor.py
+│           │   ├── builtin
+│           │   │   ├── __init__.py
+│           │   │   └── test_editor.py
+│           │   ├── editor_catalog.py
+│           │   ├── editor_context.py
+│           │   ├── editor_manifest.py
+│           │   ├── editor_registry.py
+│           │   └── overlays
+│           │       ├── __init__.py
+│           │       ├── gizmos
+│           │       │   └── __init__.py
+│           │       └── rulers
+│           │           └── __init__.py
+│           ├── theme
+│           │   ├── __init__.py
+│           │   └── service.py
+│           ├── toolbars
+│           │   ├── __init__.py
+│           │   ├── base.py
+│           │   ├── item.py
+│           │   ├── specification.py
+│           │   └── state.py
+│           ├── tools
+│           │   ├── __init__.py
+│           │   ├── builtin
+│           │   │   ├── __init__.py
+│           │   │   ├── log_tool.py
+│           │   │   └── toggle_tool.py
+│           │   ├── catalog.py
+│           │   ├── registry
+│           │   │   ├── __init__.py
+│           │   │   ├── tool_definition.py
+│           │   │   └── tool_registry.py
+│           │   └── specification.py
+│           ├── widgets
+│           │   ├── __init__.py
+│           │   ├── buttons
+│           │   │   ├── __init__.py
+│           │   │   ├── icon_button.py
+│           │   │   └── primary_button.py
+│           │   ├── headers
+│           │   │   ├── __init__.py
+│           │   │   └── section_header.py
+│           │   └── sliders
+│           │       ├── __init__.py
+│           │       └── labeled_slider.py
+│           └── workspace
+│               ├── __init__.py
+│               ├── areas
+│               │   ├── __init__.py
+│               │   ├── area.py
+│               │   ├── area_manager.py
+│               │   ├── area_widget.py
+│               │   └── placement.py
+│               ├── layout
+│               │   ├── __init__.py
+│               │   ├── layout_builder.py
+│               │   ├── layout_io.py
+│               │   ├── layout_renderer.py
+│               │   ├── layout_state.py
+│               │   └── layout_tree.py
+│               ├── overlays
+│               │   ├── __init__.py
+│               │   ├── overlay.py
+│               │   ├── overlay_manager.py
+│               │   ├── overlay_state.py
+│               │   ├── region.py
+│               │   └── top_overlay.py
+│               ├── specs
+│               │   ├── __init__.py
+│               │   ├── area_spec.py
+│               │   ├── editor_layout_spec.py
+│               │   ├── module_ui_spec.py
+│               │   └── overlay_spec.py
+│               ├── structure
+│               │   ├── __init__.py
+│               │   └── top_bar.py
+│               └── workspace.py
+├── tests
+│   ├── __init__.py
+│   ├── conftest.py
+│   ├── data
+│   ├── infrastructure
+│   │   └── i18n
+│   │       ├── conftest.py
+│   │       ├── test_catalog_loader.py
+│   │       ├── test_catalog_registry.py
+│   │       └── test_translation_service.py
+│   ├── integration
+│   │   └── ui
+│   │       └── workspace
+│   │           ├── areas
+│   │           │   └── test_area_widget.py
+│   │           ├── layout
+│   │           │   ├── test_layout_builder.py
+│   │           │   └── test_layout_renderer.py
+│   │           └── workspace
+│   │               └── test_workspace.py
+│   └── unit
+│       ├── __init__.py
+│       ├── application
+│       │   └── test_event_bus.py
+│       ├── config
+│       │   └── test_loader.py
+│       ├── domain
+│       │   ├── __init__.py
+│       │   ├── patient
+│       │   │   ├── __init__.py
+│       │   │   ├── enums
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── test_blood_type.py
+│       │   │   │   ├── test_comorbidity_category.py
+│       │   │   │   ├── test_document_type.py
+│       │   │   │   ├── test_patient_race.py
+│       │   │   │   ├── test_patient_sex.py
+│       │   │   │   └── test_phone_kind.py
+│       │   │   ├── sections
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── test_address.py
+│       │   │   │   ├── test_antecedents.py
+│       │   │   │   ├── test_comorbidities.py
+│       │   │   │   ├── test_complaint.py
+│       │   │   │   ├── test_documents.py
+│       │   │   │   ├── test_filiation.py
+│       │   │   │   ├── test_habits.py
+│       │   │   │   ├── test_identity.py
+│       │   │   │   └── test_medications.py
+│       │   │   ├── test_patient.py
+│       │   │   ├── test_patient_summary.py
+│       │   │   └── value_objects
+│       │   │       ├── __init__.py
+│       │   │       ├── test_patient_id.py
+│       │   │       └── test_phone_number.py
+│       │   └── project
+│       │       ├── __init__.py
+│       │       ├── test_project.py
+│       │       ├── test_project_id.py
+│       │       ├── test_project_metadata.py
+│       │       ├── test_project_status.py
+│       │       └── test_project_summary.py
+│       ├── infrastructure
+│       │   ├── app
+│       │   │   └── test_app_path_resolver.py
+│       │   ├── i18n
+│       │   └── project
+│       │       └── test_project_path_resolver.py
+│       ├── modules
+│       ├── settings
+│       └── ui
+│           ├── editors
+│           │   ├── builtin
+│           │   │   ├── __init__.py
+│           │   │   └── test_dummy_editor.py
+│           │   ├── test_base_editor.py
+│           │   ├── test_editor_context.py
+│           │   └── test_editor_registry.py
+│           ├── theme
+│           │   ├── __init__.py
+│           │   └── test_service.py
+│           ├── toolbars
+│           │   ├── test_item.py
+│           │   ├── test_state.py
+│           │   ├── test_toolbar.py
+│           │   └── test_toolbars_specification.py
+│           ├── tools
+│           │   ├── builtin
+│           │   │   ├── test_log_tool.py
+│           │   │   └── test_toggle_tool.py
+│           │   ├── registry
+│           │   │   ├── test_tool_definition.py
+│           │   │   └── test_tool_registry.py
+│           │   └── test_tools_specification.py
+│           └── workspace
+│               ├── areas
+│               │   ├── test_area.py
+│               │   ├── test_area_manager.py
+│               │   └── test_placement.py
+│               ├── layout
+│               │   └── test_layout_tree.py
+│               ├── overlays
+│               │   ├── test_overlay.py
+│               │   ├── test_overlay_manager.py
+│               │   ├── test_region.py
+│               │   └── test_top_overlay.py
+│               └── specs
+│                   ├── test_area_spec.py
+│                   ├── test_editor_layout_spec.py
+│                   ├── test_module_ui_spec.py
+│                   └── test_overlay_spec.py
+└── tools
+    ├── code_packer
+    │   ├── cranioZ_contexto.txt
+    │   ├── pack_code.py
+    │   └── pack_config.json
+    ├── folder_tree
+    │   ├── folder_structure.py
+    │   ├── folder_structure.txt
+    │   └── folder_structure_config.json
+    └── i18n
+        ├── .ruff_cache
+        │   ├── .gitignore
+        │   ├── 0.16.9
+        │   └── CACHEDIR.TAG
+        ├── pyproject.toml
+        ├── src
+        │   └── cranioz_tools
+        │       └── i18n
+        └── tests

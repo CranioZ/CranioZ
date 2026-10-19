@@ -1,5 +1,540 @@
 
 ======================================================================
+FILE: docs\GLOSSARY.md
+======================================================================
+
+# CranioZ Glossary
+
+**Document type:** Reference
+**Status:** Living document
+**Scope:** Canonical definitions of terms used across the CranioZ documentation
+
+---
+
+## 1. Purpose
+
+This glossary provides a single, authoritative definition for each term used in the CranioZ architecture and design documentation.
+
+It exists to:
+
+- Eliminate ambiguity when the same term appears in multiple documents.
+- Provide a canonical reference for contributors and reviewers.
+- Distinguish terms that are easily confused (e.g., *Area* vs. *Editor*, *Tool* vs. *Command*, *Datatype* vs. *Semantic Type*).
+- Link each term to the document(s) that define its detailed contract.
+
+**Rule:** when a document uses a term defined here, it should use it with the meaning given here. If a document needs a different meaning, it must declare that explicitly and link back to this glossary.
+
+---
+
+## 2. How to Use This Glossary
+
+- **Definitions here are normative.** A document may expand a definition, but it must not contradict it.
+- **Terms are grouped by domain** (Architecture, UI, Domain, Application, etc.) for navigability.
+- **Cross-references** point to the document(s) that specify the term in detail.
+- **Aliases and deprecated terms** are listed explicitly to prevent their reintroduction.
+
+If a term is missing, add it here first, then reference it from the relevant document.
+
+---
+
+## 3. Architectural Terms
+
+### ADR — Architecture Decision Record
+A document that records a significant architectural decision, its context, alternatives considered, and consequences. CranioZ ADRs live under `docs/adr/` and follow a numbered convention (`ADR-0001`, `ADR-0002`, ...).
+
+**See:** `docs/adr/`
+
+### Application Layer
+The layer that coordinates system operations: Commands, Services, Tasks, Flows, Events, transactions, and application-level state. It orchestrates the Domain and Infrastructure layers.
+
+**See:** `docs/architecture/overview.md` §5.2
+
+### Capability
+An operational capability that can be applied to an Object, resolved by the system from the Object's Datatype, Semantic Type, Components, and context. Capabilities are not statically stored on the Object.
+
+**Distinguish from:** *Tool* (a user-facing interaction), *Component* (data/structure the Object has).
+
+**See:** `docs/architecture/objects/objects.md` §5
+
+### Command
+An executable application operation. Every persistent state-changing operation in CranioZ passes through the Command mechanism, which provides validation, transaction boundaries, undo/redo, event publication, and auditability.
+
+**Distinguish from:** *Tool* (an interaction interface that may produce a Command), *Service* (reusable functionality).
+
+**See:** `docs/architecture/commands/commands.md`
+
+### Component
+Additional information or structure associated with an Object (e.g., `Transform`, `LandmarkSet`, `AnatomicalProperties`). A Component answers "What does the Object have?"
+
+**Distinguish from:** *Capability* ("What can be done with the Object?").
+
+**See:** `docs/architecture/objects/objects.md` §4
+
+### Datatype
+The fundamental structure of the data manipulated by CranioZ (e.g., `Mesh`, `Volume`, `Image2D`, `Curve`, `Point`, `PointCloud`, `ROI`). A Datatype does not, by itself, define clinical meaning.
+
+**Distinguish from:** *Semantic Type* (what the data represents).
+
+**See:** `docs/architecture/objects/datatypes.md`
+
+### Domain Layer
+The layer that contains the conceptual model: Patient, Project, Scene, Object, Datatype, Semantic Type, Component, Capability, and clinical rules. It is independent of Qt, VTK, filesystem, and any infrastructure concern.
+
+**See:** `docs/architecture/overview.md` §5.1`
+
+### Flow
+A versioned, declarative sequence of steps that guides a user through a clinical task by coordinating steps, requirements, and modules. Flow definitions are stored as JSON; the execution engine belongs to the Application layer.
+
+**See:** `docs/architecture/clinical_workflows/clinical_workflows.md`
+
+### Infrastructure Layer
+The layer that contains technical implementations: DICOM access, VTK/ITK integration, file I/O, persistence, and external library adapters. It implements the ports defined by the Application layer.
+
+**See:** `docs/architecture/overview.md` §5.3`
+
+### Module
+A coherent functional capability that composes Tools, Commands, Services, Data Types, Editors, and Flows. Modules declare their UI composition via a `ModuleUISpec`; they do not own Areas or Editors.
+
+**See:** `docs/architecture/overview.md` §6, `docs/architecture/modules/modules.md`
+
+### Object
+The entity manipulated by CranioZ, understood through four dimensions: Data (Datatype), Semantic (Semantic Type), Components, and Capabilities.
+
+**See:** `docs/architecture/objects/objects.md`
+
+### Plugin
+An external extension that provides Modules, Tools, Services, Data Types, UI components, Flows, or Capabilities through public extension points. Plugins must use versioned public APIs, not internal implementation details.
+
+**See:** `docs/architecture/overview.md` §17`
+
+### Ports and Adapters
+The architectural pattern used by CranioZ. The Application layer defines ports (interfaces) for persistence, project loading/saving, external computation, and rendering integration. Infrastructure provides concrete adapters.
+
+**See:** `docs/architecture/overview.md` §16`
+
+### Scene
+The domain-level spatial organization of objects within a specific planning context. The Scene defines object membership, spatial hierarchy, transforms, reference frames, and the coordinate system. It does not own the lifecycle of domain objects.
+
+**Distinguish from:** *DomainObjectStore* (owns canonical object identity and lifecycle), *Rendering Representation* (how it is visualized).
+
+**See:** `docs/architecture/scene/scene.md`
+
+### Semantic Type
+The clinical meaning assigned to an Object (e.g., `Anatomy.Bone.Mandible`, `Imaging.CT`, `Surgical.Guide`). The same Datatype (e.g., `Mesh`) can carry different Semantic Types.
+
+**Distinguish from:** *Datatype* (the structure of the data).
+
+**See:** `docs/architecture/objects/datatypes.md`, `docs/architecture/objects/objects.md` §3
+
+### Service
+Reusable application or domain functionality not naturally belonging to a single entity. Services have explicit contracts.
+
+**Distinguish from:** *Command* (a specific executable operation), *Tool* (a user-facing interaction).
+
+**See:** `docs/architecture/overview.md` §9`
+
+### Task
+A potentially long-running operation managed by the Application layer, providing execution, progress, cancellation, error propagation, and result delivery.
+
+**See:** `docs/architecture/overview.md` §9`
+
+### Tool
+An operational capability exposed to the user. A Tool defines what it represents, how it is identified, in which contexts it is available, and how interaction is initiated. Execution is delegated to Commands and Application Services.
+
+**Distinguish from:** *Command* (the executable operation), *Widget* (a reusable UI component).
+
+**See:** `docs/architecture/ui/tools/tools.md`
+
+---
+
+## 4. UI Terms
+
+### Area
+A structural container provided by the Workspace. It occupies a position in the Area Layout Tree and hosts one or more Editors, organized in its own internal Editor Layout Tree. There is no `EditorHost` — the Area manages its Editors directly.
+
+**Distinguish from:** *Editor* (functional unit), *Region* (a geometric grouping of Areas), *Overlay* (a floating layer).
+
+**See:** `docs/architecture/ui/workspace/workspace.md` §2, ADR-0001
+
+### Area Layout Tree
+The N-ary split tree that organizes the Areas of the Workspace. Nodes are `Leaf` (one Area) or `Split` (direction + two or more children). The Area Layout Tree is the single source of truth for Workspace structure.
+
+**See:** `docs/architecture/ui/workspace/workspace.md` §5`
+
+### Editor
+A functional unit hosted inside an Area. It provides a specific interaction experience (e.g., `Viewport3DEditor`, `MPRViewerEditor`, `ConsoleEditor`). An Editor declares and materializes its own Toolbar(s) and internal overlays.
+
+**Distinguish from:** *Area* (the structural container), *Tool* (an action), *Toolbar* (the presentation of Tools inside an Editor).
+
+**See:** `docs/architecture/ui/editors/editors.md`, ADR-0001, ADR-0002
+
+### Editor Layout Tree
+The N-ary split tree internal to an Area that organizes the Editors hosted by that Area. It uses the same node types as the Area Layout Tree (`Leaf`, `Split`).
+
+**See:** `docs/architecture/ui/workspace/workspace.md` §5`, `docs/architecture/ui/editors/editors.md` §8
+
+### EditorCatalog
+The context-aware filter over the `EditorRegistry`. It answers: "Which registered Editors can be used in the current context?" It considers the active Scene, Project, Area, and required capabilities/data.
+
+**Distinguish from:** *EditorRegistry* (the registry of all Editor types).
+
+**See:** `docs/architecture/ui/editors/editors.md` §6
+
+### EditorContext
+The controlled set of dependencies an Editor receives at insertion time. Created once per Editor (hybrid model): fields specific to the Editor (identity, view state, extras) are isolated; shared services (SceneQuery, CommandDispatcher, EventSubscription, EditorServices) are propagated by reference.
+
+**See:** `docs/architecture/ui/editors/editors.md` §15, ADR-0002
+
+### EditorRegistry
+The registry of all Editor **types** known to the system. It resolves `editor_id` to concrete Editor classes and creates instances. It does **not** manage instances.
+
+**Error contracts:** `register` raises `ValueError` on duplicate; `resolve` and `create` raise `KeyError` on unknown.
+
+**See:** `docs/architecture/ui/editors/editors.md` §5, `docs/architecture/ui/workspace/workspace.md` §3.6
+
+### LayoutBuilder
+The component that consumes a `ModuleUISpec` and produces a `LayoutTree`. It is a **pure** composition step: it does not import PySide6, does not require a `QApplication`, and does not create widgets.
+
+**Distinguish from:** *LayoutRenderer* (materializes widgets).
+
+**See:** `docs/architecture/ui/workspace/workspace.md` §3.5`, ADR-0002
+
+### LayoutRenderer
+The component that materializes a `LayoutTree` as Qt widgets (nested `QSplitter` widgets and Area widgets). It is the sole materializer of widgets: Areas, Splits, Editors, and Toolbars.
+
+**Distinguish from:** *LayoutBuilder* (pure composition step).
+
+**See:** `docs/architecture/ui/workspace/implementation/workspace-implementation.md` Phase 6, ADR-0002
+
+### LayoutState
+The presentation state associated with a Workspace layout: proportions (`QSplitter` sizes per node), visibility (which Areas are shown or hidden), and the active Editor per Area. Stored separately from the structural trees.
+
+**Distinguish from:** *OverlayState* (state of Overlays), *ViewStateStore* (per-Editor presentation state).
+
+**See:** `docs/architecture/ui/workspace/workspace.md` §5.3
+
+### MainWindow
+The top-level application window. It hosts the Workspace and provides the application frame (native OS window controls and, when applicable, the OS menu bar). It does not own the Workspace layout state, clinical state, or workflow semantics.
+
+**See:** `architecture/main_window/main_window.md`
+
+### ModuleUISpec
+The declarative specification a Module provides to the Workspace, describing which Areas it wants the Workspace to materialize, their placement, and their internal Editor Layout Trees.
+
+**See:** `docs/architecture/ui/workspace/workspace.md` §3.5
+
+### Overlay
+A floating layer managed by the Workspace, positioned over a Region of Areas. Overlays can be moved, resized, and closed. The `steps_panel` is the primary example.
+
+**Distinguish from:** *Top Bar* (structural component, not repositionable), *Editor internal overlay* (belongs to an Editor, not the Workspace).
+
+**See:** `docs/architecture/ui/workspace/workspace.md` §7`
+
+### OverlayState
+The presence, configuration, and anchoring of Overlays. Stored alongside the layout trees, inside the project file.
+
+**See:** `docs/architecture/ui/workspace/workspace.md` §5.3`, §7.6
+
+### Placement
+A semantic classification of an Area within the Workspace layout: `LEFT`, `CENTRAL`, `RIGHT`, `BOTTOM`. Placement is used to build the initial Area Layout Tree and to associate Areas with Regions. It is preserved after construction.
+
+**See:** `docs/architecture/ui/workspace/workspace.md` §3.5`
+
+### Region
+A geometric area derived from the Area Layout Tree that groups related Areas. Overlays are positioned over Regions.
+
+**See:** `docs/architecture/ui/workspace/workspace.md` §7.2`
+
+### Surface
+A visual background belonging to a window, panel, or overlay. CranioZ defines three surface styles: **Solid**, **Translucent**, and **Frosted Glass**.
+
+**See:** `docs/architecture/appearance/surfaces-and-overlays.md`
+
+### Theme
+The global visual palette and styling configuration of the interface (Light, Dark, System). A theme styles interface components; it does not dictate the background of every viewport.
+
+**See:** `docs/architecture/appearance/themes-and-design-tokens.md`
+
+### Toolbar
+A widget internal to an Editor that presents Tools to the user. A Toolbar is declared by a `ToolbarSpec` and materialized by the `LayoutRenderer` from the Editor's `toolbar_specs()`. The Workspace never hosts Toolbars; the Area never hosts Toolbars.
+
+**See:** `docs/architecture/ui/toolbar/toolbar.md`, ADR-0002
+
+### Top Bar
+A structural component of the Workspace, fixed at the top, not repositionable or closeable. It contains three segments: Left (menu, Home, toggle Left), Center (module tabs, `+` button), Right (Extras, toggle Right, window controls).
+
+**Distinguish from:** *Overlay* (repositionable, closeable).
+
+**See:** `docs/architecture/ui/workspace/workspace.md` §3.3`
+
+### Widget
+A reusable interface component implementing the CranioZ visual and interaction conventions. Generic composite widgets live in `src/cranioz/ui/widgets/`. Editor-internal overlays live in `src/cranioz/ui/editors/overlays/`.
+
+**See:** `docs/architecture/appearance/widget-system.md`, ADR-0003
+
+### Workspace
+The runtime environment where clinical work happens. It is a composition of Areas (structural containers that host Editors) and Overlays (floating layers). The Workspace manages Areas and Overlays; it does not own clinical state, Tools, Toolbars, or Module behavior.
+
+**See:** `docs/architecture/ui/workspace/workspace.md`
+
+---
+
+## 5. Domain Terms
+
+### Clinical Flow
+See *Flow*.
+
+### DomainObjectStore
+The canonical registry and lifecycle authority for domain objects belonging to a Project. It is Project-scoped, not application-global.
+
+**Distinguish from:** *Scene* (spatial organization of objects).
+
+**See:** `docs/architecture/scene/scene.md` §4
+
+### Patient
+The person associated with clinical data in CranioZ. The Patient is composed of nine section value objects (identity, documents, filiation, address, complaint, comorbidities, medications, antecedents, habits). It is referenced by a Project; it does not own clinical data such as imaging, meshes, photographs, odontogram, or documents.
+
+**See:** `docs/architecture/domain/patient/patient.md`, ADR-0004
+
+### PatientSummary
+A lightweight read-only projection of the Patient carrying `patient_id`, `display_name`, `birth_date`, and `sex`. Used in contexts where the full record is not needed (Project Catalog, ProjectContext, tooltips).
+
+**See:** `docs/architecture/domain/patient/patient.md` §13
+
+### Project
+The persistent clinical container associated with a patient and one or more clinical workflows. It provides the boundary within which patient-related data, imaging, models, planning data, workflow state, metadata, and other clinical artifacts are organized.
+
+**Distinguish from:** *Patient* (the person referenced by the Project), *ProjectContext* (the runtime representation of an opened Project).
+
+**See:** `docs/architecture/domain/project/project.md`
+
+### Project Catalog
+A read-only discovery projection of available projects. It allows the Home Page to efficiently display and search existing projects without loading complete clinical data.
+
+**See:** `docs/architecture/domain/project/project.md` §5`
+
+### Project Manager
+The single application-level authority for the lifecycle of a project: creation, opening, updating, closing, deletion, archival, restoration, validation, access checks, persistence coordination, and lifecycle events.
+
+**See:** `docs/architecture/domain/project/project.md` §4`
+
+### Project Repository
+The persistence abstraction through which the Project Manager loads and stores project state. It does not decide whether a project should be created, updated, opened, or deleted.
+
+**See:** `docs/architecture/domain/project/project.md` §12`
+
+### Project Storage
+The infrastructure responsible for the physical representation of a project (filesystem, database, institutional storage, remote storage, etc.).
+
+**See:** `docs/architecture/domain/project/project.md` §11`
+
+### ProjectContext
+A runtime initialization snapshot created when a project is opened. It is immutable for the Workspace, contains no physical paths, and does not own the project lifecycle.
+
+**See:** `docs/architecture/domain/project/project.md` §17`
+
+### Scene (Domain)
+See *Scene* in §3.
+
+### Workflow
+See *Flow*.
+
+---
+
+## 6. Application and Command Terms
+
+### CommandBus
+The mechanism through which Editors and Tools publish Commands. The CommandBus routes Commands to the appropriate CommandHandler.
+
+**See:** `docs/architecture/commands/commands.md`
+
+### CommandDispatcher
+The interface through which an Editor or Tool dispatches Commands. Part of the `EditorContext` and `ToolContext`.
+
+**See:** `docs/architecture/ui/editors/editors.md` §15
+
+### CommandHandler / CommandExecutor
+The component responsible for validating a Command, opening a transaction, applying changes to the Domain/Scene, committing, and publishing events.
+
+**See:** `docs/architecture/ui/workspace/workspace.md` §3.4`
+
+### Event Bus
+The mechanism through which the Application layer publishes events after a successful commit. Events communicate state changes; they do not replace Commands.
+
+**See:** `docs/architecture/overview.md` §13`
+
+### SelectionService
+The service through which an Editor or Tool queries and observes the current selection. Part of the `EditorContext` and `ToolContext`.
+
+**See:** `docs/architecture/ui/editors/editors.md` §15
+
+### SceneQuery
+The read-only interface through which an Editor accesses the Scene. An Editor never receives a mutable reference to the Scene.
+
+**See:** `docs/architecture/ui/editors/editors.md` §15
+
+### ToolContext
+A strict subset of the `EditorContext` provided to a Tool. Contains `SceneQuery`, `SelectionService`, `CommandDispatcher`, and `ToolServices`. Does not contain `EventSubscription`, `ViewStateStore`, or `EditorServices`.
+
+**See:** `docs/architecture/ui/editors/editors.md` §15
+
+### ViewStateStore
+Per-Editor presentation state (zoom, camera, current slice, visual selection, presentation mode). It is not clinical state and not the same as `LayoutState`.
+
+**See:** `docs/architecture/ui/editors/editors.md` §15`
+
+---
+
+## 7. Design System Terms
+
+### Design Token
+A named value used by the design system, representing a semantic role rather than a hard-coded component-specific value. Categories include color, typography, spacing, shape, and elevation.
+
+**See:** `docs/architecture/appearance/themes-and-design-tokens.md`
+
+### Frosted Glass
+A translucent surface combined with blur of the content behind it. Optional presentation capability, not a requirement.
+
+**See:** `docs/architecture/appearance/surfaces-and-overlays.md`
+
+### Modal Focus Effect
+A presentation effect that visually emphasizes an active modal dialog by reducing the visual prominence of the Workspace behind it (dimming, optionally with blur).
+
+**Status:** Blur behind VTK renderers is experimental; dimming-only is the initial default.
+
+**See:** `docs/architecture/appearance/modal-focus-effect.md`
+
+### Solid Surface
+An opaque surface with a theme-derived background color. Default for persistent panels, clinical forms, and information-dense dialogs.
+
+**See:** `docs/architecture/appearance/surfaces-and-overlays.md`
+
+### Translucent Surface
+A surface with partial opacity through which the underlying content remains visible. Suitable for selected floating toolbars and compact contextual controls.
+
+**See:** `docs/architecture/appearance/surfaces-and-overlays.md`
+
+---
+
+## 8. Internationalization Terms
+
+### Catalog
+A JSON file organized by language and major functional area (e.g., `translations/en/tomography.json`). Each catalog contains translation keys mapped to messages and optional descriptions.
+
+**See:** `docs/architecture/internationalization/internationalization.md` §3
+
+### Source Text
+The mandatory English text supplied as the second positional argument to `tr()`. It provides a last-resort fallback if the translation cannot be resolved through the catalogs. The English catalog remains the authoritative source.
+
+**See:** `docs/architecture/internationalization/internationalization.md` §5
+
+### Translation Key
+A stable semantic identifier describing meaning or intent (e.g., `tomography.segmentation.failed`). It must not depend on the displayed text or a specific UI widget.
+
+**See:** `docs/architecture/internationalization/internationalization.md` §4
+
+### TranslationCatalogRegistry
+The component that locates, loads, and caches translation catalogs by language and functional area.
+
+**See:** `docs/architecture/internationalization/internationalization.md` §2
+
+### TranslationService
+The component that resolves translation keys, processes message parameters and pluralization, manages the active language, applies fallback rules, and notifies the interface when the language changes.
+
+**See:** `docs/architecture/internationalization/internationalization.md` §2
+
+### TranslationValidator
+The component that checks catalog structure, key coverage, source-text consistency, formatting parameters, and translation completeness.
+
+**See:** `docs/architecture/internationalization/internationalization.md` §2`, §9
+
+---
+
+## 9. Deprecated and Retired Terms
+
+The following terms appeared in earlier drafts and are **retired**. They must not be reintroduced.
+
+### EditorHost
+A component that was once proposed to manage a list of Editors inside an Area. **Removed by ADR-0001.** The Area manages its Editors directly via its internal Editor Layout Tree.
+
+**Do not use.** If you encounter `EditorHost` in a document, treat it as a documentation error and correct it.
+
+### Patient_Config_Manager
+A proposed component that would independently own the patient lifecycle. **Removed by ADR-0004 and `project_pt.md` §3.** Patient lifecycle is managed through the Project Manager.
+
+**Do not use.**
+
+### PatientManager
+A proposed application-level manager for the Patient. **Removed by ADR-0004.** There is no separate Patient lifecycle manager.
+
+**Do not use.**
+
+### Main Toolbar
+A term that appeared in earlier drafts of `toolbar.md` to describe an application-level toolbar. In the current architecture, Toolbars are internal to Editors. The Top Bar is a structural component of the Workspace, not a "Main Toolbar".
+
+**Do not use.** Prefer *Top Bar* for the structural component, and *Toolbar* for the Editor-internal widget.
+
+### Panel
+A term that appeared in earlier drafts. In the current architecture, there is only **Area** (structural container) and **Editor** (functional unit). A "Panel" is a semantic specialization of an Editor (`editor_kind = PANEL`), not a separate concept.
+
+**Do not use as a structural term.** If needed, refer to an Editor whose kind is `PANEL`.
+
+---
+
+## 10. Cross-Reference Index
+
+| Term | Primary Document | Related ADR |
+|---|---|---|
+| Area | `workspace.md` §2 | ADR-0001 |
+| Area Layout Tree | `workspace.md` §5 | — |
+| Capability | `objects.md` §5 | — |
+| Command | `commands.md` | — |
+| Component | `objects.md` §4 | — |
+| Datatype | `datatypes.md` | — |
+| Editor | `editors.md` | ADR-0001, ADR-0002 |
+| EditorCatalog | `editors.md` §6 | — |
+| EditorContext | `editors.md` §15 | ADR-0002 |
+| EditorRegistry | `editors.md` §5 | ADR-0002 |
+| Flow | `clinical_workflows.md` | — |
+| LayoutBuilder | `workspace.md` §3.5 | ADR-0002 |
+| LayoutRenderer | `workspace-implementation.md` Phase 6 | ADR-0002 |
+| Module | `overview.md` §6 | — |
+| Object | `objects.md` | — |
+| Overlay | `workspace.md` §7 | — |
+| Patient | `patient.md` | ADR-0004 |
+| Project | `project.md` | — |
+| ProjectContext | `project.md` §17 | — |
+| Scene | `scene.md` | — |
+| Semantic Type | `datatypes.md`, `objects.md` §3 | — |
+| Service | `overview.md` §9 | — |
+| Surface | `surfaces-and-overlays.md` | — |
+| Theme | `themes-and-design-tokens.md` | — |
+| Tool | `tools.md` | — |
+| Toolbar | `toolbar.md` | ADR-0002 |
+| Top Bar | `workspace.md` §3.3 | — |
+| Widget | `widget-system.md` | ADR-0003 |
+| Workspace | `workspace.md` | — |
+
+---
+
+## 11. Maintenance
+
+This glossary is a **living document**. When a new term is introduced in a specification:
+
+1. Add it to the appropriate section here.
+2. Cross-reference it from the document that defines it in detail.
+3. If the term replaces a deprecated term, add the deprecated term to §9.
+
+When a term's meaning changes:
+
+1. Update the definition here **first**.
+2. Update every document that uses the term.
+3. Record the change in the CHANGELOG.
+
+The glossary is not a substitute for the detailed contracts in the individual documents. It is a navigation aid and a consistency anchor. When in doubt, the detailed contract in the specific document governs.
+
+
+======================================================================
 FILE: docs\PRINCIPLES.md
 ======================================================================
 
@@ -6061,6 +6596,13 @@ It does not create, modify, save, delete, or directly load Projects.
 
 
 ======================================================================
+FILE: docs\architecture\implementation\implementation.md
+======================================================================
+
+
+
+
+======================================================================
 FILE: docs\architecture\internationalization\folder_structure.md
 ======================================================================
 
@@ -6528,7 +7070,7 @@ An integrated translation editor, advanced catalog-reload workflows, external tr
 
 
 ======================================================================
-FILE: docs\architecture\main_window\main_windows.md
+FILE: docs\architecture\main_window\main_window.md
 ======================================================================
 
 # Main Window (MainWindow)
@@ -6697,7 +7239,7 @@ Workspace layout, Overlay behavior, workflow transitions, clinical requirement e
 
 
 ======================================================================
-FILE: docs\architecture\modules\folder_strutucture.md
+FILE: docs\architecture\modules\folder_structure.md
 ======================================================================
 
     src/cranioz/modules/
@@ -8581,40 +9123,564 @@ FILE: docs\architecture\modules\list_modules\cephalometric\tools\tools.md
 
 
 ======================================================================
+FILE: docs\architecture\modules\list_modules\professional\professional.md
+======================================================================
+
+# Professional Module
+
+**Module ID:** `professional`
+**Status:** Proposed
+**Scope:** Personal, administrative, and financial management of the surgeon
+**Persistence:** Dedicated database outside projects (`~/.cranioz/professional/`)
+
+---
+
+## 1. Purpose
+
+The **Professional Module** manages the surgeon's personal, administrative, and financial information. It is the application's administrative counterpart to the clinical modules.
+
+The module does **not** handle patient clinical data (imaging, planning, osteotomies, Scene). It produces administrative artifacts — documents, budgets, appointments, procedure catalogs — that are **consumed** by clinical modules, particularly the Patient Module.
+
+The module is **self-contained**: it works without any open project, and its data is reused across projects.
+
+---
+
+## 2. Core Principles
+
+- **Outside projects.** Professional data lives in a dedicated database, not inside clinical projects.
+- **Reusable across projects.** A procedure catalog, a document template, or a budget is defined once and reused for many patients.
+- **Reference, do not contain, patient data.** The module references patients and projects by ID; it never stores clinical content.
+- **Translate everything.** Specialties, categories, and procedures are always resolved through the `TranslationService`.
+- **Commands for all mutations.** Every persistent change passes through an application Command.
+- **Single service owns the database.** A `ProfessionalService` is the only component that reads or writes the professional database.
+
+---
+
+## 3. Ownership and Boundaries
+
+### 3.1 What the Module Owns
+
+- The professional's profile.
+- The procedure catalog (specialties, categories, procedures).
+- Document templates (orientations, contracts, consent terms, prescriptions, certificates).
+- The appointment schedule.
+- Budgets and budget items.
+- Attachments (logo, signature image).
+
+### 3.2 What the Module References (Does Not Own)
+
+- Patients — referenced by `patient_id`, live in projects.
+- Projects — referenced by `project_id`, live in the Project Root.
+- Osteotomy patterns — a separate shared catalog (see ADR-0006).
+- Scene, imaging, planning — never referenced by this module.
+
+### 3.3 What the Module Does Not Do
+
+- It does not create, modify, or delete patients or projects.
+- It does not store clinical data (imaging, planning, Scene).
+- It does not implement clinical rules.
+- It does not manage the Project lifecycle.
+
+---
+
+## 4. Persistence
+
+### 4.1 Location
+
+```text
+~/.cranioz/professional/          (Linux/macOS)
+%APPDATA%\CranioZ\Professional\   (Windows)
+```
+
+The location is resolved by the same ConfigurationPaths component used for project_root, with an override in config/paths.json and an environment variable CRANIOZ_HOME.
+
+### 4.2 Structure
+
+    professional/
+    ├── professional.db          # SQLite
+    ├── professional.db.bak      # Automatic backup
+    ├── templates/               # Document templates
+    │   ├── orientations/
+    │   ├── contracts/
+    │   ├── consent_terms/
+    │   ├── prescriptions/
+    │   ├── certificates/
+    │   └── declarations/
+    ├── attachments/             # Logo, signature
+    ├── translations/            # User-supplied translations for custom entities
+    │   ├── pt-BR.json
+    │   └── en.json
+    └── exports/                 # Generated PDFs
+        └── budgets/
+
+### 4.3 Technology
+SQLite. Chosen for relational integrity, indexed queries (schedule, budgets), ACID transactions, and versioned migrations. A single file simplifies backup and export.
+
+### 4.4 Schema Versioning
+A schema_version table tracks the current version. Migrations are applied on database open, following the pattern of ProjectMigrationService. Invalid or future schemas are rejected with a clear error.
+
+## 5. Module Structure
+The module is organized into five tabs, presented in a default order that follows the surgeon's natural workflow.
+
+#	Tab	Purpose	Frequency
+1	Professional	Personal and professional profile	Rare
+2	Procedures	Catalog of procedures and prices	Occasional
+3	Budgets	Budget creation from procedure catalog	Frequent
+4	Schedule	Appointments, tasks, scheduled surgeries	Daily
+5	Document Templates	Reusable document templates	Occasional
+Default order rationale: identity → offering → billing → operation → delivery.
+
+Reorganization: the user can reorder tabs, following the pattern of the Patient Module.
+
+## 6. Tab: Professional
+6.1 Purpose
+The surgeon's identity and presentation data. Used in generated documents (budgets, contracts, prescriptions, orientations).
+
+### 6.2 Fields
+    Field	                    Type	                                    Required
+    Salutation	                Enum (Dr., Dra., Prof., Profa., —)	        No
+    Full name	                Text	                                    Yes
+    Registration type	        Enum (CRM, CRO, CREFONO, OTHER)	            No
+    Registration number	        Text	                                    No
+    Email	                    Text	                                    No
+    Phone	                    Text	                                    No
+    Address	                    Text	                                    No
+    City	                    Text	                                    No
+    State	                    Text	                                    No
+    Country	                    Text	                                    No
+    Clinic logo	                File reference	                            No
+    Digital signature	        File reference	                            No
+    Date format	                Enum (DD/MM/YYYY, MM/DD/YYYY, YYYY-MM-DD)	Yes
+
+### 6.3 Preview
+A signature preview panel shows how the professional's identity will appear in generated documents, using the current profile fields.
+
+### 6.4 Behavior
+Saving dispatches an UpdateProfessionalProfileCommand.
+
+Cancelling reverts the fields.
+
+The onboarding wizard populates the minimal fields on first run; the tab is used for later edits.
+
+## 7. Tab: Procedures
+### 7.1 Purpose
+The catalog of procedures offered by the surgeon. Serves as the basis for budgets.
+
+### 7.2 Hierarchy
+
+    Specialty
+        └── Category
+                └── Procedure
+
+Specialties are built-in or user-created.
+
+Categories group procedures within a specialty.
+
+Procedures are the final entity.
+
+### 7.3 Built-in Specialties
+The following are provided as built-in, non-deletable suggestions:
+
+Odontology (area)
+Otorhinolaryngology
+Oral and Maxillofacial Surgery
+Plastic Surgery
+Orthodontics
+Implantology
+
+The user may add custom specialties. Custom entities are always translatable (see §11).
+
+### 7.4 Procedure Fields
+Field	                    Type	                Required
+Category	                FK	                    Yes
+Name (translation key)	    Text	                Yes
+Default price	            Decimal	                Yes
+Default duration (minutes)	Integer                 No
+TUSS code	                Text	                No
+CID code	                Text	                No
+Notes	                    Text	                No
+Active	                    Boolean	                Yes
+
+### 7.5 Actions
+Create, edit, deactivate, and delete procedures, categories, and specialties. Deletion of a specialty or category cascades to its children after confirmation.
+
+### 7.6 Catalog vs. Performed Procedures
+The catalog holds definitions. Performed procedures (with a patient, date, and execution) live elsewhere:
+
+Inside a budget, as line items.
+
+Inside the schedule, as scheduled appointments.
+
+Inside the Patient Module, as part of the patient's history.
+
+The catalog never stores instances.
+
+## 8. Tab: Budgets
+### 8.1 Purpose
+Creation of budgets for a specific patient, composed of procedures from the catalog.
+
+### 8.2 Budget Fields
+Field	                            Type	                                        Required
+Patient	                            Reference (patient_id)	                        Yes
+Project	                            Reference (project_id)	                        No
+Status	                            Enum (draft, sent, accepted, rejected, expired)	Yes
+Discount	                        Decimal	                                        No
+Total	                            Decimal	                                        Computed
+Valid until	                        Date	                                        No
+Notes	                            Text	                                        No
+
+### 8.3 Budget Item Fields
+Field	                            Type	                            Required
+Procedure	                        FK	                                Yes
+Description	                        Text	                            No
+Quantity	                        Integer	                            Yes (default 1)
+Unit price	                        Decimal	                            Yes (default from procedure)
+Notes	                            Text	                            No
+
+
+### 8.4 Computation
+    subtotal = Σ (quantity × unit_price)
+    total    = subtotal − discount
+
+### 8.5 State Machine
+    draft ──▶ sent ──▶ accepted
+                  ├──▶ rejected
+                  └──▶ expired
+
+
+Transitions are validated. accepted and rejected are terminal except for explicit reopening by the user, which resets the budget to draft.
+
+
+### 8.6 PDF Export
+Budgets can be exported to PDF. The PDF includes:
+
+Header with logo, name, registration, address.
+
+Patient identification.
+
+Line items, subtotal, discount, total.
+
+Validity date.
+
+Signature image.
+
+The PDF is saved in exports/budgets/ and, optionally, attached to the patient in the Patient Module.
+
+### 8.7 Actions
+Create, edit, duplicate, delete, export PDF, change status.
+
+## 9. Tab: Schedule
+### 9.1 Purpose
+The surgeon's personal calendar: appointments, tasks, scheduled surgeries, and administrative notes. Independent of projects.
+
+### 9.2 Views
+Weekly (primary).
+
+Monthly (overview).
+
+List (upcoming appointments).
+
+### 9.3 Appointment Types
+    Type	        Description
+    Consultation	Initial or follow-up visit
+    Surgery	        Scheduled surgical procedure
+    Follow-up	    Post-operative visit
+    Exam	        Imaging or laboratory
+    Meeting	        Team, supplier, or institutional
+    Task	        Administrative reminder
+    Block	        Vacation, congress, unavailability
+
+### 9.4 Appointment Fields
+    Field	                Type	                                                    Required
+    Type	                Enum	                                                    Yes
+    Title	                Text	                                                    Yes
+    Patient	                Reference (patient_id)	                                    No
+    Project	                Reference (project_id)	                                    No
+    Procedure	            FK	                                                        No
+    Start / End	            Timestamp	                                                Yes
+    Location	            Text	                                                    No
+    Status	                Enum (scheduled, confirmed, completed, cancelled, no_show)	Yes
+    Notes	                Text	                                                    No
+
+### 9.5 State Machine
+text
+scheduled ──▶ confirmed ──▶ completed
+                        ├──▶ cancelled
+                        └──▶ no_show
+### 9.6 Actions
+Create, edit, cancel, mark completed, navigate (day, week, month, today).
+
+### 9.7 Future Extensions
+iCal export and import.
+
+Google Calendar and Outlook synchronization.
+
+Desktop reminders.
+
+Recurring appointments.
+
+These are not part of the initial release.
+
+## 10. Tab: Document Templates
+### 10.1 Purpose
+A list of pre-configured documents that can be applied to a patient in the Patient Module. Templates are reusable, translatable, and versioned independently of any project.
+
+###10.2 Categories
+
+    Category	    Built-in	Examples
+    Orientations	Yes	        Post-operative care
+    Contracts	    Yes	        Service agreement
+    Consent terms	Yes	        Surgical consent
+    Prescriptions	Yes	        Post-operative prescription
+    Certificates	No	        Attendance certificate
+    Declarations	No	        Procedure declaration
+
+The first four are built-in and non-deletable. Others can be added by the user.
+
+### 10.3 Template Fields
+    Field	                Type	                            Required
+    Kind	                Enum (category)	                    Yes
+    Name (translation key)	Text	                            Yes
+    File path	            Text (relative to templates/)	    Yes
+    Created / Updated	    Timestamp	                        Auto
+
+### 10.4 Format
+Templates are plain text files (.txt) with placeholders using the syntax {{variable_name}}.
+
+    Dear {{patient_name}},
+    
+    You underwent {{procedure_name}} on {{procedure_date}}.
+    Please follow the post-operative instructions below.
+    
+    Sincerely,
+    {{professional_salutation}} {{professional_name}}
+    {{professional_registration_type}} {{professional_registration}}
+    10.5 Placeholders
+    Available variables include (non-exhaustive):
+    
+    Patient: patient_name, patient_social_name, patient_birth_date, patient_cpf.
+    
+    Procedure: procedure_name, procedure_date.
+    
+    Professional: professional_salutation, professional_name, professional_registration_type, professional_registration, clinic_name, clinic_address.
+    
+    System: today.
+
+### 10.6 Actions
+Create, import, edit, delete, and create a new category.
+
+### 10.7 Use in the Patient Module
+The Patient Module displays the list of templates and allows the user to apply one to a patient. Variables are filled from the patient record, the active procedure, and the professional profile. The rendered document is saved as a patient document.
+
+This is the primary interface between the Professional Module and the Patient Module.
+
+## 11. Internationalization
+All specialties, categories, and procedures are always translated.
+
+Built-in entities have translation keys in translations/<lang>/professional.json, provided by CranioZ.
+
+Custom entities have translation keys of the form user.<kind>.<uuid>, provided by the user.
+
+Custom translations live in ~/.cranioz/professional/translations/<lang>.json.
+
+When a translation is missing in the active language, the fallback sequence is:
+
+* The entity's source_language (the language at creation time).
+* 
+* The translation key itself.
+* 
+* A neutral placeholder.
+
+The TranslationCatalogRegistry loads catalog sources in this precedence order (highest to lowest):
+
+* Professional (user-created entities).
+* 
+* Settings (user overrides).
+* 
+* System (built-in).
+
+12. Application Service
+12.1 ProfessionalService
+The ProfessionalService is the sole owner of the professional database. It exposes commands, reads the repository, and validates inputs.
+
+Conceptual interface:
+
+    class ProfessionalService(Protocol):
+        # Profile
+        def get_profile(self) -> ProfessionalProfile: ...
+        def update_profile(self, command: UpdateProfessionalProfileCommand) -> None: ...
+    
+        # Catalog
+        def list_specialties(self) -> list[Specialty]: ...
+        def list_categories(self, specialty_id: str) -> list[Category]: ...
+        def list_procedures(self, category_id: str | None = None) -> list[Procedure]: ...
+        def create_procedure(self, command: CreateProcedureCommand) -> None: ...
+        def update_procedure(self, command: UpdateProcedureCommand) -> None: ...
+        def delete_procedure(self, command: DeleteProcedureCommand) -> None: ...
+    
+        # Templates
+        def list_templates(self, kind: str) -> list[DocumentTemplate]: ...
+        def create_template(self, command: CreateDocumentTemplateCommand) -> None: ...
+        def update_template(self, command: UpdateDocumentTemplateCommand) -> None: ...
+        def delete_template(self, command: DeleteDocumentTemplateCommand) -> None: ...
+    
+        # Schedule
+        def list_appointments(self, start: date, end: date) -> list[Appointment]: ...
+        def create_appointment(self, command: CreateAppointmentCommand) -> None: ...
+        def update_appointment(self, command: UpdateAppointmentCommand) -> None: ...
+        def cancel_appointment(self, command: CancelAppointmentCommand) -> None: ...
+    
+        # Budgets
+        def list_budgets(self, patient_id: str | None = None) -> list[Budget]: ...
+        def get_budget(self, budget_id: str) -> Budget: ...
+        def create_budget(self, command: CreateBudgetCommand) -> None: ...
+        def update_budget(self, command: UpdateBudgetCommand) -> None: ...
+        def delete_budget(self, command: DeleteBudgetCommand) -> None: ...
+    
+        # Lifecycle
+        def export_data(self) -> Path: ...
+        def import_data(self, archive: Path) -> None: ...
+        def backup(self) -> Path: ...
+
+### 12.2 Repository
+A ProfessionalRepository port abstracts SQLite access. The concrete adapter lives in infrastructure/persistence/professional/.
+
+### 12.3 Ownership
+The ProfessionalService is the only component that accesses the professional database. The onboarding wizard and the Professional Module both use the service; neither accesses the database directly.
+
+## 13. Onboarding
+### 13.1 First Run
+On first boot, if no professional profile exists, an onboarding wizard collects the minimal fields:
+
+* Salutation
+* Full name
+* Registration type
+* Registration number
+
+The wizard dispatches an UpdateProfessionalProfileCommand and closes. The remaining fields (email, address, logo, signature) are filled later via the Professional tab.
+
+### 13.2 Skipping
+The wizard can be skipped. In that case, generated documents will contain placeholders for the missing fields, and the user is warned.
+
+### 13.3 Re-entry
+There is no separate "onboarding" after the first run. All edits happen through the Professional tab.
+
+## 14. Commands
+The module introduces the following application Commands:
+
+    Profile
+    
+    UpdateProfessionalProfileCommand
+    
+    Catalog
+    
+    CreateSpecialtyCommand, UpdateSpecialtyCommand, DeleteSpecialtyCommand
+    
+    CreateCategoryCommand, UpdateCategoryCommand, DeleteCategoryCommand
+    
+    CreateProcedureCommand, UpdateProcedureCommand, DeleteProcedureCommand
+    
+    Templates
+    
+    CreateDocumentTemplateCommand, UpdateDocumentTemplateCommand, DeleteDocumentTemplateCommand, ImportDocumentTemplateCommand
+    
+    Schedule
+    
+    CreateAppointmentCommand, UpdateAppointmentCommand, CancelAppointmentCommand, CompleteAppointmentCommand
+    
+    Budgets
+    
+    CreateBudgetCommand, UpdateBudgetCommand, DeleteBudgetCommand, ChangeBudgetStatusCommand, ExportBudgetPdfCommand
+    
+    Maintenance
+    
+    ExportProfessionalDataCommand
+    
+    ImportProfessionalDataCommand
+    
+    BackupProfessionalDataCommand
+
+15. Interfaces with Other Modules
+### 15.1 Patient Module
+    Direction	            Data
+    Professional → Patient	Document templates (applied to a patient)
+    Professional → Patient	Budgets (created for a patient)
+    Professional → Patient	Procedure catalog (referenced in patient history)
+    Professional → Patient	Schedule (appointments linked to a patient)
+    Patient → Professional	Patient identity (name, birth date, contact) for rendering templates and budgets
+
+The interface is documented in docs/architecture/professional_patient_interface.md.
+
+### 15.2 Project Module
+The Professional Module references projects by project_id when a budget or appointment is linked to a project. It never reads or writes project files directly.
+
+### 15.3 Osteotomy Module
+Osteotomy patterns are not part of the Professional Module. They live in a separate shared catalog (see ADR-0006).
+
+## 16. Security and Privacy
+### 16.1 Sensitive Data
+The professional database may contain patient-identifying information (names, contact details) in budgets and appointments. Although it does not hold clinical data, it falls under the same privacy considerations.
+
+### 16.2 File Permissions
+The ~/.cranioz/professional/ directory is created with permissions restricted to the operating system user.
+
+### 16.3 Encryption
+SQLCipher is available as an optional encryption layer. When enabled, the database and its backups are encrypted with a user-provided key. When disabled, the database is plaintext but access-restricted.
+
+### 16.4 Audit
+A professional_audit_log table records creation, modification, and deletion of budgets and appointments, including actor, timestamp, and affected entity. Audit logging is optional in the first release.
+
+### 16.5 Export and Import
+Exported archives contain patient-identifying information. The user is warned before exporting, and the archive may be encrypted.
+
+## 17. Backup, Export, and Import
+### 17.1 Automatic Backup
+On application close (or at a configurable interval), the database is copied to professional.db.bak and to ~/.cranioz/backups/professional/. The last five backups are retained by default.
+
+### 17.2 Manual Export
+The user can export the entire professional database as a .cranioz-professional archive (a zip containing professional.db, templates/, attachments/, and a manifest.json with version metadata).
+
+### 17.3 Import
+Importing an archive replaces the current database after confirmation. Conflict resolution policies (merge, replace, rename) are defined in ADR-0009.
+
+18. Out of Scope
+The following are explicitly out of scope for the initial release:
+
+* Multiple professionals on the same installation.
+* 
+* Integration with external ERP, billing, or insurance systems.
+* 
+* Advanced financial analytics and reports.
+* 
+* Cryptographic digital signature (ICP-Brasil).
+* 
+* Conditional and loop constructs in document templates.
+* 
+* Recurring appointments.
+* 
+* Bidirectional calendar synchronization.
+* 
+* These may be added in future versions if demand justifies them.
+
+## 19. Related Documents
+    docs/architecture/domain/professional/ — domain entities.
+    
+    docs/architecture/professional_patient_interface.md — interface with the Patient Module.
+    
+    docs/architecture/config/cranioz_home.md — structure of ~/.cranioz/.
+    
+    docs/architecture/internationalization/internationalization.md — translation system.
+    
+    docs/architecture/overview.md — overall architecture.
+
+
+
+
+======================================================================
 FILE: docs\architecture\modules\list_modules\tomography\tomography.md
 ======================================================================
 
 
-
-
-======================================================================
-FILE: docs\architecture\modules\list_modules\tomography\tomography_pt.md
-======================================================================
-
-Responsável pela importação e manipulação de volumes, sejam em formato DICOM ou não. 
-
-## Funcionalidades
-* Leitura de séries DICOM e VTI; 
-* Reconstrução volumétrica; 
-* Window/Level (Ajuste do brilho e contraste das janelas 2D); 
-* Reslice 
-* MIP / MinIP 
-* Monitoramento do consumo de memória;
-* Gerenciamento de grandes volumes; 
-* Processamento assíncrono com múltiplas threads; 
-
-## Editors
-* Visualização multiplanar (MPR) com renderização volumétrica (Visualização 3d do volume da TC); 
-* Curved MPR (Reconstrução panorâmica);
-
-## Tools
-* Criar plano com imagens 2D da MPR da TC (axial, coronal ou sagital) sincronizada na view 3D.
-* Presets de renderização 3D.
-* Color Lookup Tables (LUTs); 
-* Exportação de arquivos volume (.vti); 
-
-## Simplicidade visual
-Para evitar a poluição visual e foco nas imagens e não nas ferramentas os editores de DICOM não vão exibir ferramentas (tools) por padrão. A exibição será condicionada a presença do mouse no editor. Se o mouse não estiver no editor as ferramentas e o ícone de marca o tipo de corte (axial, coronal, sagital) ficarão semi ocultos. Quando o mouse mover para o editor estes elementos se tornarão totalmente visíveis. 
 
 
 ======================================================================
@@ -11616,7 +12682,7 @@ Any violation produces a clear error. The Workspace does not fall back silently.
 
 
 ======================================================================
-FILE: docs\architecture\ui\editors\folder_strutucture.md
+FILE: docs\architecture\ui\editors\folder_structure.md
 ======================================================================
 
 src/cranioz/
@@ -14788,7 +15854,7 @@ The presence and configuration of Overlays are persisted in OverlayState, alongs
 
 
 ======================================================================
-FILE: docs\architecture\ui\workspace\folder_strututure\folder_strutucture.md
+FILE: docs\architecture\ui\workspace\folder_strututure\folder_structure.md
 ======================================================================
 
 ```
@@ -15398,577 +16464,5 @@ is a UI operation.
 **Option B:** Merge into one class.
 
 **Current lean:** Option A. Separate responsibilities.
-
-
-
-======================================================================
-FILE: docs\architecture\ui\workspace\implementation\workspace-implementation_pt.md
-======================================================================
-
-# Workspace — Plano de Implementação
-
-> **Status:** Rascunho
-> **Relacionados:** [workspace.md](../architecture/workspace.md)
-> **Escopo:** Implementação em fases do subsistema Workspace
-
----
-
-## 1. Propósito
-
-Este documento descreve **como** o Workspace descrito em
-[workspace.md](../architecture/workspace.md) é implementado, em qual
-ordem, e com quais marcos.
-
-Cada fase:
-
-- Entrega um incremento **testável**.
-- Tem critérios de aceitação claros.
-- Não quebra a fase anterior.
-- Pode ser revisada e integrada independentemente.
-
----
-
-## 2. Princípios Norteadores
-
-A implementação segue quatro regras:
-
-1. **Fatias verticais em vez de camadas horizontais.**
-   Cada fase entrega uma fatia vertical funcional (UI + lógica +
-   teste), não "todos os modelos primeiro, depois todas as views".
-
-2. **Sem dependências para frente.**
-   Uma fase nunca depende de uma fase que ainda não foi completada.
-
-3. **Testável a cada passo.**
-   Toda fase entrega testes que provam que funciona.
-
-4. **Decisões reversíveis.**
-   Se uma decisão se mostrar errada, pode ser mudada sem reescrever
-   fases anteriores.
-
----
-
-## 3. Visão Geral das Fases
-
-| Fase | Nome | Status |
-|---|---|---|
-| 1 | Modelo Base | Não iniciada |
-| 2 | Editor Host | Não iniciada |
-| 3 | Editor Registry | Não iniciada |
-| 4 | Árvore de Layout | Não iniciada |
-| 5 | Construtor de Layout | Não iniciada |
-| 6 | Renderizador de Layout | Não iniciada |
-| 7 | Regiões e Overlays | Não iniciada |
-| 8 | Persistência | Não iniciada |
-| 9 | Recursos Avançados | Não iniciada |
-
-Cada fase é independente e testável. As fases 1–7 não têm
-dependências externas. As fases 8–9 exigem subsistemas externos
-(Scene, VTK, Project).
-
----
-
-## 4. Dependências Externas
-
-Algumas fases dependem de subsistemas fora do Workspace.
-
-| Fase | Depende de | Observações |
-|---|---|---|
-| 1 | Nada | — |
-| 2 | Nada | — |
-| 3 | Nada | — |
-| 4 | Nada | — |
-| 5 | Nada | Só precisa da Fase 4 |
-| 6 | Nada | Só precisa da Fase 4 |
-| 7 | Nada | Só precisa da Fase 4 |
-| **8** | **Project** (mínimo), **schema JSON** | Ainda não implementado |
-| **9** | **Scene** (mínimo), **renderização VTK** | Ainda não implementado |
-
-**Implicação:** as fases 8 e 9 não podem ser completadas sem
-coordenação com os subsistemas Project e Scene.
-
-**Recomendação:** implementar as fases 1–7 primeiro (sem dependências
-externas), depois avaliar o escopo das fases 8–9.
-
----
-
-## 5. Evolução Arquitetural
-
-O Workspace evolui **adicionando capacidades**, não mudando o modelo
-central. A `LayoutTree` (árvore N-ária de splits) é estável a partir
-da Fase 4.
-
-### 5.1 Estado inicial
-
-```text
-+---------+--------------+---------+
-| LEFT    | CENTRAL      | RIGHT   |
-+---------+--------------+---------+
-| BOTTOM                            |
-+-----------------------------------+
-```
-
-- Áreas declaradas pelo `ModuleUISpec`.
-- Renderizadas via `QSplitter`.
-- Sem abas, sem flutuação, sem arrastar-e-soltar.
-
-**Propósito:** provar o conceito, validar a API, rodar os testes.
-
-### 5.2 Adicionando abas e troca de módulo
-
-A Top Bar (Overlay do Painel Superior) hospeda abas de módulos. Nenhuma
-mudança na API do Workspace.
-
-### 5.3 Adicionando toolbars e viewports
-
-Toolbars viram chrome interno de `Editor`. Viewports viram `Editor`.
-Nenhuma mudança na API do Workspace.
-
-### 5.4 Adicionando splits arbitrários
-
-- Splits podem ser aninhados arbitrariamente.
-- Arrastar-e-soltar entre `Leaf`s.
-- Áreas flutuantes.
-- Árvores customizadas.
-
-**Nenhuma dessas mudanças altera a API do Workspace.**
-
----
-
-## 6. Fase 1 — Modelo Base
-
-**Objetivo:** os tipos centrais do Workspace existem e podem ser
-instanciados.
-
-### 6.1 Entregáveis
-
-| Arquivo | Propósito |
-|---|---|
-| `ui/workspace/placement.py` | Enum `Placement` |
-| `ui/workspace/area.py` | Classe `Area` (concreta, mínima) |
-| `ui/workspace/area_manager.py` | `AreaManager` |
-| `ui/workspace/area_spec.py` | Dataclass `AreaSpec` |
-
-### 6.2 Critérios de aceitação
-
-- [ ] `Placement` tem `LEFT`, `CENTRAL`, `RIGHT`, `BOTTOM`.
-- [ ] `Area` tem `id`, `title`, `visible`, `editor_host` (stub).
-- [ ] `Area` **não** armazena `placement`.
-- [ ] `AreaManager` registra, desregistra e recupera Areas.
-- [ ] ID duplicado levanta `ValueError` com mensagem clara.
-
-### 6.3 Testes
-
-| Teste | Arquivo | Tipo |
-|---|---|---|
-| `test_placement_enum_has_expected_members` | `tests/unit/ui/test_placement.py` | Unit |
-| `test_area_has_id_and_title` | `tests/unit/ui/test_area.py` | Widget |
-| `test_area_does_not_store_placement` | `tests/unit/ui/test_area.py` | Widget |
-| `test_area_manager_register` | `tests/unit/ui/test_area_manager.py` | Unit |
-| `test_area_manager_duplicate_id_raises` | `tests/unit/ui/test_area_manager.py` | Unit |
-| `test_area_manager_unregister` | `tests/unit/ui/test_area_manager.py` | Unit |
-
-### 6.4 Riscos
-
-- **Problemas de plugin de plataforma Qt no Windows.** Mitigação:
-  fixar versão do PySide6.
-- **CI headless.** Mitigação: `QT_QPA_PLATFORM=offscreen`.
-
----
-
-## 7. Fase 2 — Editor Host
-
-**Objetivo:** `EditorHost` gerencia uma lista de Editors, com um ativo.
-
-### 7.1 Entregáveis
-
-| Arquivo | Propósito |
-|---|---|
-| `ui/editors/base_editor.py` | ABC `Editor` |
-| `ui/editors/editor_host.py` | `EditorHost` |
-| `ui/workspace/area.py` | Estendido: hospeda um `EditorHost` |
-
-### 7.2 Critérios de aceitação
-
-- [ ] `Editor` é abstrato, com `id`, `title`, `widget()`.
-- [ ] `EditorHost` faz `add_editor`, `remove_editor`, `list_editors`.
-- [ ] `EditorHost` tem um `active_editor` (só um por vez).
-- [ ] `EditorHost` mostra abas quando ≥ 2 editores.
-- [ ] `EditorHost` não mostra abas quando ≤ 1 editor.
-- [ ] `detach_editor` retorna o editor sem destruí-lo.
-
-### 7.3 Testes
-
-| Teste | Arquivo | Tipo |
-|---|---|---|
-| `test_editor_is_abstract` | `tests/unit/ui/test_editor.py` | Unit |
-| `test_add_editor` | `tests/unit/ui/test_editor_host.py` | Widget |
-| `test_remove_editor` | `tests/unit/ui/test_editor_host.py` | Widget |
-| `test_set_active_editor` | `tests/unit/ui/test_editor_host.py` | Widget |
-| `test_detach_does_not_destroy_editor` | `tests/unit/ui/test_editor_host.py` | Widget |
-
----
-
-## 8. Fase 3 — Editor Registry
-
-**Objetivo:** `EditorRegistry` resolve `editor_id` para classes
-concretas de Editor e cria instâncias.
-
-### 8.1 Entregáveis
-
-| Arquivo | Propósito |
-|---|---|
-| `ui/editors/editor_registry.py` | `EditorRegistry` |
-
-### 8.2 Critérios de aceitação
-
-- [ ] `register(editor_id, editor_type)` registra uma classe.
-- [ ] `resolve(editor_id)` retorna a classe.
-- [ ] `create(editor_id)` retorna uma nova instância.
-- [ ] Resolver `editor_id` desconhecido levanta `KeyError`.
-
-### 8.3 Testes
-
-| Teste | Arquivo | Tipo |
-|---|---|---|
-| `test_register_and_resolve` | `tests/unit/ui/test_editor_registry.py` | Unit |
-| `test_resolve_unknown_raises` | `tests/unit/ui/test_editor_registry.py` | Unit |
-| `test_create_returns_instance` | `tests/unit/ui/test_editor_registry.py` | Widget |
-
----
-
-## 9. Fase 4 — Árvore de Layout
-
-**Objetivo:** `LayoutTree` (árvore N-ária de splits) pode ser
-construída a partir de listas de `AreaSpec`.
-
-### 9.1 Entregáveis
-
-| Arquivo | Propósito |
-|---|---|
-| `ui/workspace/layout_tree.py` | `LayoutTree`, `Leaf`, `Split`, `SplitDirection` |
-
-### 9.2 Critérios de aceitação
-
-- [ ] `Leaf` contém exatamente uma `Area`.
-- [ ] `Split` tem uma direção e ≥ 2 filhos.
-- [ ] `LayoutTree.from_specs(specs, areas)` constrói a árvore correta.
-- [ ] `[central]` → `Leaf`.
-- [ ] `[left, central, right]` → `Split(HORIZONTAL)` com 3 filhos.
-- [ ] `[central, bottom]` → `Split(VERTICAL)`.
-- [ ] Spec sem `CENTRAL` levanta `ValueError`.
-
-### 9.3 Testes
-
-| Teste | Arquivo | Tipo |
-|---|---|---|
-| `test_from_specs_single_central` | `tests/unit/ui/test_layout_tree.py` | Unit |
-| `test_from_specs_left_central_right` | `tests/unit/ui/test_layout_tree.py` | Unit |
-| `test_from_specs_with_bottom` | `tests/unit/ui/test_layout_tree.py` | Unit |
-| `test_from_specs_requires_central` | `tests/unit/ui/test_layout_tree.py` | Unit |
-| `test_to_dict_round_trip` | `tests/unit/ui/test_layout_tree.py` | Unit |
-
----
-
-## 10. Fase 5 — Construtor de Layout
-
-**Objetivo:** `LayoutBuilder` consome um `ModuleUISpec` e produz uma
-`LayoutTree`.
-
-### 10.1 Entregáveis
-
-| Arquivo | Propósito |
-|---|---|
-| `ui/workspace/module_ui_spec.py` | `ModuleUISpec`, `AreaSpec` (estendido) |
-| `ui/workspace/layout_builder.py` | `LayoutBuilder` |
-
-### 10.2 Critérios de aceitação
-
-- [ ] `LayoutBuilder.build(spec, editor_registry)` retorna uma
-  `LayoutTree`.
-- [ ] Resolve os `editor_id` via `EditorRegistry`.
-- [ ] Cria instâncias de `Area` com `EditorHost` populado.
-- [ ] Rejeita specs sem `CENTRAL`.
-
-### 10.3 Testes
-
-| Teste | Arquivo | Tipo |
-|---|---|---|
-| `test_build_single_central` | `tests/integration/ui/test_layout_builder.py` | Integração |
-| `test_build_left_central_right` | `tests/integration/ui/test_layout_builder.py` | Integração |
-| `test_build_creates_areas_with_editors` | `tests/integration/ui/test_layout_builder.py` | Integração |
-
----
-
-## 11. Fase 6 — Renderizador de Layout
-
-**Objetivo:** `LayoutRenderer` renderiza uma `LayoutTree` em widgets
-`QSplitter` aninhados.
-
-### 11.1 Entregáveis
-
-| Arquivo | Propósito |
-|---|---|
-| `ui/workspace/layout_renderer.py` | `LayoutRenderer` |
-
-### 11.2 Critérios de aceitação
-
-- [ ] `Leaf` renderiza como o widget `Area`.
-- [ ] `Split` renderiza como um `QSplitter` (H ou V).
-- [ ] Renderizador mantém um cache de widgets
-  (`split_widgets`, `area_widgets`).
-- [ ] Cache é reconstruível a partir da árvore.
-- [ ] Renderizador nunca inventa estrutura.
-
-### 11.3 Testes
-
-| Teste | Arquivo | Tipo |
-|---|---|---|
-| `test_render_single_area` | `tests/integration/ui/test_layout_renderer.py` | Integração |
-| `test_render_split_horizontal` | `tests/integration/ui/test_layout_renderer.py` | Integração |
-| `test_render_split_vertical` | `tests/integration/ui/test_layout_renderer.py` | Integração |
-| `test_cache_rebuildable` | `tests/integration/ui/test_layout_renderer.py` | Integração |
-
----
-
-## 12. Fase 7 — Regiões e Overlays
-
-**Objetivo:** `Region` derivada da árvore; `Overlay` se posiciona
-sobre uma Região.
-
-### 12.1 Entregáveis
-
-| Arquivo | Propósito |
-|---|---|
-| `ui/workspace/region.py` | `Region` |
-| `ui/workspace/overlay.py` | ABC `Overlay` |
-| `ui/workspace/overlay_manager.py` | `OverlayManager` |
-| `ui/workspace/top_overlay.py` | `TopOverlay` (Painel Superior) |
-
-### 12.2 Critérios de aceitação
-
-- [ ] `LayoutTree.find_regions()` retorna regiões geométricas.
-- [ ] `Region.bounds` é calculado a partir das Areas renderizadas.
-- [ ] `OverlayManager.register` adiciona um Overlay.
-- [ ] `TopOverlay` se posiciona sobre `Region.CENTRAL`.
-- [ ] Overlays se reposicionam quando o layout muda.
-
-### 12.3 Testes
-
-| Teste | Arquivo | Tipo |
-|---|---|---|
-| `test_find_regions_single_central` | `tests/unit/ui/test_region.py` | Unit |
-| `test_find_regions_left_central_right` | `tests/unit/ui/test_region.py` | Unit |
-| `test_overlay_registers` | `tests/unit/ui/test_overlay.py` | Unit |
-| `test_top_overlay_positions_over_central` | `tests/integration/ui/test_overlay.py` | Integração |
-| `test_overlay_repositions_on_layout_change` | `tests/integration/ui/test_overlay.py` | Integração |
-
----
-
-## 13. Fase 8 — Persistência
-
-**Objetivo:** a `LayoutTree` serializa para JSON e desserializa de
-volta.
-
-### 13.1 Dependência externa
-
-- Um modelo mínimo de `Project` (arquivo JSON com metadados).
-- Um sistema de versionamento de schema JSON.
-
-### 13.2 Entregáveis
-
-| Arquivo | Propósito |
-|---|---|
-| `ui/workspace/layout_io.py` | Serializar / desserializar layout |
-| `infrastructure/persistence/json/project_io.py` | I/O de arquivo de projeto |
-
-### 13.3 Critérios de aceitação
-
-- [ ] Layout serializa para JSON.
-- [ ] Layout desserializa de JSON.
-- [ ] Round-trip preserva todas as Areas.
-- [ ] Areas desconhecidas são ignoradas com aviso.
-- [ ] JSON malformado levanta `ValueError` com mensagem clara.
-
-### 13.4 Testes
-
-| Teste | Arquivo | Tipo |
-|---|---|---|
-| `test_layout_serialization` | `tests/unit/ui/test_layout_io.py` | Unit |
-| `test_layout_deserialization` | `tests/unit/ui/test_layout_io.py` | Unit |
-| `test_layout_round_trip` | `tests/integration/ui/test_layout_io.py` | Integração |
-| `test_layout_ignores_unknown_areas` | `tests/integration/ui/test_layout_io.py` | Integração |
-| `test_layout_malformed_json_raises` | `tests/unit/ui/test_layout_io.py` | Unit |
-
-### 13.5 Riscos
-
-**Médio.** Exige um subsistema de Project que ainda não existe.
-
-**Mitigação:** implementar um modelo mínimo de `Project`. Modelo
-completo depois.
-
----
-
-## 14. Fase 9 — Recursos Avançados
-
-**Objetivo:** recursos de layout para usuários avançados.
-
-### 14.1 Entregáveis
-
-| Recurso | Propósito |
-|---|---|
-| Arrastar-e-soltar entre Leaves | Mover Areas interativamente |
-| Areas flutuantes | Destacar Areas em janelas separadas |
-| Suporte multi-monitor | Lembrar posição por monitor |
-| Árvores customizadas | Arranjos definidos pelo usuário |
-| Presets de árvore por Flow | Árvores diferentes por fluxo clínico |
-
-### 14.2 Critérios de aceitação
-
-- [ ] Usuário consegue arrastar uma Area de uma Leaf para outra.
-- [ ] Usuário consegue destacar uma Area em uma janela flutuante.
-- [ ] Posição da janela flutuante é lembrada por monitor.
-- [ ] Usuário consegue salvar a árvore atual como preset.
-
----
-
-## 15. Dependências Entre Fases
-
-```text
-Fase 1 (Modelo Base)
-    |
-    v
-Fase 2 (Editor Host)
-    |
-    v
-Fase 3 (Editor Registry)
-    |
-    v
-Fase 4 (Árvore de Layout)
-    |
-    +----------------+----------------+
-    |                                   |
-    v                                   v
-Fase 5 (Construtor)              Fase 6 (Renderizador)
-    |                                   |
-    +----------------+------------------+
-                     |
-                     v
-              Fase 7 (Regiões e Overlays)
-                     |
-                     v
-              Fase 8 (Persistência)
-                     |
-                     v
-              Fase 9 (Recursos Avançados)
-```
-
-As fases 5 e 6 podem ser desenvolvidas em paralelo se as dependências
-permitirem.
-
----
-
-## 16. Resumo da Estratégia de Testes
-
-| Nível | Ferramenta | Cobertura |
-|---|---|---|
-| Unit | pytest | Modelos, lógica de layout, IO |
-| Widget | pytest-qt | Areas, Workspace, Editors |
-| Integração | pytest-qt | Registro, layout, persistência |
-| Visual | (posterior) | Screenshots de regressão |
-
-**Meta de cobertura:** ≥ 80% para `ui/workspace/`.
-
-Ver [workspace-testing.md](../workspace-testing.md) para detalhes.
-
----
-
-## 17. Definition of Done
-
-Uma fase é considerada **concluída** quando:
-
-- [ ] Todos os entregáveis estão implementados.
-- [ ] Todos os critérios de aceitação passam.
-- [ ] Todos os testes passam no CI.
-- [ ] Código é revisado.
-- [ ] Documentação é atualizada.
-- [ ] CHANGELOG tem uma entrada.
-- [ ] Um ADR é escrito se a fase introduzir uma decisão arquitetural.
-
----
-
-## 18. Marcos
-
-| Marco | Fases | Observações |
-|---|---|---|
-| M1 — Modelo base roda | Fase 1 | Tipos centrais existem. |
-| M2 — EditorHost funciona | Fases 2, 3 | Editors e registry. |
-| M3 — Árvore de layout constrói | Fase 4 | `LayoutTree.from_specs` funciona. |
-| M4 — Module spec constrói UI | Fase 5 | `LayoutBuilder` funciona. |
-| M5 — Árvore renderiza em Qt | Fase 6 | `LayoutRenderer` funciona. |
-| M6 — Overlays se posicionam | Fase 7 | Regiões e TopOverlay. |
-| M7 — Layout persiste | Fase 8 | Round-trip JSON. |
-| M8 — Layout avançado | Fase 9 | Arrastar-e-soltar, flutuação, multi-monitor. |
-
-Cada marco é um ponto natural de parada. O Workspace é utilizável em
-todos os marcos a partir de M1.
-
----
-
-## 19. Recomendações
-
-Dado o escopo:
-
-1. **Implementar as fases 1–7 primeiro.** Não têm dependências
-   externas (exceto Qt/PySide6) e entregam um Workspace totalmente
-   funcional.
-2. **Deixar a fase 8 como stub se necessário.** Implementar um modelo
-   mínimo de `Project` para permitir persistência sem o subsistema
-   completo de Project.
-3. **Adiar a fase 9.** Recursos avançados (arrastar-e-soltar,
-   flutuação) exigem design de UX significativo e devem ser
-   adicionados depois que o núcleo estiver estável.
-
----
-
-## 20. Questões Abertas
-
-### 20.1 O `LayoutRenderer` deve ser stateless ou stateful?
-
-**Opção A:** Stateless — função pura `tree → widget`.
-**Opção B:** Stateful — mantém um cache de widgets para reúso.
-
-**Tendência atual:** Opção B. Mantém um cache, mas o cache é
-reconstruível a partir da árvore a qualquer momento.
-
-### 20.2 Como testar Areas flutuantes no CI?
-
-Ambientes de CI headless não têm múltiplos monitores.
-
-**Tendência atual:** mockar a geometria de tela, testar flags de
-janela em vez de posições reais.
-
-### 20.3 Animação de troca de Editor deve ser adicionada?
-
-**Opção A:** Sim — transição fade ou slide.
-**Opção B:** Não — troca instantânea.
-
-**Tendência atual:** Opção B.
-
-### 20.4 A fase 8 deve bloquear o release inicial?
-
-**Opção A:** Sim — persistência é necessária para um release útil.
-**Opção B:** Não — o Workspace pode sair sem persistência;
-persistência é adicionada em fase posterior.
-
-**Tendência atual:** Opção B.
-
-### 20.5 `LayoutBuilder` e `LayoutRenderer` devem ser fundidos?
-
-**Opção A:** Manter separados — build é operação pura de dados;
-render é operação de UI.
-**Opção B:** Fundir em uma classe única.
-
-**Tendência atual:** Opção A. Responsabilidades separadas.
 
 

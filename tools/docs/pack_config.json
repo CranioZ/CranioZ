@@ -1,6 +1,6 @@
 {
     "root_dir": "C:/CranioZ",
-    "output_file": "cranioZ_contexto.txt",
+    "output_file": "cranioZ_documentacao.txt",
     "selected_dirs": [
         "docs",
         "docs\\adr",
@@ -14,6 +14,7 @@
         "docs\\architecture\\domain\\patient",
         "docs\\architecture\\domain\\project",
         "docs\\architecture\\home_page",
+        "docs\\architecture\\implementation",
         "docs\\architecture\\internationalization",
         "docs\\architecture\\main_window",
         "docs\\architecture\\modules",
@@ -28,6 +29,7 @@
         "docs\\architecture\\modules\\list_modules\\cephalometric\\tools",
         "docs\\architecture\\modules\\list_modules\\occlusion",
         "docs\\architecture\\modules\\list_modules\\osteotomy",
+        "docs\\architecture\\modules\\list_modules\\professional",
         "docs\\architecture\\modules\\list_modules\\tomography",
         "docs\\architecture\\objects",
         "docs\\architecture\\scene",
