@@ -14,7 +14,6 @@
         "docs\\architecture\\domain\\patient",
         "docs\\architecture\\domain\\project",
         "docs\\architecture\\home_page",
-        "docs\\architecture\\implementation",
         "docs\\architecture\\internationalization",
         "docs\\architecture\\main_window",
         "docs\\architecture\\modules",
@@ -41,8 +40,6 @@
         "docs\\architecture\\ui\\toolbar",
         "docs\\architecture\\ui\\tools",
         "docs\\architecture\\ui\\workspace",
-        "docs\\architecture\\ui\\workspace\\folder_strututure",
-        "docs\\architecture\\ui\\workspace\\implementation",
         "docs\\developer",
         "docs\\development",
         "docs\\user"

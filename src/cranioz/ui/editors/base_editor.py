@@ -13,6 +13,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
+from cranioz.ui.tools.registry.tool_definition import ToolContext
+
 if TYPE_CHECKING:
     from cranioz.ui.editors.editor_context import EditorContext
     from cranioz.ui.toolbars.specification import ToolbarSpec
@@ -56,6 +58,20 @@ class Editor(ABC):
     def toolbar_specs(self) -> list[ToolbarSpec]:
         """Declare the Editor's internal Toolbars. Empty by default."""
         return []
+
+    def tool_context(self) -> ToolContext:
+        """Return the ToolContext used to materialize this Editor's Toolbars.
+
+        The Editor owns its ToolContext; the AreaWidget and the Toolbar
+        widget only consume it. Editors that need a richer context
+        (selection, scene query, command dispatcher) override this method
+        and return an instance with the appropriate services.
+
+        The default implementation returns an empty ``ToolContext``,
+        which is correct for Editors that declare no Toolbar or whose
+        Tools are context-independent.
+        """
+        return ToolContext()
 
     # Persistence ---------------------------------------------------
 

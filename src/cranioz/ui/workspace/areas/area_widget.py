@@ -16,6 +16,8 @@ Responsibilities:
   consumers in this piece; they will be connected by the Workspace
   in a future piece.
 - Consume ToolRegistry and ThemeService to materialize Toolbars.
+- Consult the Editor for the ToolContext used to materialize its
+  Toolbars.
 
 Non-responsibilities:
 
@@ -35,6 +37,14 @@ Structure of the produced widget:
                  Editor. Each tab contains the Editor's Toolbars and
                  its content_widget(). Tabs are closable. A '+' corner
                  button is present for future use.
+
+Note on the '+' button and the ``editor_add_requested`` signal:
+
+The ``editor_add_requested`` signal is declared for the future '+'
+corner button on the tab widget. In this piece, the signal is not
+emitted by any widget yet. When the '+' button is implemented, it
+will emit this signal, and a higher-level component will decide
+whether to add an Editor and how.
 """
 
 from __future__ import annotations
@@ -51,7 +61,6 @@ from PySide6.QtWidgets import (
 from cranioz.ui.editors.base_editor import Editor
 from cranioz.ui.theme.service import ThemeService
 from cranioz.ui.toolbars.base import Toolbar
-from cranioz.ui.tools.registry.tool_definition import ToolContext
 from cranioz.ui.tools.registry.tool_registry import ToolRegistry
 from cranioz.ui.workspace.areas.area import Area
 from cranioz.ui.workspace.areas.placement import Placement
@@ -216,7 +225,7 @@ class AreaWidget(QWidget):
         ThemeService. The ToolContext is taken from the Editor: the
         Editor is the owner of the ToolContext, not the AreaWidget.
         """
-        context = self._editor_tool_context(editor)
+        context = editor.tool_context()
         result: list[Toolbar] = []
         for spec in editor.toolbar_specs():
             toolbar = Toolbar(
@@ -227,17 +236,6 @@ class AreaWidget(QWidget):
             )
             result.append(toolbar)
         return result
-
-    @staticmethod
-    def _editor_tool_context(editor: Editor) -> ToolContext:
-        """Return the ToolContext for an Editor.
-
-        For now, this is an empty context. When Editors expose their
-        own ToolContext (via EditorContext or a dedicated accessor),
-        this method will read from the Editor instead of constructing
-        an empty one.
-        """
-        return ToolContext()
 
     def _build_tabs(self, editors: tuple[Editor, ...]) -> QTabWidget:
         """Build the tabbed container for multiple Editors.

@@ -44,6 +44,8 @@ A document that records a significant architectural decision, its context, alter
 
 **See:** `docs/adr/`
 
+### Area
+
 ### Application Layer
 The layer that coordinates system operations: Commands, Services, Tasks, Flows, Events, transactions, and application-level state. It orchestrates the Domain and Infrastructure layers.
 
@@ -82,7 +84,7 @@ The layer that contains the conceptual model: Patient, Project, Scene, Object, D
 
 **See:** `docs/architecture/overview.md` §5.1`
 
-### Flow
+### Workflow
 A versioned, declarative sequence of steps that guides a user through a clinical task by coordinating steps, requirements, and modules. Flow definitions are stored as JSON; the execution engine belongs to the Application layer.
 
 **See:** `docs/architecture/clinical_workflows/clinical_workflows.md`
@@ -432,6 +434,8 @@ The mandatory English text supplied as the second positional argument to `tr()`.
 A stable semantic identifier describing meaning or intent (e.g., `tomography.segmentation.failed`). It must not depend on the displayed text or a specific UI widget.
 
 **See:** `docs/architecture/internationalization/internationalization.md` §4
+
+### TopBar
 
 ### TranslationCatalogRegistry
 The component that locates, loads, and caches translation catalogs by language and functional area.
@@ -1981,6 +1985,123 @@ ImagingVolume carries the patient_id.
 
 
 ======================================================================
+FILE: docs\adr\ADR-0005_TopBar_Structural_and_Floating.md
+======================================================================
+
+# ADR-0005: Top Bar — Structural Component Materialized as a Floating Overlay
+
+**Status:** Accepted
+**Date:** 2026-10-19
+**Deciders:** Architecture team
+**Related:** ADR-0001_Area_and_Editor.md, ADR-0002_EditorContext_and_Toolbar_Materialization.md, workspace.md §3.3, workspace.md §7, top-bar.md
+
+---
+
+## 1. Context
+
+The Top Bar (Painel Superior) is a permanent navigation component of the Workspace. Its geometry is constrained by the available space between the Left and Right Areas, and its background is translucent.
+
+Three readings coexisted in the documentation:
+- A rigid structural widget fixed in the layout.
+- A flow-dependent Overlay.
+- A hybrid model.
+
+This ADR resolves the ambiguity by defining the Top Bar as a **hybrid component**: structural in purpose, floating in materialization.
+
+---
+
+## 2. Decision
+
+### 2.1 Nature
+
+The Top Bar is a structural component of the Workspace. It exists for the entire lifetime of the Workspace, independently of any active Flow, Module, or Project.
+
+### 2.2 Materialization
+
+The Top Bar is rendered as a floating layer over the Central Region. It is not part of the Area Layout Tree and does not push the Central Area down. Its geometry is computed and applied by the `OverlayManager`.
+
+### 2.3 Geometry
+
+- **Position:** anchored to the top of the Central Region, with configured margins (horizontal and vertical).
+- **Width:** dynamic, equal to the current width of the Central Region minus the lateral margins.
+- **Height:** fixed.
+- **Adaptation:** recomputed whenever the layout changes (window resize, Area visibility toggle, module switch).
+
+### 2.4 Appearance
+
+- Background: translucent, allowing the Central Region content to remain visible beneath.
+- Fallback: a semi-opaque solid background is used on platforms where translucency over the rendering surface is unavailable.
+
+### 2.5 Components
+
+The Top Bar contains three horizontal segments:
+
+| Segment | Content | Anchoring |
+|---|---|---|
+| **Left** | Menu, Home, Toggle Area Left | Left-aligned. |
+| **Center** | Module tabs, `+` button | Always horizontally centered within the Top Bar. |
+| **Right** | Extras, Toggle Area Bottom, Toggle Area Right, Window controls | Right-aligned. |
+
+The Center segment remains centered regardless of the width of the Left and Right segments.
+
+### 2.6 Lifecycle and Persistence
+
+- The Top Bar is registered in the `OverlayManager` at Workspace creation.
+- It is never created or destroyed by the Flow engine.
+- Its visibility (shown/hidden via the user toggle) is a presentation preference, persisted in `LayoutState`.
+- Its presence is not persisted in `OverlayState`. `OverlayState` is reserved for flow-dependent Overlays (e.g., `steps_panel`).
+
+---
+
+## 3. Rules Applied
+
+1. The Top Bar exists for the lifetime of the Workspace.
+2. The Top Bar is positioned by the `OverlayManager` over the Central Region.
+3. The Top Bar does not participate in the Area Layout Tree.
+4. The Top Bar's width adapts to the Central Region's current bounds.
+5. The Top Bar's background is translucent, with a solid fallback.
+6. The Center segment is always horizontally centered.
+7. The Top Bar's visibility is persisted in `LayoutState`, not in `OverlayState`.
+
+---
+
+## 4. Consequences
+
+### 4.1 Positive
+
+- Consistent with the UI specification.
+- Maximizes Central Region space (no layout displacement).
+- Single owner of geometry (`OverlayManager`).
+- Visibility is independent of Flow.
+- Single materialization path for all floating components.
+
+### 4.2 Negative
+
+- The `OverlayManager` must distinguish the Top Bar (persisted in `LayoutState`) from flow-dependent Overlays (persisted in `OverlayState`).
+- Translucency requires a platform-specific fallback.
+
+### 4.3 Neutral
+
+- The Top Bar is not part of the `LayoutTree`.
+- The Top Bar is not serialized in `OverlayState`.
+
+---
+
+## 5. Alternatives Rejected
+
+- **Rigid widget in the layout:** loses translucency and reduces Central Region space.
+- **Flow-dependent Overlay:** contradicts the requirement that the Top Bar is always present.
+- **Full-window width:** contradicts the requirement that it adapts to the Left and Right Areas.
+- **Opaque background:** contradicts the requirement that the Central Region content remains visible beneath.
+
+---
+
+## 6. Summary
+
+The Top Bar is a structural component of the Workspace materialized as a floating, translucent Overlay. This hybrid model satisfies the requirement that the component is always present while preserving the Central Region's usable space and visual continuity. The `OverlayManager` is the single owner of its geometry; its visibility is a presentation preference persisted in `LayoutState`.
+
+
+======================================================================
 FILE: docs\adr\startup_project_opening_workflow.md
 ======================================================================
 
@@ -2995,6 +3116,226 @@ READY      → workspace pronto para uso
 O princípio central é:
 
 A Home Page descobre, o Project Manager coordena, o Repository carrega, o Workspace consome, os Módulos executam.
+
+
+======================================================================
+FILE: docs\architecture\implementation.md
+======================================================================
+
+# Implementation Plan
+
+**Document type:** Roadmap and execution plan
+**Status:** Living document
+**Scope:** Phased implementation of the CranioZ platform from foundation to release.
+
+---
+
+## 1. Purpose
+
+This document defines the **execution strategy** for building the CranioZ platform. It translates the architectural decisions (ADRs), the domain contracts, and the clinical requirements into a sequenced, testable, and iterative implementation plan.
+
+Its primary goal is to serve as a scientific, technical, and managerial instrument, distinguishing between the strict scope of the PhD research and the long-term evolution of the open-source platform.
+
+---
+
+## 2. Guiding Principles
+
+The implementation follows five strict rules:
+
+1. **Vertical Slices over Horizontal Layers:** We do not build "all models first, then all views". We build a feature from the UI down to the Domain and Persistence, and we test it end-to-end.
+2. **No Unresolved Contract Dependencies:** A phase may begin before the previous phase is fully completed, **provided** that the architectural contracts (interfaces, Protocols, ADRs) it depends on are defined, documented, and stable.
+3. **Early Persistence:** Persistence is not a final feature. Minimum viable persistence (schema, JSON serialization, repository pattern) must be established from the foundation to prevent architectural rework.
+4. **Testable at Every Step:** Every phase ships with its own test suite. The `LayoutBuilder` (pure logic) is tested without Qt. The `LayoutRenderer` is tested with `pytest-qt`. The Domain is tested with pure Python.
+5. **Reversible Decisions:** If an architectural decision proves wrong during implementation, it must be caught early and changed without rewriting the entire system.
+
+---
+
+## 3. External Dependencies & Tech Stack
+
+- **Language:** Python 3.12+
+- **UI Framework:** PySide6 (Qt 6)
+- **3D/Medical Visualization:** VTK, ITK
+- **DICOM Parsing:** PyDicom
+- **Geometric Modeling:** Open CASCADE (OCCT), CGAL
+- **Scientific Computing:** NumPy, SciPy, Numba
+- **Persistence:** JSON (Project files, Layout, Scene), SQLite (Professional Module)
+- **Testing:** `pytest`, `pytest-qt`, `pytest-benchmark`, `hypothesis`
+- **Tooling:** `uv`, `ruff`, `mypy`
+
+---
+
+## 4. Phase Overview
+
+The implementation is divided into 11 phases. These phases are designed to build the *platform* progressively, ensuring the PhD delivers a validated clinical core.
+
+| Phase | Name | Status |
+|---|---|---|
+| **Phase 0** | Foundation & Boot | ✅ Implemented |
+| **Phase 1** | Contracts & Core | 🚧 In Progress |
+| **Phase 2** | Workspace | ✅ Implemented |
+| **Phase 3** | Project & Home Page | ⏳ Next |
+| **Phase 4** | Scene & Visualization | ⏳ Planned |
+| **Phase 5** | Clinical Flows | ⏳ Planned |
+| **Phase 6** | Clinical Pipeline (MVP) | ⏳ Planned |
+| **Phase 7** | Scientific Validation | ⏳ Planned |
+| **Phase 8** | Scientific Product (Release 1.0) | ⏳ Planned |
+| **Phase 9** | Extensibility (Release 2.0) | ⏳ Planned |
+| **Phase 10**| AI and Nodes (Release 3.0) | ⏳ Planned |
+
+---
+
+## 5. Phase Breakdown
+
+### Phase 0: Foundation & Boot
+**Goal:** Establish the repository, configuration, logging, minimal persistence, and boot sequence.
+- **Deliverables:**
+  - `pyproject.toml`, CI pipeline (GitHub Actions), `README.md`.
+  - `ConfigurationLoader`, `AppPathResolver`.
+  - `EventBus`, minimal `Command`/`EventHandler` contracts.
+  - JSON Schema for Project Metadata.
+- **Tests:** Unit tests for config validation and path resolution.
+
+### Phase 1: Contracts & Core Domain
+**Goal:** Define the fundamental contracts and the initial Domain models, plus minimum persistence.
+- **Deliverables:**
+  - `Patient` Domain (9 value objects).
+  - `Project` Domain (ProjectId, Metadata).
+  - UI Contracts (`Area`, `Editor`, `LayoutBuilder`, `LayoutRenderer`, `ToolSpec`, `ToolbarSpec`).
+  - `ProjectRepository` (Protocol) and `FilesystemProjectRepository` (basic implementation).
+- **Tests:** Domain unit tests (pure Python), JSON serialization round-trips for Patient and Project.
+
+### Phase 2: Workspace Engine
+**Goal:** Build the UI layout system that dynamically materializes modules.
+- **Deliverables:**
+  - `LayoutTree` (N-ary split tree), `AreaManager`.
+  - `LayoutBuilder` (pure Python), `LayoutRenderer` (Qt materialization).
+  - `EditorRegistry`, `EditorContext` (hybrid model).
+  - `TopBar` (Structural component of the Workspace).
+  - `WorkspaceOverlayManager` (for `steps_panel` and floating elements).
+- **Tests:** `pytest-qt` for rendering; benchmarks for tree building.
+
+### Phase 3: Project & Home Page
+**Goal:** Implement the project lifecycle, discovery UI, and project persistence.
+- **Deliverables:**
+  - `ProjectManager` (single authority for lifecycle).
+  - `ProjectCatalog` (read model).
+  - `HomePage` UI (project cards, recent projects, flow selection).
+  - Layout State Persistence (save/load workspace layout per project).
+- **Tests:** Project creation/opening/closing flows, JSON serialization round-trips.
+
+### Phase 4: Scene & Visualization
+**Goal:** Introduce the 3D/2D visualization layer and the spatial domain.
+- **Deliverables:**
+  - Domain `Scene` (coordinate system, spatial hierarchy, membership).
+  - `RenderingAdapter` (bridges Scene events to VTK).
+  - `Viewport3DEditor` and `MPRViewerEditor`.
+  - `TaskManager` abstraction for async operations.
+  - Scene serialization (JSON).
+- **Tests:** Headless VTK tests, spatial transform tests, performance tests (Scene update, upload to GPU, rendering FPS on reference hardware).
+
+### Phase 5: Clinical Flows
+**Goal:** Implement the workflow engine and the shared navigation panel.
+- **Deliverables:**
+  - `WorkflowEngine` (loads JSON, evaluates requirements).
+  - `steps_panel` (Workspace Overlay).
+  - Flow state persistence.
+- **Tests:** State transition tests (pending, active, blocked, completed), requirement evaluation.
+
+### Phase 6: Clinical Pipeline (PhD MVP)
+**Goal:** Build the specific clinical tools required for the orthognathic workflow.
+This phase is divided into sub-phases to accurately measure scientific progress:
+
+- **Phase 6A — Tomography & Segmentation:** DICOM import, MPR, thresholding, mask painting.
+- **Phase 6B — Registration & Cephalometry:** Alignment, cephalometric landmark acquisition.
+- **Phase 6C — Osteotomy:** Le Fort I, BSSO, boolean operations.
+- **Phase 6D — Surgical Guides:** Parametric guide generation.
+- **Phase 6E — Integrated Validation:** End-to-end flow testing.
+- **Tests:** Geometric validation (RMSE < 0.3mm), topological validation (0 non-manifold edges).
+
+### Phase 7: Scientific Validation
+**Goal:** Execute the validation protocols defined in the PhD project.
+- **Deliverables:**
+  - Geometric validation reports (phantoms, ground-truth).
+  - Reproducibility studies (ICC > 0.85).
+  - Usability reports (SUS > 70).
+  - Documentation of the validation methodology.
+- **Tests:** Automated scripts generating validation datasets and metrics.
+
+### Phase 8: Scientific Product (Release 1.0)
+**Goal:** Consolidate the platform as a stable, distributable scientific product.
+- **Deliverables:**
+  - Windows 11 Installer.
+  - Autosave and crash recovery.
+  - PDF Report generation.
+  - Final user documentation and developer SDK documentation.
+  - Scientific publication and DOI registration.
+- **Tests:** Full regression suite, performance profiling on reference hardware.
+
+### Phase 9: Extensibility (Release 2.0)
+**Goal:** Open the platform for community contribution.
+- **Deliverables:**
+  - Module API and Plugin API.
+  - Plugin loader and sandbox.
+  - External plugin catalog.
+- **Tests:** Plugin compatibility tests.
+
+### Phase 10: AI and Nodes (Release 3.0)
+**Goal:** Advanced automation and procedural workflows.
+- **Deliverables:**
+  - Node System (non-destructive graph).
+  - AI Assistant (`AIAssistantEditor`).
+  - MCP Server integration.
+- **Tests:** AI command execution parity with human UI, graph evaluation tests.
+
+---
+
+## 6. Testing Strategy & Metrics
+
+Testing is a clinical requirement. Metrics must be contextualized to avoid false positives or hardware dependencies.
+
+### 6.1 Coverage Metrics
+- **Domain Layer:** High coverage of critical business rules, with 100% of invariants and relevant error cases tested.
+- **Application Layer:** Critical command paths and transaction rollbacks tested.
+- **UI Layer:** 80% coverage of `ui/workspace/`.
+
+### 6.2 Performance Metrics (Reference Hardware)
+All performance metrics must be measured against a defined **Reference Dataset** and **Reference Hardware** (e.g., the workstations specified in the PhD infrastructure plan).
+
+- **DICOM Import:** Load a reference dataset of 500 slices in < 10 seconds (including indexing and readiness for first visualization).
+- **Rendering:** 30+ FPS for a mesh of 1,000,000 polygons.
+  - *Metrics separated into:* Scene update time, GPU upload time, render time.
+- **Memory:** < 4 GB RAM during standard facial CT processing.
+
+### 6.3 GPU vs. CPU
+- **Correction:** Semantic clinical data belongs to main memory (RAM) and the Domain `Scene`.
+- The GPU should only hold **renderable representations** (VTK actors, shaders).
+- Use caches and incremental transfer to reduce copies. Do not keep the entire clinical dataset on the GPU.
+
+### 6.4 Concurrency
+- **Correction:** `QTimer` is for UI scheduling, not asynchronous execution.
+- **TaskManager:** Application layer abstraction for tasks.
+- **Execution:** Heavy CPU-bound tasks must use `QThreadPool`/`QtConcurrent` or `ProcessPool` (for GIL-independent execution), coordinated by the `TaskManager`.
+
+---
+
+## 7. Release Criteria (Definition of Done)
+
+A phase is "Done" when:
+1. Code is implemented according to the architecture documents.
+2. Unit, Widget, and Integration tests are written and passing.
+3. The CI pipeline is green.
+4. Documentation is updated (including ADRs if a new decision was made).
+5. The feature is usable end-to-end by the UI (no orphaned backend code).
+6. No `TODO` comments are left without a linked GitHub Issue.
+
+### 7.1 The PhD Deliverable (Release 1.0)
+The PhD concludes with the delivery of the validated clinical core. It **does not** include Plugins, Nodes, AI/MCP, or multi-monitor support. These are explicitly deferred to Releases 2.0 and 3.0, demonstrating the platform's long-term vision and extensibility without compromising the thesis deadline.
+
+---
+
+## 8. Summary
+
+By following this roadmap, the CranioZ project ensures that the architectural foundation (Workspace, Commands, Scene) is built correctly before the heavy clinical lifting begins. It respects the scientific validation timelines, protects the PhD scope from feature creep, and establishes a clear path for post-doctoral open-source evolution.
 
 
 ======================================================================
@@ -4307,7 +4648,246 @@ FILE: docs\architecture\clinical_workflows\orthognathic_surgery\etapas.md
 FILE: docs\architecture\commands\commands.md
 ======================================================================
 
+# Commands
 
+**Document type:** Architecture specification
+**Status:** Living document
+**Scope:** Definition, lifecycle, and execution of Application Commands in CranioZ.
+
+---
+
+## 1. Purpose
+
+In CranioZ, every operation that changes the persistent state of the system must pass through a **Command**.
+
+The Command mechanism is the single entry point for state mutation. It exists to provide:
+- **Validation:** Ensuring a clinical operation is legal before it happens.
+- **Transaction boundaries:** Guaranteeing atomicity (all-or-nothing).
+- **Undo/Redo:** Providing a consistent history for the user.
+- **Auditability:** Recording who did what, when, and with what parameters.
+- **Decoupling:** Separating the user interface (UI) from the business rules (Domain).
+
+This document defines the contracts, lifecycle, and responsibilities of Commands, CommandHandlers, and the CommandBus.
+
+---
+
+## 2. Core Concepts
+
+The Command architecture is composed of four distinct elements:
+
+| Component | Responsibility |
+|---|---|
+| **Command** | A declarative data structure representing an *intent* to change state. It contains the target and the parameters. |
+| **CommandDispatcher** | The interface used by the UI (Editors, Tools, AI) to send a Command. |
+| **CommandBus** | The routing mechanism that receives a Command and finds the appropriate Handler. |
+| **CommandHandler** | The orchestrator that validates, executes, commits, and publishes events for a specific Command. |
+
+### 2.1 Command is not an Event
+- A **Command** expresses a *wish* or *intent*. It can be rejected. (e.g., `MoveMaxillaCommand`, `CreateProjectCommand`).
+- An **Event** expresses a *fact* that has already happened. It cannot be rejected. (e.g., `MaxillaMovedEvent`, `ProjectCreatedEvent`).
+
+Commands are handled *before* the transaction commits. Events are published *after* a successful commit.
+
+### 2.2 Command is not a Tool
+A **Tool** (`tools.md`) is the UI interaction (e.g., a button, a drag action). The Tool's responsibility is to gather parameters and create a Command. The Tool does not execute the Command itself.
+
+---
+
+## 3. The Command Lifecycle
+
+The execution of a Command follows a strict, deterministic sequence:
+
+```text
+UI / AI / Script
+       │
+       ▼
+CommandDispatcher (Context)
+       │
+       ▼
+CommandBus (Routes by type)
+       │
+       ▼
+CommandHandler
+       │
+       ├── 1. Authorize (Access Policy)
+       ├── 2. Validate (Domain rules, geometry checks)
+       ├── 3. Open Transaction
+       ├── 4. Mutate Domain / Scene
+       ├── 5. Commit Transaction
+       └── 6. Publish Events (EventBus)
+
+```
+
+If any step between 2 and 5 fails, the transaction is rolled back, the domain state remains unchanged, and an Application Error is returned to the caller. No events are published on failure.
+
+## 4. Contracts
+### 4.1 The Command Contract
+A Command is an immutable data structure. It carries identity (who/where), target (what), and parameters (how).
+
+    from dataclasses import dataclass
+    from typing import Any
+    
+    @dataclass(frozen=True)
+    class Command:
+        """Base contract for all Commands."""
+        
+        # Unique identifier of the command execution (for tracing)
+        command_id: str
+        
+        # Optional: Contextual info (e.g., user_id, project_id)
+        metadata: dict[str, Any]
+
+*Example of a concrete Command:*
+
+    @dataclass(frozen=True)
+    class CreateProjectCommand(Command):
+        patient_id: str
+        project_name: str
+        clinical_procedure: str
+
+
+### 4.2 The CommandHandler Contract
+Handlers are specific to a single Command type. They reside in the Application layer and coordinate the Domain and Infrastructure.
+
+    from typing import Protocol, TypeVar, Generic
+    
+    TCommand = TypeVar("TCommand", bound=Command)
+    TResult = TypeVar("TResult")
+    
+    class CommandHandler(Protocol, Generic[TCommand, TResult]):
+        """Contract for executing a specific Command type."""
+        
+        def handle(self, command: TCommand) -> TResult:
+            """
+            Executes the command within a transaction boundary.
+            Raises ApplicationError on validation failure.
+            """
+            ...
+
+
+### 4.3 The CommandBus Contract
+The CommandBus is the central router.
+
+    class CommandBus(Protocol):
+        def register(self, command_type: type[Command], handler: CommandHandler) -> None:
+            """Registers a handler for a command type."""
+            ...
+    
+        def dispatch(self, command: Command) -> Any:
+            """
+            Routes the command to its handler.
+            Raises KeyError if no handler is registered.
+            """
+            ...
+
+## 5. Transactions and Undo/Redo
+### 5.1 Transaction Boundaries
+A Command maps to exactly one transaction.
+
+If a Command mutates multiple domain objects (e.g., moving the maxilla, updating the dental splint, and adjusting landmarks), all mutations happen within a single logical transaction.
+
+The CommandHandler coordinates this. If an error occurs during any step, the TransactionManager rolls back the state to the beginning of the Command.
+
+### 5.2 Undo/Redo
+CranioZ uses a Command History to handle Undo/Redo, rather than state snapshots.
+
+A Command declares whether it supports Undo/Redo:
+
+    @dataclass(frozen=True)
+    class MoveMaxillaCommand(Command):
+        object_id: str
+        translation_vector: tuple[float, float, float]
+        
+        # Default is True; Commands that trigger irreversible external operations 
+        # (e.g., "Send Email", "Delete File from Disk") override this.
+        is_reversible: bool = True
+
+
+When a reversible Command is committed, the CommandStack stores the following:
+
+The Command itself.
+
+A compensating command (the UndoCommand).
+
+A rollback snapshot (if necessary for complex geometric operations).
+
+The UI (via EditorContext) triggers undo(). The CommandStack pops the last command and dispatches the inverse operation.
+
+## 6. Events and the Command Mechanism
+Events are the result of a Command, not a parallel mechanism.
+
+Before Commit: The CommandHandler mutates the Domain and prepares an internal list of Events to publish.
+
+After Commit: The CommandHandler sends the Events to the EventBus.
+
+This ensures that the UI (or an external system) never reacts to an event that corresponds to a failed transaction.
+
+Rule: A CommandHandler must never publish an event until the transaction has successfully committed.
+
+## 7. Validation and Authorization
+The Command mechanism is the gatekeeper. Validation happens in three layers:
+
+1. Structural Validation (UI/Tool): The Tool checks if the UI parameters are well-formed (e.g., "Is the text field empty?"). This is a courtesy to the user.
+2. Authorization (CommandHandler): The CommandHandler checks if the current user/session has the right to execute this command (e.g., ProjectAccessPolicy.can_update(project_id)).
+3. Domain Validation (Domain Layer): The Domain objects validate the state transition (e.g., "Can a maxilla be moved if it is not segmented yet?"). If validation fails, a DomainError is raised, and the Handler rejects the Command.
+
+
+    class MoveMaxillaHandler(CommandHandler):
+        def handle(self, command: MoveMaxillaCommand):
+            # 1. Authorization
+            if not self.access_policy.can_update(command.metadata["project_id"]):
+                raise PermissionDenied()
+                
+            # 2. Fetch
+            maxilla = self.scene.query.get_maxilla(command.object_id)
+            
+            # 3. Domain Validation
+            if not maxilla.is_valid_for_movement():
+                raise DomainError("Maxilla must be segmented first.")
+                
+            # 4. Mutate & Transaction
+            with self.transaction_manager.begin():
+                maxilla.move(command.translation_vector)
+                # Event will be published automatically on commit
+
+## 8. Integration with the Rest of the System
+### 8.1 In the UI (EditorContext and ToolContext)
+Editors and Tools do not know about CommandHandlers. They receive a CommandDispatcher through their contexts (see ADR-0002).
+
+    # Inside a Tool's execute() method
+    def execute(self, context: ToolContext):
+        command = MoveMaxillaCommand(...)
+        context.command_dispatcher.dispatch(command)
+
+### 8.2 With AI and MCP (Automation)
+The AIAssistantEditor and MCP server (see overview.md §22) use the exact same CommandDispatcher and CommandBus as a human user.
+
+* Human UI: Tool -> CommandDispatcher.dispatch() -> CommandBus
+* AI UI: Prompt -> CommandDispatcher.dispatch() -> CommandBus
+
+This is the fundamental guarantee of auditability and security: AI cannot bypass validation or authorization because it uses the same entry point.
+
+### 8.3 With the Workspace and Scene
+* The Workspace and Areas do not interact with Commands directly.
+* The Scene contains the state. It is mutated by the Domain layer, which is called by the CommandHandler. The Scene then emits its own Domain Events (e.g., ObjectTransformed), which the UI listens to.
+
+Design Principles
+1. One Command, One Handler: A Command type maps to exactly one Handler. If you need to do two things, use one Handler that orchestrates both operations within a single transaction.
+2. Commands are Data: Commands must not contain logic (no execute() method inside the Command). The logic lives in the Handler.
+3. Immutability: Commands are frozen. They represent a point-in-time intent and should not be mutated after creation.
+4. No UI Dependencies: Commands, Handlers, and the Bus must have zero dependencies on PySide6, Qt, or VTK. They belong to the Application layer.
+5. Errors are Information: A failed Command must return a structured Application Error (e.g., ProjectNotFound, InvalidGeometry) that the UI can display clearly, rather than a generic exception.
+6. Explicit Reversibility: Every Command must declare whether it is reversible. For irreversible Commands (e.g., ExportPdfCommand), the UI must request explicit confirmation.
+
+## 10. Implementation Roadmap
+To implement the Command mechanism in the CranioZ codebase:
+
+1. application/commands/base.py: Create the Command, CommandHandler, and CommandBus interfaces.
+2. application/commands/bus.py: Implement the CommandBus router.
+3. application/commands/stack.py: Implement the CommandStack for Undo/Redo.
+4. application/events/bus.py: Connect the CommandHandler to the EventBus (publish on commit).
+5. domain/errors.py: Define the base ApplicationError and DomainError.
+6. ui/editors/editor_context.py: Inject the CommandDispatcher into the EditorContext (ADR-0002).
 
 
 ======================================================================
@@ -6592,13 +7172,6 @@ The Homepage is therefore the **entry point and presentation/catalog layer** of 
 It displays Projects and Flow definitions, captures user intentions, and delegates operations to the Application layer.
 
 It does not create, modify, save, delete, or directly load Projects.
-
-
-
-======================================================================
-FILE: docs\architecture\implementation\implementation.md
-======================================================================
-
 
 
 
@@ -14212,6 +14785,56 @@ The UI must not inspect concrete modalities. Availability and enablement are res
 
 
 ======================================================================
+FILE: docs\architecture\ui\workspace\folder_structure.md
+======================================================================
+
+```
+src/cranioz/
+├── ui/
+│   ├── main_window.py
+│   ├── workspace/
+│   │   ├── workspace.py
+│   │   ├── area.py
+│   │   ├── area_manager.py
+│   │   ├── placement.py
+│   │   ├── area_spec.py
+│   │   ├── editor_layout_spec.py
+│   │   ├── module_ui_spec.py
+│   │   ├── layout_tree.py
+│   │   ├── layout_builder.py
+│   │   ├── layout_renderer.py
+│   │   ├── layout_state.py
+│   │   ├── layout_io.py
+│   │   ├── region.py
+│   │   ├── overlay.py
+│   │   ├── overlay_manager.py
+│   │   ├── overlay_state.py
+│   │   └── structure/
+│   │       └── top_bar.py
+│   └── editors/
+│       ├── base_editor.py
+│       ├── editor_registry.py
+│       ├── editor_catalog.py
+│       ├── viewport_3d/
+│       │   ├── editor.py
+│       │   └── toolbar.py
+│       └── mpr_viewer/
+│           ├── editor.py
+│           └── toolbar.py
+│
+└── tools/
+    ├── contracts/
+    ├── registry.py
+    ├── catalog.py
+    └── builtin/
+        ├── selection/
+        ├── navigation/
+        ├── measurement/
+        └── ...
+```
+
+
+======================================================================
 FILE: docs\architecture\ui\workspace\workspace-testing.md
 ======================================================================
 
@@ -15038,19 +15661,30 @@ disposed. Editor activation is independent of Area activation.
 The Workspace is a split tree of Areas, not a fixed set of panels.
 
 ```
-text
-+-------------------------------------------------------+
-|                     MainWindow                        |
-+-------------------------------------------------------+
-|  +----------+----------------------+----------+       |
-|  | Area     | Area                 | Area     |       |
-|  | left     | central              | right    |       |
-|  +----------+----------------------+----------+       |
-|                                                       |
-|  +---------------------------------------------------+|
-|  | Area — bottom                                     ||
-|  +---------------------------------------------------+|
-+-------------------------------------------------------+`
++-----------------------------------------------------------------------+
+|                             MainWindow                                |
++-----------------------------------------------------------------------+
+|                                                                       |
+|  +----------+-------------------------------------------+----------+  |
+|  |          |  +-------------------------------------+  |          |  |
+|  |          |  | [Menu][Home][Toggle L] | MÓDULOS | [..][Toggle R]||  |  
+|  |          |  +-------------------------------------+  |          |  |
+|  |  Area    |   (TopBar Translúcida Flutuante)          |  Area    |  |
+|  |  Left    |                                           |  Right   |  |
+|  |          |  +-------------------------------------+  |          |  |
+|  |          |  |                                     |  |          |  |
+|  |          |  |           Area Central              |  |          |  |
+|  |          |  |         (Dividida em 2)             |  |          |  |
+|  |          |  |                                     |  |          |  |
+|  |          |  +-------------------------------------+  |          |  |
+|  |          |                                           |          |  |
+|  +----------+-------------------------------------------+----------+  |
+|                                                                       |
+|  +-----------------------------------------------------------------+  |
+|  |                           Area Bottom                           |  |
+|  +-----------------------------------------------------------------+  |
+|                                                                       |
++-----------------------------------------------------------------------+
 ```
 
 Every visible rectangle is an Area. Each Area hosts its own Editor Layout Tree, containing the Editors assigned to it.
@@ -15090,18 +15724,13 @@ The `AreaManager` is the registry of Areas within the Workspace. It handles
 registration, unregistration, and lookup by `area_id`.
 
 ### 3.3 Application chrome
-Some visual elements are neither Areas nor Overlays:
+Some visual elements are neither Areas nor Overlays in the structural sense, but they compose the application frame:
 
-- The native OS menu bar (if any).
-- Native window controls — only if they are not embedded in the Top Bar.
-  In CranioZ, window controls are typically embedded in the right segment
-  of the Top Bar.
+* The native OS menu bar (if any), which belongs to the MainWindow.
+* Native window controls (minimize, maximize, close). In CranioZ, these are typically embedded in the right segment of the Top Bar. When embedded in the Top Bar, they belong to the Workspace, not to the MainWindow. Only when they are not embedded (e.g., a frameless window fallback) do they belong to the MainWindow.
+* The Top Bar (_Painel Superior_), which is a structural component of the Workspace. Unlike Areas, it is not part of the Area Layout Tree. Instead, it is materialized as a floating, translucent layer positioned over the Central Region. Its width dynamically adapts to the visibility of the Left and Right Areas: hiding the Left Area expands the Top Bar to occupy the freed space, and hiding the Right Area contracts it. The Top Bar is always present when the Workspace is active, regardless of the active Flow. For details on its three segments (Left, Center, Right), see top-bar.md.
 
-The native OS menu bar belongs to the `MainWindow`. Native window controls belong to the `MainWindow` only if they are not embedded in the Top Bar. When embedded in the Top Bar, they belong to the Workspace.
-
-There is no status bar. The traditional status bar role is served by the Console Editor, hosted in the Bottom Area, when the Module declares it. For details on the Top Bar (Painel Superior) — a structural component of the Workspace, not an Overlay — and its 3 segments, see `top-bar.md`.
-
-For details on the `steps_panel` — a shared Overlay hosted by the Workspace — see `steps_panel.md`.
+There is no status bar. The traditional status bar role is served by the Console Editor, hosted in the Bottom Area, when the Module declares it. The steps_panel is a different kind of Overlay: it is flow-dependent and appears only while a clinical Flow is active. For details, see steps_panel.md.
 
 ### 3.4 Data flow
 
@@ -15166,27 +15795,19 @@ class EditorLayoutSpec:
 ```
 Important points:
 
-Placement is semantic metadata. It is used to associate Areas with Regions and to build the initial tree.
-
-It is preserved after construction, because Regions depend on it.
-
-AreaSpec declares its Editors through an EditorLayoutSpec, not a flat list.
-
-The Module does not import the Editor classes.
-
-The EditorRegistry resolves the IDs to concrete classes.
+* Placement is semantic metadata. It is used to associate Areas with Regions and to build the initial tree.
+* It is preserved after construction, because Regions depend on it.
+* AreaSpec declares its Editors through an EditorLayoutSpec, not a flat list.
+* The Module does not import the Editor classes.
+* The EditorRegistry resolves the IDs to concrete classes.
 
 Validation rules (enforced before materialization):
 
-LEAF must have editor_id and must not have children.
-
-SPLIT must have direction and at least two children, and must not have editor_id.
-
-Every editor_id must resolve in the EditorRegistry.
-
-Placement must be one of LEFT, CENTRAL, RIGHT, BOTTOM.
-
-A ModuleUISpec must declare at least CENTRAL.
+* LEAF must have editor_id and must not have children.
+* SPLIT must have direction and at least two children, and must not have editor_id.
+* Every editor_id must resolve in the EditorRegistry.
+* Placement must be one of LEFT, CENTRAL, RIGHT, BOTTOM.
+* A ModuleUISpec must declare at least CENTRAL.
 
 If any rule is violated, the Workspace rejects the load with a clear error. It does not fall back silently.
 
@@ -15226,13 +15847,10 @@ ModuleUISpec(
 ```
 Placement rules:
 
-    CENTRAL — the center of the Area Layout Tree. There may be multiple Central Areas in a complex composition.
-  
-    LEFT — flanks the central region on the left.
-  
-    RIGHT — flanks the central region on the right.
-  
-    BOTTOM — sits below the horizontal row.
+* CENTRAL — the center of the Area Layout Tree. There may be multiple Central Areas in a complex composition.
+* LEFT — flanks the central region on the left.
+* RIGHT — flanks the central region on the right.
+* BOTTOM — sits below the horizontal row.
 
 Switching Modules: the Workspace receives a new ModuleUISpec and reconciles its current layout against it (see §6.4).
 
@@ -15253,31 +15871,22 @@ The Registry registers types, not instances. It answers:
 
 Error contracts:
 
-register: raises ValueError if editor_id is already registered.
+* register: raises ValueError if editor_id is already registered.
+* resolve: raises KeyError if editor_id is unknown.
+* create: raises KeyError if editor_id is unknown.
 
-resolve: raises KeyError if editor_id is unknown.
+Availability is a separate concern, handled by the EditorCatalog. The EditorCatalog filters registered Editors by:
 
-create: raises KeyError if editor_id is unknown.
-
-Availability is a separate concern, handled by the EditorCatalog. The
-EditorCatalog filters registered Editors by:
-
-The active Scene.
-
-The active project.
-
-The current Area.
-
-Required capabilities and data.
+* The active Scene.
+* The active project.
+* The current Area.
+* Required capabilities and data.
 
 Registry population:
-
-System Editors register at boot.
-
-Modules register their Editors when loaded.
-
-Plugins register their Editors when activated.
-
+* System Editors register at boot.
+* Modules register their Editors when loaded.
+* Plugins register their Editors when activated.
+* 
 When a Module or Plugin is unloaded or deactivated, its Editors are
 unregistered from the EditorRegistry. Instances already created are
 disposed following the Editor lifecycle.
@@ -15497,16 +16106,19 @@ The trees are the single source of truth for structure. They are not the single 
 
 The following are stored separately in LayoutState:
 
-State	Purpose
-Proportions	QSplitter sizes per node
-Visibility	Which Areas are shown or hidden
+    State	            Purpose
+    Proportions	        QSplitter sizes per node
+    Visibility	        Which Areas are shown or hidden
+
 Active Editor per Area	Which Editor receives input in each Area
+
 The following are stored separately in OverlayState:
 
-State	Purpose
-Presence	Which Overlays exist
-Configuration	Overlay-specific settings
-Anchoring	Which Region each Overlay targets
+    State	        Purpose
+    Presence	    Which Overlays exist
+    Configuration	Overlay-specific settings
+    Anchoring	    Which Region each Overlay targets
+
 These state models may be serialized together with the trees, but their responsibilities are distinct.
 
 ### 5.4 Resizing and reconciliation
@@ -15514,15 +16126,11 @@ Each Split (in either tree) is rendered as a QSplitter. The user can drag the di
 
 Reconciliation rule:
 
-The tree determines the structure.
-
-LayoutState stores proportions and preferences.
-
-The LayoutRenderer materializes both.
-
-User interactions update the model that owns the value.
-
-The renderer never silently alters structure to reflect a widget.
+* The tree determines the structure.
+* LayoutState stores proportions and preferences.
+* The LayoutRenderer materializes both.
+* User interactions update the model that owns the value.
+* The renderer never silently alters structure to reflect a widget.
 
 Without this rule, when a user drags a QSplitter divider, the new proportion would be lost on the next render.
 
@@ -15533,13 +16141,10 @@ The layout trees are pure data models, with no Qt dependency. The LayoutRenderer
 
 The LayoutRenderer renders recursively:
 
-An Area Layout Tree Split → QSplitter at the Workspace level.
-
-An Area Layout Tree Leaf → the Area widget.
-
-Inside each Area, its Editor Layout Tree Split → QSplitter.
-
-Its Editor Layout Tree Leaf → the Editor widget.
+* An Area Layout Tree Split → QSplitter at the Workspace level.
+* An Area Layout Tree Leaf → the Area widget.
+* Inside each Area, its Editor Layout Tree Split → QSplitter.
+* Its Editor Layout Tree Leaf → the Editor widget.
 
 ### 5.6 Persistence
 Layout persistence is keyed by context:
@@ -15603,17 +16208,15 @@ This JSON is stored inside the project file, not in user settings.
 
 Precedence when opening a project:
 
-Persisted layout for (project_id, module_id) if compatible with the current ModuleUISpec.
-
-Default layout declared by the ModuleUISpec.
-
-System fallback (single central Area with a single Editor).
+* Persisted layout for (project_id, module_id) if compatible with the current ModuleUISpec.
+* Default layout declared by the ModuleUISpec.
+* System fallback (single central Area with a single Editor).
 
 If the persisted layout is incompatible with the current ModuleUISpec, the Workspace reconciles it (see §6.4). If reconciliation is not possible, it rebuilds from the ModuleUISpec and reports the change.
 
 If the ModuleUISpec itself is invalid, the Workspace rejects the load with a clear error. The system fallback is reserved for controlled recovery, not for masking configuration errors.
 
-5.7 Why an N-ary tree
+### 5.7 Why an N-ary tree
 Simple: two node types.
 
 Recursive: each subtree is a complete layout.
@@ -15732,50 +16335,39 @@ Workspace repositions Overlays
 
 Precedence:
 
-First activation of the Module in the project: materialize the layout declared in the ModuleUISpec.
-
-Subsequent activations: restore the personalized layout for that Module, if it exists and is compatible.
-
-Missing or incompatible layout: rebuild from the ModuleUISpec.
-
-Invalid ModuleUISpec: report a clear error. Do not use the system fallback to hide configuration errors.
+* First activation of the Module in the project: materialize the layout declared in the ModuleUISpec.
+* Subsequent activations: restore the personalized layout for that Module, if it exists and is compatible.
+* Missing or incompatible layout: rebuild from the ModuleUISpec.
+* Invalid ModuleUISpec: report a clear error. Do not use the system fallback to hide configuration errors.
 
 ### 6.5 Area and Editor reconciliation
 Area identity is stable within a layout context (project_id + module_id). It does not imply that area.central is the same instance across all Modules.
 
 Reconciliation rules:
 
-area_id identifies an Area within the current layout context.
-
-If the area_id remains, the Workspace reuses the container and reconciles its internal Editor Layout Tree.
-
+* area_id identifies an Area within the current layout context.
+* If the area_id remains, the Workspace reuses the container and reconciles its internal Editor Layout Tree.
+* 
 If the internal tree changes:
 
-Editors already present and compatible are preserved.
-
-Editors no longer needed are removed (not destroyed immediately) and follow the removal lifecycle.
-
-New Editors are instantiated and inserted.
-
-If an Area no longer exists in the new composition, it is removed from the layout and follows the disposal lifecycle.
-
-Compatibility is defined per Editor type, not by tree shape. Two different trees may share the same Editor instances.
-
-This avoids destroying an entire Area just because its internal composition changed.
-
+* Editors already present and compatible are preserved.
+* Editors no longer needed are removed (not destroyed immediately) and follow the removal lifecycle.
+* New Editors are instantiated and inserted.
+* If an Area no longer exists in the new composition, it is removed from the layout and follows the disposal lifecycle.
+* Compatibility is defined per Editor type, not by tree shape. Two different trees may share the same Editor instances.
+* This avoids destroying an entire Area just because its internal composition changed.
+* 
 ## 7. Overlays
 ### 7.1 Concept
 An Overlay is a floating layer that the Workspace positions over a Region of Areas.
 
 The Overlay:
 
-Does not interfere with the layout — it floats over the Areas.
+* Does not interfere with the layout — it floats over the Areas.
+* Is not an Area. It is not hosted by any Area.
+* Is managed by the Workspace (via OverlayManager).
 
-Is not an Area. It is not hosted by any Area.
-
-Is managed by the Workspace (via OverlayManager).
-
-The Top Bar is not an Overlay. It is a structural component of the Workspace. Overlays are floating elements with their own positioning and hit-testing contracts. The distinction is architectural, not visual.
+The Top Bar is a special case. It is a structural component of the Workspace (always present, regardless of the active Flow), but it is materialized as an Overlay so that it can float over the Central Region and adapt dynamically to the visibility of the Left and Right Areas. Its geometry is managed by the OverlayManager, but its lifecycle is tied to the Workspace, not to a Flow. The distinction between the Top Bar and other Overlays (like the steps_panel) is one of lifecycle and semantics, not of materialization mechanism.
 
 ### 7.2 Regions
 A Region is a geometric area derived from the Area Layout Tree that groups related Areas.
@@ -15784,685 +16376,330 @@ A Region is not identified by coordinates alone. Region discovery must consisten
 
 Discovery rules:
 
-Placement provides the initial association between Areas and Regions.
+* Placement provides the initial association between Areas and Regions.
+* Placement is preserved as semantic metadata after construction.
+* If the user rearranges the tree, the association is revalidated against the current structure.
+* Placement.CENTRAL may apply to multiple Central Areas in a complex composition.
 
-Placement is preserved as semantic metadata after construction.
-
-If the user rearranges the tree, the association is revalidated against the current structure.
-
-Placement.CENTRAL may apply to multiple Central Areas in a complex composition.
-```
-  python
   @dataclass
   class Region:
       id: str                # "central", "left", "right", "bottom"
       bounds: Rect           # rectangle that contains the Region
       areas: list[Area]      # Areas that belong to the Region
       semantic_role: Placement | None
-```
+
 Why geometric, with structural support:
 
-Allows arbitrary splits.
+* Allows arbitrary splits.
+* Allows multiple Areas per region.
+* Allows future floating areas.
+* Avoids fragile inferences based on pixel coordinates.
 
-Allows multiple Areas per region.
-
-Allows future floating areas.
-
-Avoids fragile inferences based on pixel coordinates.
-
-### 7.3 Overlay geometry and interaction
+7.3 Overlay geometry and interaction
 Each Overlay defines:
 
-Target Region — the Region it floats over.
-
-Anchoring rules — how it aligns within the Region (top, bottom, left, right, margins).
-
-Resize behavior — how it adapts when the Region changes.
-
-Focus behavior — whether it can receive focus.
-
-Hit testing — how to distinguish interaction with the Overlay from interaction with content underneath.
-
-Positioning limits — minimum and maximum sizes, allowed regions.
-
-These contracts are documented in a dedicated specification.
+* Target Region — the Region it floats over.
+* Anchoring rules — how it aligns within the Region (top, bottom, left, right, margins).
+* Resize behavior — how it adapts when the Region changes.
+* Focus behavior — whether it can receive focus.
+* Hit testing — how to distinguish interaction with the Overlay from interaction with content underneath.
+* Positioning limits — minimum and maximum sizes, allowed regions.
+* These contracts are documented in a dedicated specification (see top-bar.md for the Top Bar and steps_panel.md for the Steps Panel).
 
 ### 7.4 When the layout changes
 Whenever the layout changes (new Module, split, window resize, visibility of lateral Areas), the Workspace:
 
-Recomputes the bounds of each Region.
-
-Repositions the Overlays.
-
-The Overlay is reactive.
+* Recomputes the bounds of each Region.
+* Repositions the Overlays.
+* The Overlay is reactive.
 
 ### 7.5 Other Overlays
-The Top Bar is a structural component, not an Overlay.
+The Top Bar is an Overlay managed by the OverlayManager, but it has a distinct lifecycle: it is always present when the Workspace is active.
 
 Future Overlays may include:
 
-Floating tool palettes.
-
-Context menus anchored to selection.
-
-Temporary informational panels.
+* Floating tool palettes.
+* Context menus anchored to selection.
+* Temporary informational panels.
+* The steps_panel (a flow-dependent Overlay, already specified).
 
 ### 7.6 Persistence
-The presence and configuration of Overlays are persisted in OverlayState, alongside the layout trees, inside the project file.
+The presence and configuration of flow-dependent Overlays (e.g., steps_panel) are persisted in OverlayState, alongside the layout trees, inside the project file.
+
+The Top Bar is structural and its presence is not persisted in OverlayState. However, its visibility state (shown/hidden) may be persisted in LayoutState if the user explicitly toggles it.
 
 
 
 
 ======================================================================
-FILE: docs\architecture\ui\workspace\folder_strututure\folder_structure.md
+FILE: docs\developer\testing.md
 ======================================================================
 
-```
-src/cranioz/
-├── ui/
-│   ├── main_window.py
-│   ├── workspace/
-│   │   ├── workspace.py
-│   │   ├── area.py
-│   │   ├── area_manager.py
-│   │   ├── placement.py
-│   │   ├── area_spec.py
-│   │   ├── editor_layout_spec.py
-│   │   ├── module_ui_spec.py
-│   │   ├── layout_tree.py
-│   │   ├── layout_builder.py
-│   │   ├── layout_renderer.py
-│   │   ├── layout_state.py
-│   │   ├── layout_io.py
-│   │   ├── region.py
-│   │   ├── overlay.py
-│   │   ├── overlay_manager.py
-│   │   ├── overlay_state.py
-│   │   └── structure/
-│   │       └── top_bar.py
-│   └── editors/
-│       ├── base_editor.py
-│       ├── editor_registry.py
-│       ├── editor_catalog.py
-│       ├── viewport_3d/
-│       │   ├── editor.py
-│       │   └── toolbar.py
-│       └── mpr_viewer/
-│           ├── editor.py
-│           └── toolbar.py
-│
-└── tools/
-    ├── contracts/
-    ├── registry.py
-    ├── catalog.py
-    └── builtin/
-        ├── selection/
-        ├── navigation/
-        ├── measurement/
-        └── ...
-```
-
-
-======================================================================
-FILE: docs\architecture\ui\workspace\implementation\workspace-implementation.md
-======================================================================
-
-# Workspace — Implementation Plan
-
-> **Status:** Draft
-> **Related:** [workspace.md](../architecture/workspace.md)
-> **Scope:** Phased implementation of the Workspace subsystem
-
----
+# Testing in CranioZ
 
 ## 1. Purpose
 
-This document describes **how** the Workspace described in
-[workspace.md](../architecture/workspace.md) is implemented, in which
-order, and with which milestones.
+This document describes how CranioZ is tested: the tools, the structure, the levels, the conventions, and the boundaries of what is and is not covered.
 
-Each phase:
-
-- Delivers a **testable** increment.
-- Has clear **acceptance criteria**.
-- Does not break the previous phase.
-- Can be reviewed and merged independently.
+It is intended for contributors who need to understand, extend, or review the test suite. It is not a tutorial on writing tests in general; it documents the specific decisions of this project.
 
 ---
 
-## 2. Guiding Principles
+## 2. Tools
 
-The implementation follows four rules:
+| Tool | Role |
+|---|---|
+| **pytest** | Test runner and assertion framework |
+| **pytest-qt** | Qt widget testing, `QApplication` lifecycle, signal waiting |
+| **pytest-cov** | Coverage measurement |
+| **pytest-benchmark** | Performance benchmarks (opt-in, not part of the default suite) |
+| **ruff** | Formatting, imports, style, and common lint errors |
+| **mypy** | Static type checking |
 
-1. **Vertical slices over horizontal layers.**
-   Each phase delivers a working vertical slice (UI + logic + test), not
-   "all models first, then all views".
+The three checks run in CI on every push:
 
-2. **No forward dependencies.**
-   A phase never depends on a phase that has not yet been completed.
-
-3. **Testable at every step.**
-   Every phase ships with tests proving it works.
-
-4. **Reversible decisions.**
-   If a decision turns out wrong, it can be changed without rewriting
-   previous phases.
-
----
-
-## 3. Phase Overview
-
-| Phase | Name | Status |
-|---|---|---|
-| 1 | Base Model | Not started |
-| 2 | Editor Host | Not started |
-| 3 | Editor Registry | Not started |
-| 4 | Layout Tree | Not started |
-| 5 | Layout Builder | Not started |
-| 6 | Layout Renderer | Not started |
-| 7 | Regions and Overlays | Not started |
-| 8 | Persistence | Not started |
-| 9 | Advanced Features | Not started |
-
-Each phase is independent and testable. Phases 1–4 have no external
-dependencies. Phases 5–8 require external subsystems (Scene, VTK,
-Project).
-
----
-
-## 4. External Dependencies
-
-Some phases depend on subsystems outside the Workspace.
-
-| Phase | Depends on | Notes |
-|---|---|---|
-| 1 | None | — |
-| 2 | None | — |
-| 3 | None | — |
-| 4 | None | — |
-| 5 | None | Only needs Phase 4 |
-| 6 | None | Only needs Phase 4 |
-| 7 | None | Only needs Phase 4 |
-| **8** | **Project** (minimal), **JSON schema** | Not yet implemented |
-| **9** | **Scene** (minimal), **VTK rendering** | Not yet implemented |
-
-**Implication:** Phase 8 and Phase 9 cannot be fully completed without
-coordinating with the Project and Scene subsystems.
-
-**Recommendation:** implement Phases 1–7 first (no external
-dependencies), then assess scope of Phases 8–9.
-
----
-
-## 5. Architectural Evolution
-
-The Workspace evolves by **adding capabilities**, not by changing the
-core model. The `LayoutTree` (N-ary split tree) is stable from Phase 4
-onward.
-
-### 5.1 Initial state
-
-```text
-+---------+--------------+---------+
-| LEFT    | CENTRAL      | RIGHT   |
-+---------+--------------+---------+
-| BOTTOM                            |
-+-----------------------------------+
+```bash
+ruff format --check .
+ruff check .
+mypy src
+pytest -q
 ```
 
-- Areas declared by `ModuleUISpec`.
-- Rendered via `QSplitter`.
-- No tabs, no floating, no drag-and-drop.
+A piece is green only when all four pass.
 
-**Purpose:** prove the concept, validate the API, run tests.
+## 3. Structure
+The test tree mirrors the source tree:
 
-### 5.2 Adding tab bars and module switching
+    src/cranioz/                      tests/
+    ├── domain/                       ├── unit/
+    │   ├── project/                  │   ├── domain/
+    │   │   ├── project.py            │   │   ├── project/
+    │   │   └── project_id.py         │   │   │   ├── test_project.py
+    │   └── patient/                  │   │   │   └── test_project_id.py
+    │       ├── enums/                │   │   └── patient/
+    │       ├── sections/             │   │       ├── enums/
+    │       └── patient.py            │   │       ├── sections/
+    ├── application/                  │   │       └── test_patient.py
+    │   └── project/                  │   ├── application/
+    │       ├── errors.py             │   │   └── project/
+    │       └── project_repository.py │   │       └── test_project_repository.py
+    ├── infrastructure/               │   └── infrastructure/
+    │   ├── app/                      │       ├── app/
+    │   │   └── app_path_resolver.py  │       │   └── test_app_path_resolver.py
+    │   └── project/                  │       └── project/
+    │       └── project_path_...py    │           └── test_project_path_...py
+    └── ui/                           ├── integration/
+        ├── editors/                  │   └── ui/
+        └── workspace/                │       └── workspace/
+                                      └── data/
+                                          └── fixtures/
 
-The Top Bar (Upper Panel Overlay) hosts module tabs. No change to the
-Workspace API.
 
-### 5.3 Adding toolbars and viewports
+Rule: a file foo.py in src/ has a corresponding test_foo.py in tests/ at the same relative path. A source file without a corresponding test file is a visible gap.
 
-Toolbars become `Editor`-internal chrome. Viewports become Editors.
-No change to the Workspace API.
+## 4. Levels
+### 4.1 Unit tests
 
-### 5.4 Adding arbitrary splits
+* **Location**: tests/unit/
+* **Scope:** a single isolated unit — a function, a class, a value object. No Qt, no I/O, no filesystem.
+* **Characteristics**: fast (milliseconds), independent, deterministic.
 
-- Splits can be nested arbitrarily.
-- Drag-and-drop between Leaves.
-- Floating Areas.
-- Custom trees.
+Examples:
 
-**None of these change the Workspace API.**
+* **test_project_id.py**: rejects empty values, equality by value, hashability.
+* **test_layout_tree.py**: LayoutTree.from_specs builds the correct tree from a list of AreaSpec.
+* **test_patient_identity.py**: rejects whitespace-only full_name, accepts photo_reference=None.
+
+### 4.2 Widget tests
+**Location**: tests/integration/ui/
+
+**Scope**: the behavior of an isolated Qt widget.
+
+**Characteristics**: use qtbot (which manages QApplication), slightly slower than unit tests.
+
+Examples:
+
+* test_area_widget.py: empty area shows placeholder, multi-editor area shows tabs, active_editor_changed is emitted on tab switch.
+* test_toolbar.py: clicking an action emits tool_triggered, toggling a ToggleTool changes state.
+
+### 4.3 Integration tests
+Location**: tests/integration/**
+
+**Scope**: the interaction between multiple components.
+
+**Characteristics**: combine two or three real components, frequently use qtbot, test the observable behavior of the system.
+
+Examples:
+
+* test_layout_builder.py: ModuleUISpec → LayoutBuilder.build() → BuildResult, including editor creation via EditorRegistry and tree construction.
+* test_workspace.py: load_spec materializes everything, clear removes everything, overlays are repositioned on layout change.
+
+## 5. Layer coverage
+Tests follow the architectural boundaries:
+
+    Layer	            Location	                                    What is validated
+    Domain	            tests/unit/domain/	                            Domain invariants (ProjectId non-empty, ProjectMetadata timezone ordering, cross-section rules in Patient)
+    Application	        tests/unit/application/	                        Application contracts (ProjectRepository Protocol, EventBus dispatch)
+    Infrastructure	    tests/unit/infrastructure/	                    Adapter behavior (AppPathResolver, ProjectPathResolver), using tmp_path
+    UI	                tests/unit/ui/ and tests/integration/ui/	    Widget behavior, layout composition, registry behavior
+    UI                  tests are the only tests that require QApplication. Any test that imports Qt is considered UI. Any test that does not can run in any environment.
+
+## 6. Fixtures
+Shared fixtures live in tests/conftest.py.
+
+### 6.1 qapp (session-scoped)
+
+    @pytest.fixture(scope="session")
+    def qapp() -> QApplication:
+        app = QApplication.instance()
+        if isinstance(app, QApplication):
+            return app
+        return QApplication([])
+
+Creating multiple QApplication instances breaks Qt. This fixture guarantees a single instance across the session.
+
+### 6.2 Function-scoped fixtures
+All other fixtures are function-scoped to guarantee a clean state per test:
+
+* **Factories (make_editor, make_area)**: build objects with sensible defaults so each test declares only the fields that matter.
+* **Registries (tool_registry, theme_service)**: pre-populated with default tools and services.
+* **Environment (workspace, area_manager)**: a functional instance ready for use.
+
+### 6.3 Temporary filesystem
+Tests that touch the filesystem use tmp_path (provided by pytest). No test touches the user's real home directory or real projects.
+
+## 7. Test conventions
+### 7.1 Arrange-Act-Assert
+Tests follow three explicit sections, separated by blank lines:
+
+    def test_patient_age_with_birthday_already_occurred() -> None:
+        # Arrange
+        patient = _patient(birth_date=date(1990, 5, 12))
+    
+        # Act
+        age = patient.age(at_date=date(2026, 6, 1))
+    
+        # Assert
+        assert age == 36
+
+
+### 7.2 One concept per test
+A test name with "and" is two tests. test_load_spec_builds_areas_and_registers_overlays should be split into test_load_spec_builds_areas and test_load_spec_registers_overlays. If one fails, the failure should point directly at the broken behavior.
+
+### 7.3 Test the contract, not the implementation
+A test must survive refactoring of private methods. It must break when the public contract changes.
+
+Tests do not import or inspect private attributes of the code under test. When a private attribute is referenced (for example, to verify that two extras dicts are distinct instances), the test explicitly documents the intent:
+
+
+    # We reach into the private attribute only in the test to prove
+    # the invariant; production code never does this.
+    extras_a = a.persistent_state()["extras"]
+    extras_b = b.persistent_state()["extras"]
+    assert extras_a is not extras_b
+
+### 7.4 Determinism
+time.sleep() is prohibited. Asynchronous behavior is tested with qtbot.waitSignal or qtbot.wait. No test depends on the system clock, the network, the order of test execution, or global state shared between tests.
+
+### 7.5 Frozen value objects
+Tests verify immutability using setattr with a variable attribute name, not with direct assignment:
+
+
+    def test_project_id_is_frozen() -> None:
+        pid = ProjectId("abc")
+        attr = "value"
+        with pytest.raises(dataclasses.FrozenInstanceError):
+            setattr(pid, attr, "other")
+This pattern satisfies both mypy (which would reject direct assignment to a frozen attribute) and ruff (which rejects setattr with a constant attribute name, B010).
+
+## 8. Contract tests
+Protocols (e.g., ProjectRepository) are not concrete classes and cannot be instantiated. To validate the contract, the tests define an in-memory reference implementation that satisfies the Protocol and exercises every documented rule.
+
+Examples:
+
+* ProjectRepository is a Protocol. InMemoryProjectRepository is the reference implementation. test_project_repository.py validates the contract against it: create raises ProjectAlreadyExists, get raises ProjectNotFound, list_metadata returns ProjectSummary (not Project), etc.
+* When the concrete implementation (FilesystemProjectRepository) is written, it is validated against the same contract tests. If it passes, it satisfies the Protocol.
+
+This is called a contract test: the test defines the expected behavior of any implementation, and every implementation is validated against it.
+
+## 9. Coverage
+Coverage is measured with pytest-cov but is not pursued uniformly.
+
+    Layer	                    Coverage target	                Rationale
+    Domain	                    High (>90%)	                    Dense pure logic, invariants, cross-section rules
+    Application	                High	                        Orchestration and contracts
+    Infrastructure	            Selective	                    Adapters, filesystem boundaries, error translation
+    UI (widgets)	            Integration-focused	            Widgets that compose other widgets; pixel-level assertions are out of scope
+    UI (workspace composition)	Integration-focused	            Layout composition, editor/area lifecycle
+
+Rule: if a behavior can be described in a sentence, it must have a test. Examples:
+
+* "PatientId rejects empty values." → test.
+* "LayoutBuilder creates editors from editor_ids." → test.
+* "The toolbar button is left-aligned." → not a test; design.
+
+## 10. Out of scope
+The following are intentionally not covered:
+
+* Visual design. Colors, spacing, alignment. No pixel-level tests.
+* Performance. pytest-benchmark measures specific hot paths; results are reviewed manually, not asserted.
+* External libraries. DICOM, VTK, OCCT, CGAL are tested upstream. CranioZ tests the adapters that wrap them.
+* Configuration content. ConfigurationLoader validates structure. The content of app.json, paths.json is reviewed manually.
+* Public API stability. The project is in active development. API stability tests will be introduced when external plugins exist.
+
+## 11. Definition of done
+A piece is considered tested when:
+
+* Every public behavior has a corresponding test.
+* The tests cover the documented invariants.
+* ruff format --check . passes.
+* ruff check . passes.
+* mypy src passes.
+* pytest -q passes.
+* No time.sleep() in the test suite.
+* No flaky tests.
+* No shared state between tests.
+* 
+A piece does not move to the next until these conditions hold.
+
+## 12. Why this matters
+CranioZ handles clinical data. A bug that corrupts a project can mean hours or days of lost surgical planning. A bug that miscalculates an osteotomy can mean a poorly planned surgery.
+
+The tests are the primary defense against regressions that affect clinicians and patients. A well-tested domain (Project, Patient, Scene) is the foundation on which the rest of the system — UI, flows, plugins — can evolve with confidence.
+
+The question is not whether coverage is 100%. It is whether the critical behaviors are protected. In CranioZ, that answer is built piece by piece, block by block.
+
+text
 
 ---
 
-## 6. Phase 1 — Base Model
-
-**Goal:** the core Workspace types exist and can be instantiated.
-
-### 6.1 Deliverables
-
-| File | Purpose |
-|---|---|
-| `ui/workspace/placement.py` | `Placement` enum |
-| `ui/workspace/area.py` | `Area` class (concrete, minimal) |
-| `ui/workspace/area_manager.py` | `AreaManager` |
-| `ui/workspace/area_spec.py` | `AreaSpec` dataclass |
-
-### 6.2 Acceptance criteria
-
-- [ ] `Placement` has `LEFT`, `CENTRAL`, `RIGHT`, `BOTTOM`.
-- [ ] `Area` has `id`, `title`, `visible`, `editor_host` (stub).
-- [ ] `Area` does **not** store `placement`.
-- [ ] `AreaManager` registers, unregisters, retrieves Areas.
-- [ ] Duplicate ID raises `ValueError` with clear message.
-
-### 6.3 Tests
-
-| Test | File | Type |
-|---|---|---|
-| `test_placement_enum_has_expected_members` | `tests/unit/ui/test_placement.py` | Unit |
-| `test_area_has_id_and_title` | `tests/unit/ui/test_area.py` | Widget |
-| `test_area_does_not_store_placement` | `tests/unit/ui/test_area.py` | Widget |
-| `test_area_manager_register` | `tests/unit/ui/test_area_manager.py` | Unit |
-| `test_area_manager_duplicate_id_raises` | `tests/unit/ui/test_area_manager.py` | Unit |
-| `test_area_manager_unregister` | `tests/unit/ui/test_area_manager.py` | Unit |
-
-### 6.4 Risks
-
-- **Qt platform plugin issues on Windows.** Mitigation: pin PySide6.
-- **Headless CI.** Mitigation: `QT_QPA_PLATFORM=offscreen`.
-
----
-
-## 7. Phase 2 — Editor Host
-
-**Goal:** `EditorHost` manages a list of Editors, with one active.
-
-### 7.1 Deliverables
-
-| File | Purpose |
-|---|---|
-| `ui/editors/base_editor.py` | `Editor` ABC |
-| `ui/editors/editor_host.py` | `EditorHost` |
-| `ui/workspace/area.py` | Extended: hosts an `EditorHost` |
-
-### 7.2 Acceptance criteria
-
-- [ ] `Editor` is abstract with `id`, `title`, `widget()`.
-- [ ] `EditorHost` can `add_editor`, `remove_editor`, `list_editors`.
-- [ ] `EditorHost` has an `active_editor` (only one at a time).
-- [ ] `EditorHost` shows tabs when ≥ 2 editors.
-- [ ] `EditorHost` shows no tabs when ≤ 1 editor.
-- [ ] `detach_editor` returns the editor without destroying it.
-
-### 7.3 Tests
-
-| Test | File | Type |
-|---|---|---|
-| `test_editor_is_abstract` | `tests/unit/ui/test_editor.py` | Unit |
-| `test_add_editor` | `tests/unit/ui/test_editor_host.py` | Widget |
-| `test_remove_editor` | `tests/unit/ui/test_editor_host.py` | Widget |
-| `test_set_active_editor` | `tests/unit/ui/test_editor_host.py` | Widget |
-| `test_detach_does_not_destroy_editor` | `tests/unit/ui/test_editor_host.py` | Widget |
-
----
-
-## 8. Phase 3 — Editor Registry
-
-**Goal:** `EditorRegistry` resolves `editor_id` to concrete Editor
-classes and creates instances.
-
-### 8.1 Deliverables
-
-| File | Purpose |
-|---|---|
-| `ui/editors/editor_registry.py` | `EditorRegistry` |
-
-### 8.2 Acceptance criteria
-
-- [ ] `register(editor_id, editor_type)` registers a class.
-- [ ] `resolve(editor_id)` returns the class.
-- [ ] `create(editor_id)` returns a new instance.
-- [ ] Resolving an unknown `editor_id` raises `KeyError`.
-
-### 8.3 Tests
-
-| Test | File | Type |
-|---|---|---|
-| `test_register_and_resolve` | `tests/unit/ui/test_editor_registry.py` | Unit |
-| `test_resolve_unknown_raises` | `tests/unit/ui/test_editor_registry.py` | Unit |
-| `test_create_returns_instance` | `tests/unit/ui/test_editor_registry.py` | Widget |
-
----
-
-## 9. Phase 4 — Layout Tree
-
-**Goal:** `LayoutTree` (N-ary split tree) can be built from `AreaSpec`
-lists.
-
-### 9.1 Deliverables
-
-| File | Purpose |
-|---|---|
-| `ui/workspace/layout_tree.py` | `LayoutTree`, `Leaf`, `Split`, `SplitDirection` |
-
-### 9.2 Acceptance criteria
-
-- [ ] `Leaf` contains exactly one `Area`.
-- [ ] `Split` has a direction and ≥ 2 children.
-- [ ] `LayoutTree.from_specs(specs, areas)` builds the correct tree.
-- [ ] `[central]` → `Leaf`.
-- [ ] `[left, central, right]` → `Split(HORIZONTAL)` with 3 children.
-- [ ] `[central, bottom]` → `Split(VERTICAL)`.
-- [ ] Spec without `CENTRAL` raises `ValueError`.
-
-### 9.3 Tests
-
-| Test | File | Type |
-|---|---|---|
-| `test_from_specs_single_central` | `tests/unit/ui/test_layout_tree.py` | Unit |
-| `test_from_specs_left_central_right` | `tests/unit/ui/test_layout_tree.py` | Unit |
-| `test_from_specs_with_bottom` | `tests/unit/ui/test_layout_tree.py` | Unit |
-| `test_from_specs_requires_central` | `tests/unit/ui/test_layout_tree.py` | Unit |
-| `test_to_dict_round_trip` | `tests/unit/ui/test_layout_tree.py` | Unit |
-
----
-
-## 10. Phase 5 — Layout Builder
-
-**Goal:** `LayoutBuilder` consumes a `ModuleUISpec` and produces a
-`LayoutTree`.
-
-### 10.1 Deliverables
-
-| File | Purpose |
-|---|---|
-| `ui/workspace/module_ui_spec.py` | `ModuleUISpec`, `AreaSpec` (extended) |
-| `ui/workspace/layout_builder.py` | `LayoutBuilder` |
-
-### 10.2 Acceptance criteria
-
-- [ ] `LayoutBuilder.build(spec, editor_registry)` returns a `LayoutTree`.
-- [ ] Resolves `editor_id` values via `EditorRegistry`.
-- [ ] Creates `Area` instances with `EditorHost` populated.
-- [ ] Rejects specs without `CENTRAL`.
-
-### 10.3 Tests
-
-| Test | File | Type |
-|---|---|---|
-| `test_build_single_central` | `tests/integration/ui/test_layout_builder.py` | Integration |
-| `test_build_left_central_right` | `tests/integration/ui/test_layout_builder.py` | Integration |
-| `test_build_creates_areas_with_editors` | `tests/integration/ui/test_layout_builder.py` | Integration |
-
----
-
-## 11. Phase 6 — Layout Renderer
-
-**Goal:** `LayoutRenderer` renders a `LayoutTree` into nested
-`QSplitter` widgets.
-
-### 11.1 Deliverables
-
-| File | Purpose |
-|---|---|
-| `ui/workspace/layout_renderer.py` | `LayoutRenderer` |
-
-### 11.2 Acceptance criteria
-
-- [ ] `Leaf` renders as the `Area` widget.
-- [ ] `Split` renders as a `QSplitter` (H or V).
-- [ ] Renderer keeps a cache of widgets (`split_widgets`, `area_widgets`).
-- [ ] Cache is rebuildable from the tree.
-- [ ] Renderer never invents structure.
-
-### 11.3 Tests
-
-| Test | File | Type |
-|---|---|---|
-| `test_render_single_area` | `tests/integration/ui/test_layout_renderer.py` | Integration |
-| `test_render_split_horizontal` | `tests/integration/ui/test_layout_renderer.py` | Integration |
-| `test_render_split_vertical` | `tests/integration/ui/test_layout_renderer.py` | Integration |
-| `test_cache_rebuildable` | `tests/integration/ui/test_layout_renderer.py` | Integration |
-
----
-
-## 12. Phase 7 — Regions and Overlays
-
-**Goal:** `Region` derived from the tree; `Overlay` positions itself
-over a Region.
-
-### 12.1 Deliverables
-
-| File | Purpose |
-|---|---|
-| `ui/workspace/region.py` | `Region` |
-| `ui/workspace/overlay.py` | `Overlay` ABC |
-| `ui/workspace/overlay_manager.py` | `OverlayManager` |
-| `ui/workspace/top_overlay.py` | `TopOverlay` (Upper Panel) |
-
-### 12.2 Acceptance criteria
-
-- [ ] `LayoutTree.find_regions()` returns geometric regions.
-- [ ] `Region.bounds` computed from rendered Areas.
-- [ ] `OverlayManager.register` adds an Overlay.
-- [ ] `TopOverlay` positions over `Region.CENTRAL`.
-- [ ] Overlays reposition on layout change.
-
-### 12.3 Tests
-
-| Test | File | Type |
-|---|---|---|
-| `test_find_regions_single_central` | `tests/unit/ui/test_region.py` | Unit |
-| `test_find_regions_left_central_right` | `tests/unit/ui/test_region.py` | Unit |
-| `test_overlay_registers` | `tests/unit/ui/test_overlay.py` | Unit |
-| `test_top_overlay_positions_over_central` | `tests/integration/ui/test_overlay.py` | Integration |
-| `test_overlay_repositions_on_layout_change` | `tests/integration/ui/test_overlay.py` | Integration |
-
----
-
-## 13. Phase 8 — Persistence
-
-**Goal:** the `LayoutTree` serializes to JSON and deserializes back.
-
-### 13.1 External dependency
-
-- A minimal `Project` model (JSON file with metadata).
-- A JSON schema versioning system.
-
-### 13.2 Deliverables
-
-| File | Purpose |
-|---|---|
-| `ui/workspace/layout_io.py` | Serialize / deserialize layout |
-| `infrastructure/persistence/json/project_io.py` | Project file I/O |
-
-### 13.3 Acceptance criteria
-
-- [ ] Layout serializes to JSON.
-- [ ] Layout deserializes from JSON.
-- [ ] Round-trip preserves all Areas.
-- [ ] Unknown Areas are ignored with a warning.
-- [ ] Malformed JSON raises `ValueError` with clear message.
-
-### 13.4 Tests
-
-| Test | File | Type |
-|---|---|---|
-| `test_layout_serialization` | `tests/unit/ui/test_layout_io.py` | Unit |
-| `test_layout_deserialization` | `tests/unit/ui/test_layout_io.py` | Unit |
-| `test_layout_round_trip` | `tests/integration/ui/test_layout_io.py` | Integration |
-| `test_layout_ignores_unknown_areas` | `tests/integration/ui/test_layout_io.py` | Integration |
-| `test_layout_malformed_json_raises` | `tests/unit/ui/test_layout_io.py` | Unit |
-
-### 13.5 Risks
-
-**Medium.** Requires a Project subsystem that does not exist yet.
-
-**Mitigation:** implement a minimal `Project` model. Full model later.
-
----
-
-## 14. Phase 9 — Advanced Features
-
-**Goal:** power-user layout features.
-
-### 14.1 Deliverables
-
-| Feature | Purpose |
-|---|---|
-| Drag-and-drop between Leaves | Move Areas interactively |
-| Floating Areas | Detach Areas to separate windows |
-| Multi-monitor support | Remember position per monitor |
-| Custom trees | User-defined arrangements |
-| Tree presets per Flow | Different trees per clinical flow |
-
-### 14.2 Acceptance criteria
-
-- [ ] User can drag an Area from one Leaf to another.
-- [ ] User can detach an Area into a floating window.
-- [ ] Floating window position is remembered per monitor.
-- [ ] User can save the current tree as a preset.
-
----
-
-## 15. Dependencies Between Phases
-
-```text
-Phase 1 (Base Model)
-    |
-    v
-Phase 2 (Editor Host)
-    |
-    v
-Phase 3 (Editor Registry)
-    |
-    v
-Phase 4 (Layout Tree)
-    |
-    +----------------+----------------+
-    |                                   |
-    v                                   v
-Phase 5 (Layout Builder)          Phase 6 (Layout Renderer)
-    |                                   |
-    +----------------+------------------+
-                     |
-                     v
-              Phase 7 (Regions and Overlays)
-                     |
-                     v
-              Phase 8 (Persistence)
-                     |
-                     v
-              Phase 9 (Advanced Features)
+## Passo 3 — Validar
+
+O arquivo é Markdown puro, sem código Python, então `ruff`, `mypy` e `pytest` não são afetados. Mas vale confirmar que nada quebrou:
+
+```bash
+.venv\Scripts\python.exe -m ruff check .
+.venv\Scripts\python.exe -m mypy src
+.venv\Scripts\python.exe -m pytest -q
+Esperado: tudo verde, 620 passed.
 ```
+#### Passo 4 — Commit
 
-Phases 5 and 6 can be developed in parallel if dependencies allow.
+    git status
+    git add docs/developer/testing.md
+    git commit -m "docs(developer): add testing guide"
+    git log --oneline -3
+    Mensagem sugerida:
 
----
 
-## 16. Testing Strategy Summary
-
-| Level | Tool | Coverage |
-|---|---|---|
-| Unit | pytest | Models, layout logic, IO |
-| Widget | pytest-qt | Areas, Workspace, Editors |
-| Integration | pytest-qt | Registration, layout, persistence |
-| Visual | (later) | Regression screenshots |
-
-**Target coverage:** ≥ 80% for `ui/workspace/`.
-
-See [workspace-testing.md](../workspace-testing.md) for details.
-
----
-
-## 17. Definition of Done
-
-A phase is considered **done** when:
-
-- [ ] All deliverables are implemented.
-- [ ] All acceptance criteria pass.
-- [ ] All tests pass in CI.
-- [ ] Code is reviewed.
-- [ ] Documentation is updated.
-- [ ] CHANGELOG has an entry.
-- [ ] An ADR is written if the phase introduces an architectural
-  decision.
-
----
-
-## 18. Milestones
-
-| Milestone | Phases | Notes |
-|---|---|---|
-| M1 — Base model runs | Phase 1 | Core types exist. |
-| M2 — EditorHost works | Phases 2, 3 | Editors and registry. |
-| M3 — Layout tree builds | Phase 4 | `LayoutTree.from_specs` works. |
-| M4 — Module spec builds UI | Phase 5 | `LayoutBuilder` works. |
-| M5 — Tree renders as Qt | Phase 6 | `LayoutRenderer` works. |
-| M6 — Overlays position | Phase 7 | Regions and TopOverlay. |
-| M7 — Layout persists | Phase 8 | JSON round-trip. |
-| M8 — Power-user layout | Phase 9 | Drag-and-drop, floating, multi-monitor. |
-
-Each milestone is a natural stopping point. The Workspace is usable at
-every milestone from M1 onward.
-
----
-
-## 19. Recommendations
-
-Given the scope:
-
-1. **Implement Phases 1–7 first.** They have no external dependencies
-   (except Qt/PySide6) and give a fully functional Workspace.
-2. **Stub Phase 8 if needed.** Implement a minimal `Project` model to
-   allow persistence without the full Project subsystem.
-3. **Defer Phase 9.** Advanced features (drag-and-drop, floating)
-   require significant UX design and should be added after the core
-   is stable.
-
----
-
-## 20. Open Questions
-
-### 20.1 Should the `LayoutRenderer` be stateless or stateful?
-
-**Option A:** Stateless — pure function `tree → widget`.
-**Option B:** Stateful — keeps a cache of widgets for re-use.
-
-**Current lean:** Option B. Keeps a cache, but the cache is
-rebuildable from the tree at any time.
-
-### 20.2 How to test floating Areas in CI?
-
-Headless CI environments do not have multiple monitors.
-
-**Current lean:** mock the screen geometry, test window flags instead
-of actual positions.
-
-### 20.3 Should Editor swap animation be added?
-
-**Option A:** Yes — fade or slide transition.
-**Option B:** No — instant swap.
-
-**Current lean:** Option B.
-
-### 20.4 Should Phase 8 block the initial release?
-
-**Option A:** Yes — persistence is required for a usable release.
-**Option B:** No — the Workspace can ship without persistence;
-persistence is added in a later phase.
-
-**Current lean:** Option B.
-
-### 20.5 Should `LayoutBuilder` and `LayoutRenderer` be merged?
-
-**Option A:** Keep separate — build is a pure data operation; render
-is a UI operation.
-**Option B:** Merge into one class.
-
-**Current lean:** Option A. Separate responsibilities.
+    docs(developer): add testing guide
+    
+    - Document tools (pytest, pytest-qt, ruff, mypy)
+      - Document test structure (mirrors src/)
+      - Document levels (unit, widget, integration)
+      - Document layer coverage
+      - Document fixtures and conventions
+      - Document contract tests and out-of-scope items
+      - Document definition of done
 
 

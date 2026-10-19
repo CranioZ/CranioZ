@@ -179,8 +179,7 @@ exclude = [
     ".mypy_cache",
     ".ruff_cache",
     ".pytest_cache",
-    "tools/code_packer",
-    "tools/folder_tree",
+    "tools",              # internal packaging tools, not part of the product
 ]
 
 [tool.ruff.lint]
@@ -205,7 +204,7 @@ ignore = [
     "PLR2004",  # magic value comparison (common in thresholds)
     "SIM108",   # ternary (not always clearer)
     "PLR6301",  # no-self-use
-    "N818",
+    "N818",     # exception names: AppPathInaccessible/ProjectPathInaccessible are internal
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -254,6 +253,7 @@ exclude = [
     "dist/",
     ".venv/",
     "venv/",
+    "tools/",
 ]
 
 # Third-party libs without stubs
@@ -313,7 +313,7 @@ omit = [
 source = ["src/cranioz"]
 
 [tool.coverage.report]
-# fail_under = 80   # descomentar quando atingir 80% (PDF exige ≥80% no Core)
+# fail_under = 80   # enable when ≥80% coverage is reached (PDF requires ≥80% in Core)
 exclude_lines = [
     "pragma: no cover",
     "if TYPE_CHECKING:",

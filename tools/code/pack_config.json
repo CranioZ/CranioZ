@@ -1,7 +1,16 @@
 {
     "root_dir": "C:/CranioZ",
-    "output_file": "cranioZ_code.txt",
+    "output_file": "cranioz_code.txt",
     "selected_dirs": [
+        ".benchmarks",
+        ".mypy_cache",
+        ".mypy_cache\\3.12",
+        ".pytest_cache",
+        ".pytest_cache\\v",
+        ".pytest_cache\\v\\cache",
+        ".ruff_cache",
+        ".ruff_cache\\0.16.9",
+        "scripts",
         "src",
         "src\\cranioz",
         "src\\cranioz\\application",
@@ -87,5 +96,10 @@
         "tests\\unit\\ui\\workspace\\layout",
         "tests\\unit\\ui\\workspace\\overlays",
         "tests\\unit\\ui\\workspace\\specs"
+    ],
+    "extensions": [
+        ".py",
+        ".ui",
+        ".md"
     ]
 }

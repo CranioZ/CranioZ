@@ -1,6 +1,191 @@
 
 ======================================================================
-FILE: src\cranioz\__init__.py
+FILE: .pytest_cache/README.md
+======================================================================
+
+# pytest cache directory #
+
+This directory contains data from the pytest's cache plugin,
+which provides the `--lf` and `--ff` options, as well as the `cache` fixture.
+
+**Do not** commit this to version control.
+
+See [the docs](https://docs.pytest.org/en/stable/how-to/cache.html) for more information.
+
+
+
+======================================================================
+FILE: scripts/debug_workspace.py
+======================================================================
+
+"""Debug script: launch the Workspace with a fake ModuleUISpec.
+
+This script is a development tool. It is NOT part of production.
+
+It builds a Workspace with:
+
+- A fake EditorRegistry populated with DummyEditor instances.
+- A ToolRegistry with LogTool and ToggleTool.
+- A ThemeService (dark).
+- A ModuleUISpec that mirrors a typical clinical layout:
+    LEFT     -> object_list
+    CENTRAL  -> viewport_3d | (mpr_axial / mpr_sagittal)
+    RIGHT    -> properties
+    BOTTOM   -> console
+
+The Workspace is created with ``debug_colors=True`` so that each
+Area has a soft background color that makes its boundary visible:
+
+    LEFT     -> soft blue
+    CENTRAL  -> soft green
+    RIGHT    -> soft yellow
+    BOTTOM   -> soft lavender
+
+The TopOverlay is registered automatically by the Workspace and
+will be positioned over the Central Region. During debug it is
+painted red so it becomes visible.
+
+Run with:
+
+    .venv\\Scripts\\python.exe scripts\\debug_workspace.py
+
+Close the window to exit.
+"""
+
+from __future__ import annotations
+
+import sys
+
+from PySide6.QtWidgets import QApplication, QMainWindow
+
+from cranioz.ui.editors.builtin.test_editor import DummyEditor
+from cranioz.ui.editors.editor_registry import EditorRegistry
+from cranioz.ui.theme.service import ThemeName, ThemeService
+from cranioz.ui.tools.builtin.log_tool import LogTool
+from cranioz.ui.tools.builtin.toggle_tool import ToggleTool
+from cranioz.ui.tools.registry.tool_registry import ToolRegistry
+from cranioz.ui.workspace.areas.placement import Placement
+from cranioz.ui.workspace.specs.area_spec import AreaSpec
+from cranioz.ui.workspace.specs.editor_layout_spec import (
+    EditorLayoutSpec,
+    SplitDirection,
+)
+from cranioz.ui.workspace.specs.module_ui_spec import ModuleUISpec
+from cranioz.ui.workspace.workspace import Workspace
+
+# ----- Editor registry ----------------------------------------------
+
+
+def build_editor_registry() -> EditorRegistry:
+    """Register DummyEditor under several editor_ids.
+
+    A single DummyEditor class is registered under several ids so
+    that the LayoutBuilder can create independent instances for
+    each slot. This mirrors the future reality where several
+    concrete Editor classes will be registered under distinct ids.
+    """
+    registry = EditorRegistry()
+    for editor_id in (
+        "editor.viewport_3d",
+        "editor.mpr_axial",
+        "editor.mpr_sagittal",
+        "editor.object_list",
+        "editor.properties",
+        "editor.console",
+    ):
+        registry.register(editor_id, DummyEditor)
+    return registry
+
+
+# ----- Tool registry ------------------------------------------------
+
+
+def build_tool_registry() -> ToolRegistry:
+    registry = ToolRegistry()
+    registry.register("tool.log", LogTool)
+    registry.register("tool.toggle", ToggleTool)
+    return registry
+
+
+# ----- ModuleUISpec -------------------------------------------------
+
+
+def build_spec() -> ModuleUISpec:
+    """Build a ModuleUISpec that mirrors the prototype layout."""
+    return ModuleUISpec(
+        areas=(
+            AreaSpec(
+                area_id="area.left",
+                title="Lists",
+                placement=Placement.LEFT,
+                editor_layout=EditorLayoutSpec.leaf("editor.object_list"),
+            ),
+            AreaSpec(
+                area_id="area.central",
+                title="Editing",
+                placement=Placement.CENTRAL,
+                editor_layout=EditorLayoutSpec.split(
+                    SplitDirection.HORIZONTAL,
+                    (
+                        EditorLayoutSpec.leaf("editor.viewport_3d"),
+                        EditorLayoutSpec.split(
+                            SplitDirection.VERTICAL,
+                            (
+                                EditorLayoutSpec.leaf("editor.mpr_axial"),
+                                EditorLayoutSpec.leaf("editor.mpr_sagittal"),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+            AreaSpec(
+                area_id="area.right",
+                title="Tools",
+                placement=Placement.RIGHT,
+                editor_layout=EditorLayoutSpec.leaf("editor.properties"),
+            ),
+            AreaSpec(
+                area_id="area.bottom",
+                title="Console",
+                placement=Placement.BOTTOM,
+                editor_layout=EditorLayoutSpec.leaf("editor.console"),
+            ),
+        ),
+    )
+
+
+# ----- Main ---------------------------------------------------------
+
+
+def main() -> int:
+    app = QApplication.instance() or QApplication([])
+
+    app.setStyle("Fusion")
+
+    workspace = Workspace(
+        editor_registry=build_editor_registry(),
+        tool_registry=build_tool_registry(),
+        theme_service=ThemeService(theme=ThemeName.DARK),
+        debug_colors=True,
+    )
+    workspace.load_spec(build_spec())
+
+    window = QMainWindow()
+    window.setWindowTitle("CranioZ — Workspace debug")
+    window.setCentralWidget(workspace)
+    window.resize(1280, 800)
+    window.show()
+
+    return app.exec()
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+
+
+
+======================================================================
+FILE: src/cranioz/__init__.py
 ======================================================================
 
 """CranioZ — virtual surgical planning for cranio-maxillofacial surgery.
@@ -31,7 +216,7 @@ __all__ = [
 
 
 ======================================================================
-FILE: src\cranioz\__main__.py
+FILE: src/cranioz/__main__.py
 ======================================================================
 
 """CranioZ application entry point.
@@ -98,7 +283,7 @@ if __name__ == "__main__":
 
 
 ======================================================================
-FILE: src\cranioz\application\event_bus.py
+FILE: src/cranioz/application/event_bus.py
 ======================================================================
 
 """Application event bus.
@@ -177,21 +362,21 @@ class EventBus:
 
 
 ======================================================================
-FILE: src\cranioz\application\__init__.py
+FILE: src/cranioz/application/__init__.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\assets\__init__.py
+FILE: src/cranioz/assets/__init__.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\config\loader.py
+FILE: src/cranioz/config/loader.py
 ======================================================================
 
 """ConfigurationLoader.
@@ -252,7 +437,7 @@ class ConfigurationLoader:
 
 
 ======================================================================
-FILE: src\cranioz\config\migration.py
+FILE: src/cranioz/config/migration.py
 ======================================================================
 
 """Configuration schema migration.
@@ -290,7 +475,7 @@ class ConfigMigrator:
 
 
 ======================================================================
-FILE: src\cranioz\config\schema.py
+FILE: src/cranioz/config/schema.py
 ======================================================================
 
 """Configuration schema and validation.
@@ -383,21 +568,21 @@ def build_config(app_data: dict[str, Any], paths_data: dict[str, Any]) -> Config
 
 
 ======================================================================
-FILE: src\cranioz\config\__init__.py
+FILE: src/cranioz/config/__init__.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\domain\__init__.py
+FILE: src/cranioz/domain/__init__.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\domain\patient\patient.py
+FILE: src/cranioz/domain/patient/patient.py
 ======================================================================
 
 """Patient.
@@ -588,7 +773,7 @@ class Patient:
 
 
 ======================================================================
-FILE: src\cranioz\domain\patient\patient_summary.py
+FILE: src/cranioz/domain/patient/patient_summary.py
 ======================================================================
 
 """PatientSummary.
@@ -645,7 +830,7 @@ class PatientSummary:
 
 
 ======================================================================
-FILE: src\cranioz\domain\patient\__init__.py
+FILE: src/cranioz/domain/patient/__init__.py
 ======================================================================
 
 """Patient domain.
@@ -741,7 +926,7 @@ __all__ = [
 
 
 ======================================================================
-FILE: src\cranioz\domain\patient\enums\blood_type.py
+FILE: src/cranioz/domain/patient/enums/blood_type.py
 ======================================================================
 
 """BloodType.
@@ -789,7 +974,7 @@ class BloodType(Enum):
 
 
 ======================================================================
-FILE: src\cranioz\domain\patient\enums\comorbidity_category.py
+FILE: src/cranioz/domain/patient/enums/comorbidity_category.py
 ======================================================================
 
 """ComorbidityCategory.
@@ -844,7 +1029,7 @@ class ComorbidityCategory(Enum):
 
 
 ======================================================================
-FILE: src\cranioz\domain\patient\enums\document_type.py
+FILE: src/cranioz/domain/patient/enums/document_type.py
 ======================================================================
 
 """DocumentType.
@@ -896,7 +1081,7 @@ class DocumentType(Enum):
 
 
 ======================================================================
-FILE: src\cranioz\domain\patient\enums\patient_race.py
+FILE: src/cranioz/domain/patient/enums/patient_race.py
 ======================================================================
 
 """PatientRace.
@@ -937,7 +1122,7 @@ class PatientRace(Enum):
 
 
 ======================================================================
-FILE: src\cranioz\domain\patient\enums\patient_sex.py
+FILE: src/cranioz/domain/patient/enums/patient_sex.py
 ======================================================================
 
 """PatientSex.
@@ -975,7 +1160,7 @@ class PatientSex(Enum):
 
 
 ======================================================================
-FILE: src\cranioz\domain\patient\enums\phone_kind.py
+FILE: src/cranioz/domain/patient/enums/phone_kind.py
 ======================================================================
 
 """PhoneKind.
@@ -1015,7 +1200,7 @@ class PhoneKind(Enum):
 
 
 ======================================================================
-FILE: src\cranioz\domain\patient\enums\__init__.py
+FILE: src/cranioz/domain/patient/enums/__init__.py
 ======================================================================
 
 """Enums of the Patient domain."""
@@ -1023,7 +1208,7 @@ FILE: src\cranioz\domain\patient\enums\__init__.py
 
 
 ======================================================================
-FILE: src\cranioz\domain\patient\sections\address.py
+FILE: src/cranioz/domain/patient/sections/address.py
 ======================================================================
 
 """PatientAddress (§4 Endereço).
@@ -1059,7 +1244,7 @@ class PatientAddress:
 
 
 ======================================================================
-FILE: src\cranioz\domain\patient\sections\antecedents.py
+FILE: src/cranioz/domain/patient/sections/antecedents.py
 ======================================================================
 
 """PatientAntecedents (§8 Antecedentes).
@@ -1111,7 +1296,7 @@ class PatientAntecedents:
 
 
 ======================================================================
-FILE: src\cranioz\domain\patient\sections\comorbidities.py
+FILE: src/cranioz/domain/patient/sections/comorbidities.py
 ======================================================================
 
 """PatientComorbidities (§6 Comorbidades).
@@ -1154,7 +1339,7 @@ class PatientComorbidities:
 
 
 ======================================================================
-FILE: src\cranioz\domain\patient\sections\complaint.py
+FILE: src/cranioz/domain/patient/sections/complaint.py
 ======================================================================
 
 """PatientComplaint (§5 Queixa e História).
@@ -1185,7 +1370,7 @@ class PatientComplaint:
 
 
 ======================================================================
-FILE: src\cranioz\domain\patient\sections\documents.py
+FILE: src/cranioz/domain/patient/sections/documents.py
 ======================================================================
 
 """PatientDocuments (§2 Documentos e Contato).
@@ -1288,7 +1473,7 @@ class PatientDocuments:
 
 
 ======================================================================
-FILE: src\cranioz\domain\patient\sections\filiation.py
+FILE: src/cranioz/domain/patient/sections/filiation.py
 ======================================================================
 
 """PatientFiliation (§3 Filiação).
@@ -1323,7 +1508,7 @@ class PatientFiliation:
 
 
 ======================================================================
-FILE: src\cranioz\domain\patient\sections\habits.py
+FILE: src/cranioz/domain/patient/sections/habits.py
 ======================================================================
 
 """PatientHabits.
@@ -1356,7 +1541,7 @@ class PatientHabits:
 
 
 ======================================================================
-FILE: src\cranioz\domain\patient\sections\identity.py
+FILE: src/cranioz/domain/patient/sections/identity.py
 ======================================================================
 
 """PatientIdentity (§1 Identificação).
@@ -1430,7 +1615,7 @@ class PatientIdentity:
 
 
 ======================================================================
-FILE: src\cranioz\domain\patient\sections\medications.py
+FILE: src/cranioz/domain/patient/sections/medications.py
 ======================================================================
 
 """PatientMedications (§7 Medicamentos e Alergias).
@@ -1465,7 +1650,7 @@ class PatientMedications:
 
 
 ======================================================================
-FILE: src\cranioz\domain\patient\sections\__init__.py
+FILE: src/cranioz/domain/patient/sections/__init__.py
 ======================================================================
 
 """
@@ -1488,7 +1673,7 @@ record, as defined by ADR-0004:
 
 
 ======================================================================
-FILE: src\cranioz\domain\patient\value_objects\patient_id.py
+FILE: src/cranioz/domain/patient/value_objects/patient_id.py
 ======================================================================
 
 """PatientId.
@@ -1531,7 +1716,7 @@ class PatientId:
 
 
 ======================================================================
-FILE: src\cranioz\domain\patient\value_objects\phone_number.py
+FILE: src/cranioz/domain/patient/value_objects/phone_number.py
 ======================================================================
 
 """PhoneNumber.
@@ -1575,7 +1760,7 @@ class PhoneNumber:
 
 
 ======================================================================
-FILE: src\cranioz\domain\patient\value_objects\__init__.py
+FILE: src/cranioz/domain/patient/value_objects/__init__.py
 ======================================================================
 
 """Value objects of the Patient domain that are not section records."""
@@ -1583,7 +1768,7 @@ FILE: src\cranioz\domain\patient\value_objects\__init__.py
 
 
 ======================================================================
-FILE: src\cranioz\domain\project\project.py
+FILE: src/cranioz/domain/project/project.py
 ======================================================================
 
 """Project.
@@ -1666,7 +1851,7 @@ class Project:
 
 
 ======================================================================
-FILE: src\cranioz\domain\project\project_id.py
+FILE: src/cranioz/domain/project/project_id.py
 ======================================================================
 
 """ProjectId.
@@ -1709,7 +1894,7 @@ class ProjectId:
 
 
 ======================================================================
-FILE: src\cranioz\domain\project\project_metadata.py
+FILE: src/cranioz/domain/project/project_metadata.py
 ======================================================================
 
 """ProjectMetadata.
@@ -1826,7 +2011,7 @@ class ProjectMetadata:
 
 
 ======================================================================
-FILE: src\cranioz\domain\project\project_status.py
+FILE: src/cranioz/domain/project/project_status.py
 ======================================================================
 
 """ProjectStatus.
@@ -1861,7 +2046,7 @@ class ProjectStatus(Enum):
 
 
 ======================================================================
-FILE: src\cranioz\domain\project\project_summary.py
+FILE: src/cranioz/domain/project/project_summary.py
 ======================================================================
 
 """ProjectSummary.
@@ -1930,7 +2115,7 @@ class ProjectSummary:
 
 
 ======================================================================
-FILE: src\cranioz\domain\project\__init__.py
+FILE: src/cranioz/domain/project/__init__.py
 ======================================================================
 
 """Project domain.
@@ -1964,14 +2149,14 @@ __all__ = [
 
 
 ======================================================================
-FILE: src\cranioz\infrastructure\__init__.py
+FILE: src/cranioz/infrastructure/__init__.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\infrastructure\app\app_path_resolver.py
+FILE: src/cranioz/infrastructure/app/app_path_resolver.py
 ======================================================================
 
 """AppPathResolver.
@@ -2166,14 +2351,14 @@ class AppPathResolver:
 
 
 ======================================================================
-FILE: src\cranioz\infrastructure\app\__init__.py
+FILE: src/cranioz/infrastructure/app/__init__.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\infrastructure\i18n\catalog_loader.py
+FILE: src/cranioz/infrastructure/i18n/catalog_loader.py
 ======================================================================
 
 """CatalogLoader.
@@ -2269,7 +2454,7 @@ class CatalogLoader:
 
 
 ======================================================================
-FILE: src\cranioz\infrastructure\i18n\catalog_registry.py
+FILE: src/cranioz/infrastructure/i18n/catalog_registry.py
 ======================================================================
 
 """TranslationCatalogRegistry.
@@ -2367,7 +2552,7 @@ class TranslationCatalogRegistry:
 
 
 ======================================================================
-FILE: src\cranioz\infrastructure\i18n\instance.py
+FILE: src/cranioz/infrastructure/i18n/instance.py
 ======================================================================
 
 """Global TranslationService instance (controlled singleton).
@@ -2437,7 +2622,7 @@ def reset() -> None:
 
 
 ======================================================================
-FILE: src\cranioz\infrastructure\i18n\translation_service.py
+FILE: src/cranioz/infrastructure/i18n/translation_service.py
 ======================================================================
 
 """TranslationService.
@@ -2678,7 +2863,7 @@ class IdentityTranslationService:
 
 
 ======================================================================
-FILE: src\cranioz\infrastructure\i18n\__init__.py
+FILE: src/cranioz/infrastructure/i18n/__init__.py
 ======================================================================
 
 """CranioZ internationalization (i18n) infrastructure.
@@ -2734,7 +2919,7 @@ def tr(key: str, source_text: str, **params: Any) -> str:
 
 
 ======================================================================
-FILE: src\cranioz\infrastructure\project\project_path_resolver.py
+FILE: src/cranioz/infrastructure/project/project_path_resolver.py
 ======================================================================
 
 """ProjectPathResolver.
@@ -2944,7 +3129,7 @@ class ProjectPathResolver:
 
 
 ======================================================================
-FILE: src\cranioz\infrastructure\project\__init__.py
+FILE: src/cranioz/infrastructure/project/__init__.py
 ======================================================================
 
 
@@ -2952,140 +3137,140 @@ FILE: src\cranioz\infrastructure\project\__init__.py
 
 
 ======================================================================
-FILE: src\cranioz\modules\__init__.py
+FILE: src/cranioz/modules/__init__.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\modules\base\module.py
+FILE: src/cranioz/modules/base/module.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\modules\base\module_context.py
+FILE: src/cranioz/modules/base/module_context.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\modules\base\module_manifest.py
+FILE: src/cranioz/modules/base/module_manifest.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\modules\base\__init__.py
+FILE: src/cranioz/modules/base/__init__.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\modules\builtin\__init__.py
+FILE: src/cranioz/modules/builtin/__init__.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\modules\builtin\test_modules\central_split.py
+FILE: src/cranioz/modules/builtin/test_modules/central_split.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\modules\builtin\test_modules\four_areas.py
+FILE: src/cranioz/modules/builtin/test_modules/four_areas.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\modules\builtin\test_modules\left_central_right.py
+FILE: src/cranioz/modules/builtin/test_modules/left_central_right.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\modules\builtin\test_modules\no_central.py
+FILE: src/cranioz/modules/builtin/test_modules/no_central.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\modules\builtin\test_modules\single.py
+FILE: src/cranioz/modules/builtin/test_modules/single.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\modules\builtin\test_modules\__init__.py
+FILE: src/cranioz/modules/builtin/test_modules/__init__.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\modules\loader\module_loader.py
+FILE: src/cranioz/modules/loader/module_loader.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\modules\loader\__init__.py
+FILE: src/cranioz/modules/loader/__init__.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\modules\registry\module_registry.py
+FILE: src/cranioz/modules/registry/module_registry.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\modules\registry\__init__.py
+FILE: src/cranioz/modules/registry/__init__.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\settings\preferences.py
+FILE: src/cranioz/settings/preferences.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\settings\__init__.py
+FILE: src/cranioz/settings/__init__.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\ui\__init__.py
+FILE: src/cranioz/ui/__init__.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\ui\editors\base_editor.py
+FILE: src/cranioz/ui/editors/base_editor.py
 ======================================================================
 
 """Editor ABC.
@@ -3160,14 +3345,14 @@ class Editor(ABC):
 
 
 ======================================================================
-FILE: src\cranioz\ui\editors\editor_catalog.py
+FILE: src/cranioz/ui/editors/editor_catalog.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\ui\editors\editor_context.py
+FILE: src/cranioz/ui/editors/editor_context.py
 ======================================================================
 
 """EditorContext.
@@ -3195,14 +3380,14 @@ class EditorContext:
 
 
 ======================================================================
-FILE: src\cranioz\ui\editors\editor_manifest.py
+FILE: src/cranioz/ui/editors/editor_manifest.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\ui\editors\editor_registry.py
+FILE: src/cranioz/ui/editors/editor_registry.py
 ======================================================================
 
 """EditorRegistry.
@@ -3299,14 +3484,14 @@ class EditorRegistry:
 
 
 ======================================================================
-FILE: src\cranioz\ui\editors\__init__.py
+FILE: src/cranioz/ui/editors/__init__.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\ui\editors\builtin\test_editor.py
+FILE: src/cranioz/ui/editors/builtin/test_editor.py
 ======================================================================
 
 """DummyEditor.
@@ -3402,35 +3587,35 @@ class DummyEditor(Editor):
 
 
 ======================================================================
-FILE: src\cranioz\ui\editors\builtin\__init__.py
+FILE: src/cranioz/ui/editors/builtin/__init__.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\ui\editors\overlays\__init__.py
+FILE: src/cranioz/ui/editors/overlays/__init__.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\ui\editors\overlays\gizmos\__init__.py
+FILE: src/cranioz/ui/editors/overlays/gizmos/__init__.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\ui\editors\overlays\rulers\__init__.py
+FILE: src/cranioz/ui/editors/overlays/rulers/__init__.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\ui\theme\service.py
+FILE: src/cranioz/ui/theme/service.py
 ======================================================================
 
 """ThemeService.
@@ -3497,7 +3682,7 @@ class ThemeService:
 
 
 ======================================================================
-FILE: src\cranioz\ui\theme\__init__.py
+FILE: src/cranioz/ui/theme/__init__.py
 ======================================================================
 
 """Theme resources for CranioZ UI."""
@@ -3505,7 +3690,7 @@ FILE: src\cranioz\ui\theme\__init__.py
 
 
 ======================================================================
-FILE: src\cranioz\ui\toolbars\base.py
+FILE: src/cranioz/ui/toolbars/base.py
 ======================================================================
 
 """Toolbar widget.
@@ -3671,7 +3856,7 @@ class Toolbar(QWidget):
 
 
 ======================================================================
-FILE: src\cranioz\ui\toolbars\item.py
+FILE: src/cranioz/ui/toolbars/item.py
 ======================================================================
 
 """ToolbarItem types.
@@ -3765,7 +3950,7 @@ class Separator:
 
 
 ======================================================================
-FILE: src\cranioz\ui\toolbars\specification.py
+FILE: src/cranioz/ui/toolbars/specification.py
 ======================================================================
 
 """ToolbarSpec.
@@ -3849,7 +4034,7 @@ class ToolbarSpec:
 
 
 ======================================================================
-FILE: src\cranioz\ui\toolbars\state.py
+FILE: src/cranioz/ui/toolbars/state.py
 ======================================================================
 
 """ToolbarState.
@@ -3899,21 +4084,21 @@ class ToolbarState:
 
 
 ======================================================================
-FILE: src\cranioz\ui\toolbars\__init__.py
+FILE: src/cranioz/ui/toolbars/__init__.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\ui\tools\catalog.py
+FILE: src/cranioz/ui/tools/catalog.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\ui\tools\specification.py
+FILE: src/cranioz/ui/tools/specification.py
 ======================================================================
 
 """ToolSpec.
@@ -3951,7 +4136,7 @@ class ToolSpec:
 
 
 ======================================================================
-FILE: src\cranioz\ui\tools\__init__.py
+FILE: src/cranioz/ui/tools/__init__.py
 ======================================================================
 
 # Specialized interaction within the editors
@@ -3959,7 +4144,7 @@ FILE: src\cranioz\ui\tools\__init__.py
 
 
 ======================================================================
-FILE: src\cranioz\ui\tools\builtin\log_tool.py
+FILE: src/cranioz/ui/tools/builtin/log_tool.py
 ======================================================================
 
 """LogTool.
@@ -4001,7 +4186,7 @@ class LogTool:
 
 
 ======================================================================
-FILE: src\cranioz\ui\tools\builtin\toggle_tool.py
+FILE: src/cranioz/ui/tools/builtin/toggle_tool.py
 ======================================================================
 
 """ToggleTool.
@@ -4046,14 +4231,14 @@ class ToggleTool:
 
 
 ======================================================================
-FILE: src\cranioz\ui\tools\builtin\__init__.py
+FILE: src/cranioz/ui/tools/builtin/__init__.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\ui\tools\registry\tool_definition.py
+FILE: src/cranioz/ui/tools/registry/tool_definition.py
 ======================================================================
 
 """Tool contract.
@@ -4104,7 +4289,7 @@ class Tool(Protocol):
 
 
 ======================================================================
-FILE: src\cranioz\ui\tools\registry\tool_registry.py
+FILE: src/cranioz/ui/tools/registry/tool_registry.py
 ======================================================================
 
 """ToolRegistry.
@@ -4190,70 +4375,70 @@ class ToolRegistry:
 
 
 ======================================================================
-FILE: src\cranioz\ui\tools\registry\__init__.py
+FILE: src/cranioz/ui/tools/registry/__init__.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\ui\widgets\__init__.py
+FILE: src/cranioz/ui/widgets/__init__.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\ui\widgets\buttons\icon_button.py
+FILE: src/cranioz/ui/widgets/buttons/icon_button.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\ui\widgets\buttons\primary_button.py
+FILE: src/cranioz/ui/widgets/buttons/primary_button.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\ui\widgets\buttons\__init__.py
+FILE: src/cranioz/ui/widgets/buttons/__init__.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\ui\widgets\headers\section_header.py
+FILE: src/cranioz/ui/widgets/headers/section_header.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\ui\widgets\headers\__init__.py
+FILE: src/cranioz/ui/widgets/headers/__init__.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\ui\widgets\sliders\labeled_slider.py
+FILE: src/cranioz/ui/widgets/sliders/labeled_slider.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\ui\widgets\sliders\__init__.py
+FILE: src/cranioz/ui/widgets/sliders/__init__.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\ui\workspace\workspace.py
+FILE: src/cranioz/ui/workspace/workspace.py
 ======================================================================
 
 """Workspace.
@@ -4557,7 +4742,7 @@ class Workspace(QWidget):
 
 
 ======================================================================
-FILE: src\cranioz\ui\workspace\__init__.py
+FILE: src/cranioz/ui/workspace/__init__.py
 ======================================================================
 
 # workspace composition and management
@@ -4565,7 +4750,7 @@ FILE: src\cranioz\ui\workspace\__init__.py
 
 
 ======================================================================
-FILE: src\cranioz\ui\workspace\areas\area.py
+FILE: src/cranioz/ui/workspace/areas/area.py
 ======================================================================
 
 """Area.
@@ -4745,7 +4930,7 @@ class Area:
 
 
 ======================================================================
-FILE: src\cranioz\ui\workspace\areas\area_manager.py
+FILE: src/cranioz/ui/workspace/areas/area_manager.py
 ======================================================================
 
 """AreaManager.
@@ -4851,7 +5036,7 @@ class AreaManager:
 
 
 ======================================================================
-FILE: src\cranioz\ui\workspace\areas\area_widget.py
+FILE: src/cranioz/ui/workspace/areas/area_widget.py
 ======================================================================
 
 """AreaWidget.
@@ -4872,6 +5057,8 @@ Responsibilities:
   consumers in this piece; they will be connected by the Workspace
   in a future piece.
 - Consume ToolRegistry and ThemeService to materialize Toolbars.
+- Consult the Editor for the ToolContext used to materialize its
+  Toolbars.
 
 Non-responsibilities:
 
@@ -4891,6 +5078,14 @@ Structure of the produced widget:
                  Editor. Each tab contains the Editor's Toolbars and
                  its content_widget(). Tabs are closable. A '+' corner
                  button is present for future use.
+
+Note on the '+' button and the ``editor_add_requested`` signal:
+
+The ``editor_add_requested`` signal is declared for the future '+'
+corner button on the tab widget. In this piece, the signal is not
+emitted by any widget yet. When the '+' button is implemented, it
+will emit this signal, and a higher-level component will decide
+whether to add an Editor and how.
 """
 
 from __future__ import annotations
@@ -5072,7 +5267,7 @@ class AreaWidget(QWidget):
         ThemeService. The ToolContext is taken from the Editor: the
         Editor is the owner of the ToolContext, not the AreaWidget.
         """
-        context = self._editor_tool_context(editor)
+        context = editor.tool_context()
         result: list[Toolbar] = []
         for spec in editor.toolbar_specs():
             toolbar = Toolbar(
@@ -5083,17 +5278,6 @@ class AreaWidget(QWidget):
             )
             result.append(toolbar)
         return result
-
-    @staticmethod
-    def _editor_tool_context(editor: Editor) -> ToolContext:
-        """Return the ToolContext for an Editor.
-
-        For now, this is an empty context. When Editors expose their
-        own ToolContext (via EditorContext or a dedicated accessor),
-        this method will read from the Editor instead of constructing
-        an empty one.
-        """
-        return ToolContext()
 
     def _build_tabs(self, editors: tuple[Editor, ...]) -> QTabWidget:
         """Build the tabbed container for multiple Editors.
@@ -5185,9 +5369,8 @@ class AreaWidget(QWidget):
         return editors[index].editor_id
 
 
-
 ======================================================================
-FILE: src\cranioz\ui\workspace\areas\placement.py
+FILE: src/cranioz/ui/workspace/areas/placement.py
 ======================================================================
 
 """Placement enum.
@@ -5214,14 +5397,14 @@ class Placement(Enum):
 
 
 ======================================================================
-FILE: src\cranioz\ui\workspace\areas\__init__.py
+FILE: src/cranioz/ui/workspace/areas/__init__.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\ui\workspace\layout\layout_builder.py
+FILE: src/cranioz/ui/workspace/layout/layout_builder.py
 ======================================================================
 
 """LayoutBuilder.
@@ -5505,14 +5688,14 @@ class LayoutBuilder:
 
 
 ======================================================================
-FILE: src\cranioz\ui\workspace\layout\layout_io.py
+FILE: src/cranioz/ui/workspace/layout/layout_io.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\ui\workspace\layout\layout_renderer.py
+FILE: src/cranioz/ui/workspace/layout/layout_renderer.py
 ======================================================================
 
 """LayoutRenderer.
@@ -5821,14 +6004,14 @@ class LayoutRenderer:
 
 
 ======================================================================
-FILE: src\cranioz\ui\workspace\layout\layout_state.py
+FILE: src/cranioz/ui/workspace/layout/layout_state.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\ui\workspace\layout\layout_tree.py
+FILE: src/cranioz/ui/workspace/layout/layout_tree.py
 ======================================================================
 
 """LayoutTree.
@@ -6062,14 +6245,14 @@ class LayoutTree:
 
 
 ======================================================================
-FILE: src\cranioz\ui\workspace\layout\__init__.py
+FILE: src/cranioz/ui/workspace/layout/__init__.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\ui\workspace\overlays\overlay.py
+FILE: src/cranioz/ui/workspace/overlays/overlay.py
 ======================================================================
 
 """Overlay.
@@ -6214,7 +6397,7 @@ class Overlay(ABC):
 
 
 ======================================================================
-FILE: src\cranioz\ui\workspace\overlays\overlay_manager.py
+FILE: src/cranioz/ui/workspace/overlays/overlay_manager.py
 ======================================================================
 
 """OverlayManager.
@@ -6386,14 +6569,14 @@ class OverlayManager:
 
 
 ======================================================================
-FILE: src\cranioz\ui\workspace\overlays\overlay_state.py
+FILE: src/cranioz/ui/workspace/overlays/overlay_state.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\ui\workspace\overlays\region.py
+FILE: src/cranioz/ui/workspace/overlays/region.py
 ======================================================================
 
 """Region.
@@ -6556,52 +6739,46 @@ class Region:
 
 
 ======================================================================
-FILE: src\cranioz\ui\workspace\overlays\top_overlay.py
+FILE: src/cranioz/ui/workspace/overlays/top_overlay.py
 ======================================================================
 
 """TopOverlay.
 
-The TopOverlay is the first concrete Overlay in CranioZ. It
-materializes the "Painel Superior" (Top Bar) shown across the UI
-prototype: a horizontal bar anchored to the top of the Central
-Region, with a fixed height and small lateral margins.
+The TopOverlay is the first concrete Overlay in CranioZ. It materializes
+the "Painel Superior" (Top Bar) as a structural component of the Workspace,
+positioned by the OverlayManager over the Central Region.
 
-Geometric behavior (this piece):
-
+Geometric behavior:
 - Anchored to the top of the target Region.
 - Fixed height.
 - Fixed lateral and top margins.
-- Width spans the Region minus the lateral margins.
+- Width spans the Region minus the lateral margins (dynamic).
 
-Content behavior (future pieces):
-
-- The three segments (left, center, right) described in the
-  prototype are not built here. This piece provides a container
-  widget with an accessible content layout so that the Workspace
-  (or a dedicated TopBar composition) can populate it later
-  without changing the TopOverlay contract.
+Structural behavior:
+- Contains three segments: Left, Center, Right.
+- The Center segment is always horizontally centered within the Top Bar.
+- The Left and Right segments are anchored to their respective edges.
+- The content of each segment is populated by future pieces (e.g., the
+  TopBar composition). This class only provides the containers.
 
 Design rules:
-
 - The TopOverlay computes its own geometry from the Region Bounds
   it receives in ``reposition()``. It does not receive a
   pre-computed position.
-- The overlay_id and target_region are class-level constants. Every
-  TopOverlay instance targets the Central Region and has the same
-  identity.
-- The widget is a plain QFrame. Styling (colors, borders) will be
-  applied later through the ThemeService, via Qt stylesheets keyed
-  by the object name.
+- The overlay_id and target_region are class-level constants.
+- The widget is a plain QFrame. Styling (colors, borders, translucency)
+  is NOT applied here. The ThemeService (future) will be responsible
+  for the visual presentation.
 - The TopOverlay never destroys its widget. It can be hidden and
   shown again; the widget instance remains the same.
 """
 
 from __future__ import annotations
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
-    QLayout,
     QWidget,
 )
 
@@ -6615,12 +6792,7 @@ class TopOverlayError(ValueError):
 
 
 class TopOverlay(Overlay):
-    """Concrete Overlay implementing the Top Bar geometry.
-
-    The TopOverlay is anchored to the top of the Central Region. Its
-    height is fixed; its width follows the Region's width minus the
-    configured lateral margins.
-    """
+    """Concrete Overlay implementing the Top Bar geometry and structure."""
 
     # ----- Class-level constants ------------------------------------
 
@@ -6653,15 +6825,33 @@ class TopOverlay(Overlay):
         self._visible = True
 
         self._widget = QFrame(parent)
-        self._widget.setObjectName("top_overlay")
+        self._widget.setObjectName("top_bar")
         self._widget.setFixedHeight(height)
 
-        # A horizontal layout is the natural container for the three
-        # segments. The segments themselves are added by a future
-        # piece; the layout is exposed via content_layout().
+        # The root layout contains the three segments.
+        # The Center segment is centered by inserting stretches
+        # before and after it.
         self._layout = QHBoxLayout(self._widget)
         self._layout.setContentsMargins(4, 4, 4, 4)
         self._layout.setSpacing(4)
+        self._layout.setAlignment(Qt.AlignmentFlag.AlignVCenter)
+
+        self._left_segment = QWidget()
+        self._left_segment.setObjectName("top_bar.left_segment")
+
+        self._center_segment = QWidget()
+        self._center_segment.setObjectName("top_bar.center_segment")
+
+        self._right_segment = QWidget()
+        self._right_segment.setObjectName("top_bar.right_segment")
+
+        # The center segment is guaranteed to be centered by
+        # inserting equal stretches on both sides.
+        self._layout.addWidget(self._left_segment, alignment=Qt.AlignmentFlag.AlignLeft)
+        self._layout.addStretch(1)
+        self._layout.addWidget(self._center_segment, alignment=Qt.AlignmentFlag.AlignCenter)
+        self._layout.addStretch(1)
+        self._layout.addWidget(self._right_segment, alignment=Qt.AlignmentFlag.AlignRight)
 
     # ----- Overlay API ----------------------------------------------
 
@@ -6721,27 +6911,44 @@ class TopOverlay(Overlay):
         """Return the vertical margin applied to the Top Bar."""
         return self._margin_y
 
-    def content_layout(self) -> QLayout:
-        """Return the layout that will hold the Top Bar's content.
+    # ----- Segment accessors ----------------------------------------
 
-        Future pieces (the Workspace or a dedicated TopBar
-        composition) add the left, center, and right segments to
-        this layout. The TopOverlay itself does not create those
-        segments: it only provides the container and its geometry.
+    def left_segment(self) -> QWidget:
+        """Return the container for the Left segment.
+
+        Future pieces (the TopBar composition) populate this
+        container with the Menu, Home, and Toggle Area Left actions.
         """
-        return self._layout
+        return self._left_segment
+
+    def center_segment(self) -> QWidget:
+        """Return the container for the Center segment.
+
+        Future pieces populate this container with the Module tabs
+        and the '+' button. The segment is always horizontally
+        centered within the Top Bar.
+        """
+        return self._center_segment
+
+    def right_segment(self) -> QWidget:
+        """Return the container for the Right segment.
+
+        Future pieces populate this container with the Extras menu,
+        the Toggle Area Bottom and Toggle Area Right actions, and
+        the window controls.
+        """
+        return self._right_segment
+
+
+======================================================================
+FILE: src/cranioz/ui/workspace/overlays/__init__.py
+======================================================================
+
 
 
 
 ======================================================================
-FILE: src\cranioz\ui\workspace\overlays\__init__.py
-======================================================================
-
-
-
-
-======================================================================
-FILE: src\cranioz\ui\workspace\specs\area_spec.py
+FILE: src/cranioz/ui/workspace/specs/area_spec.py
 ======================================================================
 
 """AreaSpec.
@@ -6782,7 +6989,7 @@ class AreaSpec:
 
 
 ======================================================================
-FILE: src\cranioz\ui\workspace\specs\editor_layout_spec.py
+FILE: src/cranioz/ui/workspace/specs/editor_layout_spec.py
 ======================================================================
 
 """EditorLayoutSpec.
@@ -6867,7 +7074,7 @@ class EditorLayoutSpec:
 
 
 ======================================================================
-FILE: src\cranioz\ui\workspace\specs\module_ui_spec.py
+FILE: src/cranioz/ui/workspace/specs/module_ui_spec.py
 ======================================================================
 
 """ModuleUISpec.
@@ -6915,7 +7122,7 @@ class ModuleUISpec:
 
 
 ======================================================================
-FILE: src\cranioz\ui\workspace\specs\overlay_spec.py
+FILE: src/cranioz/ui/workspace/specs/overlay_spec.py
 ======================================================================
 
 """OverlaySpec.
@@ -6954,28 +7161,28 @@ class OverlaySpec:
 
 
 ======================================================================
-FILE: src\cranioz\ui\workspace\specs\__init__.py
+FILE: src/cranioz/ui/workspace/specs/__init__.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\ui\workspace\structure\top_bar.py
+FILE: src/cranioz/ui/workspace/structure/top_bar.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: src\cranioz\ui\workspace\structure\__init__.py
+FILE: src/cranioz/ui/workspace/structure/__init__.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: tests\conftest.py
+FILE: tests/conftest.py
 ======================================================================
 
 """Shared pytest fixtures for CranioZ tests."""
@@ -7075,42 +7282,42 @@ def make_toolbar_spec() -> Callable[..., ToolbarSpec]:
 
 
 ======================================================================
-FILE: tests\__init__.py
+FILE: tests/__init__.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: tests\infrastructure\i18n\conftest.py
+FILE: tests/infrastructure/i18n/conftest.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: tests\infrastructure\i18n\test_catalog_loader.py
+FILE: tests/infrastructure/i18n/test_catalog_loader.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: tests\infrastructure\i18n\test_catalog_registry.py
+FILE: tests/infrastructure/i18n/test_catalog_registry.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: tests\infrastructure\i18n\test_translation_service.py
+FILE: tests/infrastructure/i18n/test_translation_service.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: tests\integration\ui\workspace\areas\test_area_widget.py
+FILE: tests/integration/ui/workspace/areas/test_area_widget.py
 ======================================================================
 
 """Integration tests for AreaWidget.
@@ -7474,7 +7681,7 @@ def test_area_widget_refresh_idempotent(
 
 
 ======================================================================
-FILE: tests\integration\ui\workspace\layout\test_layout_builder.py
+FILE: tests/integration/ui/workspace/layout/test_layout_builder.py
 ======================================================================
 
 """Integration tests for LayoutBuilder.
@@ -8120,7 +8327,7 @@ def test_area_rejects_duplicate_editor_id_in_same_build(
 
 
 ======================================================================
-FILE: tests\integration\ui\workspace\layout\test_layout_renderer.py
+FILE: tests/integration/ui/workspace/layout/test_layout_renderer.py
 ======================================================================
 
 """Integration tests for LayoutRenderer.
@@ -8422,7 +8629,7 @@ def test_render_invalid_node_raises(renderer: LayoutRenderer) -> None:
 
 
 ======================================================================
-FILE: tests\integration\ui\workspace\workspace\test_workspace.py
+FILE: tests/integration/ui/workspace/workspace/test_workspace.py
 ======================================================================
 
 """Integration tests for the Workspace facade.
@@ -8776,14 +8983,14 @@ def test_overlay_manager_is_stable_across_clear(
 
 
 ======================================================================
-FILE: tests\unit\__init__.py
+FILE: tests/unit/__init__.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: tests\unit\application\test_event_bus.py
+FILE: tests/unit/application/test_event_bus.py
 ======================================================================
 
 """Tests for EventBus."""
@@ -8890,7 +9097,7 @@ def test_subscriber_count() -> None:
 
 
 ======================================================================
-FILE: tests\unit\config\test_loader.py
+FILE: tests/unit/config/test_loader.py
 ======================================================================
 
 """Tests for ConfigurationLoader."""
@@ -8995,14 +9202,14 @@ def test_missing_app_section_raises(tmp_path: Path) -> None:
 
 
 ======================================================================
-FILE: tests\unit\domain\__init__.py
+FILE: tests/unit/domain/__init__.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: tests\unit\domain\patient\test_patient.py
+FILE: tests/unit/domain/patient/test_patient.py
 ======================================================================
 
 """Tests for Patient.
@@ -9317,7 +9524,7 @@ def test_repr_uses_social_name_when_present() -> None:
 
 
 ======================================================================
-FILE: tests\unit\domain\patient\test_patient_summary.py
+FILE: tests/unit/domain/patient/test_patient_summary.py
 ======================================================================
 
 """Tests for PatientSummary.
@@ -9504,14 +9711,14 @@ def test_summary_only_carries_the_expected_fields() -> None:
 
 
 ======================================================================
-FILE: tests\unit\domain\patient\__init__.py
+FILE: tests/unit/domain/patient/__init__.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: tests\unit\domain\patient\enums\test_blood_type.py
+FILE: tests/unit/domain/patient/enums/test_blood_type.py
 ======================================================================
 
 """Tests for BloodType."""
@@ -9568,7 +9775,7 @@ def test_all_abo_rh_combinations_present() -> None:
 
 
 ======================================================================
-FILE: tests\unit\domain\patient\enums\test_comorbidity_category.py
+FILE: tests/unit/domain/patient/enums/test_comorbidity_category.py
 ======================================================================
 
 """Tests for ComorbidityCategory."""
@@ -9628,7 +9835,7 @@ def test_others_is_last_member() -> None:
 
 
 ======================================================================
-FILE: tests\unit\domain\patient\enums\test_document_type.py
+FILE: tests/unit/domain/patient/enums/test_document_type.py
 ======================================================================
 
 """Tests for DocumentType."""
@@ -9686,7 +9893,7 @@ def test_no_country_specific_values() -> None:
 
 
 ======================================================================
-FILE: tests\unit\domain\patient\enums\test_patient_race.py
+FILE: tests/unit/domain/patient/enums/test_patient_race.py
 ======================================================================
 
 """Tests for PatientRace."""
@@ -9752,7 +9959,7 @@ def test_values_are_stable_identifiers() -> None:
 
 
 ======================================================================
-FILE: tests\unit\domain\patient\enums\test_patient_sex.py
+FILE: tests/unit/domain/patient/enums/test_patient_sex.py
 ======================================================================
 
 """Tests for PatientSex."""
@@ -9798,7 +10005,7 @@ def test_no_unknown_member() -> None:
 
 
 ======================================================================
-FILE: tests\unit\domain\patient\enums\test_phone_kind.py
+FILE: tests/unit/domain/patient/enums/test_phone_kind.py
 ======================================================================
 
 """Tests for PhoneKind."""
@@ -9834,7 +10041,7 @@ def test_unknown_value_raises() -> None:
 
 
 ======================================================================
-FILE: tests\unit\domain\patient\enums\__init__.py
+FILE: tests/unit/domain/patient/enums/__init__.py
 ======================================================================
 
 
@@ -9842,7 +10049,7 @@ FILE: tests\unit\domain\patient\enums\__init__.py
 
 
 ======================================================================
-FILE: tests\unit\domain\patient\sections\test_address.py
+FILE: tests/unit/domain/patient/sections/test_address.py
 ======================================================================
 
 """Tests for PatientAddress (§4 Endereço).
@@ -9914,7 +10121,7 @@ def test_address_with_different_cities_not_equal() -> None:
 
 
 ======================================================================
-FILE: tests\unit\domain\patient\sections\test_antecedents.py
+FILE: tests/unit/domain/patient/sections/test_antecedents.py
 ======================================================================
 
 """Tests for PatientAntecedents (§8 Antecedentes).
@@ -10004,7 +10211,7 @@ def test_antecedents_with_different_values_not_equal() -> None:
 
 
 ======================================================================
-FILE: tests\unit\domain\patient\sections\test_comorbidities.py
+FILE: tests/unit/domain/patient/sections/test_comorbidities.py
 ======================================================================
 
 """Tests for PatientComorbidities (§6 Comorbidades).
@@ -10098,7 +10305,7 @@ def test_fields_match_comorbidity_categories() -> None:
 
 
 ======================================================================
-FILE: tests\unit\domain\patient\sections\test_complaint.py
+FILE: tests/unit/domain/patient/sections/test_complaint.py
 ======================================================================
 
 """Tests for PatientComplaint (§5 Queixa e História).
@@ -10159,7 +10366,7 @@ def test_complaint_with_different_text_not_equal() -> None:
 
 
 ======================================================================
-FILE: tests\unit\domain\patient\sections\test_documents.py
+FILE: tests/unit/domain/patient/sections/test_documents.py
 ======================================================================
 
 """Tests for PatientDocuments (§2 Documentos e Contato).
@@ -10340,7 +10547,7 @@ def test_documents_with_different_notes_not_equal() -> None:
 
 
 ======================================================================
-FILE: tests\unit\domain\patient\sections\test_filiation.py
+FILE: tests/unit/domain/patient/sections/test_filiation.py
 ======================================================================
 
 """Tests for PatientFiliation (§3 Filiação).
@@ -10401,7 +10608,7 @@ def test_filiation_with_different_names_not_equal() -> None:
 
 
 ======================================================================
-FILE: tests\unit\domain\patient\sections\test_habits.py
+FILE: tests/unit/domain/patient/sections/test_habits.py
 ======================================================================
 
 """Tests for PatientHabits (§9 Hábitos e Vícios).
@@ -10465,7 +10672,7 @@ def test_habits_with_different_values_not_equal() -> None:
 
 
 ======================================================================
-FILE: tests\unit\domain\patient\sections\test_identity.py
+FILE: tests/unit/domain/patient/sections/test_identity.py
 ======================================================================
 
 """Tests for PatientIdentity (§1 Identificação).
@@ -10617,7 +10824,7 @@ def test_identity_with_different_names_not_equal() -> None:
 
 
 ======================================================================
-FILE: tests\unit\domain\patient\sections\test_medications.py
+FILE: tests/unit/domain/patient/sections/test_medications.py
 ======================================================================
 
 """Tests for PatientMedications (§7 Medicamentos e Alergias).
@@ -10680,7 +10887,7 @@ def test_medications_with_different_allergies_not_equal() -> None:
 
 
 ======================================================================
-FILE: tests\unit\domain\patient\sections\__init__.py
+FILE: tests/unit/domain/patient/sections/__init__.py
 ======================================================================
 
 
@@ -10688,7 +10895,7 @@ FILE: tests\unit\domain\patient\sections\__init__.py
 
 
 ======================================================================
-FILE: tests\unit\domain\patient\value_objects\test_patient_id.py
+FILE: tests/unit/domain/patient/value_objects/test_patient_id.py
 ======================================================================
 
 """Tests for PatientId.
@@ -10800,7 +11007,7 @@ def test_repr_mentions_value() -> None:
 
 
 ======================================================================
-FILE: tests\unit\domain\patient\value_objects\test_phone_number.py
+FILE: tests/unit/domain/patient/value_objects/test_phone_number.py
 ======================================================================
 
 """Tests for PhoneNumber.
@@ -10914,7 +11121,7 @@ def test_all_phone_kinds_are_accepted() -> None:
 
 
 ======================================================================
-FILE: tests\unit\domain\patient\value_objects\__init__.py
+FILE: tests/unit/domain/patient/value_objects/__init__.py
 ======================================================================
 
 
@@ -10922,7 +11129,7 @@ FILE: tests\unit\domain\patient\value_objects\__init__.py
 
 
 ======================================================================
-FILE: tests\unit\domain\project\test_project.py
+FILE: tests/unit/domain/project/test_project.py
 ======================================================================
 
 """Tests for Project."""
@@ -11021,7 +11228,7 @@ def test_repr_mentions_key_fields() -> None:
 
 
 ======================================================================
-FILE: tests\unit\domain\project\test_project_id.py
+FILE: tests/unit/domain/project/test_project_id.py
 ======================================================================
 
 """Tests for ProjectId."""
@@ -11086,7 +11293,7 @@ def test_hashable() -> None:
 
 
 ======================================================================
-FILE: tests\unit\domain\project\test_project_metadata.py
+FILE: tests/unit/domain/project/test_project_metadata.py
 ======================================================================
 
 """Tests for ProjectMetadata."""
@@ -11251,7 +11458,7 @@ def test_with_last_opened_sets_timestamp() -> None:
 
 
 ======================================================================
-FILE: tests\unit\domain\project\test_project_status.py
+FILE: tests/unit/domain/project/test_project_status.py
 ======================================================================
 
 """Tests for ProjectStatus."""
@@ -11280,7 +11487,7 @@ def test_lookup_by_value() -> None:
 
 
 ======================================================================
-FILE: tests\unit\domain\project\test_project_summary.py
+FILE: tests/unit/domain/project/test_project_summary.py
 ======================================================================
 
 """Tests for ProjectSummary."""
@@ -11394,14 +11601,14 @@ def test_from_metadata_with_last_opened() -> None:
 
 
 ======================================================================
-FILE: tests\unit\domain\project\__init__.py
+FILE: tests/unit/domain/project/__init__.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: tests\unit\infrastructure\app\test_app_path_resolver.py
+FILE: tests/unit/infrastructure/app/test_app_path_resolver.py
 ======================================================================
 
 """Tests for AppPathResolver."""
@@ -11582,7 +11789,7 @@ def test_resolve_in_projects_root_before_initialize_raises() -> None:
 
 
 ======================================================================
-FILE: tests\unit\infrastructure\project\test_project_path_resolver.py
+FILE: tests/unit/infrastructure/project/test_project_path_resolver.py
 ======================================================================
 
 """Tests for ProjectPathResolver.
@@ -11805,7 +12012,7 @@ def test_exists_is_false_when_path_is_a_file(tmp_path: Path) -> None:
 
 
 ======================================================================
-FILE: tests\unit\ui\editors\test_base_editor.py
+FILE: tests/unit/ui/editors/test_base_editor.py
 ======================================================================
 
 """Tests for the Editor ABC."""
@@ -11906,7 +12113,7 @@ def test_lifecycle_methods_can_be_called() -> None:
 
 
 ======================================================================
-FILE: tests\unit\ui\editors\test_editor_context.py
+FILE: tests/unit/ui/editors/test_editor_context.py
 ======================================================================
 
 """Tests for EditorContext."""
@@ -11952,7 +12159,7 @@ def test_default_extras_are_not_shared_between_instances() -> None:
 
 
 ======================================================================
-FILE: tests\unit\ui\editors\test_editor_registry.py
+FILE: tests/unit/ui/editors/test_editor_registry.py
 ======================================================================
 
 """Tests for EditorRegistry."""
@@ -12080,7 +12287,7 @@ def test_contains() -> None:
 
 
 ======================================================================
-FILE: tests\unit\ui\editors\builtin\test_dummy_editor.py
+FILE: tests/unit/ui/editors/builtin/test_dummy_editor.py
 ======================================================================
 
 """Tests for TestEditor."""
@@ -12209,14 +12416,14 @@ def test_initialize_stores_context() -> None:
 
 
 ======================================================================
-FILE: tests\unit\ui\editors\builtin\__init__.py
+FILE: tests/unit/ui/editors/builtin/__init__.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: tests\unit\ui\theme\test_service.py
+FILE: tests/unit/ui/theme/test_service.py
 ======================================================================
 
 """Tests for ThemeService."""
@@ -12282,14 +12489,14 @@ def test_theme_service_is_frozen() -> None:
 
 
 ======================================================================
-FILE: tests\unit\ui\theme\__init__.py
+FILE: tests/unit/ui/theme/__init__.py
 ======================================================================
 
 
 
 
 ======================================================================
-FILE: tests\unit\ui\toolbars\test_item.py
+FILE: tests/unit/ui/toolbars/test_item.py
 ======================================================================
 
 """Tests for ToolbarItem types."""
@@ -12413,7 +12620,7 @@ def test_toolbar_item_kind_members() -> None:
 
 
 ======================================================================
-FILE: tests\unit\ui\toolbars\test_state.py
+FILE: tests/unit/ui/toolbars/test_state.py
 ======================================================================
 
 """Tests for ToolbarState."""
@@ -12465,7 +12672,7 @@ def test_state_is_mutable() -> None:
 
 
 ======================================================================
-FILE: tests\unit\ui\toolbars\test_toolbar.py
+FILE: tests/unit/ui/toolbars/test_toolbar.py
 ======================================================================
 
 """Tests for the Toolbar widget.
@@ -12714,7 +12921,7 @@ def test_unknown_tool_id_raises(
 
 
 ======================================================================
-FILE: tests\unit\ui\toolbars\test_toolbars_specification.py
+FILE: tests/unit/ui/toolbars/test_toolbars_specification.py
 ======================================================================
 
 """Tests for ToolbarSpec."""
@@ -12777,7 +12984,7 @@ def test_orientation_members() -> None:
 
 
 ======================================================================
-FILE: tests\unit\ui\tools\test_tools_specification.py
+FILE: tests/unit/ui/tools/test_tools_specification.py
 ======================================================================
 
 """Tests for ToolSpec."""
@@ -12834,7 +13041,7 @@ def test_tool_spec_is_frozen() -> None:
 
 
 ======================================================================
-FILE: tests\unit\ui\tools\builtin\test_log_tool.py
+FILE: tests/unit/ui/tools/builtin/test_log_tool.py
 ======================================================================
 
 """Tests for LogTool."""
@@ -12883,7 +13090,7 @@ def test_log_tool_execute_logs_message(caplog: LogCaptureFixture) -> None:
 
 
 ======================================================================
-FILE: tests\unit\ui\tools\builtin\test_toggle_tool.py
+FILE: tests/unit/ui/tools/builtin/test_toggle_tool.py
 ======================================================================
 
 """Tests for ToggleTool."""
@@ -12931,7 +13138,7 @@ def test_toggle_is_enabled_respects_context() -> None:
 
 
 ======================================================================
-FILE: tests\unit\ui\tools\registry\test_tool_definition.py
+FILE: tests/unit/ui/tools/registry/test_tool_definition.py
 ======================================================================
 
 """Tests for the Tool Protocol and ToolContext."""
@@ -13011,7 +13218,7 @@ def test_object_without_methods_fails_protocol() -> None:
 
 
 ======================================================================
-FILE: tests\unit\ui\tools\registry\test_tool_registry.py
+FILE: tests/unit/ui/tools/registry/test_tool_registry.py
 ======================================================================
 
 """Tests for ToolRegistry."""
@@ -13105,7 +13312,7 @@ def test_contains() -> None:
 
 
 ======================================================================
-FILE: tests\unit\ui\workspace\areas\test_area.py
+FILE: tests/unit/ui/workspace/areas/test_area.py
 ======================================================================
 
 """Tests for Area."""
@@ -13297,7 +13504,7 @@ def test_repr_contains_key_fields() -> None:
 
 
 ======================================================================
-FILE: tests\unit\ui\workspace\areas\test_area_manager.py
+FILE: tests/unit/ui/workspace/areas/test_area_manager.py
 ======================================================================
 
 """Tests for AreaManager."""
@@ -13475,7 +13682,7 @@ def test_repr_contains_ids() -> None:
 
 
 ======================================================================
-FILE: tests\unit\ui\workspace\areas\test_placement.py
+FILE: tests/unit/ui/workspace/areas/test_placement.py
 ======================================================================
 
 """Tests for Placement."""
@@ -13518,7 +13725,7 @@ def test_declaration_order_is_not_significant() -> None:
 
 
 ======================================================================
-FILE: tests\unit\ui\workspace\layout\test_layout_tree.py
+FILE: tests/unit/ui/workspace/layout/test_layout_tree.py
 ======================================================================
 
 """Tests for LayoutTree."""
@@ -13916,7 +14123,7 @@ def test_find_regions_areas_are_in_depth_first_order() -> None:
 
 
 ======================================================================
-FILE: tests\unit\ui\workspace\overlays\test_overlay.py
+FILE: tests/unit/ui/workspace/overlays/test_overlay.py
 ======================================================================
 
 """Tests for the Overlay ABC.
@@ -14129,7 +14336,7 @@ def test_visibility_toggle_does_not_destroy_widget(qtbot: QtBot) -> None:
 
 
 ======================================================================
-FILE: tests\unit\ui\workspace\overlays\test_overlay_manager.py
+FILE: tests/unit/ui/workspace/overlays/test_overlay_manager.py
 ======================================================================
 
 """Tests for OverlayManager.
@@ -14494,7 +14701,7 @@ def test_repr_contains_registered_ids(manager: OverlayManager, make_overlay) -> 
 
 
 ======================================================================
-FILE: tests\unit\ui\workspace\overlays\test_region.py
+FILE: tests/unit/ui/workspace/overlays/test_region.py
 ======================================================================
 
 """Tests for Region and Bounds.
@@ -14692,7 +14899,7 @@ def test_region_repr_mentions_key_fields() -> None:
 
 
 ======================================================================
-FILE: tests\unit\ui\workspace\overlays\test_top_overlay.py
+FILE: tests/unit/ui/workspace/overlays/test_top_overlay.py
 ======================================================================
 
 """Tests for TopOverlay.
@@ -14952,7 +15159,7 @@ def test_content_layout_is_stable(overlay: TopOverlay) -> None:
 
 
 ======================================================================
-FILE: tests\unit\ui\workspace\specs\test_area_spec.py
+FILE: tests/unit/ui/workspace/specs/test_area_spec.py
 ======================================================================
 
 """Tests for AreaSpec."""
@@ -15005,7 +15212,7 @@ def test_empty_title_raises() -> None:
 
 
 ======================================================================
-FILE: tests\unit\ui\workspace\specs\test_editor_layout_spec.py
+FILE: tests/unit/ui/workspace/specs/test_editor_layout_spec.py
 ======================================================================
 
 """Tests for EditorLayoutSpec."""
@@ -15129,7 +15336,7 @@ def test_unknown_layout_type_raises() -> None:
 
 
 ======================================================================
-FILE: tests\unit\ui\workspace\specs\test_module_ui_spec.py
+FILE: tests/unit/ui/workspace/specs/test_module_ui_spec.py
 ======================================================================
 
 """Tests for ModuleUISpec."""
@@ -15212,7 +15419,7 @@ def test_empty_areas_raises() -> None:
 
 
 ======================================================================
-FILE: tests\unit\ui\workspace\specs\test_overlay_spec.py
+FILE: tests/unit/ui/workspace/specs/test_overlay_spec.py
 ======================================================================
 
 """Tests for OverlaySpec."""

@@ -96,19 +96,30 @@ disposed. Editor activation is independent of Area activation.
 The Workspace is a split tree of Areas, not a fixed set of panels.
 
 ```
-text
-+-------------------------------------------------------+
-|                     MainWindow                        |
-+-------------------------------------------------------+
-|  +----------+----------------------+----------+       |
-|  | Area     | Area                 | Area     |       |
-|  | left     | central              | right    |       |
-|  +----------+----------------------+----------+       |
-|                                                       |
-|  +---------------------------------------------------+|
-|  | Area — bottom                                     ||
-|  +---------------------------------------------------+|
-+-------------------------------------------------------+`
++-----------------------------------------------------------------------+
+|                             MainWindow                                |
++-----------------------------------------------------------------------+
+|                                                                       |
+|  +----------+-------------------------------------------+----------+  |
+|  |          |  +-------------------------------------+  |          |  |
+|  |          |  | [Menu][Home][Toggle L] | MÓDULOS | [..][Toggle R]||  |  
+|  |          |  +-------------------------------------+  |          |  |
+|  |  Area    |   (TopBar Translúcida Flutuante)          |  Area    |  |
+|  |  Left    |                                           |  Right   |  |
+|  |          |  +-------------------------------------+  |          |  |
+|  |          |  |                                     |  |          |  |
+|  |          |  |           Area Central              |  |          |  |
+|  |          |  |         (Dividida em 2)             |  |          |  |
+|  |          |  |                                     |  |          |  |
+|  |          |  +-------------------------------------+  |          |  |
+|  |          |                                           |          |  |
+|  +----------+-------------------------------------------+----------+  |
+|                                                                       |
+|  +-----------------------------------------------------------------+  |
+|  |                           Area Bottom                           |  |
+|  +-----------------------------------------------------------------+  |
+|                                                                       |
++-----------------------------------------------------------------------+
 ```
 
 Every visible rectangle is an Area. Each Area hosts its own Editor Layout Tree, containing the Editors assigned to it.
@@ -148,18 +159,13 @@ The `AreaManager` is the registry of Areas within the Workspace. It handles
 registration, unregistration, and lookup by `area_id`.
 
 ### 3.3 Application chrome
-Some visual elements are neither Areas nor Overlays:
+Some visual elements are neither Areas nor Overlays in the structural sense, but they compose the application frame:
 
-- The native OS menu bar (if any).
-- Native window controls — only if they are not embedded in the Top Bar.
-  In CranioZ, window controls are typically embedded in the right segment
-  of the Top Bar.
+* The native OS menu bar (if any), which belongs to the MainWindow.
+* Native window controls (minimize, maximize, close). In CranioZ, these are typically embedded in the right segment of the Top Bar. When embedded in the Top Bar, they belong to the Workspace, not to the MainWindow. Only when they are not embedded (e.g., a frameless window fallback) do they belong to the MainWindow.
+* The Top Bar (_Painel Superior_), which is a structural component of the Workspace. Unlike Areas, it is not part of the Area Layout Tree. Instead, it is materialized as a floating, translucent layer positioned over the Central Region. Its width dynamically adapts to the visibility of the Left and Right Areas: hiding the Left Area expands the Top Bar to occupy the freed space, and hiding the Right Area contracts it. The Top Bar is always present when the Workspace is active, regardless of the active Flow. For details on its three segments (Left, Center, Right), see top-bar.md.
 
-The native OS menu bar belongs to the `MainWindow`. Native window controls belong to the `MainWindow` only if they are not embedded in the Top Bar. When embedded in the Top Bar, they belong to the Workspace.
-
-There is no status bar. The traditional status bar role is served by the Console Editor, hosted in the Bottom Area, when the Module declares it. For details on the Top Bar (Painel Superior) — a structural component of the Workspace, not an Overlay — and its 3 segments, see `top-bar.md`.
-
-For details on the `steps_panel` — a shared Overlay hosted by the Workspace — see `steps_panel.md`.
+There is no status bar. The traditional status bar role is served by the Console Editor, hosted in the Bottom Area, when the Module declares it. The steps_panel is a different kind of Overlay: it is flow-dependent and appears only while a clinical Flow is active. For details, see steps_panel.md.
 
 ### 3.4 Data flow
 
@@ -224,27 +230,19 @@ class EditorLayoutSpec:
 ```
 Important points:
 
-Placement is semantic metadata. It is used to associate Areas with Regions and to build the initial tree.
-
-It is preserved after construction, because Regions depend on it.
-
-AreaSpec declares its Editors through an EditorLayoutSpec, not a flat list.
-
-The Module does not import the Editor classes.
-
-The EditorRegistry resolves the IDs to concrete classes.
+* Placement is semantic metadata. It is used to associate Areas with Regions and to build the initial tree.
+* It is preserved after construction, because Regions depend on it.
+* AreaSpec declares its Editors through an EditorLayoutSpec, not a flat list.
+* The Module does not import the Editor classes.
+* The EditorRegistry resolves the IDs to concrete classes.
 
 Validation rules (enforced before materialization):
 
-LEAF must have editor_id and must not have children.
-
-SPLIT must have direction and at least two children, and must not have editor_id.
-
-Every editor_id must resolve in the EditorRegistry.
-
-Placement must be one of LEFT, CENTRAL, RIGHT, BOTTOM.
-
-A ModuleUISpec must declare at least CENTRAL.
+* LEAF must have editor_id and must not have children.
+* SPLIT must have direction and at least two children, and must not have editor_id.
+* Every editor_id must resolve in the EditorRegistry.
+* Placement must be one of LEFT, CENTRAL, RIGHT, BOTTOM.
+* A ModuleUISpec must declare at least CENTRAL.
 
 If any rule is violated, the Workspace rejects the load with a clear error. It does not fall back silently.
 
@@ -284,13 +282,10 @@ ModuleUISpec(
 ```
 Placement rules:
 
-    CENTRAL — the center of the Area Layout Tree. There may be multiple Central Areas in a complex composition.
-  
-    LEFT — flanks the central region on the left.
-  
-    RIGHT — flanks the central region on the right.
-  
-    BOTTOM — sits below the horizontal row.
+* CENTRAL — the center of the Area Layout Tree. There may be multiple Central Areas in a complex composition.
+* LEFT — flanks the central region on the left.
+* RIGHT — flanks the central region on the right.
+* BOTTOM — sits below the horizontal row.
 
 Switching Modules: the Workspace receives a new ModuleUISpec and reconciles its current layout against it (see §6.4).
 
@@ -311,31 +306,22 @@ The Registry registers types, not instances. It answers:
 
 Error contracts:
 
-register: raises ValueError if editor_id is already registered.
+* register: raises ValueError if editor_id is already registered.
+* resolve: raises KeyError if editor_id is unknown.
+* create: raises KeyError if editor_id is unknown.
 
-resolve: raises KeyError if editor_id is unknown.
+Availability is a separate concern, handled by the EditorCatalog. The EditorCatalog filters registered Editors by:
 
-create: raises KeyError if editor_id is unknown.
-
-Availability is a separate concern, handled by the EditorCatalog. The
-EditorCatalog filters registered Editors by:
-
-The active Scene.
-
-The active project.
-
-The current Area.
-
-Required capabilities and data.
+* The active Scene.
+* The active project.
+* The current Area.
+* Required capabilities and data.
 
 Registry population:
-
-System Editors register at boot.
-
-Modules register their Editors when loaded.
-
-Plugins register their Editors when activated.
-
+* System Editors register at boot.
+* Modules register their Editors when loaded.
+* Plugins register their Editors when activated.
+* 
 When a Module or Plugin is unloaded or deactivated, its Editors are
 unregistered from the EditorRegistry. Instances already created are
 disposed following the Editor lifecycle.
@@ -555,16 +541,19 @@ The trees are the single source of truth for structure. They are not the single 
 
 The following are stored separately in LayoutState:
 
-State	Purpose
-Proportions	QSplitter sizes per node
-Visibility	Which Areas are shown or hidden
+    State	            Purpose
+    Proportions	        QSplitter sizes per node
+    Visibility	        Which Areas are shown or hidden
+
 Active Editor per Area	Which Editor receives input in each Area
+
 The following are stored separately in OverlayState:
 
-State	Purpose
-Presence	Which Overlays exist
-Configuration	Overlay-specific settings
-Anchoring	Which Region each Overlay targets
+    State	        Purpose
+    Presence	    Which Overlays exist
+    Configuration	Overlay-specific settings
+    Anchoring	    Which Region each Overlay targets
+
 These state models may be serialized together with the trees, but their responsibilities are distinct.
 
 ### 5.4 Resizing and reconciliation
@@ -572,15 +561,11 @@ Each Split (in either tree) is rendered as a QSplitter. The user can drag the di
 
 Reconciliation rule:
 
-The tree determines the structure.
-
-LayoutState stores proportions and preferences.
-
-The LayoutRenderer materializes both.
-
-User interactions update the model that owns the value.
-
-The renderer never silently alters structure to reflect a widget.
+* The tree determines the structure.
+* LayoutState stores proportions and preferences.
+* The LayoutRenderer materializes both.
+* User interactions update the model that owns the value.
+* The renderer never silently alters structure to reflect a widget.
 
 Without this rule, when a user drags a QSplitter divider, the new proportion would be lost on the next render.
 
@@ -591,13 +576,10 @@ The layout trees are pure data models, with no Qt dependency. The LayoutRenderer
 
 The LayoutRenderer renders recursively:
 
-An Area Layout Tree Split → QSplitter at the Workspace level.
-
-An Area Layout Tree Leaf → the Area widget.
-
-Inside each Area, its Editor Layout Tree Split → QSplitter.
-
-Its Editor Layout Tree Leaf → the Editor widget.
+* An Area Layout Tree Split → QSplitter at the Workspace level.
+* An Area Layout Tree Leaf → the Area widget.
+* Inside each Area, its Editor Layout Tree Split → QSplitter.
+* Its Editor Layout Tree Leaf → the Editor widget.
 
 ### 5.6 Persistence
 Layout persistence is keyed by context:
@@ -661,17 +643,15 @@ This JSON is stored inside the project file, not in user settings.
 
 Precedence when opening a project:
 
-Persisted layout for (project_id, module_id) if compatible with the current ModuleUISpec.
-
-Default layout declared by the ModuleUISpec.
-
-System fallback (single central Area with a single Editor).
+* Persisted layout for (project_id, module_id) if compatible with the current ModuleUISpec.
+* Default layout declared by the ModuleUISpec.
+* System fallback (single central Area with a single Editor).
 
 If the persisted layout is incompatible with the current ModuleUISpec, the Workspace reconciles it (see §6.4). If reconciliation is not possible, it rebuilds from the ModuleUISpec and reports the change.
 
 If the ModuleUISpec itself is invalid, the Workspace rejects the load with a clear error. The system fallback is reserved for controlled recovery, not for masking configuration errors.
 
-5.7 Why an N-ary tree
+### 5.7 Why an N-ary tree
 Simple: two node types.
 
 Recursive: each subtree is a complete layout.
@@ -790,50 +770,39 @@ Workspace repositions Overlays
 
 Precedence:
 
-First activation of the Module in the project: materialize the layout declared in the ModuleUISpec.
-
-Subsequent activations: restore the personalized layout for that Module, if it exists and is compatible.
-
-Missing or incompatible layout: rebuild from the ModuleUISpec.
-
-Invalid ModuleUISpec: report a clear error. Do not use the system fallback to hide configuration errors.
+* First activation of the Module in the project: materialize the layout declared in the ModuleUISpec.
+* Subsequent activations: restore the personalized layout for that Module, if it exists and is compatible.
+* Missing or incompatible layout: rebuild from the ModuleUISpec.
+* Invalid ModuleUISpec: report a clear error. Do not use the system fallback to hide configuration errors.
 
 ### 6.5 Area and Editor reconciliation
 Area identity is stable within a layout context (project_id + module_id). It does not imply that area.central is the same instance across all Modules.
 
 Reconciliation rules:
 
-area_id identifies an Area within the current layout context.
-
-If the area_id remains, the Workspace reuses the container and reconciles its internal Editor Layout Tree.
-
+* area_id identifies an Area within the current layout context.
+* If the area_id remains, the Workspace reuses the container and reconciles its internal Editor Layout Tree.
+* 
 If the internal tree changes:
 
-Editors already present and compatible are preserved.
-
-Editors no longer needed are removed (not destroyed immediately) and follow the removal lifecycle.
-
-New Editors are instantiated and inserted.
-
-If an Area no longer exists in the new composition, it is removed from the layout and follows the disposal lifecycle.
-
-Compatibility is defined per Editor type, not by tree shape. Two different trees may share the same Editor instances.
-
-This avoids destroying an entire Area just because its internal composition changed.
-
+* Editors already present and compatible are preserved.
+* Editors no longer needed are removed (not destroyed immediately) and follow the removal lifecycle.
+* New Editors are instantiated and inserted.
+* If an Area no longer exists in the new composition, it is removed from the layout and follows the disposal lifecycle.
+* Compatibility is defined per Editor type, not by tree shape. Two different trees may share the same Editor instances.
+* This avoids destroying an entire Area just because its internal composition changed.
+* 
 ## 7. Overlays
 ### 7.1 Concept
 An Overlay is a floating layer that the Workspace positions over a Region of Areas.
 
 The Overlay:
 
-Does not interfere with the layout — it floats over the Areas.
+* Does not interfere with the layout — it floats over the Areas.
+* Is not an Area. It is not hosted by any Area.
+* Is managed by the Workspace (via OverlayManager).
 
-Is not an Area. It is not hosted by any Area.
-
-Is managed by the Workspace (via OverlayManager).
-
-The Top Bar is not an Overlay. It is a structural component of the Workspace. Overlays are floating elements with their own positioning and hit-testing contracts. The distinction is architectural, not visual.
+The Top Bar is a special case. It is a structural component of the Workspace (always present, regardless of the active Flow), but it is materialized as an Overlay so that it can float over the Central Region and adapt dynamically to the visibility of the Left and Right Areas. Its geometry is managed by the OverlayManager, but its lifecycle is tied to the Workspace, not to a Flow. The distinction between the Top Bar and other Overlays (like the steps_panel) is one of lifecycle and semantics, not of materialization mechanism.
 
 ### 7.2 Regions
 A Region is a geometric area derived from the Area Layout Tree that groups related Areas.
@@ -842,69 +811,55 @@ A Region is not identified by coordinates alone. Region discovery must consisten
 
 Discovery rules:
 
-Placement provides the initial association between Areas and Regions.
+* Placement provides the initial association between Areas and Regions.
+* Placement is preserved as semantic metadata after construction.
+* If the user rearranges the tree, the association is revalidated against the current structure.
+* Placement.CENTRAL may apply to multiple Central Areas in a complex composition.
 
-Placement is preserved as semantic metadata after construction.
-
-If the user rearranges the tree, the association is revalidated against the current structure.
-
-Placement.CENTRAL may apply to multiple Central Areas in a complex composition.
-```
-  python
   @dataclass
   class Region:
       id: str                # "central", "left", "right", "bottom"
       bounds: Rect           # rectangle that contains the Region
       areas: list[Area]      # Areas that belong to the Region
       semantic_role: Placement | None
-```
+
 Why geometric, with structural support:
 
-Allows arbitrary splits.
+* Allows arbitrary splits.
+* Allows multiple Areas per region.
+* Allows future floating areas.
+* Avoids fragile inferences based on pixel coordinates.
 
-Allows multiple Areas per region.
-
-Allows future floating areas.
-
-Avoids fragile inferences based on pixel coordinates.
-
-### 7.3 Overlay geometry and interaction
+7.3 Overlay geometry and interaction
 Each Overlay defines:
 
-Target Region — the Region it floats over.
-
-Anchoring rules — how it aligns within the Region (top, bottom, left, right, margins).
-
-Resize behavior — how it adapts when the Region changes.
-
-Focus behavior — whether it can receive focus.
-
-Hit testing — how to distinguish interaction with the Overlay from interaction with content underneath.
-
-Positioning limits — minimum and maximum sizes, allowed regions.
-
-These contracts are documented in a dedicated specification.
+* Target Region — the Region it floats over.
+* Anchoring rules — how it aligns within the Region (top, bottom, left, right, margins).
+* Resize behavior — how it adapts when the Region changes.
+* Focus behavior — whether it can receive focus.
+* Hit testing — how to distinguish interaction with the Overlay from interaction with content underneath.
+* Positioning limits — minimum and maximum sizes, allowed regions.
+* These contracts are documented in a dedicated specification (see top-bar.md for the Top Bar and steps_panel.md for the Steps Panel).
 
 ### 7.4 When the layout changes
 Whenever the layout changes (new Module, split, window resize, visibility of lateral Areas), the Workspace:
 
-Recomputes the bounds of each Region.
-
-Repositions the Overlays.
-
-The Overlay is reactive.
+* Recomputes the bounds of each Region.
+* Repositions the Overlays.
+* The Overlay is reactive.
 
 ### 7.5 Other Overlays
-The Top Bar is a structural component, not an Overlay.
+The Top Bar is an Overlay managed by the OverlayManager, but it has a distinct lifecycle: it is always present when the Workspace is active.
 
 Future Overlays may include:
 
-Floating tool palettes.
-
-Context menus anchored to selection.
-
-Temporary informational panels.
+* Floating tool palettes.
+* Context menus anchored to selection.
+* Temporary informational panels.
+* The steps_panel (a flow-dependent Overlay, already specified).
 
 ### 7.6 Persistence
-The presence and configuration of Overlays are persisted in OverlayState, alongside the layout trees, inside the project file.
+The presence and configuration of flow-dependent Overlays (e.g., steps_panel) are persisted in OverlayState, alongside the layout trees, inside the project file.
+
+The Top Bar is structural and its presence is not persisted in OverlayState. However, its visibility state (shown/hidden) may be persisted in LayoutState if the user explicitly toggles it.
 

@@ -39,6 +39,8 @@ A document that records a significant architectural decision, its context, alter
 
 **See:** `docs/adr/`
 
+### Area
+
 ### Application Layer
 The layer that coordinates system operations: Commands, Services, Tasks, Flows, Events, transactions, and application-level state. It orchestrates the Domain and Infrastructure layers.
 
@@ -77,7 +79,7 @@ The layer that contains the conceptual model: Patient, Project, Scene, Object, D
 
 **See:** `docs/architecture/overview.md` §5.1`
 
-### Flow
+### Workflow
 A versioned, declarative sequence of steps that guides a user through a clinical task by coordinating steps, requirements, and modules. Flow definitions are stored as JSON; the execution engine belongs to the Application layer.
 
 **See:** `docs/architecture/clinical_workflows/clinical_workflows.md`
@@ -427,6 +429,8 @@ The mandatory English text supplied as the second positional argument to `tr()`.
 A stable semantic identifier describing meaning or intent (e.g., `tomography.segmentation.failed`). It must not depend on the displayed text or a specific UI widget.
 
 **See:** `docs/architecture/internationalization/internationalization.md` §4
+
+### TopBar
 
 ### TranslationCatalogRegistry
 The component that locates, loads, and caches translation catalogs by language and functional area.

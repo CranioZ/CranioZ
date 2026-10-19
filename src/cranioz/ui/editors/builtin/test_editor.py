@@ -84,6 +84,5 @@ class DummyEditor(Editor):
 
     # ----- Convenience for tests -------------------------------------
 
-    @property
     def tool_context(self) -> ToolContext:
         return self._tool_context

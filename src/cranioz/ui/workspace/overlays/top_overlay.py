@@ -1,42 +1,37 @@
 """TopOverlay.
 
-The TopOverlay is the first concrete Overlay in CranioZ. It
-materializes the "Painel Superior" (Top Bar) shown across the UI
-prototype: a horizontal bar anchored to the top of the Central
-Region, with a fixed height and small lateral margins.
+The TopOverlay is the first concrete Overlay in CranioZ. It materializes
+the "Painel Superior" (Top Bar) as a structural component of the Workspace,
+positioned by the OverlayManager over the Central Region.
 
-Geometric behavior (this piece):
-
+Geometric behavior:
 - Anchored to the top of the target Region.
 - Fixed height.
 - Fixed lateral and top margins.
-- Width spans the Region minus the lateral margins.
+- Width spans the Region minus the lateral margins (dynamic).
 
-Content behavior (future pieces):
-
-- The three segments (left, center, right) described in the
-  prototype are not built here. This piece provides a container
-  widget with an accessible content layout so that the Workspace
-  (or a dedicated TopBar composition) can populate it later
-  without changing the TopOverlay contract.
+Structural behavior:
+- Contains three segments: Left, Center, Right.
+- The Center segment is always horizontally centered within the Top Bar.
+- The Left and Right segments are anchored to their respective edges.
+- The content of each segment is populated by future pieces (e.g., the
+  TopBar composition). This class only provides the containers.
 
 Design rules:
-
 - The TopOverlay computes its own geometry from the Region Bounds
   it receives in ``reposition()``. It does not receive a
   pre-computed position.
-- The overlay_id and target_region are class-level constants. Every
-  TopOverlay instance targets the Central Region and has the same
-  identity.
-- The widget is a plain QFrame. Styling (colors, borders) will be
-  applied later through the ThemeService, via Qt stylesheets keyed
-  by the object name.
+- The overlay_id and target_region are class-level constants.
+- The widget is a plain QFrame. Styling (colors, borders, translucency)
+  is NOT applied here. The ThemeService (future) will be responsible
+  for the visual presentation.
 - The TopOverlay never destroys its widget. It can be hidden and
   shown again; the widget instance remains the same.
 """
 
 from __future__ import annotations
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -54,12 +49,7 @@ class TopOverlayError(ValueError):
 
 
 class TopOverlay(Overlay):
-    """Concrete Overlay implementing the Top Bar geometry.
-
-    The TopOverlay is anchored to the top of the Central Region. Its
-    height is fixed; its width follows the Region's width minus the
-    configured lateral margins.
-    """
+    """Concrete Overlay implementing the Top Bar geometry and structure."""
 
     # ----- Class-level constants ------------------------------------
 
@@ -95,12 +85,30 @@ class TopOverlay(Overlay):
         self._widget.setObjectName("top_overlay")
         self._widget.setFixedHeight(height)
 
-        # A horizontal layout is the natural container for the three
-        # segments. The segments themselves are added by a future
-        # piece; the layout is exposed via content_layout().
+        # The root layout contains the three segments.
+        # The Center segment is centered by inserting stretches
+        # before and after it.
         self._layout = QHBoxLayout(self._widget)
         self._layout.setContentsMargins(4, 4, 4, 4)
         self._layout.setSpacing(4)
+        self._layout.setAlignment(Qt.AlignmentFlag.AlignVCenter)
+
+        self._left_segment = QWidget()
+        self._left_segment.setObjectName("top_overlay.left_segment")
+
+        self._center_segment = QWidget()
+        self._center_segment.setObjectName("top_overlay.center_segment")
+
+        self._right_segment = QWidget()
+        self._right_segment.setObjectName("top_overlay.right_segment")
+
+        # The center segment is guaranteed to be centered by
+        # inserting equal stretches on both sides.
+        self._layout.addWidget(self._left_segment, alignment=Qt.AlignmentFlag.AlignLeft)
+        self._layout.addStretch(1)
+        self._layout.addWidget(self._center_segment, alignment=Qt.AlignmentFlag.AlignCenter)
+        self._layout.addStretch(1)
+        self._layout.addWidget(self._right_segment, alignment=Qt.AlignmentFlag.AlignRight)
 
     # ----- Overlay API ----------------------------------------------
 
@@ -160,12 +168,42 @@ class TopOverlay(Overlay):
         """Return the vertical margin applied to the Top Bar."""
         return self._margin_y
 
-    def content_layout(self) -> QLayout:
-        """Return the layout that will hold the Top Bar's content.
+    # ----- Segment accessors ----------------------------------------
 
-        Future pieces (the Workspace or a dedicated TopBar
-        composition) add the left, center, and right segments to
-        this layout. The TopOverlay itself does not create those
-        segments: it only provides the container and its geometry.
+    def left_segment(self) -> QWidget:
+        """Return the container for the Left segment.
+
+        Future pieces (the TopBar composition) populate this
+        container with the Menu, Home, and Toggle Area Left actions.
+        """
+        return self._left_segment
+
+    def center_segment(self) -> QWidget:
+        """Return the container for the Center segment.
+
+        Future pieces populate this container with the Module tabs
+        and the '+' button. The segment is always horizontally
+        centered within the Top Bar.
+        """
+        return self._center_segment
+
+    def right_segment(self) -> QWidget:
+        """Return the container for the Right segment.
+
+        Future pieces populate this container with the Extras menu,
+        the Toggle Area Bottom and Toggle Area Right actions, and
+        the window controls.
+        """
+        return self._right_segment
+
+    # ----- Content layout -------------------------------------------
+
+    def content_layout(self) -> QLayout:
+        """Return the QLayout that arranges the three segments.
+
+        Exposed so that future pieces (the TopBar composition) can
+        inspect or extend the segment arrangement without reaching
+        into private state. The layout is stable across calls: the
+        same instance is returned every time.
         """
         return self._layout
