@@ -6,7 +6,7 @@ or remote storage. Concrete adapters live in `infrastructure/` (e.g.
 `FilesystemProjectRepository`) or in the application layer for test
 doubles (e.g. `InMemoryProjectRepository`).
 
-Design rules (see `project.md` §12):
+Design rules (see `project.md` §11-§12):
 
 - The repository is *not* the lifecycle authority. It does not decide
   whether a project should be created, opened, or deleted. It performs
