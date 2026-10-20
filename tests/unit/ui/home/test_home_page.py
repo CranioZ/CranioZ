@@ -1,0 +1,177 @@
+"""Tests for HomePage."""
+
+from __future__ import annotations
+
+from pytestqt.qtbot import QtBot
+
+from cranioz.application.event_bus import EventBus
+from cranioz.application.project.in_memory_project_repository import (
+    InMemoryProjectRepository,
+)
+from cranioz.application.project.project_access_policy import (
+    AllowAllProjectAccessPolicy,
+)
+from cranioz.application.project.project_catalog import ProjectCatalog
+from cranioz.application.project.project_manager import ProjectManager
+from cranioz.domain.patient.value_objects.patient_id import PatientId
+from cranioz.domain.project.project_id import ProjectId
+from cranioz.ui.home.home_page import HomePage
+
+
+def _make_page() -> tuple[HomePage, ProjectCatalog, ProjectManager]:
+    repo = InMemoryProjectRepository()
+    catalog = ProjectCatalog(repository=repo)
+    manager = ProjectManager(
+        repository=repo,
+        event_bus=EventBus(),
+        access_policy=AllowAllProjectAccessPolicy(),
+    )
+    page = HomePage(catalog=catalog)
+    return page, catalog, manager
+
+
+def _seed(manager: ProjectManager, project_id: str, name: str) -> None:
+    manager.create_project(
+        "test",
+        project_id=ProjectId(project_id),
+        project_name=name,
+        patient_id=PatientId("pat-001"),
+        patient_display_name="Gabriel Silva",
+        clinical_procedure="orthognathic",
+    )
+
+
+# ----- Composition --------------------------------------------------
+
+
+def test_has_expected_object_name(qtbot: QtBot) -> None:
+    page, _, _ = _make_page()
+    qtbot.addWidget(page)
+    assert page.objectName() == "home_page"
+
+
+def test_starts_with_empty_table(qtbot: QtBot) -> None:
+    page, _, _ = _make_page()
+    qtbot.addWidget(page)
+    assert page._project_table_widget().row_count() == 0
+
+
+def test_refresh_reflects_new_projects(qtbot: QtBot) -> None:
+    page, _, manager = _make_page()
+    qtbot.addWidget(page)
+    _seed(manager, "p-001", "Alpha")
+    page.refresh()
+    assert page._project_table_widget().row_count() == 1
+
+
+# ----- Signal forwarding -------------------------------------------
+
+
+def test_top_bar_menu_signal_is_forwarded(qtbot: QtBot) -> None:
+    page, _, _ = _make_page()
+    qtbot.addWidget(page)
+
+    with qtbot.waitSignal(page.menu_requested, timeout=1000):
+        page._top_bar_widget()._menu_button.click()
+
+
+def test_top_bar_help_signal_is_forwarded(qtbot: QtBot) -> None:
+    page, _, _ = _make_page()
+    qtbot.addWidget(page)
+
+    with qtbot.waitSignal(page.help_requested, timeout=1000):
+        page._top_bar_widget()._help_button.click()
+
+
+def test_top_bar_settings_signal_is_forwarded(qtbot: QtBot) -> None:
+    page, _, _ = _make_page()
+    qtbot.addWidget(page)
+
+    with qtbot.waitSignal(page.settings_requested, timeout=1000):
+        page._top_bar_widget()._settings_button.click()
+
+
+def test_sidebar_community_signal_is_forwarded(qtbot: QtBot) -> None:
+    page, _, _ = _make_page()
+    qtbot.addWidget(page)
+
+    with qtbot.waitSignal(page.community_requested, timeout=1000):
+        page._sidebar_widget().button_for("community").click()
+
+
+def test_new_project_signal_is_forwarded(qtbot: QtBot) -> None:
+    page, _, _ = _make_page()
+    qtbot.addWidget(page)
+
+    with qtbot.waitSignal(page.new_project_requested, timeout=1000):
+        page._project_table_widget()._new_button.click()
+
+
+# ----- Start button behavior ---------------------------------------
+
+
+def test_start_button_disabled_initially(qtbot: QtBot) -> None:
+    page, _, _ = _make_page()
+    qtbot.addWidget(page)
+    assert page._start_button_widget().isEnabled() is False
+
+
+def test_start_button_stays_disabled_with_only_project(qtbot: QtBot) -> None:
+    page, _, manager = _make_page()
+    qtbot.addWidget(page)
+    _seed(manager, "p-001", "Alpha")
+    page.refresh()
+    page._project_table_widget()._table.selectRow(0)
+    assert page._start_button_widget().isEnabled() is False
+
+
+def test_start_button_stays_disabled_with_only_flow(qtbot: QtBot) -> None:
+    page, _, _ = _make_page()
+    qtbot.addWidget(page)
+    page._flow_list_widget().set_flows([("orthognathic", "Cirurgia")])
+    page._flow_list_widget()._flow_buttons["orthognathic"].click()
+    assert page._start_button_widget().isEnabled() is False
+
+
+def test_start_button_enables_with_project_and_flow(qtbot: QtBot) -> None:
+    page, _, manager = _make_page()
+    qtbot.addWidget(page)
+    _seed(manager, "p-001", "Alpha")
+    page.refresh()
+
+    page._project_table_widget()._table.selectRow(0)
+    page._flow_list_widget().set_flows([("orthognathic", "Cirurgia")])
+    page._flow_list_widget()._flow_buttons["orthognathic"].click()
+
+    assert page._start_button_widget().isEnabled() is True
+
+
+def test_start_button_emits_open_requested(qtbot: QtBot) -> None:
+    page, _, manager = _make_page()
+    qtbot.addWidget(page)
+    _seed(manager, "p-001", "Alpha")
+    page.refresh()
+
+    page._project_table_widget()._table.selectRow(0)
+    page._flow_list_widget().set_flows([("orthognathic", "Cirurgia")])
+    page._flow_list_widget()._flow_buttons["orthognathic"].click()
+
+    with qtbot.waitSignal(
+        page.project_open_requested, timeout=1000
+    ) as blocker:
+        page._start_button_widget().click()
+
+    assert blocker.args[0] == ProjectId("p-001")
+    assert blocker.args[1] == "orthognathic"
+
+
+# ----- Architectural contract --------------------------------------
+
+
+def test_home_page_has_no_project_manager_reference(
+    qtbot: QtBot,
+) -> None:
+    """HomePage must not hold a ProjectManager; only the ProjectCatalog."""
+    page, _, _ = _make_page()
+    qtbot.addWidget(page)
+    assert not hasattr(page, "_manager")

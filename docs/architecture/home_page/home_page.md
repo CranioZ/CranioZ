@@ -719,3 +719,35 @@ The Homepage is therefore the **entry point and presentation/catalog layer** of 
 It displays Projects and Flow definitions, captures user intentions, and delegates operations to the Application layer.
 
 It does not create, modify, save, delete, or directly load Projects.
+
+# 25. Buttons
+
+    HomePage
+    ├── HomeTopBar
+    │   ├── ☰ menu            → emite menu_requested
+    │   ├── CranioZ
+    │   ├── ? ajuda           → emite help_requested
+    │   └── ⚙ configurações   → emite settings_requested
+    │
+    ├── CommunitySidebar
+    │   ├── Comunidade           → emite community_requested
+    │   ├── Biblioteca de objetos→ emite library_requested
+    │   ├── Novidades            → emite news_requested
+    │   ├── Sugerir melhorias    → emite feedback_requested
+    │   └── Contribuir           → emite contribute_requested
+    │
+    ├── ProjectTable
+    │   ├── [Novo projeto]       → emite new_project_requested()
+    │   ├── [Remover projeto]    → emite remove_project_requested(project_id)
+    │   ├── [Busca]
+    │   ├── [Expandir]
+    │   └── QTableWidget
+    │
+    └── FlowList
+        ├── [Gerir Fluxos]       → emite manage_flows_requested()
+        └── Lista de fluxos
+    
+    StartButton (flutuante)
+    ├── Cinza (padrão)
+    └── Verde (só quando projeto + fluxo selecionados)
+        → emite project_open_requested(project_id, flow_id)
