@@ -90,27 +90,28 @@ def test_selection_emits_signal(qtbot: QtBot) -> None:
     assert blocker.args[0] == ProjectId("p-001")
 
 
-def test_remove_button_emits_signal(qtbot: QtBot) -> None:
-    catalog, manager = _make_catalog_and_manager()
-    _seed(manager, "p-001", "Alpha")
+def test_manage_button_emits_signal(qtbot: QtBot) -> None:
+    """The 'Gerir projetos' button emits manage_projects_requested (no arg)."""
+    catalog, _ = _make_catalog_and_manager()
     table = ProjectTable(catalog)
     qtbot.addWidget(table)
-    table._table.selectRow(0)
 
     with qtbot.waitSignal(
-        table.remove_project_requested, timeout=1000
+        table.manage_projects_requested, timeout=1000
     ) as blocker:
-        table._remove_button.click()
+        table._manage_button.click()
 
-    assert blocker.args[0] == ProjectId("p-001")
+    # No argument: managing projects is not about a specific project.
+    assert blocker.args == []
 
 
-def test_remove_button_disabled_without_selection(qtbot: QtBot) -> None:
+def test_manage_button_is_always_enabled(qtbot: QtBot) -> None:
+    """The 'Gerir projetos' button does not depend on selection."""
     catalog, manager = _make_catalog_and_manager()
     _seed(manager, "p-001", "Alpha")
     table = ProjectTable(catalog)
     qtbot.addWidget(table)
-    assert table._remove_button.isEnabled() is False
+    assert table._manage_button.isEnabled() is True
 
 
 def test_new_button_emits_signal(qtbot: QtBot) -> None:

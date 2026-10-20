@@ -4,9 +4,13 @@ Displays five community-related actions. Each emits a signal; the
 HomePage re-emits it; the MainWindow opens the appropriate URL or
 dialog.
 
-The sidebar is intentionally non-collapsible in this piece. The
-prototype shows it always visible. A toggle can be added in a later
-piece if users need the horizontal space.
+Visibility:
+- The sidebar is hidden by default. The ☰ button in the HomeTopBar
+  toggles it. It is an "extra" resource, not part of the default
+  workflow.
+- It fills the full height of the HomePage (vertical QSizePolicy =
+  Expanding), aligning with the top and bottom edges of the right
+  column — not just the content above the bottom bar.
 """
 
 from __future__ import annotations
@@ -14,6 +18,7 @@ from __future__ import annotations
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QPushButton,
+    QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
@@ -40,6 +45,14 @@ class CommunitySidebar(QWidget):
         super().__init__(parent)
         self.setObjectName("home_page.community_sidebar")
         self.setFixedWidth(200)
+        # Expand vertically: fill the full height of the HomePage,
+        # not just the content above the bottom bar. Without this,
+        # the QHBoxLayout that hosts the sidebar would align it to
+        # the top with its natural height (the sum of the buttons).
+        self.setSizePolicy(
+            QSizePolicy.Policy.Fixed,
+            QSizePolicy.Policy.Expanding,
+        )
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(8, 8, 8, 8)

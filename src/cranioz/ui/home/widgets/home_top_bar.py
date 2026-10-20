@@ -2,12 +2,12 @@
 
 Displays the menu icon, the application title, and the help/settings
 icons. Every control emits a signal; nothing here executes an
-operation. The HomePage re-emits these signals; the MainWindow (piece
-7.6b) decides what to do.
+operation.
 
-The bar is a plain QWidget, not a QToolBar. The prototype shows a
-custom-drawn bar with a specific background color and spacing that
-QToolBar's defaults (drag handle, overflow) do not match.
+The ☰ button toggles the CommunitySidebar. It does not emit a
+generic "menu requested"; the sidebar is the only thing it
+controls. A future application menu (if any) will be a separate
+control.
 """
 
 from __future__ import annotations
@@ -24,19 +24,22 @@ from PySide6.QtWidgets import (
 class HomeTopBar(QWidget):
     """Top bar of the Home Page."""
 
-    menu_requested = Signal()
+    FIXED_HEIGHT: int = 48
+
+    toggle_sidebar_requested = Signal()
     help_requested = Signal()
     settings_requested = Signal()
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setObjectName("home_page.top_bar")
+        self.setFixedHeight(self.FIXED_HEIGHT)
 
         self._menu_button = QPushButton("☰")
         self._menu_button.setObjectName("home_page.top_bar.menu")
         self._menu_button.setFlat(True)
         self._menu_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        self._menu_button.clicked.connect(self.menu_requested)
+        self._menu_button.clicked.connect(self.toggle_sidebar_requested)
 
         self._title = QLabel("CranioZ")
         self._title.setObjectName("home_page.top_bar.title")

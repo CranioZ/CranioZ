@@ -1,9 +1,16 @@
 """ProjectTable — the "Lista de projetos" section of the Home Page.
 
 Displays the ProjectSummaries from the ProjectCatalog. Emits signals
-for user actions: selection, new project, remove project. It does not
+for user actions: selection, new project, manage projects. It does not
 create, delete, or open projects; the HomePage re-emits the signals
 and the MainWindow (piece 7.6b) executes the operations.
+
+The "Gerir projetos" button replaces the previous "Remover projeto".
+Rationale: the HomePage should not expose destructive operations
+directly. Project deletion belongs in a management page (settings /
+project management, piece 7.6d) where the user has context: archive,
+export, import, delete. The HomePage opens that page; it does not
+delete a project with one click.
 
 Widget choice: QTableWidget, not QTableView + model. A surgeon
 typically has dozens of projects, not thousands. QTableWidget handles
@@ -38,10 +45,10 @@ _COLUMNS = ("Nome", "ID", "Sexo", "Idade", "Criação do projeto", "Última modi
 
 
 class ProjectTable(QWidget):
-    """Project listing with search, create/remove buttons, and selection."""
+    """Project listing with search, create/manage buttons, and selection."""
 
     new_project_requested = Signal()
-    remove_project_requested = Signal(object)  # ProjectId
+    manage_projects_requested = Signal()
     project_selected = Signal(object)  # ProjectId
 
     def __init__(
@@ -65,10 +72,9 @@ class ProjectTable(QWidget):
         self._new_button.setObjectName("home_page.project_table.new")
         self._new_button.clicked.connect(self.new_project_requested)
 
-        self._remove_button = QPushButton("Remover projeto")
-        self._remove_button.setObjectName("home_page.project_table.remove")
-        self._remove_button.setEnabled(False)
-        self._remove_button.clicked.connect(self._on_remove_clicked)
+        self._manage_button = QPushButton("Gerir projetos")
+        self._manage_button.setObjectName("home_page.project_table.manage")
+        self._manage_button.clicked.connect(self.manage_projects_requested)
 
         self._search_edit = QLineEdit()
         self._search_edit.setObjectName("home_page.project_table.search")
@@ -80,7 +86,7 @@ class ProjectTable(QWidget):
         header.addWidget(title)
         header.addStretch(1)
         header.addWidget(self._new_button)
-        header.addWidget(self._remove_button)
+        header.addWidget(self._manage_button)
         header.addWidget(self._search_edit)
 
         # ----- Table -----
@@ -152,7 +158,6 @@ class ProjectTable(QWidget):
             self._set_cell(row, 3, _format_age(summary))
             self._set_cell(row, 4, _format_datetime(summary.created_at))
             self._set_cell(row, 5, _format_datetime(summary.updated_at))
-        self._remove_button.setEnabled(False)
 
     def _set_cell(self, row: int, column: int, text: str) -> None:
         item = QTableWidgetItem(text)
@@ -163,14 +168,8 @@ class ProjectTable(QWidget):
 
     def _on_selection_changed(self) -> None:
         project_id = self.selected_project_id()
-        self._remove_button.setEnabled(project_id is not None)
         if project_id is not None:
             self.project_selected.emit(project_id)
-
-    def _on_remove_clicked(self) -> None:
-        project_id = self.selected_project_id()
-        if project_id is not None:
-            self.remove_project_requested.emit(project_id)
 
 
 # ----- Formatting helpers --------------------------------------------
@@ -179,15 +178,16 @@ class ProjectTable(QWidget):
 def _format_sex(summary: ProjectSummary) -> str:
     # The ProjectSummary does not carry sex; the project metadata only
     # has patient_display_name. Column is reserved, filled later when
-    # the Patient module provides sex. Empty placeholder is honest.
+    # the Patient module provides sex. An em-dash placeholder is
+    # honest: it says "not available" rather than "missing".
     del summary
-    return ""
+    return "—"
 
 
 def _format_age(summary: ProjectSummary) -> str:
     # Same rationale as _format_sex.
     del summary
-    return ""
+    return "—"
 
 
 def _format_datetime(value: datetime) -> str:

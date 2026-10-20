@@ -100,7 +100,7 @@ class FlowList(QWidget):
         self._flow_buttons.clear()
 
         # Remove placeholder if flows exist.
-        if flows and self._placeholder.isVisible():
+        if flows:
             self._placeholder.setParent(None)
             self._placeholder.deleteLater()
 

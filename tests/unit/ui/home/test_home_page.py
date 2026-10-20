@@ -67,12 +67,27 @@ def test_refresh_reflects_new_projects(qtbot: QtBot) -> None:
 # ----- Signal forwarding -------------------------------------------
 
 
-def test_top_bar_menu_signal_is_forwarded(qtbot: QtBot) -> None:
+def test_sidebar_hidden_by_default(qtbot: QtBot) -> None:
+    """The CommunitySidebar starts hidden (extra resource)."""
     page, _, _ = _make_page()
     qtbot.addWidget(page)
+    assert page._sidebar_widget().isHidden() is True
 
-    with qtbot.waitSignal(page.menu_requested, timeout=1000):
-        page._top_bar_widget()._menu_button.click()
+
+def test_top_bar_toggle_sidebar_signal_is_handled(qtbot: QtBot) -> None:
+    """The ☰ toggles the CommunitySidebar visibility."""
+    page, _, _ = _make_page()
+    qtbot.addWidget(page)
+    page.show()
+    qtbot.waitExposed(page)
+
+    assert page._sidebar_widget().isHidden() is True
+
+    page._top_bar_widget()._menu_button.click()
+    assert page._sidebar_widget().isHidden() is False
+
+    page._top_bar_widget()._menu_button.click()
+    assert page._sidebar_widget().isHidden() is True
 
 
 def test_top_bar_help_signal_is_forwarded(qtbot: QtBot) -> None:
@@ -105,6 +120,14 @@ def test_new_project_signal_is_forwarded(qtbot: QtBot) -> None:
 
     with qtbot.waitSignal(page.new_project_requested, timeout=1000):
         page._project_table_widget()._new_button.click()
+
+
+def test_manage_projects_signal_is_forwarded(qtbot: QtBot) -> None:
+    page, _, _ = _make_page()
+    qtbot.addWidget(page)
+
+    with qtbot.waitSignal(page.manage_projects_requested, timeout=1000):
+        page._project_table_widget()._manage_button.click()
 
 
 # ----- Start button behavior ---------------------------------------
@@ -175,3 +198,19 @@ def test_home_page_has_no_project_manager_reference(
     page, _, _ = _make_page()
     qtbot.addWidget(page)
     assert not hasattr(page, "_manager")
+
+
+# ----- Bottom bar composition --------------------------------------
+
+
+def test_bottom_bar_is_present(qtbot: QtBot) -> None:
+    page, _, _ = _make_page()
+    qtbot.addWidget(page)
+    assert page._bottom_bar_widget() is not None
+    assert page._bottom_bar_widget().start_button() is page._start_button_widget()
+
+
+def test_bottom_bar_is_ancestor_of_start_button(qtbot: QtBot) -> None:
+    page, _, _ = _make_page()
+    qtbot.addWidget(page)
+    assert page._bottom_bar_widget().isAncestorOf(page._start_button_widget())

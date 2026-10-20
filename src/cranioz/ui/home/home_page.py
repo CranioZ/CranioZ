@@ -17,13 +17,25 @@ Application executes.
 Layout:
 
     HomePage
-    ├── HomeTopBar (menu, title, help, settings)
-    ├── QHBoxLayout
-    │   ├── CommunitySidebar (community, library, news, feedback, contribute)
-    │   └── QSplitter(Vertical)
-    │       ├── ProjectTable (list, search, new/remove, selection)
-    │       └── FlowList (list, manage, selection)
-    └── StartButton (floating, bottom-right)
+    └── QHBoxLayout
+        ├── CommunitySidebar (200 px, hidden by default, full height)
+        └── QVBoxLayout
+            ├── HomeTopBar       (stretch 8  — ~8%)
+            ├── ProjectTable     (stretch 42 — ~42%)
+            ├── FlowList         (stretch 42 — ~42%)
+            └── HomeBottomBar    (stretch 8  — ~8%)
+
+The right column uses a plain QVBoxLayout with stretch factors,
+not a QSplitter. The prototype shows fixed panels, not a draggable
+divider. Proportional heights (8/42/42/8) keep the four bars
+visually balanced regardless of window size; setMinimumHeight on
+the top and bottom bars protects against very small windows.
+
+CommunitySidebar is hidden by default. The ☰ button in the top bar
+toggles it. The sidebar is an "extra" resource, not part of the
+default workflow. It fills the full height of the HomePage; when
+visible, it aligns with the top and bottom edges of the right
+column, not just the content above the bottom bar.
 
 StartButton state:
 
@@ -34,11 +46,9 @@ StartButton state:
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QResizeEvent
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QHBoxLayout,
-    QSplitter,
     QVBoxLayout,
     QWidget,
 )
@@ -47,6 +57,7 @@ from cranioz.application.project.project_catalog import ProjectCatalog
 from cranioz.domain.project.project_id import ProjectId
 from cranioz.ui.home.widgets.community_sidebar import CommunitySidebar
 from cranioz.ui.home.widgets.flow_list import FlowList
+from cranioz.ui.home.widgets.home_bottom_bar import HomeBottomBar
 from cranioz.ui.home.widgets.home_top_bar import HomeTopBar
 from cranioz.ui.home.widgets.project_table import ProjectTable
 from cranioz.ui.home.widgets.start_button import StartButton
@@ -57,7 +68,6 @@ class HomePage(QWidget):
 
     # ----- Top bar ---------------------------------------------------
 
-    menu_requested = Signal()
     help_requested = Signal()
     settings_requested = Signal()
 
@@ -72,7 +82,7 @@ class HomePage(QWidget):
     # ----- Project table ---------------------------------------------
 
     new_project_requested = Signal()
-    remove_project_requested = Signal(object)  # ProjectId
+    manage_projects_requested = Signal()
     project_selected = Signal(object)  # ProjectId
 
     # ----- Flow list -------------------------------------------------
@@ -100,30 +110,43 @@ class HomePage(QWidget):
         self._sidebar = CommunitySidebar(self)
         self._project_table = ProjectTable(catalog, self)
         self._flow_list = FlowList(self)
-        self._start_button = StartButton(self)
+        self._start_button = StartButton()
+        self._bottom_bar = HomeBottomBar(self._start_button, self)
 
-        splitter = QSplitter(Qt.Orientation.Vertical, self)
-        splitter.setObjectName("home_page.splitter")
-        splitter.addWidget(self._project_table)
-        splitter.addWidget(self._flow_list)
-        splitter.setStretchFactor(0, 3)
-        splitter.setStretchFactor(1, 2)
+        # ----- Right column: proportional heights 8 / 42 / 42 / 8 ----
+        # No QSplitter: the prototype shows fixed panels, not a
+        # draggable divider. If per-user proportions are ever needed,
+        # that is a separate piece (LayoutState persistence).
+        right_column = QWidget(self)
+        right_layout = QVBoxLayout(right_column)
+        right_layout.setContentsMargins(0, 0, 0, 0)
+        right_layout.setSpacing(0)
+        right_layout.addWidget(self._top_bar, stretch=8)
+        right_layout.addWidget(self._project_table, stretch=42)
+        right_layout.addWidget(self._flow_list, stretch=42)
+        right_layout.addWidget(self._bottom_bar, stretch=8)
 
+        # ----- Whole page: sidebar (left) | right column ---------------
+        # The sidebar uses QSizePolicy.Expanding vertically (see its
+        # class), so it fills the full height of the HomePage — not
+        # just the height of the content above the bottom bar.
         content = QWidget(self)
         content_layout = QHBoxLayout(content)
         content_layout.setContentsMargins(0, 0, 0, 0)
         content_layout.setSpacing(0)
         content_layout.addWidget(self._sidebar)
-        content_layout.addWidget(splitter, stretch=1)
+        content_layout.addWidget(right_column, stretch=1)
 
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
-        root.addWidget(self._top_bar)
-        root.addWidget(content, stretch=1)
+        root.addWidget(content)
 
         self._connect_signals()
         self._sync_start_button()
+
+        # CommunitySidebar is hidden by default. The ☰ button toggles it.
+        self._sidebar.setVisible(False)
 
     # ----- Public API -----------------------------------------------
 
@@ -137,17 +160,11 @@ class HomePage(QWidget):
     def selected_flow_id(self) -> str | None:
         return self._selected_flow_id
 
-    # ----- Qt events ------------------------------------------------
-
-    def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802
-        super().resizeEvent(event)
-        self._reposition_start_button()
-
     # ----- Internals ------------------------------------------------
 
     def _connect_signals(self) -> None:
         tb = self._top_bar
-        tb.menu_requested.connect(self.menu_requested)
+        tb.toggle_sidebar_requested.connect(self._on_toggle_sidebar)
         tb.help_requested.connect(self.help_requested)
         tb.settings_requested.connect(self.settings_requested)
 
@@ -160,7 +177,7 @@ class HomePage(QWidget):
 
         pt = self._project_table
         pt.new_project_requested.connect(self.new_project_requested)
-        pt.remove_project_requested.connect(self.remove_project_requested)
+        pt.manage_projects_requested.connect(self.manage_projects_requested)
         pt.project_selected.connect(self._on_project_selected)
 
         fl = self._flow_list
@@ -193,13 +210,8 @@ class HomePage(QWidget):
             self._selected_project_id, self._selected_flow_id
         )
 
-    def _reposition_start_button(self) -> None:
-        margin = 24
-        size = self._start_button.size()
-        x = self.width() - size.width() - margin
-        y = self.height() - size.height() - margin
-        self._start_button.move(x, y)
-        self._start_button.raise_()
+    def _on_toggle_sidebar(self) -> None:
+        self._sidebar.setVisible(not self._sidebar.isVisible())
 
     # ----- Convenience for tests ------------------------------------
 
@@ -214,6 +226,9 @@ class HomePage(QWidget):
 
     def _flow_list_widget(self) -> FlowList:
         return self._flow_list
+
+    def _bottom_bar_widget(self) -> HomeBottomBar:
+        return self._bottom_bar
 
     def _start_button_widget(self) -> StartButton:
         return self._start_button
