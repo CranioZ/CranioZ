@@ -1,30 +1,24 @@
-"""Project subsystem — application layer.
-
-Public API of the Project management subsystem:
-
-- `ProjectRepository` — persistence port (Protocol).
-- `InMemoryProjectRepository` — reference implementation, test-only.
-- The `ProjectRepositoryError` family — application-level errors.
-- `ProjectContext`, `ObjectReference` — runtime initialization snapshot.
-- Lifecycle events: `ProjectCreated`, `ProjectOpened`, `ProjectUpdated`,
-  `ProjectClosing`, `ProjectClosed`, `ProjectDeleted`.
-
-Infrastructure adapters (e.g. `FilesystemProjectRepository`) live in
-`cranioz.infrastructure.project` and are imported by the bootstrap,
-not by this package.
-"""
+"""Project subsystem — application layer."""
 
 from cranioz.application.project.in_memory_project_repository import (
     InMemoryProjectRepository,
 )
+from cranioz.application.project.project_access_policy import (
+    Actor,
+    AllowAllProjectAccessPolicy,
+    ProjectAccessPolicy,
+)
+from cranioz.application.project.project_catalog import ProjectCatalog
 from cranioz.application.project.project_context import (
     ObjectReference,
     ProjectContext,
 )
 from cranioz.application.project.project_errors import (
+    ProjectAccessDenied,
     ProjectAlreadyExists,
     ProjectCorrupted,
     ProjectError,
+    ProjectInUse,
     ProjectNotFound,
     ProjectRepositoryError,
     ProjectStorageError,
@@ -37,12 +31,18 @@ from cranioz.application.project.project_events import (
     ProjectOpened,
     ProjectUpdated,
 )
+from cranioz.application.project.project_manager import ProjectManager
 from cranioz.application.project.project_repository import ProjectRepository
 
 __all__ = [
+    "Actor",
+    "AllowAllProjectAccessPolicy",
     "InMemoryProjectRepository",
     "ObjectReference",
+    "ProjectAccessDenied",
+    "ProjectAccessPolicy",
     "ProjectAlreadyExists",
+    "ProjectCatalog",
     "ProjectClosed",
     "ProjectClosing",
     "ProjectContext",
@@ -50,6 +50,8 @@ __all__ = [
     "ProjectCreated",
     "ProjectDeleted",
     "ProjectError",
+    "ProjectInUse",
+    "ProjectManager",
     "ProjectNotFound",
     "ProjectOpened",
     "ProjectRepository",

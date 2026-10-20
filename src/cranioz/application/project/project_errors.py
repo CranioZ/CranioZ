@@ -16,6 +16,14 @@ Design rules (see `project.md` §27):
 - Errors are not `ValueError` or `KeyError` subclasses. They are a
   separate hierarchy so that callers do not accidentally conflate a
   domain validation error with an application lifecycle error.
+
+Two families live under `ProjectError`:
+
+- `ProjectRepositoryError` and subclasses — persistence failures.
+  Raised by repository implementations (filesystem, in-memory).
+- `ProjectAccessDenied`, `ProjectInUse` — application decisions.
+  Raised by the Project Manager before touching persistence. They are
+  not persistence errors and must not be caught as such.
 """
 
 from __future__ import annotations
@@ -30,6 +38,9 @@ class ProjectError(Exception):
     can raise. Catching a more specific subclass lets the caller react
     differently to, e.g., "not found" vs "already exists".
     """
+
+
+# ----- Persistence failures -----------------------------------------
 
 
 class ProjectRepositoryError(ProjectError):
@@ -87,3 +98,45 @@ class ProjectStorageError(ProjectRepositoryError):
     the underlying `OSError` as `__cause__`; callers that need the
     original exception can inspect `__cause__` explicitly.
     """
+
+
+# ----- Application decisions ---------------------------------------
+
+
+class ProjectAccessDenied(ProjectError):
+    """Raised when the access policy denies a project operation.
+
+    The operation was not attempted: no state was mutated, no event
+    was published. The policy is consulted before any other step, so
+    this error means "you were not allowed to ask", not "your request
+    was invalid".
+    """
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        project_id: ProjectId | None = None,
+    ) -> None:
+        self.project_id = project_id
+        super().__init__(message)
+
+
+class ProjectInUse(ProjectError):
+    """Raised when an operation conflicts with an open project.
+
+    The project is currently open (has an active runtime context);
+    the caller must close it first. This is a deliberate refusal,
+    not an implicit close: closing and deleting are two distinct
+    commands with different effects, and mixing them could discard
+    a context the user is still using.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        project_id: ProjectId | None = None,
+    ) -> None:
+        self.project_id = project_id
+        super().__init__(message)
