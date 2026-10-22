@@ -90,7 +90,8 @@ class ProjectTable(QWidget):
         self._search_edit = QLineEdit()
         self._search_edit.setObjectName("home_page.project_table.search")
         self._search_edit.setPlaceholderText("Buscar por nome do projeto ou do paciente")
-        self._search_edit.setMaximumWidth(280)
+        self._search_edit.setMinimumWidth(320)
+        self._search_edit.setMaximumWidth(420)
         self._search_edit.textChanged.connect(self.refresh)
 
         header = QHBoxLayout()
@@ -112,10 +113,18 @@ class ProjectTable(QWidget):
         )
         self._table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self._table.verticalHeader().setVisible(False)
-        self._table.horizontalHeader().setSectionResizeMode(
-            0, QHeaderView.ResizeMode.Stretch
+
+        header_view = self._table.horizontalHeader()
+        header_view.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        for column in range(1, len(_COLUMNS) - 1):
+            header_view.setSectionResizeMode(
+                column, QHeaderView.ResizeMode.ResizeToContents
+            )
+        header_view.setSectionResizeMode(
+            len(_COLUMNS) - 1, QHeaderView.ResizeMode.Stretch
         )
-        self._table.horizontalHeader().setStretchLastSection(True)
+        header_view.setMinimumSectionSize(80)
+
         self._table.itemSelectionChanged.connect(self._on_selection_changed)
 
         layout = QVBoxLayout(self)
