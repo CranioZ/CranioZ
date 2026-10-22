@@ -171,9 +171,11 @@ Registration order is Commands → Services → Tools → Editors → Data Types
 @dataclass(frozen=True)
 class ModuleContext:
     module_id: str
+    correlation_id: str | None
     event_subscription: EventSubscription
     event_publisher: EventPublisher
     command_bus: CommandBus
+    task_manager: TaskManager
     project_provider: Callable[[], ProjectContext | None]
     services: ServiceContainer
     telemetry: TelemetrySink

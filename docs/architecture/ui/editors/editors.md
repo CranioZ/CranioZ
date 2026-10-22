@@ -326,41 +326,128 @@ provided once at insertion and remains stable throughout the Editor's
 lifetime.
 
 ```
-text
-EditorContext
-├── SceneQuery            → read-only access to the Scene
-├── SelectionService     → query and observe the current selection
-├── CommandDispatcher    → dispatch Commands (write intention)
-├── EventSubscription    → subscribe to application events
-├── ViewStateStore       → per-Editor presentation state
-└── EditorServices       → additional Editor-scoped services
+    EditorContext
+    ├── editor_id                → stable identifier within the Area
+    ├── correlation_id           → identifies the current operation (ADR-0012)
+    ├── SceneQuery               → read-only access to the Scene
+    ├── SelectionService         → query and observe the current selection
+    ├── CommandDispatcher        → dispatch Commands (write intention)
+    ├── EventSubscription        → subscribe to application events (activation-scoped)
+    ├── ViewStateStore           → per-Editor presentation state
+    ├── TaskManager              → dispatch long-running work (ADR-0011)
+    ├── TelemetrySink            → emit events and measurements (ADR-0012)
+    └── EditorServices           → additional Editor-scoped services
 ```
-
 
 Each component has a specific role:
 
-- **`SceneQuery`** — exposes a read-only view of the Scene. The Editor never receives a mutable reference.
-- **`SelectionService`** — exposes the current selection and allows the Editor to observe selection changes.
-- **`CommandDispatcher`** — accepts Commands from the Editor. The Editor never mutates the Scene directly.
-- **`EventSubscription`** — allows the Editor to subscribe to relevant application events (e.g., `SceneChanged`, `SelectionChanged`).
-- **`ViewStateStore`** — stores per-Editor presentation state (zoom, camera, current slice, visual selection, presentation mode). It is
-  **not** part of the clinical state and is **not** the same as the Workspace `LayoutState`.
-- **`EditorServices`** — additional services scoped to the Editor (e.g., Editor-specific caches, helpers). This is deliberately a narrow extension point, not a service locator.
+- **`editor_id`** — the Editor's stable identifier within its Area.
+  Same as `Editor.editor_id`; exposed on the context so that shared
+  services (e.g., the `TaskManager` binding) can identify the owner of
+  a task.
+- **`correlation_id`** — identifies the operation currently in progress
+  (activation, Command dispatch, deactivation). It is `None` when no
+  operation is in progress. The Editor passes it to every
+  `telemetry.record_event(...)` and `telemetry.record_measurement(...)`
+  call it makes during the operation (ADR-0012 §2.3).
+- **`SceneQuery`** — exposes a read-only view of the Scene. The Editor
+  never receives a mutable reference.
+- **`SelectionService`** — exposes the current selection and allows
+  the Editor to observe selection changes.
+- **`CommandDispatcher`** — accepts Commands from the Editor. The
+  Editor never mutates the Scene directly and never talks to the
+  `CommandBus` itself.
+- **`EventSubscription`** — allows the Editor to subscribe to
+  relevant application events. Subscriptions are scoped to the
+  Editor's activation scope; they are disposed automatically when the
+  Editor is deactivated or disposed (ADR-0002 §2.1). The `EventBus`
+  itself is not exposed. The `EventSubscription` instance is
+  **stable across activations**: the Application rebinds it to a
+  fresh scope between `deactivate()` and the next `activate()`,
+  rather than creating a new instance.
+- **`ViewStateStore`** — stores per-Editor presentation state (zoom,
+  camera, current slice, visual selection, presentation mode). It is
+  **not** part of the clinical state and is **not** the same as the
+  Workspace `LayoutState`.
+- **`TaskManager`** — the only mechanism for off-thread work
+  (ADR-0011). The Editor must not create `QThread`,
+  `ThreadPoolExecutor`, `ProcessPoolExecutor`, `asyncio` loops, or raw
+  threads. Long-running operations (DICOM import, segmentation,
+  registration, mesh processing, AI inference) are dispatched through
+  `context.task_manager.dispatch(...)`.
+- **`TelemetrySink`** — emits events and measurements (ADR-0012). The
+  Editor must pass `context.correlation_id` so that events from the
+  same operation share one correlation id. The Editor includes
+  `editor_id` as an attribute on the events it produces.
+- **`EditorServices`** — additional services scoped to the Editor
+  (e.g., Editor-specific caches, helpers). This is deliberately a
+  narrow extension point, not a service locator.
 
 The Editor must depend on abstractions and avoid direct dependencies on
 concrete application components whenever possible.
 
 A Tool receives an even narrower context:
 
+```
     ToolContext
-    ├── SceneQuery → read-only access to the Scene
-    ├── SelectionService → query and observe the current selection
-    ├── CommandDispatcher → dispatch Commands
-    └── ToolServices → additional Tool-scoped services
+    ├── editor_id          → owning Editor
+    ├── correlation_id     → same as the owning Editor's context
+    ├── SceneQuery         → read-only access to the Scene
+    ├── SelectionService   → query and observe the current selection
+    ├── CommandDispatcher  → dispatch Commands
+    ├── TelemetrySink      → emit events and measurements
+    └── ToolServices       → additional Tool-scoped services
+```
 
+The `ToolContext` is a strict subset of the `EditorContext`. A Tool
+never receives `EventSubscription`, `ViewStateStore`,
+`TaskManager`, or `EditorServices`, because it does not own
+presentation state, does not subscribe to events directly, and does
+not spawn long-running work — it acts through the Editor, which owns
+the `TaskManager` binding. A Tool that needs background work returns
+a description of the work to the Editor (e.g., via a return value
+or a Command), and the Editor dispatches it.
 
-The `ToolContext` is a strict subset of the `EditorContext`. A Tool never receives `EventSubscription`, `ViewStateStore`, or
-`EditorServices`, because it does not own presentation state and does not subscribe to events directly — it acts through the Editor.
+### 15.1 Task lifecycle on the Editor
+
+The Editor owns the Tasks it dispatches through
+`EditorContext.task_manager`. When the Editor is deactivated or
+disposed, its Tasks are cancelled and awaited before the Editor's
+lifecycle hooks return. A Task that outlives its Editor is a bug.
+
+- **`initialize()`** — the Editor receives the `EditorContext` and
+  may store a reference to it. The context is stable; the `TaskManager`
+  is always available.
+- **`activate()`** — the Editor may dispatch Tasks. The
+  `TaskManager` binding is scoped to the activation; Tasks dispatched
+  in this scope are cancelled when the scope closes.
+- **`deactivate()`** — the Editor's activation scope closes. Pending
+  Tasks are cancelled cooperatively (ADR-0011 §2.4). The
+  `on_cancel` callbacks run on the GUI thread before `deactivate()`
+  returns. The Editor must not rely on a Task completing after
+  `deactivate()` returns.
+- **`dispose()`** — the Editor is removed. Any Task still running is
+  cancelled and awaited. `dispose()` is idempotent; a second call is
+  a no-op.
+
+The `EditorContext` is not recreated on `activate`/`deactivate`. The
+`TaskManager` binding it exposes is rebound to a fresh activation
+scope by the Application, mirroring the `EventSubscription` rebind
+described in ADR-0002 §2.1.
+
+### 15.2 Telemetry on the Editor
+
+The Editor emits telemetry through `EditorContext.telemetry`. The
+`correlation_id` from the context must be passed to every event and
+measurement the Editor emits during an activation. The `editor_id`
+should be included as an attribute on the events the Editor produces
+(e.g., `tool.invoked`, `viewport.camera.changed`).
+
+The Editor is responsible for not emitting patient-identifying
+information as attributes (ADR-0012 §2.10). The `TelemetrySink`
+contract is fire-and-forget; a sink that raises does not affect the
+Editor's lifecycle.
+
 
 ## 16. Editor state
 Clinical state must be separated from purely visual state.
@@ -370,6 +457,10 @@ Clinical state belongs to the application and the Scene: mandible position, oste
 Visual state may belong to the Editor: zoom, camera, current slice, visual selection, presentation mode, viewport configuration, internal toolbar layout.
 
 The Editor may declare which of its properties are persisted (persistent_state() / restore_state()) and which are derived from the Scene.
+
+**Task state is not Editor state.** A Task is owned by the `TaskManager`; the Editor only holds a `TaskHandle`. When the Editor is
+deactivated, the handle becomes invalid; the Editor must not call `wait()` on it after `deactivate()` returns. Task state is not
+persisted in `persistent_state()` and is not restored in `restore_state()`.
 
 ## 17. Overlays
 Overlays are temporary or floating elements presented over an Editor. They are internal to the Editor, not Workspace Overlays.
@@ -390,6 +481,10 @@ Guidelines:
 * Overlays must not directly change clinical state; interactive Overlays use Commands.
 
 Note: Workspace Overlays (e.g., steps_panel) are a different concept and belong to the Workspace, not to Editors.
+
+**Interactive overlays and Tasks.** An interactive overlay (e.g., a gizmo that triggers a re-computation) dispatches Tasks through the **Editor's** `EditorContext.task_manager`, not its own. The overlay does not receive a `TaskManager` directly; it uses the Editor's
+context, which is bound to the Editor's activation scope. This keeps the Task lifecycle tied to the Editor, not to the overlay widget. An
+overlay that attempts to create its own thread, `QThread`, or `asyncio` loop violates ADR-0011.
 
 ## 18. Spatial independence
 One of the fundamental principles of Editors:
@@ -464,4 +559,8 @@ Any violation produces a clear error. The Workspace does not fall back silently.
 14. The ToolRegistry provides definitions; the Toolbar creates instances.
 15. Editors must be testable without Qt. Qt-specific materialization must be isolated.
 16. Tool switching is a UI operation, not a clinical Command. It is persisted in LayoutState, not in the clinical history.
+17. Long-running work is dispatched through `EditorContext.task_manager`     (ADR-0011). The Editor does not create threads, event loops, or
+    `processEvents()` calls.
+18. Events and measurements are emitted through     `EditorContext.telemetry` with `EditorContext.correlation_id`
+    (ADR-0012). The Editor includes `editor_id` as an attribute and does not emit patient-identifying information.
 

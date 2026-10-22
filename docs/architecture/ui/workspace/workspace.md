@@ -16,6 +16,10 @@ The Workspace manages Areas and Overlays and coordinates their layout and lifecy
 
 If something is not an Area and not an Overlay, the Workspace does not interpret it. Toolbars, Tools and Modules are invisible to the Workspace, but the Workspace may use platform services (LayoutRenderer, EditorRegistry, OverlayManager) to materialize and manage its elements.
 
+The Workspace also does not own long-running work. Operations that can take more than a few milliseconds (DICOM import, segmentation,
+registration, mesh processing, AI inference) are dispatched through the `TaskManager` by the component that initiates them (an Editor, a Tool,
+or the Application layer). The Workspace cancels the Tasks it is responsible for when it is destroyed (§8), but it does not create or run them.
+
 ### 1.3 Module declares; Workspace materializes
 
 The Module declares the UI composition. The Workspace materializes that
@@ -171,44 +175,74 @@ There is no status bar. The traditional status bar role is served by the Console
 
 The Workspace does not mutate clinical state. It only presents it.
 
-```
-User action → Editor → Command → CommandBus → CommandHandler → Transaction
-↓
-Scene (mutation)
-↓
-commit
-↓
-EventBus
-↓
-Editors → redraw
+**Synchronous path** (state mutations, UI changes, short operations):
+
+```text
+User action → Editor → CommandDispatcher → CommandBus → CommandHandler
+    → Transaction → Scene (mutation) → commit → EventBus
+    → Editors redraw
 ```
 
 Read/write separation:
 
-- **Read:** the Editor accesses the Scene via `SceneProvider` (a read-only
-  API over the Scene). It never receives a mutable reference.
-- **Write:** the Editor publishes `Command`s to the `CommandBus`. It never
-  mutates the Scene directly.
+- **Read:** the Editor accesses the Scene via `SceneQuery` (a read-only
+  API over the Scene, provided by the `EditorContext`). It never
+  receives a mutable reference.
+- **Write:** the Editor dispatches `Command`s via the
+  `CommandDispatcher` (also from the `EditorContext`). The
+  `CommandDispatcher` routes them to the `CommandBus`; the Editor never
+  mutates the Scene directly and never talks to the `CommandBus`
+  itself.
 
-The `CommandHandler` (or `CommandExecutor`) is responsible for validating
-the Command, opening a transaction, applying the changes to the Domain/Scene,
-committing, and publishing the events. Editors and Tools never interact with
-the transaction directly.
+The `CommandHandler` validates the Command, opens a transaction,
+applies the changes to the Domain/Scene, commits, and publishes the
+events. Editors and Tools never interact with the transaction
+directly. This keeps the Scene as the single source of truth for
+clinical data.
 
-This keeps the Scene as the single source of truth for clinical data.
+**Asynchronous path** (long-running operations: DICOM import,
+segmentation, registration, mesh processing, AI inference):
 
-**UI operations** (switching active Areas, switching active Editors within
-an Area, changing visibility, resizing) are not clinical Commands. They
-update `LayoutState` and are persisted with the project. They are not mixed
-with the clinical undo/redo history.
+```text
+User action → Editor → TaskManager.dispatch(Task) → worker thread
+    → Task.run → progress/result/error marshalled to the GUI thread
+    → on_result callback → Command dispatch (if the task produces a
+      persistent change) → synchronous path
+```
+
+- The Editor never creates threads, `QThread`, `ThreadPoolExecutor`,
+  or `asyncio` loops. Off-thread work is dispatched exclusively
+  through `EditorContext.task_manager` (ADR-0011).
+- `Task.run` runs on a worker thread. It must not touch `QWidget`,
+  VTK render objects, the Scene, or any GUI-thread state. It reads
+  immutable snapshots and returns a value or raises an error.
+- Progress, results, and errors are delivered to the `on_progress`,
+  `on_result`, `on_error` callbacks, which the `TaskManager` invokes
+  on the **GUI thread**. The Editor updates its UI from these
+  callbacks.
+- If the task produces a persistent change, the `on_result` callback
+  dispatches a Command. The Command runs on the GUI thread through
+  the synchronous path above. The `TaskManager` does not bypass
+  Commands (ADR-0007 §2.6).
+
+**UI operations** (switching active Areas, switching active Editors
+within an Area, changing visibility, resizing) are not clinical
+Commands. They update `LayoutState` and are persisted with the
+project. They are not mixed with the clinical undo/redo history.
 
 - The **Area** manages which Editor is active within it.
 - The **Workspace** manages which Area is active globally.
 
+**Task lifecycle on Workspace teardown.** When the Workspace is
+destroyed, it cancels every Task it dispatched (or that its Editors
+dispatched through the Workspace-scoped `TaskManager` binding) and
+waits for them to reach a terminal state or the configured shutdown
+timeout (ADR-0011 §2.4). A Task that outlives its Workspace is a bug,
+not a feature. See §8.
+
 ### 3.5 The Module declares the UI composition
 The Workspace does not decide which Areas exist. Each Module declares its UI composition through a ModuleUISpec.
 ```
-python
 @dataclass(frozen=True)
 class ModuleUISpec:
     areas: list[AreaSpec]
@@ -228,6 +262,7 @@ class EditorLayoutSpec:
     children: tuple["EditorLayoutSpec", ...] = ()
     editor_id: str | None = None              # when type == LEAF
 ```
+
 Important points:
 
 * Placement is semantic metadata. It is used to associate Areas with Regions and to build the initial tree.
@@ -245,6 +280,10 @@ Validation rules (enforced before materialization):
 * A ModuleUISpec must declare at least CENTRAL.
 
 If any rule is violated, the Workspace rejects the load with a clear error. It does not fall back silently.
+
+`load_spec()` itself is synchronous and short. It does not dispatch Tasks; it validates the spec, builds the trees, and materializes the
+widgets on the GUI thread. Any data loading that the new Editors need is dispatched by those Editors after `load_spec()` returns, through
+their `EditorContext.task_manager` (ADR-0011 §2.4). The Workspace does not pre-load data on behalf of Editors.
 
 Example:
 ```
@@ -651,6 +690,10 @@ If the persisted layout is incompatible with the current ModuleUISpec, the Works
 
 If the ModuleUISpec itself is invalid, the Workspace rejects the load with a clear error. The system fallback is reserved for controlled recovery, not for masking configuration errors.
 
+Layout persistence is not telemetry. The `LayoutState` and `OverlayState` are persisted with the project (ADR-0009, ADR-0010);
+they are not emitted through the `TelemetrySink`. A `load_spec` call emits `workspace.load_spec` and `workspace.load_spec.duration`
+(§9.1), but the serialized layout is not itself a telemetry attribute.
+
 ### 5.7 Why an N-ary tree
 Simple: two node types.
 
@@ -775,6 +818,9 @@ Precedence:
 * Missing or incompatible layout: rebuild from the ModuleUISpec.
 * Invalid ModuleUISpec: report a clear error. Do not use the system fallback to hide configuration errors.
 
+On Module switch, the previous Module's activation scope is closed by the Application layer, which cancels its Tasks (`modules.md` v10 §9).
+The Workspace does not cancel Tasks on Module switch; it is not the owner of those Tasks. The Workspace's role is limited to the final teardown (§8).
+
 ### 6.5 Area and Editor reconciliation
 Area identity is stable within a layout context (project_id + module_id). It does not imply that area.central is the same instance across all Modules.
 
@@ -816,12 +862,15 @@ Discovery rules:
 * If the user rearranges the tree, the association is revalidated against the current structure.
 * Placement.CENTRAL may apply to multiple Central Areas in a complex composition.
 
-  @dataclass
-  class Region:
-      id: str                # "central", "left", "right", "bottom"
-      bounds: Rect           # rectangle that contains the Region
-      areas: list[Area]      # Areas that belong to the Region
-      semantic_role: Placement | None
+```
+python
+@dataclass
+class Region:
+    id: str                # "central", "left", "right", "bottom"
+    bounds: Rect           # rectangle that contains the Region
+    areas: list[Area]      # Areas that belong to the Region
+    semantic_role: Placement | None
+```
 
 Why geometric, with structural support:
 
@@ -863,3 +912,132 @@ The presence and configuration of flow-dependent Overlays (e.g., steps_panel) ar
 
 The Top Bar is structural and its presence is not persisted in OverlayState. However, its visibility state (shown/hidden) may be persisted in LayoutState if the user explicitly toggles it.
 
+## 8. Task lifecycle
+
+The Workspace is the owner of its own Task scope. It does not dispatch
+Tasks directly; Editors and Modules do, through their respective
+contexts. However, the Workspace is responsible for cancelling Tasks
+associated with it when the Workspace is torn down.
+
+### 8.1 What "associated with the Workspace" means
+
+A Task is associated with a Workspace when:
+
+- It was dispatched through an `EditorContext` whose Editor is hosted
+  by an Area in this Workspace, **and**
+- The Task's `TaskManager` binding is the Workspace-scoped binding
+  (the `TaskManager` instance injected into the Workspace by
+  `MainWindow`, ADR-0011 §2.7).
+
+A Task dispatched by an Editor is owned by that Editor, but the
+Workspace is responsible for cancelling any Editor-owned Task that is
+still pending when the Editor is disposed. The Editor's `deactivate()`
+already cancels its own activation-scoped Tasks (`editors.md` §15.1);
+the Workspace's responsibility is the final teardown: when the
+Workspace is destroyed, every remaining Editor-owned Task is
+cancelled and awaited before `Workspace` destruction completes.
+
+### 8.2 Cancellation on Workspace teardown
+
+When the Workspace is destroyed (e.g., when `MainWindow` switches from
+a Workspace to another, or when the application closes):
+
+1. Every Editor hosted by an Area in the Workspace is disposed. Each
+   Editor's `dispose()` cancels and awaits its pending Tasks
+   (`editors.md` §15.1).
+2. Any Task that remains (dispatched through an `EditorContext` whose
+   Editor was not properly disposed, e.g., because of an exception
+   during teardown) is cancelled by the Workspace through the
+   `TaskManager` binding it received from `MainWindow`.
+3. The Workspace waits for cancelled Tasks to reach a terminal state,
+   up to the shutdown timeout configured on the `TaskManager`
+   (ADR-0011 §2.4).
+4. The Workspace returns from `closeEvent` (if hosted in a window) or
+   from its destruction path.
+
+The Workspace does not call `TaskManager.shutdown()`. That is the
+bootstrap's responsibility, after the `QApplication` event loop exits
+(`main_window.md` §7.3).
+
+### 8.3 Tasks and ModuleUISpec switching
+
+A switch from one `ModuleUISpec` to another is not a Workspace
+destruction. The Workspace remains alive; only its composition
+changes. In this case:
+
+- The previous Module's activation scope is closed by the Application
+  layer, and its Tasks are cancelled (ADR-0011 §2.4; `modules.md` v10
+  §9).
+- The Workspace itself does not cancel Tasks on `ModuleUISpec` switch,
+  because the Tasks are scoped to the Module/Editor, not to the
+  Workspace. The Workspace's role is limited to the final teardown.
+
+### 8.4 What the Workspace must not do
+
+- It must not dispatch Tasks itself. Only Editors, Modules, and the
+  Application layer dispatch Tasks.
+- It must not call `QApplication.processEvents()` to wait for Tasks.
+  The wait is done through `TaskHandle.wait()` (ADR-0011 §2.2) or by
+  the bootstrap's `TaskManager.shutdown()`.
+- It must not create `QThread`, `ThreadPoolExecutor`,
+  `ProcessPoolExecutor`, `asyncio` loops, or raw threads.## 8. Task lifecycle
+
+The Workspace is the owner of its own Task scope. It does not dispatch
+Tasks directly; Editors and Modules do, through their respective
+contexts. However, the Workspace is responsible for cancelling Tasks
+associated with it when the Workspace is torn down.
+
+
+## 9. Telemetry
+
+The Workspace emits telemetry through the `TelemetrySink` it receives
+from `MainWindow` (`main_window.md` §3.1). It does not emit events
+directly to the `EventBus`; that is the `CommandBus`'s and the
+Application layer's concern (ADR-0007, `modules.md` §9).
+
+### 9.1 What the Workspace emits
+
+The Workspace emits the following reserved events and measurements
+(ADR-0012 §2.4, §2.5):
+
+| Name | Type | When |
+|---|---|---|
+| `workspace.load_spec` | event | `load_spec()` completes successfully. |
+| `workspace.load_spec.failure` | event | `load_spec()` raises (spec invalid, builder failure, renderer failure). |
+| `workspace.load_spec.duration` | measurement (ms) | Duration of `load_spec()`. |
+| `workspace.clear` | event | `clear()` completes. |
+| `workspace.teardown` | event | `Workspace` destruction begins. |
+| `workspace.teardown.duration` | measurement (ms) | Duration of the teardown (cancellation + disposal). |
+
+The Workspace does not emit `command.*`, `task.*`, `module.*`, or
+`app.*` events; those belong to their respective producers.
+
+### 9.2 Correlation
+
+`load_spec()` is initiated by the Application layer (typically the
+`MainWindow` or the `WorkflowEngine`). The `correlation_id` for the
+`load_spec()` call is provided by the caller and passed to
+`telemetry.record_event(...)` and
+`telemetry.record_measurement(...)`. If the caller does not provide a
+`correlation_id`, the Workspace generates one and uses it for all
+events emitted during that call, but the caller's correlation id (if
+present) takes precedence.
+
+### 9.3 What the Workspace does not emit
+
+- It does not emit `Editor`-scoped events (`tool.invoked`,
+  `viewport.camera.changed`). Those belong to the Editor
+  (`editors.md` §15.2).
+- It does not emit `Module`-scoped events (`module.activate`,
+  `module.deactivate`). Those belong to the Application layer
+  (`modules.md` v10 §9).
+- It does not emit `Task`-scoped events (`task.dispatch`,
+  `task.complete`). Those belong to the `TaskManager`
+  (ADR-0011 §2.2).
+
+### 9.4 PII
+
+The Workspace does not emit patient-identifying information as
+telemetry attributes (ADR-0012 §2.10). It does not emit project names,
+patient names, file paths, or dates of birth. It may emit
+`project_id` (a stable identifier) and `area_count` (a number).

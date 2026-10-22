@@ -16,6 +16,8 @@ MainWindow is responsible for:
 * forwarding project open and close requests to the application runtime without managing the project lifecycle or project data;
 * consuming and reflecting application-provided visual and language settings in the surfaces it hosts, such as the theme, icons, and active language;
 * presenting relevant application operation state when needed, without performing heavy work inside the window.
+* injecting shared application services (`TaskManager`, `TelemetrySink`)   into the `Workspace` and, transitively, into every `EditorContext`.
+  MainWindow does not own these services; it forwards the instances it receives from the bootstrap.
 
 MainWindow is a presentation and hosting boundary. It does not implement clinical rules, workflow requirement checks, module operations, or changes to domain or project state. The Project Manager is the application authority for the project lifecycle.
 
@@ -43,6 +45,21 @@ The Workspace is responsible for:
 MainWindow hosts the Workspace and forwards lifecycle events. It does not interpret the Workspace's internal structure.
 
 The Workspace does not know about clinical modules or Flows. MainWindow does not own the clinical workflow either. The Application layer loads the active Flow and module, coordinates transitions, and provides workflow presentation state and the ModuleUISpec to the Workspace.
+
+### 3.1 Service injection
+
+`MainWindow` receives `task_manager: TaskManager` and
+`telemetry_sink: TelemetrySink` from the bootstrap and forwards them to
+the `Workspace` at construction:
+
+```text
+__main__ → MainWindow(task_manager=..., telemetry_sink=...)
+                ├── Workspace(task_manager=..., telemetry_sink=...)
+                │       ├── EditorContext.task_manager = task_manager
+                │       ├── EditorContext.telemetry_sink = telemetry_sink
+                │       └── ModuleContext.task_manager (if a module is loaded)
+                └── (future) other Workspace hosts
+```
 
 ## 4. Relationship to modules and clinical workflows
 Modules do not own MainWindow and do not replace it when activated. A module provides a ModuleUISpec; the Application layer passes that specification to the Workspace for materialization.
@@ -132,6 +149,11 @@ Project persistence and physical storage	                    Project Repository 
 Clinical objects and results	                                Domain and module/application services
 Long-running operations state	                                Service responsible, coordinated by the Application layer
 
+| `TaskManager` | Application (constructed by `__main__`, forwarded by `MainWindow`) |
+| `TelemetrySink` | Application (constructed by `__main__`, forwarded by `MainWindow`) |
+| `Workspace`-scoped Tasks | `Workspace` (cancel on teardown) |
+| `Editor`-scoped Tasks | `Editor` (cancel on deactivate / dispose) |
+
 **MainWindow** may host these components, but it is not the source of truth for their state.
 
 ## 9. Architectural boundaries
@@ -158,5 +180,12 @@ Tests for MainWindow should focus on hosting and lifecycle responsibilities:
 * global actions invoke Application-layer capabilities rather than changing domain state directly;
 * long-running operation state can be presented without blocking the UI;
 * the window does not create or manage threads to perform service operations.
+* closing `MainWindow` cancels and awaits the `Workspace`'s pending Tasks
+  before `closeEvent` returns;
+* `TaskManager.shutdown()` is called by the bootstrap after the
+  `QApplication` event loop exits, not by `MainWindow`;
+* the `TelemetrySink` receives no events from `MainWindow` or its hosted
+  components after the window begins closing (any shutdown telemetry is
+  emitted before step 1 of §7.3).
 
 Workspace layout, Overlay behavior, workflow transitions, clinical requirement evaluation, and asynchronous task execution are tested at their respective architectural boundaries.
