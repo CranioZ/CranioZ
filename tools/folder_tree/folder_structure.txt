@@ -19,8 +19,10 @@ CranioZ
 │   ├── .gitignore
 │   ├── 0.16.9
 │   │   ├── 10326316172798160621
+│   │   ├── 10335039416222799962
 │   │   ├── 10614605627070785775
 │   │   ├── 11171665550253351028
+│   │   ├── 11303462395635433143
 │   │   ├── 11376065140599829768
 │   │   ├── 11629926835217846565
 │   │   ├── 11665753874505339045
@@ -36,9 +38,14 @@ CranioZ
 │   │   ├── 12457903411398276172
 │   │   ├── 12473419363369107721
 │   │   ├── 1247502524523765453
+│   │   ├── 12564323379500007641
+│   │   ├── 12715838255252480765
 │   │   ├── 12803894654579336592
 │   │   ├── 12805767370830356761
+│   │   ├── 12906880459208351115
 │   │   ├── 13474558880330438852
+│   │   ├── 13521859227423036896
+│   │   ├── 13557301115328090833
 │   │   ├── 13819379392550965660
 │   │   ├── 13877667343092926075
 │   │   ├── 13997520610808341236
@@ -48,12 +55,15 @@ CranioZ
 │   │   ├── 1437372085772984924
 │   │   ├── 14416259443744125308
 │   │   ├── 14653393924847029577
+│   │   ├── 14749920209768110977
 │   │   ├── 14828679908336408091
 │   │   ├── 14903097709080191270
 │   │   ├── 14950653756078280655
+│   │   ├── 15099052079265172186
 │   │   ├── 15239532769794016747
 │   │   ├── 15419475389312746637
 │   │   ├── 15696253447130475352
+│   │   ├── 15810711473117851493
 │   │   ├── 15962943949344423026
 │   │   ├── 16110855600364421241
 │   │   ├── 16204438524395665676
@@ -61,6 +71,7 @@ CranioZ
 │   │   ├── 16598009528270152017
 │   │   ├── 16711004818620616229
 │   │   ├── 16764843275916820406
+│   │   ├── 16957935192553115604
 │   │   ├── 17199596843283621271
 │   │   ├── 17734999400545001635
 │   │   ├── 17832083478342167242
@@ -72,6 +83,7 @@ CranioZ
 │   │   ├── 2068433874241999396
 │   │   ├── 2119330735463439230
 │   │   ├── 2262285390102192015
+│   │   ├── 2272686312068281423
 │   │   ├── 2327071471568116857
 │   │   ├── 2528140460162725103
 │   │   ├── 2782421323134159905
@@ -85,8 +97,15 @@ CranioZ
 │   │   ├── 3637820860251992246
 │   │   ├── 3778879716544981235
 │   │   ├── 3845325368291624599
+│   │   ├── 4497012917042468299
 │   │   ├── 4578237168493285002
+│   │   ├── 488358309566532623
+│   │   ├── 5052899135327446324
 │   │   ├── 5459661328021185860
+│   │   ├── 5776699023243105686
+│   │   ├── 5782692017346091071
+│   │   ├── 5814251271528259276
+│   │   ├── 5815705233193244503
 │   │   ├── 5868321572846790294
 │   │   ├── 5912835943153031627
 │   │   ├── 5929453234761365148
@@ -103,14 +122,17 @@ CranioZ
 │   │   ├── 7225228719943008181
 │   │   ├── 7449306442741747127
 │   │   ├── 7620769828382592042
+│   │   ├── 7656361617287503440
 │   │   ├── 7675482826392310919
 │   │   ├── 7768434420250397663
+│   │   ├── 7839856577860638975
 │   │   ├── 8025699021069042788
 │   │   ├── 8080415271407661797
 │   │   ├── 8181109390288596805
 │   │   ├── 8314816732228450197
 │   │   ├── 8315495922453907664
 │   │   ├── 8354404599648940417
+│   │   ├── 8489597859976354287
 │   │   ├── 874714692492401465
 │   │   ├── 8899263924592826144
 │   │   ├── 9044446590588349208
@@ -119,7 +141,8 @@ CranioZ
 │   │   ├── 9727419800825818367
 │   │   ├── 9869407868860017245
 │   │   ├── 9965278069635563113
-│   │   └── 9973314785731616738
+│   │   ├── 9973314785731616738
+│   │   └── 9982148046451430329
 │   └── CACHEDIR.TAG
 ├── LICENSE
 ├── README.md
@@ -132,6 +155,14 @@ CranioZ
 │   │   ├── ADR-0002_EditorContext_and_Toolbar_Materialization.md
 │   │   ├── ADR-0003_UI_Widgets_and_Editor_Overlays.md
 │   │   ├── ADR-0004_Patient_Domain.md
+│   │   ├── ADR-0005_TopBar_Structural_and_Floating.md
+│   │   ├── ADR-0006_MainWindow_Navigation_and_Window-Lifecycl_Orchestrator.md
+│   │   ├── ADR-0007_Commands_and_Transactions.md
+│   │   ├── ADR-0008_Scene_and_DomainObjectStore.md
+│   │   ├── ADR-0009_Project_Persistence_Format.md
+│   │   ├── ADR-0010_Layout_Persistence.md
+│   │   ├── ADR-0011_Threading_and_Task_Execution.md
+│   │   ├── ADR-0012—Telemetry_and_Observability.md
 │   │   ├── startup_project_opening_workflow.md
 │   │   └── startup_project_opening_workflow_pt.md
 │   ├── architecture
@@ -154,6 +185,7 @@ CranioZ
 │   │   │       └── project.md
 │   │   ├── home_page
 │   │   │   └── home_page.md
+│   │   ├── implementation.md
 │   │   ├── internationalization
 │   │   │   ├── folder_structure.md
 │   │   │   └── internationalization.md
@@ -215,13 +247,11 @@ CranioZ
 │   │       │   ├── folder_structure.md
 │   │       │   └── tools.md
 │   │       └── workspace
-│   │           ├── folder_strututure
-│   │           │   └── folder_structure.md
-│   │           ├── implementation
-│   │           │   └── workspace-implementation.md
+│   │           ├── folder_structure.md
 │   │           ├── workspace-testing.md
 │   │           └── workspace.md
 │   ├── developer
+│   │   └── testing.md
 │   ├── development
 │   │   ├── Folder_ Struture_full.txt
 │   │   ├── Folder_ Struture_simple.txt
@@ -235,14 +265,28 @@ CranioZ
 │   └── examples
 ├── pyproject.toml
 ├── scripts
-│   └── debug_workspace.py
+│   ├── debug_full_cycle.py
+│   ├── debug_home_page.py
+│   ├── debug_main_window.py
+│   ├── debug_workspace.py
+│   └── seed_projects.py
 ├── src
 │   └── cranioz
 │       ├── __init__.py
 │       ├── __main__.py
 │       ├── application
 │       │   ├── __init__.py
-│       │   └── event_bus.py
+│       │   ├── event_bus.py
+│       │   └── project
+│       │       ├── __init__.py
+│       │       ├── in_memory_project_repository.py
+│       │       ├── project_access_policy.py
+│       │       ├── project_catalog.py
+│       │       ├── project_context.py
+│       │       ├── project_errors.py
+│       │       ├── project_events.py
+│       │       ├── project_manager.py
+│       │       └── project_repository.py
 │       ├── assets
 │       │   └── __init__.py
 │       ├── config
@@ -303,7 +347,9 @@ CranioZ
 │       │   │   └── translation_service.py
 │       │   └── project
 │       │       ├── __init__.py
-│       │       └── project_path_resolver.py
+│       │       ├── filesystem_project_repository.py
+│       │       ├── project_path_resolver.py
+│       │       └── project_serialization.py
 │       ├── modules
 │       │   ├── __init__.py
 │       │   ├── base
@@ -313,6 +359,8 @@ CranioZ
 │       │   │   └── module_manifest.py
 │       │   ├── builtin
 │       │   │   ├── __init__.py
+│       │   │   ├── cephalometry
+│       │   │   │   └── __init__.py
 │       │   │   └── test_modules
 │       │   │       ├── __init__.py
 │       │   │       ├── central_split.py
@@ -320,8 +368,11 @@ CranioZ
 │       │   │       ├── left_central_right.py
 │       │   │       ├── no_central.py
 │       │   │       └── single.py
+│       │   ├── errors.py
 │       │   ├── loader
 │       │   │   ├── __init__.py
+│       │   │   ├── _internal
+│       │   │   │   └── __init__.py
 │       │   │   └── module_loader.py
 │       │   └── registry
 │       │       ├── __init__.py
@@ -366,6 +417,18 @@ CranioZ
 │           │       │   └── __init__.py
 │           │       └── rulers
 │           │           └── __init__.py
+│           ├── home
+│           │   ├── __init__.py
+│           │   ├── home_page.py
+│           │   └── widgets
+│           │       ├── __init__.py
+│           │       ├── community_sidebar.py
+│           │       ├── flow_list.py
+│           │       ├── home_bottom_bar.py
+│           │       ├── home_top_bar.py
+│           │       ├── project_table.py
+│           │       └── start_button.py
+│           ├── main_window.py
 │           ├── theme
 │           │   ├── __init__.py
 │           │   └── service.py
@@ -430,7 +493,8 @@ CranioZ
 │               ├── structure
 │               │   ├── __init__.py
 │               │   └── top_bar.py
-│               └── workspace.py
+│               ├── workspace.py
+│               └── workspace_spec.py
 ├── tests
 │   ├── __init__.py
 │   ├── conftest.py
@@ -443,6 +507,7 @@ CranioZ
 │   │       └── test_translation_service.py
 │   ├── integration
 │   │   └── ui
+│   │       ├── test_main_window.py
 │   │       └── workspace
 │   │           ├── areas
 │   │           │   └── test_area_widget.py
@@ -454,6 +519,16 @@ CranioZ
 │   └── unit
 │       ├── __init__.py
 │       ├── application
+│       │   ├── project
+│       │   │   ├── __init__.py
+│       │   │   ├── test_filesystem_project_repository.py
+│       │   │   ├── test_project_access_policy.py
+│       │   │   ├── test_project_catalog.py
+│       │   │   ├── test_project_context.py
+│       │   │   ├── test_project_events.py
+│       │   │   ├── test_project_manager.py
+│       │   │   ├── test_project_repository_contract.py
+│       │   │   └── test_project_serialization.py
 │       │   └── test_event_bus.py
 │       ├── config
 │       │   └── test_loader.py
@@ -509,6 +584,16 @@ CranioZ
 │           │   ├── test_base_editor.py
 │           │   ├── test_editor_context.py
 │           │   └── test_editor_registry.py
+│           ├── home
+│           │   ├── __init__.py
+│           │   ├── test_home_page.py
+│           │   └── widgets
+│           │       ├── __init__.py
+│           │       ├── test_community_sidebar.py
+│           │       ├── test_flow_list.py
+│           │       ├── test_home_bottom_bar.py
+│           │       ├── test_home_top_bar.py
+│           │       └── test_project_table.py
 │           ├── theme
 │           │   ├── __init__.py
 │           │   └── test_service.py
@@ -543,10 +628,14 @@ CranioZ
 │                   ├── test_module_ui_spec.py
 │                   └── test_overlay_spec.py
 └── tools
-    ├── code_packer
-    │   ├── cranioZ_contexto.txt
+    ├── code
+    │   ├── cranioZ_code.txt
     │   ├── pack_code.py
     │   └── pack_config.json
+    ├── docs
+    │   ├── cranioZ_documentacao.txt
+    │   ├── pack_config.json
+    │   └── pack_docs.py
     ├── folder_tree
     │   ├── folder_structure.py
     │   ├── folder_structure.txt

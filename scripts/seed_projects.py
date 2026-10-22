@@ -18,7 +18,6 @@ Home Page's ProjectTable.
 from __future__ import annotations
 
 import sys
-from datetime import UTC, datetime
 from pathlib import Path
 
 from cranioz.application.event_bus import EventBus

@@ -29,7 +29,6 @@ from cranioz.application.project.project_events import (
 )
 from cranioz.application.project.project_manager import ProjectManager
 from cranioz.config.loader import ConfigurationLoader
-from cranioz.domain.project.project_id import ProjectId
 from cranioz.infrastructure.app.app_path_resolver import AppPathResolver
 from cranioz.infrastructure.project.filesystem_project_repository import (
     FilesystemProjectRepository,

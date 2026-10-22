@@ -3,7 +3,7 @@
 **Document type:** Roadmap and execution plan
 **Status:** Living document
 **Scope:** Phased implementation of the CranioZ platform from foundation to release.
-**Last updated:** 2026-10-22
+**Last updated:** 2026-10-22 (post ADR-0007 to ADR-0012)
 
 ---
 
@@ -47,12 +47,12 @@ The implementation is divided into 11 phases. These phases are designed to build
 
 | Phase | Name | Status | Done / Pending |
 |---|---|---|---|
-| **Phase 0** | Foundation & Boot | ✅ Implemented | Boot wiring to MainWindow pending (Phase 3 dependency) |
+| **Phase 0** | Foundation & Boot | ✅ Implemented | — |
 | **Phase 1** | Contracts & Core | ✅ Implemented | — |
 | **Phase 2** | Workspace | ✅ Implemented | — |
-| **Phase 3** | Project & Home Page | 🚧 In Progress | Core done; Recent Projects, Flow Catalog, Layout persistence pending |
-| **Phase 4** | Scene & Visualization | ⏳ Next | Blocked by: Commands, Scene domain, ADRs |
-| **Phase 5** | Clinical Flows | ⏳ Planned | Blocked by: Phase 4, `modules.md`, Flow Catalog |
+| **Phase 3** | Project & Home Page | ✅ Implemented (core) / 🚧 peripherals pending | Recent Projects, Flow Catalog, Layout persistence pending |
+| **Phase 4** | Scene & Visualization | 🚧 In Progress | Contracts ready (ADR-0007, 0008, 0011); implementation pending |
+| **Phase 5** | Clinical Flows | ⏳ Planned | Blocked by Phase 4 |
 | **Phase 6** | Clinical Pipeline (MVP) | ⏳ Planned | — |
 | **Phase 7** | Scientific Validation | ⏳ Planned | — |
 | **Phase 8** | Scientific Product (Release 1.0) | ⏳ Planned | — |
@@ -61,32 +61,48 @@ The implementation is divided into 11 phases. These phases are designed to build
 
 **Legend:**
 - ✅ Implemented — all deliverables of the phase are in `src/` and tested.
-- 🚧 In Progress — the core of the phase is in `src/`, but documented deliverables are still missing.
-- ⏳ Next — the phase is unblocked and is the next to start.
+- 🚧 In Progress — the contracts exist and/or the core is in `src/`, but documented deliverables are still missing.
 - ⏳ Planned — the phase is blocked by a prior dependency or by an ADR that has not been written.
+
+**Contracts layer.** ADRs 0001–0012 are all written and stable. The contracts for Commands, Scene, Persistence, Layout, Threading, and Telemetry are defined. Phase 4 can now be implemented against them.
 
 ---
 
 ## 5. Current Focus
 
-**Phase 3 is the active phase.** The lifecycle core (`ProjectManager`, `ProjectCatalog`) and the discovery UI (`HomePage`, `MainWindow`) are implemented and tested. The remaining work is peripheral and does not block Phase 4.
+**Phase 3 is functionally complete.** The lifecycle core (`ProjectManager`, `ProjectCatalog`), the discovery UI (`HomePage`, `MainWindow`), and the boot wiring are implemented and tested. The peripherals (Recent Projects, Flow Catalog, Layout persistence) are deferred and do not block Phase 4.
+
+**Phase 4 is the active phase.** Its contracts are in place. The next implementation step is the Application layer:
+
+1. **`application/commands/`** — `Command`, `CommandHandler`, `CommandBus`, `CommandDispatcher`, `CommandHandlerRegistry` (ADR-0007). The `CommandBus` is the base for every state mutation; without it, the Scene cannot be mutated and the `ModuleContext.command_bus` is undefined.
+2. **`application/tasks/`** — `Task`, `TaskHandle`, `TaskManager`, `CancelToken`, `TaskState` (ADR-0011). Small and isolated.
+3. **`application/telemetry/`** — `TelemetrySink`, `Severity`, `MeasurementUnit` (ADR-0012). Small and isolated.
+4. **`application/events/`** — `EventSubscription`, `EventPublisher` facade over the existing `EventBus`.
+5. **`application/modules/`** — `Module`, `ModuleManifest`, `ModuleContext`, `ModuleRegistry`, `ModuleLoader` (modules.md v10). Aggregates the four above.
+
+Then the Domain:
+
+6. **`domain/scene/`** — `Scene`, `DomainObjectStore` (ADR-0008).
+7. **`infrastructure/rendering/`** — `RenderingAdapter`, VTK bridge.
+8. **`ui/editors/`** — `Viewport3DEditor`, `MPRViewerEditor`.
 
 ### 5.1 Immediate priorities (in order)
 
-1. **Boot wiring.** Connect `__main__.py` to `MainWindow`. Today the application initializes configuration, logging, paths and the `EventBus`, but calls `app.exec()` without showing a window. This is the highest-value missing piece — it makes the application usable end-to-end.
-2. **Documentation synchronization.** Update `implementation.md` (this document), `home_page.md` §25, `project.md` §17, and `startup_project_opening_workflow.md` §9 to match the code. Several documents still describe `service_locator` in `ProjectContext`, `EditorHost`, and `Main Toolbar`, all of which were rejected by ADRs.
-3. **Missing ADRs.** Write the ADRs that block Phase 4: `project-persistence-format`, `project-catalog-synchronization`, `commands`, `scene`, `layout-persistence`.
-4. **Flow Catalog (Bloco 9).** Implement the flow definition loader and populate the `HomePage`'s `FlowList`. Depends on `modules.md` (currently empty).
-5. **Layout State Persistence.** Persist `LayoutState` and `OverlayState` per `(project_id, module_id)`. Depends on the `layout-persistence` ADR.
-6. **Recent Projects (§11 of `home_page.md`).** Add a recent-projects section to the `HomePage`. Low priority; can be deferred to Phase 8.
+1. **Application layer contracts.** Implement `application/commands/`, `application/tasks/`, `application/telemetry/`, `application/events/`, `application/modules/` as Protocols + reference implementations (in-memory) + contract tests. This is the prerequisite for the `ModuleContext` and `ModuleLoader` to exist in code.
+2. **Domain `Scene`.** Implement `domain/scene/` per ADR-0008 and `scene.md`.
+3. **Rendering bridge.** Implement `RenderingAdapter` and the first concrete Editors (`Viewport3DEditor`, `MPRViewerEditor`).
+4. **Boot wiring for the new services.** Update `__main__.py` to construct `TaskManager`, `TelemetrySink`, and `ModuleRegistry`, and inject them into `MainWindow` → `Workspace` → `EditorContext`.
 
 ### 5.2 What blocks Phase 4
 
-Before Phase 4 (Scene & Visualization) can begin, three prerequisites must exist:
+No blockers remain. The ADRs (0007 Commands, 0008 Scene, 0009 Persistence, 0011 Threading) and the documents (`commands.md`, `scene.md`, `modules.md`) are stable. The only prerequisites are implementation of the Application layer contracts, which is tracked under §5.1 item 1.
 
-1. **Command mechanism** (`application/commands/`) — `commands.md` specifies the contract, but no code exists. The Scene cannot be mutated without Commands.
-2. **Scene domain** (`domain/scene/`) — `scene.md` specifies the contract, but no code exists.
-3. **ADRs** for `commands`, `scene`, and `project-persistence-format` — these decisions are cited in `project.md` and `scene.md` but have not been written.
+### 5.3 Deferred to later phases
+
+- **Recent Projects** (Phase 8): read-only projection, low impact.
+- **Flow Catalog** (Phase 5, Bloco 9): depends on `modules.md` (now stable) and on the `WorkflowEngine`.
+- **Layout State Persistence** (Phase 5): `layout_state.py`, `layout_io.py`, `overlay_state.py` are stubs; implementation follows ADR-0010.
+- **Module-owned persisted state** (Phase 9): deferred until the first module needs it (see `modules.md` v10 §15).
 
 ---
 
@@ -101,12 +117,13 @@ Before Phase 4 (Scene & Visualization) can begin, three prerequisites must exist
   - ✅ `ConfigurationLoader`, `AppPathResolver`.
   - ✅ `EventBus`.
   - ✅ JSON serialization for Project Metadata (in `project_serialization.py`).
-  - 🚧 Boot sequence (`__main__.py`) — initializes config, logging, paths, and the event bus, but does not yet create or show the `MainWindow`. **Pending.**
-  - ⏳ Minimal `Command`/`EventHandler` contracts — referenced in `commands.md` but not implemented.
+  - ✅ Boot sequence (`__main__.py`) — initializes config, logging, paths, event bus, project subsystem, UI registries, theme service, and shows the `MainWindow` before entering the Qt event loop.
+  - ✅ Error handling for `AppPathInaccessible` with `QMessageBox.critical`.
+  - ✅ Actor resolution from the OS username (`getpass.getuser`).
 
-- **Tests:** Unit tests for config validation and path resolution.
+- **Tests:** Unit tests for config validation and path resolution; smoke test for boot-time dependency construction.
 
-- **Status:** ✅ Implemented for all deliverables except the boot-to-window wiring, which is tracked under Phase 3.
+- **Status:** ✅ Implemented.
 
 ### Phase 1: Contracts & Core Domain
 
@@ -120,6 +137,7 @@ Before Phase 4 (Scene & Visualization) can begin, three prerequisites must exist
   - ✅ `ProjectContext` (frozen, data-only; no service locator).
   - ✅ `ProjectAccessPolicy` (Protocol), `AllowAllProjectAccessPolicy`.
   - ✅ `ProjectCatalog` (read-only projection, no cache).
+  - ✅ ADRs 0001–0012 (all contracts defined).
 
 - **Tests:** Domain unit tests (pure Python), contract tests for `ProjectRepository`, JSON serialization round-trips for Project.
 
@@ -150,32 +168,43 @@ Before Phase 4 (Scene & Visualization) can begin, three prerequisites must exist
   - ✅ `ProjectCatalog` (read model, delegates to `ProjectRepository`).
   - ✅ `HomePage` UI (`ProjectTable`, `FlowList`, `StartButton`, `CommunitySidebar`, `HomeTopBar`, `HomeBottomBar`).
   - ✅ `MainWindow` (navigation Home ↔ Workspace, ADR-0006).
-  - 🚧 Recent Projects — not implemented.
-  - 🚧 Flow Catalog — `FlowList` exists but is populated only by tests and debug scripts; the real catalog depends on Bloco 9.
-  - ⏳ Layout State Persistence — `layout_state.py`, `layout_io.py`, `overlay_state.py` are stubs.
+  - ✅ `ProjectTable` selection lifecycle (emit `None` on deselection, preserve selection on refresh).
+  - 🚧 Recent Projects — not implemented (deferred to Phase 8).
+  - 🚧 Flow Catalog — `FlowList` exists but is populated only by tests and debug scripts; the real catalog depends on Phase 5.
+  - ⏳ Layout State Persistence — `layout_state.py`, `layout_io.py`, `overlay_state.py` are stubs (ADR-0010 defines the contract; implementation in Phase 5).
 
-- **Tests:** Project lifecycle tests (77 tests across `test_project_manager.py`, `test_project_catalog.py`, `test_home_page.py`, `test_project_table.py`, `test_main_window.py`).
+- **Tests:** 864 passing across the full suite, including 8 new regression tests for `ProjectTable` and `HomePage` deselection.
 
-- **Status:** 🚧 In Progress. Core is done; peripherals are pending.
+- **Status:** ✅ Core implemented. Peripherals deferred.
 
 ### Phase 4: Scene & Visualization
 
 **Goal:** Introduce the 3D/2D visualization layer and the spatial domain.
 
-- **Deliverables:**
-  - ⏳ Domain `Scene` (coordinate system, spatial hierarchy, membership).
-  - ⏳ `DomainObjectStore`.
-  - ⏳ Command mechanism (`Command`, `CommandBus`, `CommandHandler`, `CommandStack`).
-  - ⏳ `RenderingAdapter` (bridges Scene events to VTK).
-  - ⏳ `Viewport3DEditor` and `MPRViewerEditor`.
-  - ⏳ `TaskManager` abstraction for async operations.
+- **Contracts ready:**
+  - ✅ ADR-0007 (Commands, Transactions, Undo/Redo).
+  - ✅ ADR-0008 (Scene and DomainObjectStore).
+  - ✅ ADR-0009 (Project Persistence Format).
+  - ✅ ADR-0011 (Threading and Task Execution).
+  - ✅ ADR-0012 (Telemetry and Observability).
+  - ✅ `commands.md`, `scene.md`, `modules.md` v10.
+
+- **Deliverables (implementation pending):**
+  - ⏳ `application/commands/` — `Command`, `CommandHandler`, `CommandBus`, `CommandDispatcher`, `CommandStack`.
+  - ⏳ `application/tasks/` — `Task`, `TaskHandle`, `TaskManager`, `CancelToken`.
+  - ⏳ `application/telemetry/` — `TelemetrySink`, `Severity`, `MeasurementUnit`.
+  - ⏳ `application/events/` — `EventSubscription`, `EventPublisher`.
+  - ⏳ `application/modules/` — `Module`, `ModuleManifest`, `ModuleContext`, `ModuleRegistry`, `ModuleLoader`.
+  - ⏳ `domain/scene/` — `Scene`, `DomainObjectStore`.
+  - ⏳ `infrastructure/rendering/` — `RenderingAdapter`, VTK bridge.
+  - ⏳ `ui/editors/` — `Viewport3DEditor`, `MPRViewerEditor`.
   - ⏳ Scene serialization (JSON).
 
-- **Blockers:** No code exists. Requires ADRs for `commands` and `scene`, and the `project-persistence-format` ADR for serialization.
+- **Blockers:** None. The contracts are in place.
 
 - **Tests:** Headless VTK tests, spatial transform tests, performance tests (Scene update, upload to GPU, rendering FPS on reference hardware).
 
-- **Status:** ⏳ Next (blocked).
+- **Status:** 🚧 In Progress. Contracts done; implementation started.
 
 ### Phase 5: Clinical Flows
 
@@ -185,14 +214,15 @@ Before Phase 4 (Scene & Visualization) can begin, three prerequisites must exist
   - ⏳ `WorkflowEngine` (loads JSON, evaluates requirements, computes step states).
   - ⏳ `steps_panel` (Workspace Overlay).
   - ⏳ Flow state persistence.
-  - ⏳ `modules.md` — the Module contract (currently empty).
-  - ⏳ `ModuleRegistry`, `ModuleLoader` (currently stubs in `src/cranioz/modules/`).
+  - ⏳ Flow Catalog (Bloco 9) — loader of flow definitions, populates `HomePage`'s `FlowList`.
+  - ⏳ Layout State Persistence (`layout_state.py`, `layout_io.py`, `overlay_state.py`) — per ADR-0010.
+  - ⏳ `ModuleRegistry`, `ModuleLoader` — wire-up of `application/modules/` into `__main__`.
 
-- **Blockers:** Depends on Phase 4 (Scene is a requirement of most flows) and on `modules.md`.
+- **Blockers:** Depends on Phase 4 (Scene is a requirement of most flows).
 
 - **Tests:** State transition tests (pending, active, blocked, completed), requirement evaluation.
 
-- **Status:** ⏳ Planned (blocked).
+- **Status:** ⏳ Planned.
 
 ### Phase 6: Clinical Pipeline (PhD MVP)
 
@@ -234,6 +264,7 @@ This phase is divided into sub-phases to accurately measure scientific progress:
   - PDF Report generation.
   - Final user documentation and developer SDK documentation.
   - Scientific publication and DOI registration.
+  - Recent Projects on the Home Page (§11 of `home_page.md`).
 
 - **Tests:** Full regression suite, performance profiling on reference hardware.
 
@@ -247,6 +278,7 @@ This phase is divided into sub-phases to accurately measure scientific progress:
   - Module API and Plugin API.
   - Plugin loader and sandbox.
   - External plugin catalog.
+  - Module-owned persisted state and its migration contract (per `modules.md` v10 §15).
 
 - **Tests:** Plugin compatibility tests.
 
@@ -274,7 +306,7 @@ Testing is a clinical requirement. Metrics must be contextualized to avoid false
 ### 7.1 Coverage Metrics
 
 - **Domain Layer:** High coverage of critical business rules, with 100% of invariants and relevant error cases tested.
-- **Application Layer:** Critical command paths and transaction rollbacks tested.
+- **Application Layer:** Critical command paths and transaction rollbacks tested; contract tests for every Protocol (`ProjectRepository`, `CommandBus`, `TaskManager`, `TelemetrySink`, `ModuleRegistry`, `ModuleLoader`).
 - **UI Layer:** 80% coverage of `ui/workspace/`.
 
 ### 7.2 Performance Metrics (Reference Hardware)
@@ -295,8 +327,9 @@ All performance metrics must be measured against a defined **Reference Dataset**
 ### 7.4 Concurrency
 
 - **Correction:** `QTimer` is for UI scheduling, not asynchronous execution.
-- **TaskManager:** Application layer abstraction for tasks.
+- **TaskManager:** Application layer abstraction for tasks (ADR-0011).
 - **Execution:** Heavy CPU-bound tasks must use `QThreadPool`/`QtConcurrent` or `ProcessPool` (for GIL-independent execution), coordinated by the `TaskManager`.
+- **Telemetry:** Every long operation must emit `task.dispatch`, `task.complete`, `task.cancel`, or `task.failure` through the `TelemetrySink` with a correlation id (ADR-0012).
 
 ---
 
@@ -306,10 +339,11 @@ A phase is "Done" when:
 
 1. Code is implemented according to the architecture documents.
 2. Unit, Widget, and Integration tests are written and passing.
-3. The CI pipeline is green.
-4. Documentation is updated (including ADRs if a new decision was made).
-5. The feature is usable end-to-end by the UI (no orphaned backend code).
-6. No `TODO` comments are left without a linked GitHub Issue.
+3. Contract tests for every new Protocol exist (a reference in-memory implementation + the same suite for the concrete adapter).
+4. The CI pipeline is green.
+5. Documentation is updated (including ADRs if a new decision was made).
+6. The feature is usable end-to-end by the UI (no orphaned backend code).
+7. No `TODO` comments are left without a linked GitHub Issue.
 
 ### 8.1 The PhD Deliverable (Release 1.0)
 
@@ -320,3 +354,5 @@ The PhD concludes with the delivery of the validated clinical core. It **does no
 ## 9. Summary
 
 By following this roadmap, the CranioZ project ensures that the architectural foundation (Workspace, Commands, Scene) is built correctly before the heavy clinical lifting begins. It respects the scientific validation timelines, protects the PhD scope from feature creep, and establishes a clear path for post-doctoral open-source evolution.
+
+**Post ADR-0007–0012:** All contracts for Phase 4 (Commands, Scene, Persistence, Layout, Threading, Telemetry) are in place. Phase 3 is functionally complete. The next implementation step is the Application layer (`application/commands/`, `application/tasks/`, `application/telemetry/`, `application/events/`, `application/modules/`), which turns the contracts into the wiring that the Scene and the Editors will use.

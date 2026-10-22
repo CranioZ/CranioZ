@@ -1,91 +1,43 @@
-    src/cranioz/modules/
-    │
-    ├── __init__.py
-    │
-    ├── base/
+src/cranioz/modules/
+│
+├── __init__.py
+│
+├── base/
+│   ├── __init__.py
+│   ├── module.py              # Module Protocol + ModuleBase
+│   ├── module_manifest.py     # ModuleManifest, ModuleDependency
+│   ├── module_context.py      # ModuleContext (agregador de dependências)
+│   └── module_state.py        # ModuleState (Enum)
+│
+├── registry/
+│   ├── __init__.py
+│   └── module_registry.py     # ModuleRegistry Protocol + InMemoryModuleRegistry
+│
+├── loader/
+│   ├── __init__.py
+│   ├── module_loader.py       # ModuleLoader Protocol + Impl
+│   └── _internal/             # helpers privados do loader
+│       ├── __init__.py
+│       ├── dependency_graph.py    # grafo + topo sort + cycle detection
+│       ├── load_state.py          # estado interno do loader
+│       └── rollback.py            # rollback de load/unload
+│
+├── errors.py                  # ModuleError + subclasses
+│
+└── builtin/
+    ├── __init__.py            # BUILTIN_MANIFESTS
+    ├── patient/
     │   ├── __init__.py
     │   ├── module.py
-    │   ├── module_context.py
-    │   ├── module_manifest.py
-    │   ├── module_state.py
-    │   └── lifecycle.py
+    │   ├── manifest.py
+    │   ├── commands/
+    │   ├── tools/
+    │   ├── services/
+    │   └── ui_specs.py
     │
-    ├── contracts/
-    │   ├── __init__.py
-    │   ├── command_definition.py
-    │   ├── tool_definition.py
-    │   ├── service_definition.py
-    │   └── capability_definition.py
-    │
-    ├── registry/
-    │   ├── __init__.py
-    │   ├── module_registry.py
-    │   ├── command_registry.py
-    │   ├── tool_registry.py
-    │   ├── service_registry.py
-    │   └── capability_registry.py
-    │
-    ├── loader/
-    │   ├── __init__.py
-    │   ├── module_loader.py
-    │   ├── module_host.py
-    │   ├── module_graph.py
-    │   ├── dependency_resolver.py
-    │   ├── load_policy.py
-    │   └── load_state.py
-    │
-    └── builtin/
-        │
-        ├── patient/
-        │   ├── __init__.py
-        │   ├── module.py
-        │   ├── manifest.py
-        │   ├── domain/
-        │   ├── commands/
-        │   ├── tools/
-        │   └── services/
-        │
-        ├── tomography/
-        │   ├── __init__.py
-        │   ├── module.py
-        │   ├── manifest.py
-        │   ├── domain/
-        │   ├── commands/
-        │   ├── tools/
-        │   └── services/
-        │
-        ├── segmentation/
-        │   ├── __init__.py
-        │   ├── module.py
-        │   ├── manifest.py
-        │   ├── domain/
-        │   ├── commands/
-        │   ├── tools/
-        │   └── services/
-        │
-        ├── alignment/
-        │   ├── __init__.py
-        │   ├── module.py
-        │   ├── manifest.py
-        │   ├── domain/
-        │   ├── commands/
-        │   ├── tools/
-        │   └── services/
-        │
-        ├── osteotomies/
-        │   ├── __init__.py
-        │   ├── module.py
-        │   ├── manifest.py
-        │   ├── domain/
-        │   ├── commands/
-        │   ├── tools/
-        │   └── services/
-        │
-        └── guide_builder/
-            ├── __init__.py
-            ├── module.py
-            ├── manifest.py
-            ├── domain/
-            ├── commands/
-            ├── tools/
-            └── services/
+    ├── tomography/
+    ├── segmentation/
+    ├── alignment/
+    ├── cephalometry/         
+    ├── osteotomies/
+    └── guide_builder/

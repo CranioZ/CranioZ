@@ -75,7 +75,7 @@ def _resolve_actor() -> str:
     """
     try:
         return getpass.getuser()
-    except Exception:  # noqa: BLE001
+    except Exception:
         return "local-user"
 
 

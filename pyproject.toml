@@ -205,6 +205,8 @@ ignore = [
     "SIM108",   # ternary (not always clearer)
     "PLR6301",  # no-self-use
     "N818",     # exception names: AppPathInaccessible/ProjectPathInaccessible are internal
+    "UP046",    # Keep explicit TypeVar with Protocol; PEP 695 unsupported by mypy
+    "PLC0105",  # TypeVar names follow the project convention (TCommand, TResult)
 ]
 
 [tool.ruff.lint.per-file-ignores]
