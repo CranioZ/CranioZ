@@ -214,3 +214,47 @@ def test_bottom_bar_is_ancestor_of_start_button(qtbot: QtBot) -> None:
     page, _, _ = _make_page()
     qtbot.addWidget(page)
     assert page._bottom_bar_widget().isAncestorOf(page._start_button_widget())
+
+def test_start_button_disables_when_selection_cleared(
+    qtbot: QtBot,
+) -> None:
+    """Clearing the project table selection must disable StartButton.
+
+    Regression guard for the bug where ProjectTable did not emit None
+    on deselection, leaving HomePage._selected_project_id stale and
+    the StartButton green.
+    """
+    page, _, manager = _make_page()
+    qtbot.addWidget(page)
+    _seed(manager, "p-001", "Alpha")
+    page.refresh()
+
+    page._project_table_widget()._table.selectRow(0)
+    page._flow_list_widget().set_flows([("orthognathic", "Cirurgia")])
+    page._flow_list_widget()._flow_buttons["orthognathic"].click()
+
+    assert page._start_button_widget().isEnabled() is True
+
+    page._project_table_widget()._table.clearSelection()
+
+    assert page._start_button_widget().isEnabled() is False
+
+
+def test_start_button_disables_when_search_filters_selected_project(
+    qtbot: QtBot,
+) -> None:
+    """Filtering the selected project away must disable the StartButton."""
+    page, _, manager = _make_page()
+    qtbot.addWidget(page)
+    _seed(manager, "p-001", "Alpha")
+    _seed(manager, "p-002", "Beta")
+    page.refresh()
+
+    page._project_table_widget()._table.selectRow(0)  # Alpha
+    page._flow_list_widget().set_flows([("orthognathic", "Cirurgia")])
+    page._flow_list_widget()._flow_buttons["orthognathic"].click()
+    assert page._start_button_widget().isEnabled() is True
+
+    page._project_table_widget()._search_edit.setText("beta")
+
+    assert page._start_button_widget().isEnabled() is False

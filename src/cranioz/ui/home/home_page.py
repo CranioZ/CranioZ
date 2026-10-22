@@ -186,7 +186,16 @@ class HomePage(QWidget):
 
         self._start_button.start_requested.connect(self._on_start_requested)
 
-    def _on_project_selected(self, project_id: ProjectId) -> None:
+    def _on_project_selected(self, project_id: ProjectId | None) -> None:
+        """Record the selected project (or clear it) and re-emit.
+
+        The ProjectTable emits ``None`` when the selection is cleared
+        (deselection by the user, or the selected project filtered out
+        by search). HomePage mirrors that contract: ``_selected_project_id``
+        becomes ``None`` and ``project_selected`` is re-emitted with
+        ``None``, so downstream consumers see the "nothing selected" state
+        explicitly instead of a stale id.
+        """
         self._selected_project_id = project_id
         self.project_selected.emit(project_id)
         self._sync_start_button()

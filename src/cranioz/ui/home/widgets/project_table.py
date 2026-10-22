@@ -17,6 +17,17 @@ typically has dozens of projects, not thousands. QTableWidget handles
 that with zero ceremony. Migration to QTableView + ProjectTableModel
 is a separate decision, to be taken only if the list needs
 server-side sorting, dynamic filtering, or virtualization.
+
+Selection semantics:
+
+``project_selected`` is emitted with the ``ProjectId`` of the
+selected row, **or with ``None`` when the selection is cleared**.
+HomePage relies on the ``None`` emission to clear its own
+``_selected_project_id`` and to disable the StartButton; without
+it, the StartButton would stay enabled after the row disappears
+(e.g. via search filtering). ``refresh()`` preserves the selection
+when the same project is still present in the results, and emits
+``None`` only when the selected project is gone.
 """
 
 from __future__ import annotations
@@ -49,7 +60,7 @@ class ProjectTable(QWidget):
 
     new_project_requested = Signal()
     manage_projects_requested = Signal()
-    project_selected = Signal(object)  # ProjectId
+    project_selected = Signal(object)  # ProjectId | None
 
     def __init__(
         self,
@@ -118,7 +129,13 @@ class ProjectTable(QWidget):
     # ----- Public API -----------------------------------------------
 
     def refresh(self) -> None:
-        """Reload the table from the catalog, honoring the current search."""
+        """Reload the table from the catalog, honoring the current search.
+
+        Preserves the current selection when the selected project is
+        still in the results. Emits ``project_selected(None)`` when
+        the selected project disappears (e.g. filtered out by search),
+        so HomePage can clear its state and disable the StartButton.
+        """
         query = self._search_edit.text()
         if query.strip():
             summaries = self._catalog.search_projects(query)
@@ -148,16 +165,46 @@ class ProjectTable(QWidget):
         return item.text()
 
     def _populate(self, summaries: tuple[ProjectSummary, ...]) -> None:
-        # Clear selection first, to avoid signals during repopulation.
-        self._table.clearSelection()
-        self._table.setRowCount(len(summaries))
-        for row, summary in enumerate(summaries):
-            self._set_cell(row, 0, summary.project_name)
-            self._set_cell(row, 1, summary.project_id.value)
-            self._set_cell(row, 2, _format_sex(summary))
-            self._set_cell(row, 3, _format_age(summary))
-            self._set_cell(row, 4, _format_datetime(summary.created_at))
-            self._set_cell(row, 5, _format_datetime(summary.updated_at))
+        """Rebuild the table from ``summaries``.
+
+        Preserves the previous selection when the same project id is
+        still present in the new summaries. Emits ``project_selected(None)``
+        only when the previously selected project is gone, to keep
+        HomePage in sync without spuriously disabling the StartButton
+        on every refresh.
+        """
+        previous_selection = self.selected_project_id()
+
+        # Block table signals during the rebuild so that intermediate
+        # clearSelection() / setRowCount() do not fire
+        # itemSelectionChanged for states the user never actually chose.
+        self._table.blockSignals(True)
+        try:
+            self._table.clearSelection()
+            self._table.setRowCount(len(summaries))
+            for row, summary in enumerate(summaries):
+                self._set_cell(row, 0, summary.project_name)
+                self._set_cell(row, 1, summary.project_id.value)
+                self._set_cell(row, 2, _format_sex(summary))
+                self._set_cell(row, 3, _format_age(summary))
+                self._set_cell(row, 4, _format_datetime(summary.created_at))
+                self._set_cell(row, 5, _format_datetime(summary.updated_at))
+        finally:
+            self._table.blockSignals(False)
+
+        # Restore the previous selection when possible. selectRow()
+        # triggers itemSelectionChanged, which emits the project id
+        # via _on_selection_changed. No manual emission needed here.
+        if previous_selection is not None:
+            for row, summary in enumerate(summaries):
+                if summary.project_id == previous_selection:
+                    self._table.selectRow(row)
+                    return
+
+        # The previously selected project is no longer in the table.
+        # Tell HomePage that the selection is now empty.
+        if previous_selection is not None:
+            self.project_selected.emit(None)
 
     def _set_cell(self, row: int, column: int, text: str) -> None:
         item = QTableWidgetItem(text)
@@ -167,9 +214,14 @@ class ProjectTable(QWidget):
         self._table.setItem(row, column, item)
 
     def _on_selection_changed(self) -> None:
-        project_id = self.selected_project_id()
-        if project_id is not None:
-            self.project_selected.emit(project_id)
+        """Emit the current selection (ProjectId or None) to HomePage.
+
+        HomePage relies on receiving ``None`` when the selection is
+        cleared, so that it can clear its own ``_selected_project_id``
+        and disable the StartButton. Emitting only non-None values
+        would leave a stale selection behind (the previous bug).
+        """
+        self.project_selected.emit(self.selected_project_id())
 
 
 # ----- Formatting helpers --------------------------------------------

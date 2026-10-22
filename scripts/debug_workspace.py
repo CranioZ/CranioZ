@@ -7,6 +7,7 @@ It builds a Workspace with:
 - A fake EditorRegistry populated with DummyEditor instances.
 - A ToolRegistry with LogTool and ToggleTool.
 - A ThemeService (dark).
+- A fake, coherent ProjectContext (ADR-0006 requires one).
 - A ModuleUISpec that mirrors a typical clinical layout:
     LEFT     -> object_list
     CENTRAL  -> viewport_3d | (mpr_axial / mpr_sagittal)
@@ -35,9 +36,17 @@ Close the window to exit.
 from __future__ import annotations
 
 import sys
+from datetime import UTC, datetime
 
 from PySide6.QtWidgets import QApplication, QMainWindow
 
+from cranioz.application.project.project_context import ProjectContext
+from cranioz.domain.patient.enums.patient_sex import PatientSex
+from cranioz.domain.patient.patient_summary import PatientSummary
+from cranioz.domain.patient.value_objects.patient_id import PatientId
+from cranioz.domain.project.project_id import ProjectId
+from cranioz.domain.project.project_metadata import ProjectMetadata
+from cranioz.domain.project.project_status import ProjectStatus
 from cranioz.ui.editors.builtin.test_editor import DummyEditor
 from cranioz.ui.editors.editor_registry import EditorRegistry
 from cranioz.ui.theme.service import ThemeName, ThemeService
@@ -52,6 +61,42 @@ from cranioz.ui.workspace.specs.editor_layout_spec import (
 )
 from cranioz.ui.workspace.specs.module_ui_spec import ModuleUISpec
 from cranioz.ui.workspace.workspace import Workspace
+
+# ----- Project context ----------------------------------------------
+
+
+def build_project_context() -> ProjectContext:
+    """Build a fake, coherent ProjectContext for the debug Workspace.
+
+    The Workspace never inspects the context beyond checking for its
+    presence (see ADR-0006), but a coherent context keeps the debug
+    run representative of production. All timestamps are timezone-aware
+    UTC, as required by ProjectMetadata.
+    """
+    pid = ProjectId("p-debug")
+    now = datetime(2026, 1, 1, 12, 0, tzinfo=UTC)
+    return ProjectContext(
+        project_id=pid,
+        metadata=ProjectMetadata(
+            project_id=pid,
+            project_name="Debug Case",
+            patient_id="pat-debug",
+            patient_display_name="Debug Patient",
+            clinical_procedure="orthognathic",
+            status=ProjectStatus.ACTIVE,
+            created_at=now,
+            updated_at=now,
+            last_opened_at=None,
+            schema_version=1,
+        ),
+        patient_summary=PatientSummary(
+            patient_id=PatientId("pat-debug"),
+            display_name="Debug Patient",
+            birth_date=None,
+            sex=PatientSex.MALE,
+        ),
+    )
+
 
 # ----- Editor registry ----------------------------------------------
 
@@ -146,6 +191,7 @@ def main() -> int:
         editor_registry=build_editor_registry(),
         tool_registry=build_tool_registry(),
         theme_service=ThemeService(theme=ThemeName.DARK),
+        project_context=build_project_context(),
         debug_colors=True,
     )
     workspace.load_spec(build_spec())

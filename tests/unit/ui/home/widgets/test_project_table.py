@@ -132,3 +132,126 @@ def test_refresh_reloads(qtbot: QtBot) -> None:
     _seed(manager, "p-001", "Alpha")
     table.refresh()
     assert table.row_count() == 1
+
+
+# ----- Selection lifecycle (None emission) ---------------------------
+
+
+def test_clearing_selection_emits_none(qtbot: QtBot) -> None:
+    """Deselect the only row: ProjectTable must emit project_selected(None).
+
+    Regression guard: previously _on_selection_changed only emitted
+    when a row was selected, so HomePage kept a stale _selected_project_id
+    and the StartButton stayed enabled after the row was deselected.
+    """
+    catalog, manager = _make_catalog_and_manager()
+    _seed(manager, "p-001", "Alpha")
+    table = ProjectTable(catalog)
+    qtbot.addWidget(table)
+
+    table._table.selectRow(0)
+    assert table.selected_project_id() == ProjectId("p-001")
+
+    with qtbot.waitSignal(table.project_selected, timeout=1000) as blocker:
+        table._table.clearSelection()
+
+    assert blocker.args[0] is None
+    assert table.selected_project_id() is None
+
+
+def test_refresh_preserves_selection_when_project_still_present(
+    qtbot: QtBot,
+) -> None:
+    """refresh() must NOT clear the selection if the same project remains."""
+    catalog, manager = _make_catalog_and_manager()
+    _seed(manager, "p-001", "Alpha")
+    _seed(manager, "p-002", "Beta")
+    table = ProjectTable(catalog)
+    qtbot.addWidget(table)
+
+    table._table.selectRow(0)
+    assert table.selected_project_id() == ProjectId("p-001")
+
+    table.refresh()
+
+    assert table.selected_project_id() == ProjectId("p-001")
+
+
+def test_refresh_preserves_selection_through_unchanged_search(
+    qtbot: QtBot,
+) -> None:
+    """Selecting a row, then refreshing, emits no None to the HomePage."""
+    catalog, manager = _make_catalog_and_manager()
+    _seed(manager, "p-001", "Alpha")
+    table = ProjectTable(catalog)
+    qtbot.addWidget(table)
+
+    table._table.selectRow(0)
+
+    emitted: list[object] = []
+    table.project_selected.connect(emitted.append)
+    table.refresh()
+
+    # No None emitted, because the project is still in the results.
+    assert None not in emitted
+
+
+def test_refresh_emits_none_when_selected_project_is_filtered_out(
+    qtbot: QtBot,
+) -> None:
+    """Search filtering the selected project away must clear HomePage state."""
+    catalog, manager = _make_catalog_and_manager()
+    _seed(manager, "p-001", "Alpha")
+    _seed(manager, "p-002", "Beta")
+    table = ProjectTable(catalog)
+    qtbot.addWidget(table)
+
+    table._table.selectRow(0)  # Alpha, p-001
+    assert table.selected_project_id() == ProjectId("p-001")
+
+    with qtbot.waitSignal(table.project_selected, timeout=1000) as blocker:
+        table._search_edit.setText("beta")  # filters out Alpha
+
+    assert blocker.args[0] is None
+    assert table.selected_project_id() is None
+    assert table.row_count() == 1
+
+
+def test_populate_does_not_emit_none_when_nothing_was_selected(
+    qtbot: QtBot,
+) -> None:
+    """An initial or repeated refresh with no prior selection must stay silent."""
+    catalog, manager = _make_catalog_and_manager()
+    _seed(manager, "p-001", "Alpha")
+    table = ProjectTable(catalog)
+    qtbot.addWidget(table)
+
+    emitted: list[object] = []
+    table.project_selected.connect(emitted.append)
+    table.refresh()
+
+    assert emitted == []
+
+
+def test_populate_blocks_intermediate_signals(qtbot: QtBot) -> None:
+    """During repopulation, only the final selection state is emitted.
+
+    If blockSignals() were missing, clearSelection() inside _populate
+    would emit None, then selectRow() would emit the ProjectId — the
+    HomePage would see a None-then-id flicker on every refresh.
+    """
+    catalog, manager = _make_catalog_and_manager()
+    _seed(manager, "p-001", "Alpha")
+    _seed(manager, "p-002", "Beta")
+    table = ProjectTable(catalog)
+    qtbot.addWidget(table)
+
+    table._table.selectRow(0)  # p-001
+
+    emitted: list[object] = []
+    table.project_selected.connect(emitted.append)
+    table.refresh()
+
+    # Exactly one emission (if any), and it must be the ProjectId,
+    # never a bare None.
+    assert None not in emitted
