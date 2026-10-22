@@ -23,7 +23,7 @@ The tests verify:
 from __future__ import annotations
 
 import pytest
-from PySide6.QtWidgets import QFrame, QLayout, QWidget
+from PySide6.QtWidgets import QFrame, QLayout, QPushButton, QWidget
 from pytestqt.qtbot import QtBot
 
 from cranioz.ui.workspace.areas.placement import Placement
@@ -251,3 +251,53 @@ def test_content_layout_returns_qlayout(overlay: TopOverlay) -> None:
 
 def test_content_layout_is_stable(overlay: TopOverlay) -> None:
     assert overlay.content_layout() is overlay.content_layout()
+
+# ----- set_left_content (ADR-0006) ----------------------------------
+
+
+def test_set_left_content_adds_widget(qtbot: QtBot) -> None:
+    overlay = TopOverlay()
+    qtbot.addWidget(overlay.widget())
+
+    button = QPushButton("Home")
+    overlay.set_left_content(button)
+
+    assert overlay.left_segment().isAncestorOf(button)
+
+
+def test_set_left_content_replaces_previous_widget(qtbot: QtBot) -> None:
+    overlay = TopOverlay()
+    qtbot.addWidget(overlay.widget())
+
+    first = QPushButton("First")
+    second = QPushButton("Second")
+    overlay.set_left_content(first)
+    overlay.set_left_content(second)
+
+    assert not overlay.left_segment().isAncestorOf(first)
+    assert overlay.left_segment().isAncestorOf(second)
+
+
+def test_set_left_content_with_none_clears(qtbot: QtBot) -> None:
+    overlay = TopOverlay()
+    qtbot.addWidget(overlay.widget())
+
+    button = QPushButton("Home")
+    overlay.set_left_content(button)
+    overlay.set_left_content(None)
+
+    assert not overlay.left_segment().isAncestorOf(button)
+
+
+def test_set_left_content_does_not_affect_center_or_right(
+    qtbot: QtBot,
+) -> None:
+    overlay = TopOverlay()
+    qtbot.addWidget(overlay.widget())
+
+    button = QPushButton("Home")
+    overlay.set_left_content(button)
+
+    assert overlay.left_segment().isAncestorOf(button)
+    assert not overlay.center_segment().isAncestorOf(button)
+    assert not overlay.right_segment().isAncestorOf(button)

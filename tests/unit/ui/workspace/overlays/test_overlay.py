@@ -204,3 +204,5 @@ def test_visibility_toggle_does_not_destroy_widget(qtbot: QtBot) -> None:
 
     # The widget instance is the same throughout.
     assert overlay.widget() is widget
+
+

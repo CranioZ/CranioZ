@@ -19,9 +19,13 @@ when the Workspace is shown; the tests call ``show()`` and
 ``qtbot.waitExposed()`` (or explicitly trigger a resize) when the
 geometry matters.
 
+The Workspace receives a ProjectContext at construction (ADR-0006).
+A minimal fixture provides one for these tests; the context is not
+inspected by the Workspace beyond its presence.
+
 What these tests cover:
 
-- Construction with the required registries and services.
+- Construction with the required registries, services, and context.
 - The TopOverlay is registered by default and accessible.
 - load_spec() builds the Areas, the tree, and the widget hierarchy.
 - areas() returns the Areas of the current composition.
@@ -37,15 +41,25 @@ Non-goals:
 
 - Layout persistence (Bloco 11).
 - Drag-and-drop, floating, multi-monitor (Bloco 14).
-- Top Bar content (the three segments are not built here).
+- Top Bar content (the three segments are populated by the
+  MainWindow, not by the Workspace — ADR-0006).
 """
 
 from __future__ import annotations
+
+from datetime import UTC, datetime
 
 import pytest
 from PySide6.QtWidgets import QWidget
 from pytestqt.qtbot import QtBot
 
+from cranioz.application.project.project_context import ProjectContext
+from cranioz.domain.patient.enums.patient_sex import PatientSex
+from cranioz.domain.patient.patient_summary import PatientSummary
+from cranioz.domain.patient.value_objects.patient_id import PatientId
+from cranioz.domain.project.project_id import ProjectId
+from cranioz.domain.project.project_metadata import ProjectMetadata
+from cranioz.domain.project.project_status import ProjectStatus
 from cranioz.ui.editors.builtin.test_editor import DummyEditor
 from cranioz.ui.editors.editor_registry import EditorRegistry
 from cranioz.ui.theme.service import ThemeName, ThemeService
@@ -113,16 +127,50 @@ def theme_service() -> ThemeService:
 
 
 @pytest.fixture
+def project_context() -> ProjectContext:
+    """A minimal ProjectContext for Workspace tests.
+
+    The Workspace only checks for the presence of the context; it does
+    not inspect its fields. This fixture provides a coherent one so
+    that tests can construct a Workspace without a ProjectManager.
+    """
+    pid = ProjectId("p-001")
+    return ProjectContext(
+        project_id=pid,
+        metadata=ProjectMetadata(
+            project_id=pid,
+            project_name="Case 001",
+            patient_id="pat-001",
+            patient_display_name="Gabriel Silva",
+            clinical_procedure="orthognathic",
+            status=ProjectStatus.ACTIVE,
+            created_at=datetime(2026, 1, 1, 12, 0, tzinfo=UTC),
+            updated_at=datetime(2026, 1, 1, 12, 0, tzinfo=UTC),
+            last_opened_at=None,
+            schema_version=1,
+        ),
+        patient_summary=PatientSummary(
+            patient_id=PatientId("pat-001"),
+            display_name="Gabriel Silva",
+            birth_date=None,
+            sex=PatientSex.MALE,
+        ),
+    )
+
+
+@pytest.fixture
 def workspace(
     qtbot: QtBot,
     editor_registry: EditorRegistry,
     tool_registry: ToolRegistry,
     theme_service: ThemeService,
+    project_context: ProjectContext,
 ) -> Workspace:
     ws = Workspace(
         editor_registry=editor_registry,
         tool_registry=tool_registry,
         theme_service=theme_service,
+        project_context=project_context,
     )
     qtbot.addWidget(ws)
     return ws
@@ -152,6 +200,14 @@ def test_workspace_registers_top_overlay_by_default(
     assert overlay is not None
     assert overlay.overlay_id == "overlay.top_bar"
     assert workspace.overlay_manager().contains("overlay.top_bar")
+
+
+def test_workspace_exposes_project_context(
+    workspace: Workspace,
+    project_context: ProjectContext,
+) -> None:
+    """ADR-0006: the Workspace exposes the ProjectContext it was created for."""
+    assert workspace.project_context is project_context
 
 
 # ----- load_spec — basic materialization ----------------------------

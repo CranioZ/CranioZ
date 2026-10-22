@@ -8,6 +8,12 @@ green and enabled.
 The button does not know about project_id or flow_id. It only emits
 `start_requested()` when clicked. The HomePage owns the state and
 emits the full `project_open_requested(project_id, flow_id)` signal.
+
+The objectName uses underscores, not dots. Qt Style Sheets treat "."
+as a class separator; a QSS selector ``#home_page.start_button``
+would not match an objectName of ``"home_page.start_button"``. The
+underscore form matches literally. See the QSS documentation on
+selector syntax.
 """
 
 from __future__ import annotations
@@ -30,7 +36,7 @@ class StartButton(QPushButton):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self.setObjectName("home_page.start_button")
+        self.setObjectName("home_page_start_button")
         self.setFixedSize(56, 56)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setEnabled(False)
@@ -49,10 +55,10 @@ class StartButton(QPushButton):
     def _apply_style(self, *, enabled: bool) -> None:
         color = _GREEN if enabled else _GREY
         self.setStyleSheet(
-            f"QPushButton#home_page.start_button {{"
+            f"QPushButton#home_page_start_button {{"
             f"  background-color: {color};"
             f"  color: {_WHITE};"
-            f"  border: none;"
+            f"  border: 2px solid {'#27ae60' if enabled else '#7f8c8d'};"
             f"  border-radius: 28px;"
             f"  font-size: 22px;"
             f"  font-weight: bold;"

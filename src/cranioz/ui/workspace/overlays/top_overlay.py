@@ -12,10 +12,12 @@ Geometric behavior:
 
 Structural behavior:
 - Contains three segments: Left, Center, Right.
+- Each segment has a QHBoxLayout, ready to receive content.
 - The Center segment is always horizontally centered within the Top Bar.
 - The Left and Right segments are anchored to their respective edges.
-- The content of each segment is populated by future pieces (e.g., the
-  TopBar composition). This class only provides the containers.
+- Content is injected by the MainWindow via set_left_content(widget)
+  (and, in future pieces, set_center_content / set_right_content).
+  The TopOverlay does not know what the injected widgets do (ADR-0006).
 
 Design rules:
 - The TopOverlay computes its own geometry from the Region Bounds
@@ -95,12 +97,21 @@ class TopOverlay(Overlay):
 
         self._left_segment = QWidget()
         self._left_segment.setObjectName("top_overlay.left_segment")
+        self._left_layout = QHBoxLayout(self._left_segment)
+        self._left_layout.setContentsMargins(0, 0, 0, 0)
+        self._left_layout.setSpacing(4)
 
         self._center_segment = QWidget()
         self._center_segment.setObjectName("top_overlay.center_segment")
+        self._center_layout = QHBoxLayout(self._center_segment)
+        self._center_layout.setContentsMargins(0, 0, 0, 0)
+        self._center_layout.setSpacing(4)
 
         self._right_segment = QWidget()
         self._right_segment.setObjectName("top_overlay.right_segment")
+        self._right_layout = QHBoxLayout(self._right_segment)
+        self._right_layout.setContentsMargins(0, 0, 0, 0)
+        self._right_layout.setSpacing(4)
 
         # The center segment is guaranteed to be centered by
         # inserting equal stretches on both sides.
@@ -173,28 +184,32 @@ class TopOverlay(Overlay):
     def left_segment(self) -> QWidget:
         """Return the container for the Left segment.
 
-        Future pieces (the TopBar composition) populate this
-        container with the Menu, Home, and Toggle Area Left actions.
+        Deprecated for direct use: prefer ``set_left_content(widget)``,
+        which places the widget in the segment's layout correctly.
         """
         return self._left_segment
 
     def center_segment(self) -> QWidget:
-        """Return the container for the Center segment.
-
-        Future pieces populate this container with the Module tabs
-        and the '+' button. The segment is always horizontally
-        centered within the Top Bar.
-        """
+        """Return the container for the Center segment."""
         return self._center_segment
 
     def right_segment(self) -> QWidget:
-        """Return the container for the Right segment.
-
-        Future pieces populate this container with the Extras menu,
-        the Toggle Area Bottom and Toggle Area Right actions, and
-        the window controls.
-        """
+        """Return the container for the Right segment."""
         return self._right_segment
+
+    # ----- Content injection ----------------------------------------
+
+    def set_left_content(self, widget: QWidget | None) -> None:
+        """Inject content into the Left segment.
+
+        The segment owns the widget after this call. Replaces any
+        previous content. Passing ``None`` clears the segment.
+
+        The TopOverlay does not know what the widget does. It is a
+        generic container (ADR-0006). The MainWindow injects the
+        "Home" button here.
+        """
+        _replace_content(self._left_layout, widget)
 
     # ----- Content layout -------------------------------------------
 
@@ -207,3 +222,23 @@ class TopOverlay(Overlay):
         same instance is returned every time.
         """
         return self._layout
+
+
+# ----- Internals ----------------------------------------------------
+
+
+def _replace_content(layout: QHBoxLayout, widget: QWidget | None) -> None:
+    """Remove any existing children from the layout and add the widget.
+
+    Uses deleteLater for removed widgets so that Qt cleans up after
+    the current event loop iteration. Safe to call during signal
+    handlers.
+    """
+    while layout.count():
+        item = layout.takeAt(0)
+        existing = item.widget() if item is not None else None
+        if existing is not None:
+            existing.setParent(None)
+            existing.deleteLater()
+    if widget is not None:
+        layout.addWidget(widget)
