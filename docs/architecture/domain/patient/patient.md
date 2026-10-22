@@ -118,15 +118,15 @@ Identity documents and contact information.
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
-| `document_type` | `DocumentType \| None` | no | `RG`, `CPF`, `CNH`, `PASSAPORTE`, `OUTRO`. |
-| `document_number` | `str \| None` | conditional | Required when `document_type` is set. |
+| `document_type` | `DocumentType \| None` | no | `NATIONAL_ID`, `TAX_ID`, `DRIVERS_LICENSE`, `PASSPORT`, `BIRTH_CERTIFICATE`, `OTHER`. See §5.1. |
+| `document_country` | `str \| None` | conditional | Required when `document_type` is set. ISO 3166-1 alpha-2 (e.g., `"BR"`, `"US"`). |
+| `document_number` | `str \| None` | conditional | Required when `document_type` is set. Non-empty, non-whitespace. |
 | `phone_primary` | `PhoneNumber \| None` | no | Main phone, with kind. |
 | `phone_secondary` | `PhoneNumber \| None` | no | Optional secondary phone. |
 | `email` | `str \| None` | no | Email address. |
 | `health_insurance` | `str \| None` | no | Health insurance name (free-form). |
-| `insurance_card_number` | `str \| None` | conditional | Required when `health_insurance` is set. |
+| `insurance_card_number` | `str \| None` | conditional | Required when `health_insurance` is set. Non-empty, non-whitespace. |
 | `notes` | `str` | no | Free-form. Defaults to `""`. |
-
 **Conditional rules** (enforced in `PatientDocuments.__post_init__`):
 
 - If `document_type` is set, `document_number` must be non-empty.
@@ -143,6 +143,14 @@ not enforce a phone format.
 **Health insurance** is a free-form string today. If the list of
 insurances needs metadata (ANS code, contact, etc.), it will be
 promoted to an entity referenced by the domain.
+
+**Conditional rules** (enforced in `PatientDocuments.__post_init__`):
+
+- If `document_type` is set, `document_country` and `document_number` must be set and non-empty.
+- If `document_type` is `None`, both `document_country` and `document_number` must be `None`.
+- `document_country`, when set, must be an ISO 3166-1 alpha-2 code: two uppercase ASCII letters.
+- If `health_insurance` is set, `insurance_card_number` must be set and non-empty.
+- If `health_insurance` is `None`, `insurance_card_number` must be `None`.
 
 ---
 

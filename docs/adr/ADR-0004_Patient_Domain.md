@@ -380,7 +380,7 @@ patient = Patient(
         full_name="Gabriel Silva",
         birth_date=date(1990, 5, 12),
         sex=PatientSex.MALE,
-        race=PatientRace.PARDA,
+        race=PatientRace.BROWN,
         blood_type=BloodType.O_POSITIVE,
     ),
     documents=PatientDocuments(),
@@ -394,7 +394,7 @@ patient = Patient(
 )
 
 assert patient.display_name() == "Gabriel Silva"
-assert patient.age() == 36  # at 2026
+assert patient.age(at_date=date(2026, 6, 1)) == 36
 ```
 
 7.2 A cross-section invariant is enforced

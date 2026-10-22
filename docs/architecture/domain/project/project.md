@@ -465,38 +465,38 @@ restricted operations.
 
 Authorization and audit logging are separate concerns, although both operate at the Project Management boundary.
 
-16. Opening a Project
+## 16. Opening a Project
 
 Selecting a project on the Home Page does not mean that the Home Page loads and owns the entire project.
 
 The opening process is:
 
-1. User selects project
+    1. User selects project
           │
           ▼
-2. Home Page requests project opening
-          │
-          ▼
-3. Project Manager checks access
-          │
-          ▼
-4. Project Manager loads project
-          │
-          ▼
-5. Project Manager resolves clinical workflow
-          │
-          ▼
-6. Project Manager creates ProjectContext
-          │
-          ▼
-7. Workspace receives ProjectContext
-          │
-          ▼
-8. Workspace initializes the clinical flow
+    2. Home Page requests project opening
+             │
+             ▼
+    3. Project Manager checks access
+             │
+             ▼
+    4. Project Manager loads project
+             │
+             ▼
+    5. Project Manager resolves clinical workflow
+             │
+             ▼
+    6. Project Manager creates ProjectContext
+             │
+             ▼
+    7. Workspace receives ProjectContext
+             │
+             ▼
+    8. Workspace initializes the clinical flow
 
 The Project Manager remains the lifecycle authority throughout this process.
 
-17. Project Context
+## 17. Project Context
 
 ProjectContext is a runtime initialization context created when a project is opened.
 
@@ -508,50 +508,54 @@ It does not own the project lifecycle.
 
 It is not required to be serialized as the project's canonical representation.
 
-Its purpose is to provide the Workspace with the information and runtime references necessary to operate on an opened project.
+Its purpose is to provide the Workspace with the information necessary to operate on an opened project.
 
 Conceptually:
 
+```
 ProjectContext
 ├── project_id
-├── project_metadata
+├── metadata
 ├── patient_summary
-├── workflow_id
-├── workflow_config
-└── object_references
+├── workflow_id              (optional)
+├── workflow_config          (optional)
+└── object_references        (tuple)
+```
 
-Runtime services or capabilities required by the Workspace should be supplied through the application's dependency-injection/application-service mechanisms rather than turning ProjectContext into a generic service locator.
+The two workflow fields are either both set or both None. A workflow id without a configuration is meaningless, and a configuration without an id cannot be resolved. object_references is a tuple, not a list: immutability is structural, not merely by convention.
+
+Runtime services or capabilities required by the Workspace — SceneQuery, CommandDispatcher, EventBus, and any future service — are supplied through the application's dependency-injection mechanism, not through ProjectContext. The context is data, not a service registry. Turning it into a service locator would couple every consumer to every service, make the context untestable without service mocks, and contradict the principle that a runtime snapshot should be a plain, immutable value.
 
 Conceptually:
 
-Persistent Project
-       │
-       │ load
-       ▼
-Project Manager
-       │
-       │ creates
-       ▼
-ProjectContext
-       │
-       │ + ClinicalWorkflow
-       ▼
-Workspace
+    Persistent Project
+           │
+           │ load
+           ▼
+    Project Manager
+           │
+           │ creates
+           ▼
+    ProjectContext
+           │
+           │ + ClinicalWorkflow
+           ▼
+    Workspace
 
 The context exists only while the project is active in the application session.
 
-18. Clinical Workflow Handoff
+## 18. Clinical Workflow Handoff
 
 A Project may be associated with one or more clinical workflows.
 
 Examples include:
 
-Orthognathic Surgery
-Facial Implant Planning
-Osteosynthesis Planning
-Airway Analysis
-Cephalometric Analysis
-Fibula Reconstruction
+    Orthognathic Surgery
+    Facial Implant Planning
+    Osteosynthesis Planning
+    Airway Analysis
+    Cephalometric Analysis
+    Fibula Reconstruction
 
 The Home Page may allow the user to select a workflow, but it does not execute the workflow.
 
@@ -559,77 +563,74 @@ The Project Manager or an appropriate application service resolves the workflow 
 
 Conceptually:
 
-Selected Project
-      │
-      ├── Project Context
-      │
-      └── Clinical Workflow
-                │
-                ▼
-            Workspace
+    Selected Project
+          │
+          ├── Project Context
+          │
+          └── Clinical Workflow
+                    │
+                    ▼
+                Workspace
 
 The exact workflow/module architecture is defined by the Flow and Module documentation.
 
-19. Workspace
+## 19. Workspace
 
 The Workspace is the active clinical execution environment.
 
 It is responsible for:
 
-displaying project data;
-executing clinical workflows;
-invoking modules;
-manipulating domain objects through application commands;
-displaying imaging and 3D data;
-executing planning operations;
-managing workspace layout;
-maintaining temporary UI state;
-presenting clinical tools.
+* displaying project data;
+* executing clinical workflows;
+* invoking modules;
+* manipulating domain objects through application commands;
+* displaying imaging and 3D data;
+* executing planning operations;
+* managing workspace layout;
+* maintaining temporary UI state;
+* presenting clinical tools.
 
 The Workspace must not:
 
-create independent projects;
-delete projects directly;
-maintain the authoritative project list;
-implement project persistence;
-decide project lifecycle policy;
-manage patient/project storage;
-become a second Project Manager.
+* create independent projects;
+* delete projects directly;
+* maintain the authoritative project list;
+* implement project persistence;
+* decide project lifecycle policy;
+* manage patient/project storage;
+* become a second Project Manager.
 
 The Workspace consumes the Project Context provided by the Project Management layer.
 
-20. Clinical Data Changes from the Workspace
+## 20. Clinical Data Changes from the Workspace
 
 Clinical operations performed in the Workspace may produce persistent project changes.
 
 For example:
 
-Workspace
-    │
-    │ Apply Le Fort I osteotomy
-    ▼
-Application Command
-    │
-    ▼
-Planning / Domain Service
-    │
-    ▼
-Project State
-    │
-    ▼
-Persistence Boundary
+    Workspace
+        │
+        │ Apply Le Fort I osteotomy
+        ▼
+    Application Command
+        │
+        ▼
+    Planning / Domain Service
+        │
+        ▼
+    Project State
+        │
+        ▼
+    Persistence Boundary
 
 The Workspace must not perform direct persistence such as:
 
-open("project.json", "w")
+* open("project.json", "w")
+* or equivalent storage operations.
+* Clinical modules must also not access project storage directly.
+* They must use the application/domain contracts provided by CranioZ.
 
-or equivalent storage operations.
-
-Clinical modules must also not access project storage directly.
-
-They must use the application/domain contracts provided by CranioZ.
-
-21. Closing a Project
+## 21. Closing a Project
 
 Closing a project is a runtime lifecycle operation controlled by the Project Manager.
 
@@ -637,29 +638,29 @@ Closing a project means ending the active runtime context associated with the pr
 
 A close operation may involve:
 
-checking for pending changes;
-persisting changes according to the configured persistence/autosave policy;
-publishing a ProjectClosing event;
-releasing project-specific runtime resources;
-invalidating the active ProjectContext;
-publishing ProjectClosed.
+* checking for pending changes;
+* persisting changes according to the configured persistence/autosave policy;
+* publishing a ProjectClosing event;
+* releasing project-specific runtime resources;
+* invalidating the active ProjectContext;
+* publishing ProjectClosed.
 
 Closing a project does not remove it from the Project Catalog.
 
-Open
-  │
-  ▼
-Active ProjectContext
-  │
-  ▼
-Close
-  │
-  ├── persist pending state
-  ├── release runtime resources
-  └── dispose context
-  │
-  ▼
-Project remains persisted and discoverable
+    Open
+      │
+      ▼
+    Active ProjectContext
+      │
+      ▼
+    Close
+      │
+      ├── persist pending state
+      ├── release runtime resources
+      └── dispose context
+      │
+      ▼
+    Project remains persisted and discoverable
 
 Closing is therefore distinct from deletion.
 
@@ -671,32 +672,32 @@ Project lifecycle changes may be communicated through the Application Event Bus.
 
 Relevant events may include:
 
-ProjectCreated
-ProjectOpened
-ProjectUpdated
-ProjectClosing
-ProjectClosed
-ProjectDeleted
+    ProjectCreated
+    ProjectOpened
+    ProjectUpdated
+    ProjectClosing
+    ProjectClosed
+    ProjectDeleted
 
 Events communicate state changes; they do not transfer ownership.
 
 For example:
 
-Project Manager
-      │
-      ▼
-Application Event Bus
-      │
-      ├── Project Catalog
-      ├── Home Page
-      ├── Workspace
-      └── other subscribers
+    Project Manager
+          │
+          ▼
+    Application Event Bus
+          │
+          ├── Project Catalog
+          ├── Home Page
+          ├── Workspace
+          └── other subscribers
 
 The Workspace may react to ProjectOpened or ProjectClosed, but it does not become the lifecycle authority.
 
 The exact event semantics belong to the application/event documentation.
 
-23. Who Reads the Project?
+## 23. Who Reads the Project?
 
 Different components read different representations.
 
@@ -704,51 +705,51 @@ Project Catalog
 
 Reads lightweight project metadata for discovery:
 
-ProjectSummary
-Project Manager
+    ProjectSummary
+    Project Manager
 
 Reads the authoritative project state when opening or managing a project:
 
-Project
-Workspace
+    Project
+    Workspace
 
 Receives the active runtime representation through:
 
-ProjectContext
-Clinical Modules
+    ProjectContext
+    Clinical Modules
 
 Consume project/domain data through their defined application contracts.
 
 The Home Page and Workspace must not bypass the Project Management boundary to read arbitrary project files.
 
-24. Who Stores the Project?
+## 24. Who Stores the Project?
 
 The responsibilities are deliberately separated:
 
-Project Manager
-    = lifecycle authority and coordinator
-
-Project Repository
-    = persistence abstraction
-
-Project Storage
-    = physical storage infrastructure
-
-Project Catalog
-    = read-only discovery projection
-
-Project Context
-    = active runtime context
-
-Home Page
-    = discovery and selection UI
-
-Workspace
-    = clinical execution environment
+    Project Manager
+        = lifecycle authority and coordinator
+    
+    Project Repository
+        = persistence abstraction
+    
+    Project Storage
+        = physical storage infrastructure
+    
+    Project Catalog
+        = read-only discovery projection
+    
+    Project Context
+        = active runtime context
+    
+    Home Page
+        = discovery and selection UI
+    
+    Workspace
+        = clinical execution environment
 
 This distinction prevents infrastructure classes from becoming business authorities and prevents UI components from becoming persistence layers.
 
-25. Single Lifecycle Writer Principle
+## 25. Single Lifecycle Writer Principle
 
 CranioZ follows a single lifecycle writer principle for projects.
 
@@ -760,39 +761,39 @@ Clinical modules and application services may modify clinical domain state throu
 
 The rule means that there is only one authoritative application boundary for:
 
-Create Project
-Open Project
-Update Project Metadata
-Close Project
-Delete Project
-Archive Project
-Restore Project
+    Create Project
+    Open Project
+    Update Project Metadata
+    Close Project
+    Delete Project
+    Archive Project
+    Restore Project
 
 The following components must not independently implement project lifecycle behavior:
 
-Home Page
-Workspace
-Clinical Modules
-Plugins
-Project Catalog
-Project Repository
-Project Storage
+    Home Page
+    Workspace
+    Clinical Modules
+    Plugins
+    Project Catalog
+    Project Repository
+    Project Storage
 
 Plugins and modules must use the public Project Management/application API.
 
-26. Concurrency and Consistency
+## 26. Concurrency and Consistency
 
 Project-level concurrency is a Project Management and persistence concern.
 
 Potential mechanisms include:
 
-filesystem locking;
-optimistic concurrency;
-project revision numbers;
-transactions;
-conflict detection;
-recovery after interrupted writes;
-autosave coordination.
+    filesystem locking;
+    optimistic concurrency;
+    project revision numbers;
+    transactions;
+    conflict detection;
+    recovery after interrupted writes;
+    autosave coordination.
 
 This document establishes the responsibility boundary but intentionally does not select a concurrency strategy.
 
@@ -802,40 +803,40 @@ adr/project-concurrency.md
 
 The eventual implementation should ensure that concurrent project modifications cannot silently corrupt persistent clinical data.
 
-27. Error Handling
+## 27. Error Handling
 
 Project lifecycle failures should be represented by application-level errors.
 
 Examples include:
 
-ProjectNotFound
-ProjectAlreadyExists
-ProjectValidationError
-ProjectStorageError
-ProjectCorrupted
-ProjectAccessDenied
-ProjectInUse
-ProjectDeletionError
-ProjectConcurrencyError
+    ProjectNotFound
+    ProjectAlreadyExists
+    ProjectValidationError
+    ProjectStorageError
+    ProjectCorrupted
+    ProjectAccessDenied
+    ProjectInUse
+    ProjectDeletionError
+    ProjectConcurrencyError
 
 The Home Page should present appropriate user-facing feedback but should not interpret infrastructure-specific exceptions.
 
 The Workspace should similarly receive application-level failures rather than depending directly on filesystem or database exceptions.
 
-28. Security, Privacy, and Auditability
+## 28. Security, Privacy, and Auditability
 
 Projects may contain patient-related information and therefore require architectural support for access control and auditability.
 
 The Project Management boundary should provide extension points for:
 
-authorization;
-role-based access;
-project permissions;
-audit events;
-controlled deletion;
-data export;
-data retention;
-institutional storage policies.
+    authorization;
+    role-based access;
+    project permissions;
+    audit events;
+    controlled deletion;
+    data export;
+    data retention;
+    institutional storage policies.
 
 Authorization is represented by ProjectAccessPolicy.
 
@@ -843,7 +844,7 @@ Audit logging should consume application/project events rather than being implem
 
 The initial implementation may use permissive access and minimal auditing, but the extension points should exist from the beginning.
 
-29. Project Lifecycle
+## 29. Project Lifecycle
 
 The conceptual project lifecycle is:
 
@@ -879,79 +880,80 @@ The conceptual project lifecycle is:
 
 The exact project status model belongs to the Project domain documentation.
 
-30. Architectural Invariants
+## 30. Architectural Invariants
 
 The following rules are mandatory:
 
-The Project Manager is the single application-level authority for project lifecycle.
-The Home Page is read-only with respect to project lifecycle state.
-The Workspace is not a project manager.
-The Home Page does not directly access project persistence.
-The Workspace does not directly access project persistence.
-The Project Catalog is read-only.
-The Project Repository is a persistence abstraction, not a lifecycle authority.
-Project Storage is infrastructure, not business logic.
-Project creation goes through the Project Manager.
-Project deletion goes through the Project Manager.
-Project metadata maintenance goes through the Project Manager.
-Project opening goes through the Project Manager.
-Project closing is controlled by the Project Manager.
-The Project Context is not the Project itself.
-The Project Context does not own the project lifecycle.
-Patient is a domain entity; there is no separate Patient Manager in this architecture.
-Patient-related project data is managed within the Project Management boundary.
-The authoritative project list is not maintained by the Home Page.
-Plugins and modules must not bypass the Project Management/application API.
-Project lifecycle changes may be communicated through application events.
-Catalog synchronization must not be implemented independently by the Home Page.
-Authorization is evaluated at the Project Management boundary.
-Physical storage paths are infrastructure concerns.
-Clinical workflow execution belongs to the Workspace/Flow/Module architecture, not to Project Management.
-31. Conceptual API
+1. The Project Manager is the single application-level authority for project lifecycle.
+2. The Home Page is read-only with respect to project lifecycle state.
+3. The Workspace is not a project manager.
+4. The Home Page does not directly access project persistence.
+5. The Workspace does not directly access project persistence.
+6. The Project Catalog is read-only.
+7. The Project Repository is a persistence abstraction, not a lifecycle authority.
+8. Project Storage is infrastructure, not business logic.
+9. Project creation goes through the Project Manager.
+10. Project deletion goes through the Project Manager.
+11. Project metadata maintenance goes through the Project Manager.
+12. Project opening goes through the Project Manager.
+13. Project closing is controlled by the Project Manager.
+14. The Project Context is not the Project itself.
+15. The Project Context does not own the project lifecycle.
+16. Patient is a domain entity; there is no separate Patient Manager in this architecture.
+17. Patient-related project data is managed within the Project Management boundary.
+18. The authoritative project list is not maintained by the Home Page.
+19. Plugins and modules must not bypass the Project Management/application API.
+20. Project lifecycle changes may be communicated through application events.
+21. Catalog synchronization must not be implemented independently by the Home Page.
+22. Authorization is evaluated at the Project Management boundary.
+23. Physical storage paths are infrastructure concerns.
+24. Clinical workflow execution belongs to the Workspace/Flow/Module architecture, not to Project Management.
+
+## 31. Conceptual API
 
 The exact implementation belongs to the application layer, but the Project Manager should conceptually expose operations similar to:
 
-class ProjectManager(Protocol):
-    def create_project(...) -> Project: ...
-    def open_project(project_id: ProjectId) -> ProjectContext: ...
-    def update_project(...) -> None: ...
-    def close_project(project_id: ProjectId) -> None: ...
-    def delete_project(project_id: ProjectId) -> None: ...
+    class ProjectManager(Protocol):
+        def create_project(...) -> Project: ...
+        def open_project(project_id: ProjectId) -> ProjectContext: ...
+        def update_project(...) -> None: ...
+        def close_project(project_id: ProjectId) -> None: ...
+        def delete_project(project_id: ProjectId) -> None: ...
 
 The read-only Catalog may expose:
 
-class ProjectCatalog(Protocol):
-    def list_projects(...) -> list[ProjectSummary]: ...
-    def get_project_summary(
-        self,
-        project_id: ProjectId,
-    ) -> ProjectSummary: ...
-    def search_projects(
-        self,
-        query: str,
-    ) -> list[ProjectSummary]: ...
+    class ProjectCatalog(Protocol):
+        def list_projects(...) -> list[ProjectSummary]: ...
+        def get_project_summary(
+            self,
+            project_id: ProjectId,
+        ) -> ProjectSummary: ...
+        def search_projects(
+            self,
+            query: str,
+        ) -> list[ProjectSummary]: ...
 
 Persistence remains behind:
 
-class ProjectRepository(Protocol):
-    def create(self, project: Project) -> None: ...
-    def get(self, project_id: ProjectId) -> Project: ...
-    def update(self, project: Project) -> None: ...
-    def delete(self, project_id: ProjectId) -> None: ...
+    class ProjectRepository(Protocol):
+        def create(self, project: Project) -> None: ...
+        def get(self, project_id: ProjectId) -> Project: ...
+        def update(self, project: Project) -> None: ...
+        def delete(self, project_id: ProjectId) -> None: ...
 
 These interfaces describe responsibility boundaries rather than prescribing concrete implementation details.
 
-32. Project Lifecycle Sequence
+## 32. Project Lifecycle Sequence
 
 The normal user flow is:
 
 The Workspace then executes the selected clinical workflow.
 
-33. Creation and Persistence Sequence
+## 33. Creation and Persistence Sequence
 
 The Home Page receives the updated discovery state through the Catalog mechanism rather than maintaining its own authoritative list.
 
-34. Closing and Opening Projects
+## 34. Closing and Opening Projects
 
 Opening and closing are runtime lifecycle operations.
 
@@ -965,94 +967,95 @@ This document defines the application-level project lifecycle and ownership mode
 
 It should be read together with:
 
-domain/patient.md — Patient domain entity;
-domain/project.md — Project domain representation;
-domain/scene.md — Scene and object membership;
-domain/objects.md / Datatypes documentation — domain object model;
-application/ documentation — application services, commands, events, and orchestration;
-infrastructure/ documentation — storage and persistence implementations;
-flows/ documentation — clinical workflow execution;
-modules/ documentation — module lifecycle and contracts;
-workspace.md — Workspace lifecycle and runtime context;
-adr/ — architectural decisions governing persistence, concurrency, transactions, catalog synchronization, and access control.
+1. domain/patient.md — Patient domain entity;
+2. domain/project.md — Project domain representation;
+3. domain/scene.md — Scene and object membership;
+4. domain/objects.md / Datatypes documentation — domain object model;
+5. application/ documentation — application services, commands, events, and orchestration;
+6. infrastructure/ documentation — storage and persistence implementations;
+7. flows/ documentation — clinical workflow execution;
+8. modules/ documentation — module lifecycle and contracts;
+9. workspace.md — Workspace lifecycle and runtime context;
+10. adr/ — architectural decisions governing persistence, concurrency, transactions, catalog synchronization, and access control.
+
 36. Related Architectural Decisions
 
 The following topics should be defined by dedicated ADRs rather than overloaded into this document:
 
-Project Catalog Synchronization
-Project Concurrency
-Project Persistence Format
-Project Access and Audit
-Project Transactions
-Project Recovery / Autosave
+    Project Catalog Synchronization
+    Project Concurrency
+    Project Persistence Format
+    Project Access and Audit
+    Project Transactions
+    Project Recovery / Autosave
 
 The project.md document defines the stable responsibility boundaries. ADRs define implementation-specific or decision-sensitive policies.
 
-37. Summary
+## 37. Summary
 
 CranioZ treats the Project as the central persistent clinical container and establishes a single application-level authority for its lifecycle.
 
 The resulting architecture is:
 
-Project Manager
-    │
-    ├── Project Access Policy
-    ├── Project Repository
-    │       └── Project Storage
-    │
-    ├── Application Events
-    │
-    └── Project Context
-             │
-             └── Clinical Workflow
-                       │
-                       ▼
-                   Workspace
-                       │
-                       ▼
-                 Clinical Modules
+    Project Manager
+        │
+        ├── Project Access Policy
+        ├── Project Repository
+        │       └── Project Storage
+        │
+        ├── Application Events
+        │
+        └── Project Context
+                 │
+                 └── Clinical Workflow
+                           │
+                           ▼
+                       Workspace
+                           │
+                           ▼
+                     Clinical Modules
 
 
-Project Catalog
-      │
-      ▼
-  Home Page
-      │
-      │ select
-      ▼
-Project Manager
+    Project Catalog
+          │
+          ▼
+      Home Page
+          │
+          │ select
+          ▼
+    Project Manager
 
 The central responsibilities are:
 
-Project Manager
-    Owns lifecycle.
-
-Project Catalog
-    Provides read-only discovery.
-
-Project Repository
-    Provides persistence.
-
-Project Storage
-    Provides physical storage.
-
-Project Access Policy
-    Provides authorization.
-
-Project Context
-    Provides the active runtime context.
-
-Home Page
-    Discovers and selects projects.
-
-Workspace
-    Executes clinical workflows.
+    Project Manager
+        Owns lifecycle.
+    
+    Project Catalog
+        Provides read-only discovery.
+    
+    Project Repository
+        Provides persistence.
+    
+    Project Storage
+        Provides physical storage.
+    
+    Project Access Policy
+        Provides authorization.
+    
+    Project Context
+        Provides the active runtime context.
+    
+    Home Page
+        Discovers and selects projects.
+    
+    Workspace
+        Executes clinical workflows.
 
 The architectural principle is:
 
 The Home Page discovers projects, the Project Manager owns their lifecycle, the Repository persists them, Storage provides the physical representation, the Project Context represents the active runtime state, and the Workspace executes the selected clinical workflow without managing the project.
 """
 
-path = Path("/mnt/data/project.md")
-path.write_text(content, encoding="utf-8")
-print(path)
+    path = Path("/mnt/data/project.md")
+    path.write_text(content, encoding="utf-8")
+    print(path)

@@ -724,37 +724,42 @@ It does not create, modify, save, delete, or directly load Projects.
 
 Layout (top to bottom, left to right):
 
-```text
+```
 HomePage
 ├── HomeTopBar
-│   ├── ☰ menu            → emite menu_requested
+│   ├── ☰ menu            → emits toggle_sidebar_requested
 │   ├── CranioZ
-│   ├── ? ajuda           → emite help_requested
-│   └── ⚙ configurações   → emite settings_requested
+│   ├── ? help            → emits help_requested
+│   └── ⚙ settings        → emits settings_requested
 │
 └── QHBoxLayout
-    ├── CommunitySidebar
-    │   ├── Comunidade           → emite community_requested
-    │   ├── Biblioteca de objetos→ emite library_requested
-    │   ├── Novidades            → emite news_requested
-    │   ├── Sugerir melhorias    → emite feedback_requested
-    │   └── Contribuir           → emite contribute_requested
+    ├── CommunitySidebar (hidden by default)
+    │   ├── Community            → emits community_requested
+    │   ├── Object library       → emits library_requested
+    │   ├── News                 → emits news_requested
+    │   ├── Suggest improvements → emits feedback_requested
+    │   └── Contribute           → emits contribute_requested
     │
-    └── QVBoxLayout (coluna direita)
-        ├── QSplitter(Vertical)
-        │   ├── ProjectTable
-        │   │   ├── [Novo projeto]     → emite new_project_requested()
-        │   │   ├── [Remover projeto]  → emite remove_project_requested(project_id)
-        │   │   ├── [Busca]
-        │   │   ├── [Expandir]
-        │   │   └── QTableWidget
-        │   │
-        │   └── FlowList
-        │       ├── [Gerir Fluxos]     → emite manage_flows_requested()
-        │       └── Lista de fluxos
+    └── QVBoxLayout (right column, stretch 8 / 42 / 42 / 8)
+        ├── HomeTopBar             (stretch 8)
+        ├── ProjectTable           (stretch 42)
+        │   ├── [New project]      → emits new_project_requested()
+        │   ├── [Manage projects]  → emits manage_projects_requested()
+        │   ├── [Search]           → filters by project name or patient name
+        │   ├── [Expand]           → reserved (table expansion)
+        │   └── QTableWidget
         │
-        └── HomeBottomBar
-            └── StartButton            → emite project_open_requested(project_id, flow_id)
-                ├── Cinza (padrão)
-                └── Verde (só quando projeto + fluxo selecionados)
+        ├── FlowList               (stretch 42)
+        │   ├── [Manage Flows]     → emits manage_flows_requested()
+        │   └── Flow list
+        │       └── (each flow: horizontal row of steps — Block 9)
+        │
+        └── HomeBottomBar          (stretch 8)
+            └── StartButton        → emits project_open_requested(project_id, flow_id)
+                ├── Grey (default)
+                └── Green (only when both project and flow are selected)
 ```
+
+* **About the QSplitter**: the prototype shows stacked panels with fixed proportional heights, not draggable dividers. That is why the HomePage uses a QVBoxLayout with stretch 8 / 42 / 42 / 8 and setMinimumHeight on HomeTopBar and HomeBottomBar. Persistent panel resizing, if ever needed, is a separate piece (LayoutState persistence), not an implicit decision of the initial layout.
+* **About "Manage projects" vs. "Remove project"**: the button exposed on the Home Page is "Manage projects", not a destructive action. The prototype confirms this. Project deletion happens inside the management page (piece 7.6d), where the user has context — archive, export, import, delete. The Home Page does not expose deletion in a single click. Without this button, the user would have no way to reach the management page.
+* **About the ☰**: the button toggles the CommunitySidebar; it does not open an application menu. The signal is toggle_sidebar_requested (no arguments). An application menu, if introduced, will be a separate control.
