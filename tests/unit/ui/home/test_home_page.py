@@ -5,6 +5,10 @@ from __future__ import annotations
 from pytestqt.qtbot import QtBot
 
 from cranioz.application.event_bus import EventBus
+from cranioz.application.flows.definition import (
+    FlowDefinition,
+    FlowStep,
+)
 from cranioz.application.project.in_memory_project_repository import (
     InMemoryProjectRepository,
 )
@@ -39,6 +43,27 @@ def _seed(manager: ProjectManager, project_id: str, name: str) -> None:
         patient_display_name="Gabriel Silva",
         clinical_procedure="orthognathic",
     )
+
+
+def _make_flow(flow_id: str = "orthognathic") -> FlowDefinition:
+    return FlowDefinition(
+        flow_id=flow_id,
+        name_key=f"flows.{flow_id}.name",
+        version=1,
+        steps=(
+            FlowStep(
+                step_id=f"{flow_id}_s0",
+                name_key=f"flows.{flow_id}.steps.s0",
+                module_id="patient",
+            ),
+        ),
+    )
+
+
+def _select_flow(page: HomePage, flow_id: str = "orthognathic") -> None:
+    """Populate the FlowList with one flow and select it."""
+    page._flow_list_widget().set_flows((_make_flow(flow_id),))
+    page._flow_list_widget()._on_row_selected(flow_id)
 
 
 # ----- Composition --------------------------------------------------
@@ -151,8 +176,7 @@ def test_start_button_stays_disabled_with_only_project(qtbot: QtBot) -> None:
 def test_start_button_stays_disabled_with_only_flow(qtbot: QtBot) -> None:
     page, _, _ = _make_page()
     qtbot.addWidget(page)
-    page._flow_list_widget().set_flows([("orthognathic", "Cirurgia")])
-    page._flow_list_widget()._flow_buttons["orthognathic"].click()
+    _select_flow(page)
     assert page._start_button_widget().isEnabled() is False
 
 
@@ -163,8 +187,7 @@ def test_start_button_enables_with_project_and_flow(qtbot: QtBot) -> None:
     page.refresh()
 
     page._project_table_widget()._table.selectRow(0)
-    page._flow_list_widget().set_flows([("orthognathic", "Cirurgia")])
-    page._flow_list_widget()._flow_buttons["orthognathic"].click()
+    _select_flow(page)
 
     assert page._start_button_widget().isEnabled() is True
 
@@ -176,8 +199,7 @@ def test_start_button_emits_open_requested(qtbot: QtBot) -> None:
     page.refresh()
 
     page._project_table_widget()._table.selectRow(0)
-    page._flow_list_widget().set_flows([("orthognathic", "Cirurgia")])
-    page._flow_list_widget()._flow_buttons["orthognathic"].click()
+    _select_flow(page)
 
     with qtbot.waitSignal(
         page.project_open_requested, timeout=1000
@@ -215,23 +237,21 @@ def test_bottom_bar_is_ancestor_of_start_button(qtbot: QtBot) -> None:
     qtbot.addWidget(page)
     assert page._bottom_bar_widget().isAncestorOf(page._start_button_widget())
 
+
+# ----- Regression: deselection / search filter ---------------------
+
+
 def test_start_button_disables_when_selection_cleared(
     qtbot: QtBot,
 ) -> None:
-    """Clearing the project table selection must disable StartButton.
-
-    Regression guard for the bug where ProjectTable did not emit None
-    on deselection, leaving HomePage._selected_project_id stale and
-    the StartButton green.
-    """
+    """Clearing the project table selection must disable StartButton."""
     page, _, manager = _make_page()
     qtbot.addWidget(page)
     _seed(manager, "p-001", "Alpha")
     page.refresh()
 
     page._project_table_widget()._table.selectRow(0)
-    page._flow_list_widget().set_flows([("orthognathic", "Cirurgia")])
-    page._flow_list_widget()._flow_buttons["orthognathic"].click()
+    _select_flow(page)
 
     assert page._start_button_widget().isEnabled() is True
 
@@ -251,8 +271,7 @@ def test_start_button_disables_when_search_filters_selected_project(
     page.refresh()
 
     page._project_table_widget()._table.selectRow(0)  # Alpha
-    page._flow_list_widget().set_flows([("orthognathic", "Cirurgia")])
-    page._flow_list_widget()._flow_buttons["orthognathic"].click()
+    _select_flow(page)
     assert page._start_button_widget().isEnabled() is True
 
     page._project_table_widget()._search_edit.setText("beta")

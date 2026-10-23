@@ -1,14 +1,22 @@
 """FlowList — the "Fluxos clínicos" section of the Home Page.
 
-Displays the available Flow definitions (Bloco 9). Until the Flow
-Catalog exists, the list is empty and shows a placeholder.
+Renders each available flow as a horizontal ``FlowRow`` (name + steps
+connected by arrows). Flows are loaded from a ``FlowCatalog`` by the
+``MainWindow``; the ``FlowList`` itself does not know about the catalog.
 
-The list supports single selection. Selecting a flow emits
-`flow_selected(flow_id)`. Deselecting (or no selection) emits
-`flow_selected(None)`. The HomePage uses this to enable the StartButton.
+The list has single-selection semantics: at most one ``FlowRow`` is
+checked. Selecting a row emits ``flow_selected(flow_id)``; deselecting
+(clicking the checked row) emits ``flow_selected(None)``. This matches
+the ``StartButton``'s contract: it enables only when both a project and
+a flow are selected.
+
+The list does not execute flows. It only presents them and emits
+selection. Execution belongs to the ``WorkflowEngine`` (Phase 5).
 """
 
 from __future__ import annotations
+
+from collections.abc import Callable
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
@@ -20,18 +28,27 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from cranioz.application.flows.definition import FlowDefinition
+from cranioz.ui.home.widgets.flow_row import FlowRow
+
 
 class FlowList(QWidget):
-    """Clinical flow listing with selection and a manage button."""
+    """Clinical flow listing with row selection and a manage button."""
 
     flow_selected = Signal(object)  # str | None
     manage_flows_requested = Signal()
 
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        translate: Callable[[str], str] | None = None,
+        parent: QWidget | None = None,
+    ) -> None:
         super().__init__(parent)
         self.setObjectName("home_page.flow_list")
+        self._translate: Callable[[str], str] = translate or (lambda key: key)
         self._selected_flow_id: str | None = None
-        self._flow_buttons: dict[str, QPushButton] = {}
+        self._rows: dict[str, FlowRow] = {}
 
         title = QLabel("Fluxos clínicos")
         title.setObjectName("home_page.flow_list.title")
@@ -44,24 +61,13 @@ class FlowList(QWidget):
         self._manage_button.setObjectName("home_page.flow_list.manage")
         self._manage_button.clicked.connect(self.manage_flows_requested)
 
-        header = QVBoxLayout()
-        header.setContentsMargins(0, 0, 0, 0)
-        header_row = QVBoxLayout()
-        del header_row  # not used; simple vertical header below
-
         top = QWidget()
-        top_layout = QVBoxLayout(top)
+        top_layout = QHBoxLayout(top)
         top_layout.setContentsMargins(8, 8, 8, 0)
-        row = QWidget()
+        top_layout.addWidget(title)
+        top_layout.addStretch(1)
+        top_layout.addWidget(self._manage_button)
 
-        row_layout = QHBoxLayout(row)
-        row_layout.setContentsMargins(0, 0, 0, 0)
-        row_layout.addWidget(title)
-        row_layout.addStretch(1)
-        row_layout.addWidget(self._manage_button)
-        top_layout.addWidget(row)
-
-        # Scroll area with placeholder.
         self._content = QWidget()
         self._content.setObjectName("home_page.flow_list.content")
         self._content_layout = QVBoxLayout(self._content)
@@ -87,57 +93,52 @@ class FlowList(QWidget):
 
     # ----- Public API -----------------------------------------------
 
-    def set_flows(self, flows: list[tuple[str, str]]) -> None:
-        """Populate the list with (flow_id, display_name) pairs.
+    def set_flows(self, flows: tuple[FlowDefinition, ...]) -> None:
+        """Replace the rendered flows with ``flows``.
 
-        Clears any existing selection. Used by the Bloco 9 integration;
-        today it is called only from tests to simulate content.
+        Clears any existing selection and emits ``flow_selected(None)``
+        so the caller's state is consistent with the (empty) selection.
         """
-        # Remove old flow buttons.
-        for button in self._flow_buttons.values():
-            button.setParent(None)
-            button.deleteLater()
-        self._flow_buttons.clear()
+        for row in self._rows.values():
+            row.setParent(None)
+            row.deleteLater()
+        self._rows.clear()
 
-        # Remove placeholder if flows exist.
         if flows:
             self._placeholder.setParent(None)
             self._placeholder.deleteLater()
 
-        for flow_id, display_name in flows:
-            button = QPushButton(display_name)
-            button.setObjectName(f"home_page.flow_list.flow.{flow_id}")
-            button.setCheckable(True)
-            button.setCursor(Qt.CursorShape.PointingHandCursor)
-            button.clicked.connect(
-                lambda _=False, fid=flow_id: self._on_flow_clicked(fid)
-            )
+        for flow in flows:
+            row = FlowRow(flow, translate=self._translate, parent=self._content)
+            row.selected.connect(self._on_row_selected)
             self._content_layout.insertWidget(
-                self._content_layout.count() - 1, button
+                self._content_layout.count() - 1, row
             )
-            self._flow_buttons[flow_id] = button
+            self._rows[flow.flow_id] = row
 
         self._selected_flow_id = None
         self.flow_selected.emit(None)
 
     def selected_flow_id(self) -> str | None:
-        """Return the id of the selected flow, or None."""
         return self._selected_flow_id
 
     def flow_count(self) -> int:
-        """Number of flow buttons currently displayed."""
-        return len(self._flow_buttons)
+        return len(self._rows)
 
     # ----- Internals ------------------------------------------------
 
-    def _on_flow_clicked(self, flow_id: str) -> None:
-        # Toggle behavior: clicking the selected flow deselects it.
-        if self._selected_flow_id == flow_id:
+    def _on_row_selected(self, flow_id: object) -> None:
+        if flow_id is None:
             self._selected_flow_id = None
-            for button in self._flow_buttons.values():
-                button.setChecked(False)
-        else:
-            self._selected_flow_id = flow_id
-            for fid, button in self._flow_buttons.items():
-                button.setChecked(fid == flow_id)
-        self.flow_selected.emit(self._selected_flow_id)
+            for row in self._rows.values():
+                row.set_checked(False)
+            self.flow_selected.emit(None)
+            return
+
+        if not isinstance(flow_id, str):
+            return
+
+        self._selected_flow_id = flow_id
+        for fid, row in self._rows.items():
+            row.set_checked(fid == flow_id)
+        self.flow_selected.emit(flow_id)

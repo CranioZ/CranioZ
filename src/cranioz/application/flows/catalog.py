@@ -50,3 +50,17 @@ class FlowCatalog:
 
     def contains(self, flow_id: str) -> bool:
         return self._repository.exists(flow_id)
+
+    def list_definitions(self) -> tuple[FlowDefinition, ...]:
+        """Return full definitions for all flows in the catalog.
+
+        The repository is the source of truth. Corrupted flows are
+        skipped by the repository's ``list_summaries``; a flow whose
+        ``get`` raises during this call is propagated (the caller
+        should prefer ``list_summaries`` when it only needs the
+        projection).
+        """
+        return tuple(
+            self._repository.get(summary.flow_id)
+            for summary in self._repository.list_summaries()
+        )

@@ -27,6 +27,7 @@ from cranioz import __version__
 from cranioz.application.commands.in_memory_bus import InMemoryCommandBus
 from cranioz.application.event_bus import EventBus
 from cranioz.application.events import EventBusAdapter
+from cranioz.application.flows.catalog import FlowCatalog
 from cranioz.application.project.project_access_policy import (
     AllowAllProjectAccessPolicy,
 )
@@ -39,6 +40,9 @@ from cranioz.config.schema import Config
 from cranioz.infrastructure.app.app_path_resolver import (
     AppPathInaccessible,
     AppPathResolver,
+)
+from cranioz.infrastructure.flows.filesystem_flow_repository import (
+    FilesystemFlowRepository,
 )
 from cranioz.infrastructure.project.filesystem_project_repository import (
     FilesystemProjectRepository,
@@ -148,6 +152,13 @@ def main() -> int:
     theme_service = _build_theme_service(config)
     actor = _resolve_actor()
 
+    # ----- Flows -------------------------------------------------------
+    flow_repository = FilesystemFlowRepository(
+        flows_root=app_paths.flows_root,
+    )
+    flow_catalog = FlowCatalog(repository=flow_repository)
+    _logger.debug("FlowCatalog initialized: %r", flow_catalog)
+
     # ----- Main window ------------------------------------------------
     window = MainWindow(
         catalog=catalog,
@@ -158,6 +169,7 @@ def main() -> int:
         theme_service=theme_service,
         task_manager=task_manager,
         telemetry=telemetry,
+        flow_catalog=flow_catalog,
     )
     window.show()
 

@@ -46,6 +46,8 @@ StartButton state:
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QHBoxLayout,
@@ -95,9 +97,11 @@ class HomePage(QWidget):
     project_open_requested = Signal(object, str)  # ProjectId, flow_id
 
     def __init__(
-        self,
-        catalog: ProjectCatalog,
-        parent: QWidget | None = None,
+            self,
+            catalog: ProjectCatalog,
+            parent: QWidget | None = None,
+            *,
+            flow_list_translate: Callable[[str], str] | None = None,
     ) -> None:
         super().__init__(parent)
         self._catalog = catalog
@@ -109,7 +113,7 @@ class HomePage(QWidget):
         self._top_bar = HomeTopBar(self)
         self._sidebar = CommunitySidebar(self)
         self._project_table = ProjectTable(catalog, self)
-        self._flow_list = FlowList(self)
+        self._flow_list = FlowList(translate=flow_list_translate, parent=self)
         self._start_button = StartButton()
         self._bottom_bar = HomeBottomBar(self._start_button, self)
 

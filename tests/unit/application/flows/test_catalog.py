@@ -117,3 +117,10 @@ def test_corrupted_flow_is_invisible(
     assert catalog.count() == 1
     with pytest.raises(FlowCorrupted):
         catalog.get_flow("bad")
+
+def test_list_definitions(repository: InMemoryFlowRepository) -> None:
+    repository.add(_flow("a"))
+    repository.add(_flow("b"))
+    catalog = FlowCatalog(repository=repository)
+    definitions = catalog.list_definitions()
+    assert {d.flow_id for d in definitions} == {"a", "b"}

@@ -16,6 +16,7 @@ Responsibilities:
   pieces that are not yet implemented (Bloco 8 / Bloco 9 / 7.6d).
 - Forward shared application services (TaskManager, TelemetrySink)
   to the Workspace (ADR-0011, ADR-0012).
+- Populate the HomePage's FlowList from the FlowCatalog (A5).
 
 Non-responsibilities (see main_window.md §9 and ADR-0006):
 
@@ -27,6 +28,7 @@ Non-responsibilities (see main_window.md §9 and ADR-0006):
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 from PySide6.QtWidgets import (
@@ -37,6 +39,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from cranioz.application.flows.catalog import FlowCatalog
 from cranioz.application.project.project_catalog import ProjectCatalog
 from cranioz.application.project.project_context import ProjectContext
 from cranioz.application.project.project_errors import ProjectError
@@ -59,6 +62,8 @@ if TYPE_CHECKING:
     from cranioz.application.tasks.base import TaskManager
     from cranioz.application.telemetry.base import TelemetrySink
 
+_logger = logging.getLogger(__name__)
+
 
 class MainWindow(QMainWindow):
     """Application shell: hosts HomePage and Workspace."""
@@ -74,6 +79,7 @@ class MainWindow(QMainWindow):
         theme_service: ThemeService,
         task_manager: TaskManager | None = None,
         telemetry: TelemetrySink | None = None,
+        flow_catalog: FlowCatalog | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -85,6 +91,7 @@ class MainWindow(QMainWindow):
         self._theme_service = theme_service
         self._task_manager = task_manager
         self._telemetry = telemetry
+        self._flow_catalog = flow_catalog
 
         self._current_project_id: ProjectId | None = None
         self._workspace: Workspace | None = None
@@ -99,9 +106,10 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self._stack)
 
         self._connect_home_signals()
+        self._populate_flow_list()
 
         self.setWindowTitle("CranioZ")
-        self.resize(1280, 800)
+        self.resize(1000, 800)
 
     # ----- HomePage signal wiring ------------------------------------
 
@@ -118,6 +126,24 @@ class MainWindow(QMainWindow):
         home.news_requested.connect(self._on_news_requested)
         home.feedback_requested.connect(self._on_feedback_requested)
         home.contribute_requested.connect(self._on_contribute_requested)
+
+    # ----- Flow population -------------------------------------------
+
+    def _populate_flow_list(self) -> None:
+        """Load flows from the catalog (if any) into the HomePage.
+
+        The catalog is optional: if it is ``None``, the HomePage keeps
+        the placeholder "Nenhum fluxo disponível". Any catalog failure
+        is logged and does not prevent the HomePage from showing.
+        """
+        if self._flow_catalog is None:
+            return
+        try:
+            definitions = self._flow_catalog.list_definitions()
+        except Exception:
+            _logger.exception("cannot load flows into the Home Page")
+            return
+        self._home._flow_list_widget().set_flows(definitions)
 
     # ----- Project navigation ----------------------------------------
 
@@ -164,19 +190,23 @@ class MainWindow(QMainWindow):
     def _on_home_clicked(self) -> None:
         if self._current_project_id is None or self._workspace is None:
             return
+
         self._manager.close_project(self._actor, self._current_project_id)
         self._stack.removeWidget(self._workspace)
         self._workspace.setParent(None)
         self._workspace.deleteLater()
         self._workspace = None
         self._current_project_id = None
+
         self._stack.setCurrentWidget(self._home)
         self._home.refresh()
 
     # ----- HomePage action handlers (placeholders) ------------------
 
     def _on_new_project_requested(self) -> None:
-        QMessageBox.information(self, "New project", "Available after Bloco 8 (Patient Module).")
+        QMessageBox.information(
+            self, "New project", "Available after Bloco 8 (Patient Module)."
+        )
 
     def _on_manage_projects_requested(self) -> None:
         QMessageBox.information(
@@ -186,28 +216,42 @@ class MainWindow(QMainWindow):
         )
 
     def _on_manage_flows_requested(self) -> None:
-        QMessageBox.information(self, "Manage flows", "Available after Bloco 9 (Flow Catalog).")
+        QMessageBox.information(
+            self, "Manage flows", "Available after Bloco 9 (Flow Catalog)."
+        )
 
     def _on_settings_requested(self) -> None:
-        QMessageBox.information(self, "Settings", "Available after piece 7.6d (Settings).")
+        QMessageBox.information(
+            self, "Settings", "Available after piece 7.6d (Settings)."
+        )
 
     def _on_help_requested(self) -> None:
-        QMessageBox.information(self, "Help", "Available after piece 7.6d (Documentation).")
+        QMessageBox.information(
+            self, "Help", "Available after piece 7.6d (Documentation)."
+        )
 
     def _on_community_requested(self) -> None:
-        QMessageBox.information(self, "Community", "Available in a future piece.")
+        QMessageBox.information(
+            self, "Community", "Available in a future piece."
+        )
 
     def _on_library_requested(self) -> None:
-        QMessageBox.information(self, "Object library", "Available in a future piece.")
+        QMessageBox.information(
+            self, "Object library", "Available in a future piece."
+        )
 
     def _on_news_requested(self) -> None:
         QMessageBox.information(self, "News", "Available in a future piece.")
 
     def _on_feedback_requested(self) -> None:
-        QMessageBox.information(self, "Suggest improvements", "Available in a future piece.")
+        QMessageBox.information(
+            self, "Suggest improvements", "Available in a future piece."
+        )
 
     def _on_contribute_requested(self) -> None:
-        QMessageBox.information(self, "Contribute", "Available in a future piece.")
+        QMessageBox.information(
+            self, "Contribute", "Available in a future piece."
+        )
 
     # ----- Convenience for tests ------------------------------------
 
