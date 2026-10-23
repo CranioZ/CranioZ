@@ -3,7 +3,7 @@
 **Document type:** Roadmap and execution plan
 **Status:** Living document
 **Scope:** Phased implementation of the CranioZ platform from foundation to release.
-**Last updated:** 2026-10-22 (post ADR-0007 to ADR-0012)
+**Last updated:** 2026-10-23 (post Application layer and dívidas de Phase 2/4)
 
 ---
 
@@ -12,6 +12,8 @@
 This document defines the **execution strategy** for building the CranioZ platform. It translates the architectural decisions (ADRs), the domain contracts, and the clinical requirements into a sequenced, testable, and iterative implementation plan.
 
 Its primary goal is to serve as a scientific, technical, and managerial instrument, distinguishing between the strict scope of the PhD research and the long-term evolution of the open-source platform.
+
+It is also meant to be an **honest status record**: it distinguishes between *contracts that exist*, *reference implementations that exist*, *production implementations that exist*, and *wiring that connects them*. A deliverable marked ✅ means it is implemented and tested; 🚧 means a contract or partial implementation exists but the deliverable is not complete; ⏳ means it has not started.
 
 ---
 
@@ -48,10 +50,10 @@ The implementation is divided into 11 phases. These phases are designed to build
 | Phase | Name | Status | Done / Pending |
 |---|---|---|---|
 | **Phase 0** | Foundation & Boot | ✅ Implemented | — |
-| **Phase 1** | Contracts & Core | ✅ Implemented | — |
-| **Phase 2** | Workspace | ✅ Implemented | — |
-| **Phase 3** | Project & Home Page | ✅ Implemented (core) / 🚧 peripherals pending | Recent Projects, Flow Catalog, Layout persistence pending |
-| **Phase 4** | Scene & Visualization | 🚧 In Progress | Contracts ready (ADR-0007, 0008, 0011); implementation pending |
+| **Phase 1** | Contracts & Core Domain | ✅ Implemented / 🚧 dívidas de `EditorContext` híbrido | `task_manager`, `telemetry`, `correlation_id` existem no dataclass mas não são propagados |
+| **Phase 2** | Workspace | ✅ Implemented / 🚧 dívidas de lifecycle e geometria | `AreaWidget.refresh`, `compute_region_bounds`, `Editor.dispose`, atomicidade de `load_spec` |
+| **Phase 3** | Project & Home Page | ✅ Core / 🚧 periféricos | Recent Projects, WorkflowEngine, Layout persistence |
+| **Phase 4** | Scene & Visualization | 🚧 In Progress | Application layer implementada; Scene, rendering e editores clínicos pendentes |
 | **Phase 5** | Clinical Flows | ⏳ Planned | Blocked by Phase 4 |
 | **Phase 6** | Clinical Pipeline (MVP) | ⏳ Planned | — |
 | **Phase 7** | Scientific Validation | ⏳ Planned | — |
@@ -60,49 +62,51 @@ The implementation is divided into 11 phases. These phases are designed to build
 | **Phase 10**| AI and Nodes (Release 3.0) | ⏳ Planned | — |
 
 **Legend:**
-- ✅ Implemented — all deliverables of the phase are in `src/` and tested.
-- 🚧 In Progress — the contracts exist and/or the core is in `src/`, but documented deliverables are still missing.
-- ⏳ Planned — the phase is blocked by a prior dependency or by an ADR that has not been written.
+- ✅ Implemented — the deliverable is in `src/` and tested. Does not imply absence of known debt; known debt is listed in §10.
+- 🚧 In Progress — a contract exists and/or a reference implementation exists, but the deliverable is not complete or not wired.
+- ⏳ Planned — the phase is blocked by a prior dependency or has not started.
 
-**Contracts layer.** ADRs 0001–0012 are all written and stable. The contracts for Commands, Scene, Persistence, Layout, Threading, and Telemetry are defined. Phase 4 can now be implemented against them.
+**Contracts layer.** ADR-0001, 0002, 0004–0012 are Accepted. ADR-0003 is **Proposed** (not Accepted) and must be reviewed before widget-library work depends on it. The contracts for Commands, Scene, Persistence, Layout, Threading, and Telemetry are defined. Phase 4 can be implemented against them.
+
+**Application layer status.** The Application layer contracts for Commands, Tasks, Telemetry, and Events are **implemented with reference in-memory implementations and contract tests**. The `application/modules/` layer exists but the `ModuleLoader` is skeletal (no dependency resolution, no `entry_point` import, no registration of Tools/Editors/Services/Flows, ad hoc handler resolution). `BUILTIN_MANIFESTS` is empty and every built-in module is a stub.
 
 ---
 
 ## 5. Current Focus
 
-**Phase 3 is functionally complete.** The lifecycle core (`ProjectManager`, `ProjectCatalog`), the discovery UI (`HomePage`, `MainWindow`), and the boot wiring are implemented and tested. The peripherals (Recent Projects, Flow Catalog, Layout persistence) are deferred and do not block Phase 4.
+**Phase 3 is functionally complete for its core.** The lifecycle core (`ProjectManager`, `ProjectCatalog`), the discovery UI (`HomePage`, `MainWindow`), the boot wiring, the `FlowCatalog`, the `InMemoryFlowRepository`, the `FilesystemFlowRepository` and the flow serialization are implemented and tested. The peripherals (Recent Projects, WorkflowEngine execution, Layout persistence) are deferred and do not block Phase 4.
 
-**Phase 4 is the active phase.** Its contracts are in place. The next implementation step is the Application layer:
+**Phase 4 is the active phase.** Its contracts are in place. The Application layer is implemented as contracts + reference in-memory implementations. The real work remaining is:
 
-1. **`application/commands/`** — `Command`, `CommandHandler`, `CommandBus`, `CommandDispatcher`, `CommandHandlerRegistry` (ADR-0007). The `CommandBus` is the base for every state mutation; without it, the Scene cannot be mutated and the `ModuleContext.command_bus` is undefined.
-2. **`application/tasks/`** — `Task`, `TaskHandle`, `TaskManager`, `CancelToken`, `TaskState` (ADR-0011). Small and isolated.
-3. **`application/telemetry/`** — `TelemetrySink`, `Severity`, `MeasurementUnit` (ADR-0012). Small and isolated.
-4. **`application/events/`** — `EventSubscription`, `EventPublisher` facade over the existing `EventBus`.
-5. **`application/modules/`** — `Module`, `ModuleManifest`, `ModuleContext`, `ModuleRegistry`, `ModuleLoader` (modules.md v10). Aggregates the four above.
-
-Then the Domain:
-
-6. **`domain/scene/`** — `Scene`, `DomainObjectStore` (ADR-0008).
-7. **`infrastructure/rendering/`** — `RenderingAdapter`, VTK bridge.
-8. **`ui/editors/`** — `Viewport3DEditor`, `MPRViewerEditor`.
+1. **Close the boot wiring with real services.** Replace `NoOpTaskManager` and `NoOpTelemetrySink` in `__main__.py` with real implementations (`QtTaskManager`, `LoggingTelemetrySink`). Wire the `CommandBus` into the actual dispatch path. Inject `TaskManager`, `TelemetrySink` and `CommandDispatcher` into `MainWindow` → `Workspace` → `LayoutBuilder` → `EditorContext` → `Editor`. Today the `Workspace` holds the references but does not propagate them to Editors.
+2. **Implement `domain/scene/`** — `Scene`, `DomainObjectStore` (ADR-0008, `scene.md`).
+3. **Implement `infrastructure/rendering/`** — `RenderingAdapter`, VTK bridge.
+4. **Implement `ui/editors/`** — `Viewport3DEditor`, `MPRViewerEditor`.
+5. **Implement `application/modules/` for real** — dependency resolution, cycle detection, `entry_point` import, registration of Tools/Editors/Services/Flows, and explicit handler registration for Commands.
+6. **Fix Phase 2 debt before adding real Editors.** The known debt in `AreaWidget.refresh`, `LayoutRenderer.compute_region_bounds`, `Workspace.clear` and `Workspace.load_spec` will affect any non-placeholder Editor. See §10.
 
 ### 5.1 Immediate priorities (in order)
 
-1. **Application layer contracts.** Implement `application/commands/`, `application/tasks/`, `application/telemetry/`, `application/events/`, `application/modules/` as Protocols + reference implementations (in-memory) + contract tests. This is the prerequisite for the `ModuleContext` and `ModuleLoader` to exist in code.
-2. **Domain `Scene`.** Implement `domain/scene/` per ADR-0008 and `scene.md`.
-3. **Rendering bridge.** Implement `RenderingAdapter` and the first concrete Editors (`Viewport3DEditor`, `MPRViewerEditor`).
-4. **Boot wiring for the new services.** Update `__main__.py` to construct `TaskManager`, `TelemetrySink`, and `ModuleRegistry`, and inject them into `MainWindow` → `Workspace` → `EditorContext`.
+1. **Replace boot placeholders.** `QtTaskManager` and `LoggingTelemetrySink` in the boot; remove `NoOpTaskManager`/`NoOpTelemetrySink` from the production boot path (keep them for tests).
+2. **Fix Phase 2 debt.** `AreaWidget.refresh` must not destroy Editor-owned widgets; `compute_region_bounds` must map geometries to Workspace coordinates; `Workspace.clear` must call `Editor.dispose()`; `Workspace.load_spec` must be atomic.
+3. **Propagate `EditorContext`.** `LayoutBuilder` must build a per-Editor `EditorContext` with `task_manager`, `telemetry` and `correlation_id`, and `Workspace` must pass them through.
+4. **Implement `CommandExecutor`.** A component that ties `CommandBus`, transaction boundary, post-commit event publication and `CommandStack` together. Without it, the `CommandDispatcher` has no useful target.
+5. **Implement `domain/scene/`** per ADR-0008 and `scene.md`.
+6. **Implement `RenderingAdapter`** and the first concrete Editors (`Viewport3DEditor`, `MPRViewerEditor`).
+7. **Implement `application/modules/` for real** (dependencies, `entry_point`, registration, handler registration). Populate `BUILTIN_MANIFESTS`.
 
 ### 5.2 What blocks Phase 4
 
-No blockers remain. The ADRs (0007 Commands, 0008 Scene, 0009 Persistence, 0011 Threading) and the documents (`commands.md`, `scene.md`, `modules.md`) are stable. The only prerequisites are implementation of the Application layer contracts, which is tracked under §5.1 item 1.
+No *contract* blockers remain. The ADRs (0007 Commands, 0008 Scene, 0009 Persistence, 0011 Threading, 0012 Telemetry) and the documents (`commands.md`, `scene.md`, `modules.md`) are stable. The remaining prerequisites are implementation and wiring, tracked under §5.1.
 
 ### 5.3 Deferred to later phases
 
 - **Recent Projects** (Phase 8): read-only projection, low impact.
-- **Flow Catalog** (Phase 5, Bloco 9): depends on `modules.md` (now stable) and on the `WorkflowEngine`.
+- **WorkflowEngine** (Phase 5): the `FlowCatalog` and the flow repository exist; execution is not implemented.
 - **Layout State Persistence** (Phase 5): `layout_state.py`, `layout_io.py`, `overlay_state.py` are stubs; implementation follows ADR-0010.
 - **Module-owned persisted state** (Phase 9): deferred until the first module needs it (see `modules.md` v10 §15).
+- **Plugin API** (Phase 9): deferred.
+- **AI/MCP** (Phase 10): deferred.
 
 ---
 
@@ -113,17 +117,24 @@ No blockers remain. The ADRs (0007 Commands, 0008 Scene, 0009 Persistence, 0011 
 **Goal:** Establish the repository, configuration, logging, minimal persistence, and boot sequence.
 
 - **Deliverables:**
-  - ✅ `pyproject.toml`, CI pipeline (GitHub Actions), `README.md`.
+  - ✅ `pyproject.toml`, CI pipeline (GitHub Actions).
   - ✅ `ConfigurationLoader`, `AppPathResolver`.
   - ✅ `EventBus`.
   - ✅ JSON serialization for Project Metadata (in `project_serialization.py`).
   - ✅ Boot sequence (`__main__.py`) — initializes config, logging, paths, event bus, project subsystem, UI registries, theme service, and shows the `MainWindow` before entering the Qt event loop.
   - ✅ Error handling for `AppPathInaccessible` with `QMessageBox.critical`.
   - ✅ Actor resolution from the OS username (`getpass.getuser`).
+  - ✅ `application/flows/` — `FlowDefinition`, `FlowStep`, `FlowSummary`, `FlowRepository`, `InMemoryFlowRepository`, `FlowCatalog`.
+  - ✅ `infrastructure/flows/` — `FilesystemFlowRepository`, `FlowPathResolver`, `flow_serialization`.
+
+- **Placeholders in boot (known, must be replaced before Phase 4 is "done"):**
+  - 🚧 `NoOpTaskManager` and `NoOpTelemetrySink` are constructed at boot. They are correct for tests but must not be the production implementation.
+  - 🚧 `InMemoryModuleRegistry` is constructed and populated from `BUILTIN_MANIFESTS`, but `BUILTIN_MANIFESTS` is empty.
+  - 🚧 `command_bus` is constructed but not wired into any dispatch path.
 
 - **Tests:** Unit tests for config validation and path resolution; smoke test for boot-time dependency construction.
 
-- **Status:** ✅ Implemented.
+- **Status:** ✅ Implemented with documented boot placeholders.
 
 ### Phase 1: Contracts & Core Domain
 
@@ -132,16 +143,18 @@ No blockers remain. The ADRs (0007 Commands, 0008 Scene, 0009 Persistence, 0011 
 - **Deliverables:**
   - ✅ `Patient` Domain (9 section value objects, 6 enums, 2 value objects, aggregate root with cross-section invariants).
   - ✅ `Project` Domain (`Project`, `ProjectId`, `ProjectMetadata`, `ProjectStatus`, `ProjectSummary`).
-  - ✅ UI Contracts (`Area`, `Editor`, `EditorRegistry`, `EditorContext`, `ToolbarSpec`, `ToolSpec`, `LayoutBuilder`, `LayoutRenderer`).
+  - ✅ UI Contracts (`Area`, `Editor`, `EditorRegistry`, `ToolbarSpec`, `ToolSpec`, `LayoutBuilder`, `LayoutRenderer`).
   - ✅ `ProjectRepository` (Protocol), `InMemoryProjectRepository`, `FilesystemProjectRepository`.
   - ✅ `ProjectContext` (frozen, data-only; no service locator).
   - ✅ `ProjectAccessPolicy` (Protocol), `AllowAllProjectAccessPolicy`.
   - ✅ `ProjectCatalog` (read-only projection, no cache).
-  - ✅ ADRs 0001–0012 (all contracts defined).
+  - ✅ ADRs 0001, 0002, 0004–0012 written and Accepted.
+  - 🚧 ADR-0003 is **Proposed**, not Accepted.
+  - 🚧 `EditorContext` fields `task_manager`, `telemetry` and `correlation_id` exist in the dataclass but are not propagated by `LayoutBuilder` or `Workspace`.
 
 - **Tests:** Domain unit tests (pure Python), contract tests for `ProjectRepository`, JSON serialization round-trips for Project.
 
-- **Status:** ✅ Implemented.
+- **Status:** ✅ Core implemented. 🚧 EditorContext hybrid propagation pending.
 
 ### Phase 2: Workspace Engine
 
@@ -150,14 +163,15 @@ No blockers remain. The ADRs (0007 Commands, 0008 Scene, 0009 Persistence, 0011 
 - **Deliverables:**
   - ✅ `LayoutTree` (N-ary split tree), `AreaManager`.
   - ✅ `LayoutBuilder` (pure Python, no Qt), `LayoutRenderer` (Qt materialization).
-  - ✅ `EditorRegistry`, `EditorContext` (hybrid model, ADR-0002).
+  - ✅ `EditorRegistry`, `EditorContext` (hybrid model declared in ADR-0002; propagation pending).
   - ✅ `TopOverlay` (the structural Top Bar, materialized as a floating Overlay, ADR-0005).
   - ✅ `OverlayManager`.
   - ✅ `Workspace` facade coordinating builder, renderer, and overlays.
+  - 🚧 Known debt (see §10): `AreaWidget.refresh` can invalidate Editor content; `compute_region_bounds` uses parent-relative geometry; `Workspace.clear` does not call `Editor.dispose()`; `load_spec` is not atomic.
 
 - **Tests:** `pytest-qt` for rendering; unit tests for `LayoutTree`, `Area`, `AreaManager`, `EditorRegistry`; integration tests for `Workspace`.
 
-- **Status:** ✅ Implemented.
+- **Status:** ✅ Implemented with documented debt.
 
 ### Phase 3: Project & Home Page
 
@@ -169,13 +183,16 @@ No blockers remain. The ADRs (0007 Commands, 0008 Scene, 0009 Persistence, 0011 
   - ✅ `HomePage` UI (`ProjectTable`, `FlowList`, `StartButton`, `CommunitySidebar`, `HomeTopBar`, `HomeBottomBar`).
   - ✅ `MainWindow` (navigation Home ↔ Workspace, ADR-0006).
   - ✅ `ProjectTable` selection lifecycle (emit `None` on deselection, preserve selection on refresh).
+  - ✅ `FlowCatalog`, `FlowRepository`, `InMemoryFlowRepository`, `FilesystemFlowRepository`, `flow_serialization`.
+  - ✅ `MainWindow` populates the `FlowList` from the `FlowCatalog` at boot (via `_populate_flow_list`).
   - 🚧 Recent Projects — not implemented (deferred to Phase 8).
-  - 🚧 Flow Catalog — `FlowList` exists but is populated only by tests and debug scripts; the real catalog depends on Phase 5.
+  - 🚧 `FlowList` real population depends on the `FilesystemFlowRepository` having `flow.json` files on disk; seeding is done by `scripts/seed_flows.py`.
+  - ⏳ WorkflowEngine execution (Phase 5).
   - ⏳ Layout State Persistence — `layout_state.py`, `layout_io.py`, `overlay_state.py` are stubs (ADR-0010 defines the contract; implementation in Phase 5).
 
-- **Tests:** 864 passing across the full suite, including 8 new regression tests for `ProjectTable` and `HomePage` deselection.
+- **Tests:** Full suite passing, including regression tests for `ProjectTable` and `HomePage` deselection, `FlowCatalog` and `FilesystemFlowRepository`.
 
-- **Status:** ✅ Core implemented. Peripherals deferred.
+- **Status:** ✅ Core implemented. 🚧 Peripherals deferred.
 
 ### Phase 4: Scene & Visualization
 
@@ -189,22 +206,33 @@ No blockers remain. The ADRs (0007 Commands, 0008 Scene, 0009 Persistence, 0011 
   - ✅ ADR-0012 (Telemetry and Observability).
   - ✅ `commands.md`, `scene.md`, `modules.md` v10.
 
-- **Deliverables (implementation pending):**
-  - ⏳ `application/commands/` — `Command`, `CommandHandler`, `CommandBus`, `CommandDispatcher`, `CommandStack`.
-  - ⏳ `application/tasks/` — `Task`, `TaskHandle`, `TaskManager`, `CancelToken`.
-  - ⏳ `application/telemetry/` — `TelemetrySink`, `Severity`, `MeasurementUnit`.
-  - ⏳ `application/events/` — `EventSubscription`, `EventPublisher`.
-  - ⏳ `application/modules/` — `Module`, `ModuleManifest`, `ModuleContext`, `ModuleRegistry`, `ModuleLoader`.
+- **Application layer (implemented, with reference in-memory implementations and contract tests):**
+  - ✅ `application/commands/` — `Command`, `CommandHandler`, `CommandBus`, `InMemoryCommandBus`, `CommandStack`, `InMemoryCommandStack`.
+  - ✅ `application/tasks/` — `Task`, `TaskHandle`, `TaskManager`, `CancelToken`, `TaskState`, `NoOpTaskManager`.
+  - ✅ `application/telemetry/` — `TelemetrySink`, `Severity`, `MeasurementUnit`, `NoOpTelemetrySink`, `RecordingTelemetrySink`.
+  - ✅ `application/events/` — `EventSubscription`, `EventPublisher`, `SubscriptionHandle`, `EventBusAdapter`, `SubscriptionClosed`.
+
+- **Application layer (partial or pending):**
+  - 🚧 `application/modules/` — `Module`, `ModuleBase`, `ModuleManifest`, `ModuleContext`, `ModuleRegistry`, `ModuleLoader` exist, but `InMemoryModuleLoader` does not resolve dependencies, does not import `entry_point`, does not register Tools/Editors/Services/Flows, and resolves handlers via an ad hoc `_handler` attribute. `BUILTIN_MANIFESTS` is empty; every built-in module is a stub.
+  - ⏳ `CommandExecutor` — ties transaction boundary, post-commit event publication, `CommandStack` and `CommandBus`. Not implemented.
+  - ⏳ `CommandDispatcher` — the interface used by Editors/Tools to dispatch Commands. Not wired.
+
+- **Domain / infrastructure / UI (pending):**
   - ⏳ `domain/scene/` — `Scene`, `DomainObjectStore`.
   - ⏳ `infrastructure/rendering/` — `RenderingAdapter`, VTK bridge.
   - ⏳ `ui/editors/` — `Viewport3DEditor`, `MPRViewerEditor`.
   - ⏳ Scene serialization (JSON).
 
-- **Blockers:** None. The contracts are in place.
+- **Boot wiring (pending):**
+  - ⏳ Replace `NoOpTaskManager`/`NoOpTelemetrySink` in `__main__.py` with `QtTaskManager`/`LoggingTelemetrySink`.
+  - ⏳ Propagate `task_manager`, `telemetry`, `correlation_id` from `MainWindow` → `Workspace` → `LayoutBuilder` → `EditorContext` → `Editor`.
+  - ⏳ Populate `BUILTIN_MANIFESTS` and make `InMemoryModuleLoader` (or a real loader) resolve dependencies and `entry_point`.
+
+- **Blockers:** No contract blockers. Implementation and wiring blockers tracked in §5.1.
 
 - **Tests:** Headless VTK tests, spatial transform tests, performance tests (Scene update, upload to GPU, rendering FPS on reference hardware).
 
-- **Status:** 🚧 In Progress. Contracts done; implementation started.
+- **Status:** 🚧 In Progress. Application layer implemented; Scene, rendering, editors and real boot wiring pending.
 
 ### Phase 5: Clinical Flows
 
@@ -214,15 +242,15 @@ No blockers remain. The ADRs (0007 Commands, 0008 Scene, 0009 Persistence, 0011 
   - ⏳ `WorkflowEngine` (loads JSON, evaluates requirements, computes step states).
   - ⏳ `steps_panel` (Workspace Overlay).
   - ⏳ Flow state persistence.
-  - ⏳ Flow Catalog (Bloco 9) — loader of flow definitions, populates `HomePage`'s `FlowList`.
+  - ✅ Flow Catalog (`FlowCatalog`, `FlowRepository`, `InMemoryFlowRepository`, `FilesystemFlowRepository`) — the loader exists and populates the `FlowList`.
   - ⏳ Layout State Persistence (`layout_state.py`, `layout_io.py`, `overlay_state.py`) — per ADR-0010.
-  - ⏳ `ModuleRegistry`, `ModuleLoader` — wire-up of `application/modules/` into `__main__`.
+  - ⏳ Real `ModuleRegistry`/`ModuleLoader` wire-up of `application/modules/` into `__main__`.
 
-- **Blockers:** Depends on Phase 4 (Scene is a requirement of most flows).
+- **Blockers:** Depends on Phase 4 (Scene is a requirement of most flows) and on the real module loader.
 
 - **Tests:** State transition tests (pending, active, blocked, completed), requirement evaluation.
 
-- **Status:** ⏳ Planned.
+- **Status:** ⏳ Planned (Flow Catalog portion ✅).
 
 ### Phase 6: Clinical Pipeline (PhD MVP)
 
@@ -306,7 +334,7 @@ Testing is a clinical requirement. Metrics must be contextualized to avoid false
 ### 7.1 Coverage Metrics
 
 - **Domain Layer:** High coverage of critical business rules, with 100% of invariants and relevant error cases tested.
-- **Application Layer:** Critical command paths and transaction rollbacks tested; contract tests for every Protocol (`ProjectRepository`, `CommandBus`, `TaskManager`, `TelemetrySink`, `ModuleRegistry`, `ModuleLoader`).
+- **Application Layer:** Critical command paths and transaction rollbacks tested; contract tests for every Protocol (`ProjectRepository`, `CommandBus`, `TaskManager`, `TelemetrySink`, `ModuleRegistry`, `ModuleLoader`). Contract tests for `CommandBus`, `CommandStack`, `EventSubscription`/`EventPublisher`, `TaskManager`, `TelemetrySink`, `ModuleRegistry` and `ModuleLoader` are implemented against reference in-memory implementations.
 - **UI Layer:** 80% coverage of `ui/workspace/`.
 
 ### 7.2 Performance Metrics (Reference Hardware)
@@ -327,9 +355,9 @@ All performance metrics must be measured against a defined **Reference Dataset**
 ### 7.4 Concurrency
 
 - **Correction:** `QTimer` is for UI scheduling, not asynchronous execution.
-- **TaskManager:** Application layer abstraction for tasks (ADR-0011).
+- **TaskManager:** Application layer abstraction for tasks (ADR-0011). `NoOpTaskManager` is a reference synchronous implementation for tests; `QtTaskManager` is the production implementation and is pending.
 - **Execution:** Heavy CPU-bound tasks must use `QThreadPool`/`QtConcurrent` or `ProcessPool` (for GIL-independent execution), coordinated by the `TaskManager`.
-- **Telemetry:** Every long operation must emit `task.dispatch`, `task.complete`, `task.cancel`, or `task.failure` through the `TelemetrySink` with a correlation id (ADR-0012).
+- **Telemetry:** Every long operation must emit `task.dispatch`, `task.complete`, `task.cancel`, or `task.failure` through the `TelemetrySink` with a correlation id (ADR-0012). `NoOpTelemetrySink` is the test sink; `LoggingTelemetrySink` is the production sink and is pending.
 
 ---
 
@@ -342,8 +370,10 @@ A phase is "Done" when:
 3. Contract tests for every new Protocol exist (a reference in-memory implementation + the same suite for the concrete adapter).
 4. The CI pipeline is green.
 5. Documentation is updated (including ADRs if a new decision was made).
-6. The feature is usable end-to-end by the UI (no orphaned backend code).
+6. **The feature is usable end-to-end by the UI (no orphaned backend code).**
 7. No `TODO` comments are left without a linked GitHub Issue.
+8. **No production `NoOp*` placeholders remain in the boot path for a service that the phase claims to deliver.**
+9. **Known debt that affects the phase is either fixed or recorded in §10 with a linked issue.**
 
 ### 8.1 The PhD Deliverable (Release 1.0)
 
@@ -353,6 +383,55 @@ The PhD concludes with the delivery of the validated clinical core. It **does no
 
 ## 9. Summary
 
-By following this roadmap, the CranioZ project ensures that the architectural foundation (Workspace, Commands, Scene) is built correctly before the heavy clinical lifting begins. It respects the scientific validation timelines, protects the PhD scope from feature creep, and establishes a clear path for post-doctoral open-source evolution.
+The architectural foundation is in place, and the Application layer is now **implemented as contracts plus reference in-memory implementations**, with contract tests. The next milestone is not "implement the Application layer"; it is **to close the wiring** — replace boot placeholders with real services, propagate `EditorContext` to Editors, implement `CommandExecutor`, and fix the Phase 2 debt — before adding `Scene`, rendering, and clinical Editors.
 
-**Post ADR-0007–0012:** All contracts for Phase 4 (Commands, Scene, Persistence, Layout, Threading, Telemetry) are in place. Phase 3 is functionally complete. The next implementation step is the Application layer (`application/commands/`, `application/tasks/`, `application/telemetry/`, `application/events/`, `application/modules/`), which turns the contracts into the wiring that the Scene and the Editors will use.
+Phases 0, 1, 2 and 3 are functionally complete for their core, with documented debt. Phase 4 is in progress: the Application layer is done; `domain/scene/`, `infrastructure/rendering/`, `ui/editors/`, the real `ModuleLoader`, and the real boot wiring remain. Phase 5 (Clinical Flows) depends on Phase 4 and on the real module loader. Phases 6–10 are planned.
+
+**Post Application layer:** The contracts for Commands, Tasks, Telemetry, Events and Flows are implemented and tested. The contracts for Scene, Persistence, Layout, Threading and Telemetry (behavioral) are in place. The next implementation steps are: real boot services, `EditorContext` propagation, `CommandExecutor`, `domain/scene/`, `infrastructure/rendering/`, and the first concrete Editors.
+
+---
+
+## 10. Known Debt
+
+This section records debt that is known, accepted for now, and must be resolved (or explicitly deferred with a linked issue) before the phase that depends on it can be declared "done". Each item is a candidate for a GitHub Issue.
+
+### 10.1 Phase 2 — Workspace lifecycle and geometry
+
+- **`AreaWidget.refresh()` can invalidate Editor content.** The method clears its layout and calls `deleteLater()` on the container that holds `editor.content_widget()`. Editors that cache their content widget (e.g., `DummyEditor`) may hold a reference to a deleted `QWidget` after a second `refresh()`. `refresh()` must not destroy Editor-owned widgets; it must detach and reattach them.
+- **`LayoutRenderer.compute_region_bounds()` uses parent-relative geometry.** `widget.geometry()` is relative to the widget's parent. In nested `QSplitter` layouts, AreaWidgets may have different parents, so the union of their geometries does not represent a Workspace-coordinate Region. `compute_region_bounds()` must map each AreaWidget's geometry to Workspace coordinates before unioning.
+- **`Workspace.clear()` does not call `Editor.dispose()`.** Widgets are deleted via `deleteLater()`, but the Editor lifecycle contract (ADR-0001, `editors.md` §4) requires `dispose()` when an Editor is removed. Editors with resources (Tasks, subscriptions) will leak.
+- **`Workspace.load_spec()` is not atomic.** The method calls `clear()` before validating and building the new spec. If the new spec fails, the Workspace is left empty. `load_spec()` must validate and build the new composition before tearing down the old one.
+- **`Workspace` holds `task_manager` and `telemetry` but does not propagate them.** The references are stored but not forwarded to `LayoutBuilder`/`EditorContext`. Tracked in §10.2.
+
+### 10.2 Phase 1 / Phase 4 — `EditorContext` propagation
+
+- **`LayoutBuilder` accepts `shared_context` but discards it.** ADR-0002 §2.3 defines `shared_context` as the extension point for shared services. Today it is `_ = shared_context`. When `TaskManager`, `TelemetrySink` and `CommandDispatcher` are shared services, they must be propagated by reference.
+- **`EditorContext` fields `task_manager`, `telemetry` and `correlation_id` default to `None`.** They must be populated by `LayoutBuilder` and the `Workspace`, and consumed by `Editor` and `Toolbar`.
+- **`EditorContext` has no `CommandDispatcher` or `SceneQuery`.** These are defined in ADR-0002 and `editors.md` §15 but are not yet fields on the dataclass.
+
+### 10.3 Phase 4 — Module system
+
+- **`InMemoryModuleLoader` is skeletal.** It does not resolve dependencies, does not detect cycles, does not import `entry_point`, does not register Tools/Editors/Services/Flows, and resolves Command handlers via an ad hoc `_handler` attribute on the Command class. A real loader (or a completed `InMemoryModuleLoader`) is required before `application/modules/` can be marked ✅.
+- **`BUILTIN_MANIFESTS` is empty.** Every `modules/builtin/*/manifest.py` and `modules/builtin/*/module.py` is a stub. The module system has no real module to load.
+- **`InMemoryModuleLoader` creates a new `EventBus` per `ModuleContext`.** Module events are isolated from the application-wide bus. This contradicts the Event Bus contract (`modules.md` v10, `commands.md` §8.3).
+- **No `CommandExecutor`.** `CommandBus` and `CommandStack` exist, but there is no component that ties transaction boundary, post-commit event publication and undo/redo together. Without it, the `CommandDispatcher` (ADR-0007) has no useful target.
+
+### 10.4 Phase 3 — Project deletion
+
+- **`FilesystemProjectRepository.delete()` removes only `project.json`.** Other files (`patient_record.json`, `assets/`, `scene.json`, `layout.json`, `backups/`) belong to other owners and are left orphaned. Deleting a project must coordinate with the owners of each file (ADR-0009 §2.1), or the repository must document that it only deletes its own file and that higher layers coordinate the rest. Today neither is documented in code.
+
+### 10.5 Phase 1 / Phase 4 — ADR-0003
+
+- **ADR-0003 is `Proposed`, not `Accepted`.** The document `implementation.md` previously stated that ADRs 0001–0012 were all stable. They are not: ADR-0003 (widgets, overlays, icon actions, semantic colors) is still Proposed. Widget-library work and semantic-color work depend on it; it must be reviewed and accepted (or revised) before those deliverables start.
+
+### 10.6 Cross-cutting — i18n and theme
+
+- **UI strings and colors are hardcoded.** `HomePage`, `ProjectTable`, `FlowList`, `StartButton`, `FlowRow` use Portuguese strings and hardcoded colors, contrary to the i18n documentation and ADR-0003 §2.4 (semantic colors via `ThemeService.color()`). `TranslationService` exists but is not wired into the UI; `ThemeService` does not yet expose semantic colors. This is not a Phase 4 blocker, but it must be resolved before Release 1.0 (§8.1).
+
+### 10.7 Documentation
+
+- **`docs/architecture/README.md` contains an accidental PowerShell command** instead of Markdown.
+- **`docs/architecture/domain/project/project.md` ends with an accidental Python file-write snippet.**
+- **Some documents still reference `EditorHost`**, which ADR-0001 removed.
+- **The main `README.md` is empty.**
+- **i18n test files are empty** (`tests/infrastructure/i18n/`).

@@ -17,6 +17,8 @@ Responsibilities:
 - Forward shared application services (TaskManager, TelemetrySink)
   to the Workspace (ADR-0011, ADR-0012).
 - Populate the HomePage's FlowList from the FlowCatalog (A5).
+- Translate flow labels for the HomePage via a temporary humanizer
+  until the TranslationService is wired.
 
 Non-responsibilities (see main_window.md §9 and ADR-0006):
 
@@ -65,6 +67,29 @@ if TYPE_CHECKING:
 _logger = logging.getLogger(__name__)
 
 
+def _humanize_translation_key(key: str) -> str:
+    """Fallback translator: turns a translation key into a readable label.
+
+    This is a temporary bridge until the TranslationService is wired.
+    When i18n is active, replace this with ``translation_service.tr``.
+
+    Examples:
+        "flows.orthognathic_basic.name"             -> "Orthognathic Basic"
+        "flows.orthognathic_basic.steps.patient"    -> "Patient"
+        "flows.orthognathic_basic.steps.organize_data" -> "Organize Data"
+
+    The function is deliberately simple: it splits on "." and humanizes
+    the last non-structural segment. It does not attempt to translate;
+    it only makes the key readable.
+    """
+    structural = {"flows", "steps", "name"}
+    parts = [p for p in key.split(".") if p and p not in structural]
+    if not parts:
+        return key
+    last = parts[-1]
+    return last.replace("_", " ").title()
+
+
 class MainWindow(QMainWindow):
     """Application shell: hosts HomePage and Workspace."""
 
@@ -100,7 +125,11 @@ class MainWindow(QMainWindow):
             PLACEHOLDER_EDITOR_ID, PLACEHOLDER_EDITOR_CLASS
         )
 
-        self._home = HomePage(catalog=self._catalog, parent=self)
+        self._home = HomePage(
+            catalog=self._catalog,
+            parent=self,
+            flow_list_translate=_humanize_translation_key,
+        )
         self._stack = QStackedWidget(self)
         self._stack.addWidget(self._home)
         self.setCentralWidget(self._stack)
@@ -109,7 +138,7 @@ class MainWindow(QMainWindow):
         self._populate_flow_list()
 
         self.setWindowTitle("CranioZ")
-        self.resize(1000, 800)
+        self.resize(1000, 650)
 
     # ----- HomePage signal wiring ------------------------------------
 

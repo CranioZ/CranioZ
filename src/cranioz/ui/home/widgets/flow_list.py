@@ -96,6 +96,11 @@ class FlowList(QWidget):
     def set_flows(self, flows: tuple[FlowDefinition, ...]) -> None:
         """Replace the rendered flows with ``flows``.
 
+        The rendered order is deterministic: flows are sorted by
+        ``flow_id``, independent of the order in which they arrive
+        (e.g., filesystem ``iterdir()``). When the flow schema gains an
+        ``order`` field, this sort is the single place to change.
+
         Clears any existing selection and emits ``flow_selected(None)``
         so the caller's state is consistent with the (empty) selection.
         """
@@ -108,12 +113,10 @@ class FlowList(QWidget):
             self._placeholder.setParent(None)
             self._placeholder.deleteLater()
 
-        for flow in flows:
+        for flow in sorted(flows, key=lambda f: f.flow_id):
             row = FlowRow(flow, translate=self._translate, parent=self._content)
             row.selected.connect(self._on_row_selected)
-            self._content_layout.insertWidget(
-                self._content_layout.count() - 1, row
-            )
+            self._content_layout.insertWidget(self._content_layout.count() - 1, row)
             self._rows[flow.flow_id] = row
 
         self._selected_flow_id = None

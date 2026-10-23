@@ -38,9 +38,7 @@ def test_manage_button_emits_signal(qtbot: QtBot) -> None:
     flow_list = FlowList()
     qtbot.addWidget(flow_list)
 
-    with qtbot.waitSignal(
-        flow_list.manage_flows_requested, timeout=1000
-    ):
+    with qtbot.waitSignal(flow_list.manage_flows_requested, timeout=1000):
         flow_list._manage_button.click()
 
 
@@ -103,3 +101,14 @@ def test_selecting_a_second_flow_deselects_the_first(
     assert flow_list._rows["a"].is_checked() is False
     assert flow_list._rows["b"].is_checked() is True
     assert flow_list.selected_flow_id() == "b"
+
+
+def test_set_flows_sorts_by_flow_id(qtbot: QtBot) -> None:
+    """Rendered order is by flow_id, independent of input order."""
+    flow_list = FlowList()
+    qtbot.addWidget(flow_list)
+
+    # Input order: c, a, b. Rendered order must be a, b, c.
+    flow_list.set_flows((_flow("c"), _flow("a"), _flow("b")))
+
+    assert list(flow_list._rows.keys()) == ["a", "b", "c"]
