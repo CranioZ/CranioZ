@@ -19,41 +19,22 @@ from cranioz.application.commands.base import Command, CommandHandler
 
 @runtime_checkable
 class CommandHandlerRegistry(Protocol):
-    """Maps Command types to their Handler.
-
-    The registry is the source of truth for "which handler handles
-    which command". It does not dispatch; the CommandBus does.
-    """
+    """Maps Command types to their Handler."""
 
     def register(
         self,
         command_type: type[Command],
         handler: CommandHandler[Any, Any],
-    ) -> None:
-        """Register a Handler for the given Command type.
-
-        Raises ``ValueError`` if a different Handler is already
-        registered for the same type. Idempotent for the same Handler.
-        """
-        ...
+    ) -> None: ...
 
     def resolve(
         self,
         command_type: type[Command],
-    ) -> CommandHandler[Any, Any]:
-        """Return the Handler registered for the Command type.
+    ) -> CommandHandler[Any, Any]: ...
 
-        Raises ``KeyError`` if the type is unknown.
-        """
-        ...
+    def contains(self, command_type: type[Command]) -> bool: ...
 
-    def contains(self, command_type: type[Command]) -> bool:
-        """Return True if a Handler is registered for the type."""
-        ...
-
-    def command_types(self) -> tuple[type[Command], ...]:
-        """Return the registered Command types, in registration order."""
-        ...
+    def command_types(self) -> tuple[type[Command], ...]: ...
 
 
 @runtime_checkable
@@ -68,15 +49,13 @@ class CommandBus(Protocol):
         """Register a Handler for the given Command type."""
         ...
 
-    def dispatch(self, command: Command) -> Any:
-        """Dispatch the Command to its Handler.
+    def unregister(self, command_type: type[Command]) -> None:
+        """Remove the Handler for the given Command type.
 
-        Raises ``CommandNotRegistered`` if no Handler is registered for
-        the Command's type. Raises ``CommandDispatchError`` (with the
-        original exception as ``__cause__``) if the Handler raises.
+        No-op if the type is unknown.
         """
         ...
 
-    def can_dispatch(self, command_type: type[Command]) -> bool:
-        """Return True if the type has a registered Handler."""
-        ...
+    def dispatch(self, command: Command) -> Any: ...
+
+    def can_dispatch(self, command_type: type[Command]) -> bool: ...
