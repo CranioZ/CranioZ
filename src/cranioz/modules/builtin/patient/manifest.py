@@ -1,0 +1,1 @@
+﻿# Module manifest: patient (stub).
