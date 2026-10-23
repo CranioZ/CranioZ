@@ -2,47 +2,28 @@
 
 The Workspace is the runtime environment where clinical work happens.
 It is the composition of Areas — containers that host Editors — and
-Overlays — floating layers over Regions.
+Overlays — floating layers over regions.
 
-Public responsibilities:
+Responsibilities:
 
-- ``load_spec(spec)``: materialize a ModuleUISpec. Rebuilds the
-  whole visual tree and repositions every registered Overlay.
-- ``clear()``: drop the current composition (Areas, widgets,
-  Overlays registrations remain; they can be re-added on the next
-  ``load_spec``).
-- ``areas()``: return the Areas of the current composition.
-- ``overlay_manager``: read-only access for advanced callers.
-- ``top_overlay``: the shared Top Bar Overlay, exposed so the
-  Workspace host can populate its content.
-- ``project_context``: the immutable ProjectContext this Workspace
-  was created for (ADR-0006).
+- Materialize a ModuleUISpec as Areas, QSplitters, and Editor widgets.
+- Manage the AreaManager, the LayoutRenderer, and the OverlayManager.
+- Own the shared TopOverlay (ADR-0005).
+- Receive and forward the TaskManager and TelemetrySink to the
+  Editors it hosts (ADR-0011, ADR-0012).
 
 Non-responsibilities:
 
 - Persistence of layout state (Bloco 11).
 - Drag-and-drop, floating Areas, multi-monitor (Bloco 14).
-- Top Bar content: the three segments are populated by the
-  MainWindow, not by the Workspace (ADR-0006).
-- Steps Panel: a second shared Overlay, to be added when the Flow
-  system is implemented (Bloco 9).
-
-Design rules:
-
-- The Workspace is a QWidget. Its single visual child is the root
-  widget returned by the LayoutRenderer.
-- ``load_spec()`` is idempotent in the sense that calling it again
-  replaces the previous composition. It always calls ``clear()``
-  first.
-- The Workspace owns the AreaManager produced by the build result.
-- The Workspace owns the LayoutRenderer instance.
-- The TopOverlay is registered in the OverlayManager on construction.
-- The Workspace receives its ProjectContext at construction and
-  does not orchestrate its own project lifecycle. It is created and
-  destroyed by the MainWindow (ADR-0006).
+- Top Bar content: populated by the MainWindow (ADR-0006).
+- Steps Panel: a second shared Overlay, added with the Flow system.
+- Module lifecycle: owned by the Application layer (modules.md v10 §11).
 """
 
 from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QTimer
 from PySide6.QtGui import QResizeEvent
@@ -65,6 +46,10 @@ from cranioz.ui.workspace.overlays.region import Bounds, Region
 from cranioz.ui.workspace.overlays.top_overlay import TopOverlay
 from cranioz.ui.workspace.specs.module_ui_spec import ModuleUISpec
 
+if TYPE_CHECKING:
+    from cranioz.application.tasks.base import TaskManager
+    from cranioz.application.telemetry.base import TelemetrySink
+
 
 class WorkspaceError(RuntimeError):
     """Raised when the Workspace is used in an invalid state."""
@@ -74,14 +59,16 @@ class Workspace(QWidget):
     """The Workspace facade."""
 
     def __init__(
-            self,
-            *,
-            editor_registry: EditorRegistry,
-            tool_registry: ToolRegistry,
-            theme_service: ThemeService,
-            project_context: ProjectContext,
-            debug_colors: bool = False,
-            parent: QWidget | None = None,
+        self,
+        *,
+        editor_registry: EditorRegistry,
+        tool_registry: ToolRegistry,
+        theme_service: ThemeService,
+        project_context: ProjectContext,
+        task_manager: TaskManager | None = None,
+        telemetry: TelemetrySink | None = None,
+        debug_colors: bool = False,
+        parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self.setObjectName("workspace")
@@ -96,6 +83,8 @@ class Workspace(QWidget):
         self._tool_registry = tool_registry
         self._theme_service = theme_service
         self._project_context = project_context
+        self._task_manager = task_manager
+        self._telemetry = telemetry
         self._debug_colors = debug_colors
 
         self._layout_builder = LayoutBuilder(editor_registry)
@@ -127,59 +116,52 @@ class Workspace(QWidget):
 
     @property
     def project_context(self) -> ProjectContext:
-        """The immutable ProjectContext this Workspace was created for."""
         return self._project_context
 
-    def load_spec(self, spec: ModuleUISpec) -> None:
-        """Materialize the given ModuleUISpec."""
-        self.clear()
+    def task_manager(self) -> TaskManager | None:
+        return self._task_manager
 
+    def telemetry(self) -> TelemetrySink | None:
+        return self._telemetry
+
+    def load_spec(self, spec: ModuleUISpec) -> None:
+        self.clear()
         result = self._layout_builder.build(spec)
         self._build_result = result
-
         root = self._layout_renderer.render(result.tree)
         self._root_widget = root
         self._root_layout.addWidget(root)
-
         self._top_overlay.widget().setParent(self)
         self._top_overlay.widget().raise_()
-
         self._reposition_overlays()
         QTimer.singleShot(0, self._reposition_overlays)
 
     def clear(self) -> None:
-        """Remove the current composition."""
         if self._root_widget is not None:
             self._root_layout.removeWidget(self._root_widget)
             self._root_widget.setParent(None)
             self._root_widget.deleteLater()
             self._root_widget = None
-
         self._layout_renderer.clear_cache()
         self._build_result = None
 
     def areas(self) -> tuple[Area, ...]:
-        """Return the Areas of the current composition."""
         if self._build_result is None:
             return ()
         return self._build_result.areas
 
     def area_manager(self) -> AreaManager | None:
-        """Return the AreaManager of the current composition."""
         if self._build_result is None:
             return None
         return self._build_result.area_manager
 
     def overlay_manager(self) -> OverlayManager:
-        """Return the OverlayManager."""
         return self._overlay_manager
 
     def top_overlay(self) -> TopOverlay:
-        """Return the shared Top Bar Overlay."""
         return self._top_overlay
 
     def is_loaded(self) -> bool:
-        """Return True if a composition has been loaded."""
         return self._build_result is not None
 
     # ----- Qt events ------------------------------------------------
@@ -203,10 +185,9 @@ class Workspace(QWidget):
         manager = self.area_manager()
         if manager is None:
             return ()
-
         regions: list[Region] = []
         for placement, bounds in bounds_by_placement.items():
-            areas = tuple(area for area in manager.areas() if area.placement is placement)
+            areas = tuple(a for a in manager.areas() if a.placement is placement)
             if not areas:
                 continue
             regions.append(

@@ -4,16 +4,13 @@ Boot sequence:
 1. Load configuration.
 2. Configure logging.
 3. Create the QApplication.
-4. Initialize the application path resolver.
-5. Initialize the event bus.
-6. Initialize the project subsystem (repository, catalog, manager).
+4. Initialize application paths.
+5. Initialize shared services (EventBus, CommandBus, TaskManager,
+   TelemetrySink, ModuleRegistry).
+6. Initialize the project subsystem.
 7. Initialize the UI registries (editors, tools) and the theme service.
 8. Create and show the MainWindow.
-9. Start the Qt application loop.
-
-The main window is the sole top-level window of the application. Without
-it, the Qt event loop would idle with no visible window and the process
-would appear to hang.
+9. Start the Qt event loop.
 """
 
 from __future__ import annotations
@@ -27,12 +24,16 @@ import yaml
 from PySide6.QtWidgets import QApplication, QMessageBox
 
 from cranioz import __version__
+from cranioz.application.commands.in_memory_bus import InMemoryCommandBus
 from cranioz.application.event_bus import EventBus
+from cranioz.application.events import EventBusAdapter
 from cranioz.application.project.project_access_policy import (
     AllowAllProjectAccessPolicy,
 )
 from cranioz.application.project.project_catalog import ProjectCatalog
 from cranioz.application.project.project_manager import ProjectManager
+from cranioz.application.tasks.noop_task_manager import NoOpTaskManager
+from cranioz.application.telemetry.noop_sink import NoOpTelemetrySink
 from cranioz.config.loader import ConfigurationLoader
 from cranioz.config.schema import Config
 from cranioz.infrastructure.app.app_path_resolver import (
@@ -42,6 +43,8 @@ from cranioz.infrastructure.app.app_path_resolver import (
 from cranioz.infrastructure.project.filesystem_project_repository import (
     FilesystemProjectRepository,
 )
+from cranioz.modules.builtin import BUILTIN_MANIFESTS
+from cranioz.modules.registry.module_registry import InMemoryModuleRegistry
 from cranioz.ui.editors.editor_registry import EditorRegistry
 from cranioz.ui.main_window import MainWindow
 from cranioz.ui.theme.service import ThemeName, ThemeService
@@ -54,11 +57,7 @@ _logger = logging.getLogger(__name__)
 _DEFAULT_LOGGING_CONFIG = Path(__file__).parent / "config" / "defaults" / "logging.yaml"
 
 
-# ----- Internals ----------------------------------------------------
-
-
 def _configure_logging(config: Config) -> None:
-    """Configure logging from the packaged YAML, then apply config overrides."""
     if _DEFAULT_LOGGING_CONFIG.exists():
         with _DEFAULT_LOGGING_CONFIG.open("r", encoding="utf-8") as fh:
             logging.config.dictConfig(yaml.safe_load(fh))
@@ -66,13 +65,6 @@ def _configure_logging(config: Config) -> None:
 
 
 def _resolve_actor() -> str:
-    """Return the current OS username as the actor identifier.
-
-    The actor is injected by the bootstrap; MainWindow does not
-    construct one (ADR-0006 §2.6). When the application gains a
-    proper user model, this function is replaced by a lookup
-    against the authenticated user.
-    """
     try:
         return getpass.getuser()
     except Exception:
@@ -80,11 +72,6 @@ def _resolve_actor() -> str:
 
 
 def _build_tool_registry() -> ToolRegistry:
-    """Build the ToolRegistry with the built-in tools.
-
-    Built-in tools are registered at boot. Modules and plugins will
-    register their own tools when they are activated.
-    """
     registry = ToolRegistry()
     registry.register("tool.log", LogTool)
     registry.register("tool.toggle", ToggleTool)
@@ -92,12 +79,6 @@ def _build_tool_registry() -> ToolRegistry:
 
 
 def _build_theme_service(config: Config) -> ThemeService:
-    """Build the ThemeService from configuration.
-
-    The configuration's ``theme`` value is resolved to a ``ThemeName``.
-    Unknown values fall back to ``DARK`` (the current default), so a
-    misconfigured theme does not prevent the application from starting.
-    """
     try:
         theme_name = ThemeName(config.app.theme.lower())
     except ValueError:
@@ -110,21 +91,14 @@ def _build_theme_service(config: Config) -> ThemeService:
     return ThemeService(theme=theme_name)
 
 
-# ----- Main ---------------------------------------------------------
-
-
 def main() -> int:
-    """Run the CranioZ application."""
-    # 1. Configuration.
     config = ConfigurationLoader().load()
     _configure_logging(config)
     _logger.info("CranioZ %s starting", __version__)
 
-    # 2. QApplication. Created early so error dialogs can be shown
-    #    before any window exists.
     app = QApplication.instance() or QApplication([])
 
-    # 3. Application paths.
+    # ----- Application paths -----------------------------------------
     app_paths = AppPathResolver()
     try:
         app_paths.initialize(config.paths)
@@ -138,10 +112,26 @@ def main() -> int:
         return 1
     _logger.info("Projects root: %s", app_paths.projects_root)
 
-    # 4. Application services.
+    # ----- Shared services -------------------------------------------
     event_bus = EventBus()
     _logger.debug("Event bus initialized: %r", event_bus)
 
+    command_bus = InMemoryCommandBus()
+    _logger.debug("Command bus initialized: %r", command_bus)
+
+    task_manager = NoOpTaskManager()
+    telemetry = NoOpTelemetrySink()
+    _logger.debug("TaskManager and TelemetrySink initialized (no-op)")
+
+    event_bus_adapter = EventBusAdapter(event_bus)
+    _logger.debug("EventBusAdapter initialized: %r", event_bus_adapter)
+
+    module_registry = InMemoryModuleRegistry()
+    for manifest in BUILTIN_MANIFESTS:
+        module_registry.register(manifest)
+    _logger.debug("ModuleRegistry initialized: %r", module_registry)
+
+    # ----- Project subsystem -----------------------------------------
     repository = FilesystemProjectRepository(
         projects_root=app_paths.projects_root,
     )
@@ -152,12 +142,13 @@ def main() -> int:
         access_policy=AllowAllProjectAccessPolicy(),
     )
 
+    # ----- UI services ------------------------------------------------
     editor_registry = EditorRegistry()
     tool_registry = _build_tool_registry()
     theme_service = _build_theme_service(config)
     actor = _resolve_actor()
 
-    # 5. Main window.
+    # ----- Main window ------------------------------------------------
     window = MainWindow(
         catalog=catalog,
         manager=manager,
@@ -165,12 +156,12 @@ def main() -> int:
         editor_registry=editor_registry,
         tool_registry=tool_registry,
         theme_service=theme_service,
+        task_manager=task_manager,
+        telemetry=telemetry,
     )
     window.show()
 
     _logger.info("Boot complete; MainWindow shown (actor=%r)", actor)
-
-    # 6. Qt event loop.
     return app.exec()
 
 
