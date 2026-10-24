@@ -1,1 +1,1 @@
-﻿# Module implementation: tomography (stub).
+# Module implementation: tomography (stub).

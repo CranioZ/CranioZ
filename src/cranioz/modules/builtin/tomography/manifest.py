@@ -1,1 +1,1 @@
-﻿# Module manifest: tomography (stub).
+# Module manifest: tomography (stub).

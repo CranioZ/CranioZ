@@ -1,1 +1,1 @@
-﻿# Module manifest: patient (stub).
+# Module manifest: patient (stub).

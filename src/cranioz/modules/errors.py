@@ -1,4 +1,4 @@
-﻿"""Module error hierarchy (see modules.md v10 §13)."""
+"""Module error hierarchy (see modules.md v10 §13)."""
 
 from __future__ import annotations
 

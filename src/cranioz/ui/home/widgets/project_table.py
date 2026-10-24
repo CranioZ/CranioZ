@@ -105,24 +105,16 @@ class ProjectTable(QWidget):
         self._table = QTableWidget(0, len(_COLUMNS))
         self._table.setObjectName("home_page.project_table.table")
         self._table.setHorizontalHeaderLabels(_COLUMNS)
-        self._table.setSelectionBehavior(
-            QAbstractItemView.SelectionBehavior.SelectRows
-        )
-        self._table.setSelectionMode(
-            QAbstractItemView.SelectionMode.SingleSelection
-        )
+        self._table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self._table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self._table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self._table.verticalHeader().setVisible(False)
 
         header_view = self._table.horizontalHeader()
         header_view.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         for column in range(1, len(_COLUMNS) - 1):
-            header_view.setSectionResizeMode(
-                column, QHeaderView.ResizeMode.ResizeToContents
-            )
-        header_view.setSectionResizeMode(
-            len(_COLUMNS) - 1, QHeaderView.ResizeMode.Stretch
-        )
+            header_view.setSectionResizeMode(column, QHeaderView.ResizeMode.ResizeToContents)
+        header_view.setSectionResizeMode(len(_COLUMNS) - 1, QHeaderView.ResizeMode.Stretch)
         header_view.setMinimumSectionSize(80)
 
         self._table.itemSelectionChanged.connect(self._on_selection_changed)
@@ -217,9 +209,7 @@ class ProjectTable(QWidget):
 
     def _set_cell(self, row: int, column: int, text: str) -> None:
         item = QTableWidgetItem(text)
-        item.setTextAlignment(
-            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
-        )
+        item.setTextAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         self._table.setItem(row, column, item)
 
     def _on_selection_changed(self) -> None:

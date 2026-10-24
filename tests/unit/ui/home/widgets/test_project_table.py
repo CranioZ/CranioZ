@@ -96,9 +96,7 @@ def test_manage_button_emits_signal(qtbot: QtBot) -> None:
     table = ProjectTable(catalog)
     qtbot.addWidget(table)
 
-    with qtbot.waitSignal(
-        table.manage_projects_requested, timeout=1000
-    ) as blocker:
+    with qtbot.waitSignal(table.manage_projects_requested, timeout=1000) as blocker:
         table._manage_button.click()
 
     # No argument: managing projects is not about a specific project.

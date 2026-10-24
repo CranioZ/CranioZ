@@ -124,7 +124,7 @@ def test_get_missing_raises_project_not_found(repo: ProjectRepository) -> None:
 
 
 def test_create_duplicate_raises_project_already_exists(
-        repo: ProjectRepository,
+    repo: ProjectRepository,
 ) -> None:
     repo.create(_project("p-001"))
     with pytest.raises(ProjectAlreadyExists) as exc_info:
@@ -223,16 +223,14 @@ def test_create_writes_project_json(repo: ProjectRepository, root: Path) -> None
     assert data == project_to_dict(project)
 
 
-def test_create_does_not_write_patient_record(
-        repo: ProjectRepository, root: Path
-) -> None:
+def test_create_does_not_write_patient_record(repo: ProjectRepository, root: Path) -> None:
     """patient_record.json belongs to the Patient persistence layer."""
     repo.create(_project("p-001"))
     assert not (root / "p-001" / "patient_record.json").exists()
 
 
 def test_exists_is_false_for_directory_without_project_json(
-        repo: ProjectRepository, root: Path
+    repo: ProjectRepository, root: Path
 ) -> None:
     """A stray directory is not a project.
 
@@ -243,9 +241,7 @@ def test_exists_is_false_for_directory_without_project_json(
     assert repo.exists(ProjectId("stray")) is False
 
 
-def test_delete_removes_only_project_json(
-        repo: ProjectRepository, root: Path
-) -> None:
+def test_delete_removes_only_project_json(repo: ProjectRepository, root: Path) -> None:
     """Other files in the directory belong to other layers."""
     repo.create(_project("p-001"))
     # Simulate a patient record written by another layer.
@@ -258,27 +254,21 @@ def test_delete_removes_only_project_json(
     assert patient_record.is_file()  # untouched
 
 
-def test_list_ids_skips_non_project_directories(
-        repo: ProjectRepository, root: Path
-) -> None:
+def test_list_ids_skips_non_project_directories(repo: ProjectRepository, root: Path) -> None:
     repo.create(_project("p-001"))
     (root / "stray").mkdir()  # no project.json
 
     assert repo.list_ids() == (ProjectId("p-001"),)
 
 
-def test_list_ids_skips_non_directory_entries(
-        repo: ProjectRepository, root: Path
-) -> None:
+def test_list_ids_skips_non_directory_entries(repo: ProjectRepository, root: Path) -> None:
     repo.create(_project("p-001"))
     (root / "file.txt").write_text("x", encoding="utf-8")
 
     assert repo.list_ids() == (ProjectId("p-001"),)
 
 
-def test_list_ids_includes_all_project_directories(
-    repo: ProjectRepository, root: Path
-) -> None:
+def test_list_ids_includes_all_project_directories(repo: ProjectRepository, root: Path) -> None:
     """Any directory with a project.json is a project, regardless of name.
 
     The `ProjectId` value object itself does not reject path-unsafe
@@ -293,9 +283,7 @@ def test_list_ids_includes_all_project_directories(
     assert ProjectId("weird.name") in ids
 
 
-def test_get_corrupted_json_raises_project_corrupted(
-        repo: ProjectRepository, root: Path
-) -> None:
+def test_get_corrupted_json_raises_project_corrupted(repo: ProjectRepository, root: Path) -> None:
     repo.create(_project("p-001"))
     (root / "p-001" / "project.json").write_text("{not-json", encoding="utf-8")
 
@@ -303,9 +291,7 @@ def test_get_corrupted_json_raises_project_corrupted(
         repo.get(ProjectId("p-001"))
 
 
-def test_get_non_object_json_raises_project_corrupted(
-        repo: ProjectRepository, root: Path
-) -> None:
+def test_get_non_object_json_raises_project_corrupted(repo: ProjectRepository, root: Path) -> None:
     repo.create(_project("p-001"))
     (root / "p-001" / "project.json").write_text("[1, 2, 3]", encoding="utf-8")
 
@@ -313,9 +299,7 @@ def test_get_non_object_json_raises_project_corrupted(
         repo.get(ProjectId("p-001"))
 
 
-def test_get_schema_mismatch_raises_project_corrupted(
-        repo: ProjectRepository, root: Path
-) -> None:
+def test_get_schema_mismatch_raises_project_corrupted(repo: ProjectRepository, root: Path) -> None:
     repo.create(_project("p-001"))
     project_json = root / "p-001" / "project.json"
     data = json.loads(project_json.read_text(encoding="utf-8"))
@@ -326,7 +310,5 @@ def test_get_schema_mismatch_raises_project_corrupted(
         repo.get(ProjectId("p-001"))
 
 
-def test_list_metadata_skips_corrupted_entries(
-        repo: ProjectRepository, root: Path
-) -> None:
+def test_list_metadata_skips_corrupted_entries(repo: ProjectRepository, root: Path) -> None:
     """One corrupted project does not break the listing."""

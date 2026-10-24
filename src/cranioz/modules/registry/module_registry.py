@@ -58,8 +58,7 @@ class InMemoryModuleRegistry:
             return
         if existing is not None:
             raise ModuleAlreadyRegistered(
-                f"a different manifest is already registered under "
-                f"{manifest.module_id!r}"
+                f"a different manifest is already registered under {manifest.module_id!r}"
             )
         self._manifests[manifest.module_id] = manifest
         self._states[manifest.module_id] = ModuleState.REGISTERED
@@ -70,8 +69,7 @@ class InMemoryModuleRegistry:
         state = self._states[module_id]
         if state is not ModuleState.REGISTERED:
             raise ModuleStillLoaded(
-                f"cannot unregister {module_id!r}: state is {state.value!r}, "
-                f"expected 'registered'"
+                f"cannot unregister {module_id!r}: state is {state.value!r}, expected 'registered'"
             )
         del self._manifests[module_id]
         del self._states[module_id]

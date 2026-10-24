@@ -86,9 +86,7 @@ class ProjectContext:
             )
 
         if (self.workflow_id is None) != (self.workflow_config is None):
-            raise ValueError(
-                "workflow_id and workflow_config must be set together or both be None"
-            )
+            raise ValueError("workflow_id and workflow_config must be set together or both be None")
 
     def has_workflow(self) -> bool:
         """Return True if a clinical workflow has been selected."""

@@ -42,16 +42,12 @@ class FlowDefinition:
         if not self.name_key:
             raise ValueError("FlowDefinition.name_key must not be empty")
         if self.version < 1:
-            raise ValueError(
-                f"FlowDefinition.version must be >= 1, got {self.version}"
-            )
+            raise ValueError(f"FlowDefinition.version must be >= 1, got {self.version}")
         if not self.steps:
             raise ValueError("FlowDefinition.steps must not be empty")
         ids = [s.step_id for s in self.steps]
         if len(ids) != len(set(ids)):
-            raise ValueError(
-                "FlowDefinition.steps must have unique step_ids"
-            )
+            raise ValueError("FlowDefinition.steps must have unique step_ids")
 
     def step_count(self) -> int:
         return len(self.steps)

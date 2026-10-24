@@ -1,1 +1,1 @@
-﻿# Module manifest: osteotomies (stub).
+# Module manifest: osteotomies (stub).

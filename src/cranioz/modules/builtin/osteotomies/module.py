@@ -1,1 +1,1 @@
-﻿# Module implementation: osteotomies (stub).
+# Module implementation: osteotomies (stub).

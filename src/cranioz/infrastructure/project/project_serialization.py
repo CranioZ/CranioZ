@@ -73,15 +73,12 @@ def project_from_dict(data: dict[str, Any]) -> Project:
             has invalid types, or fails a domain invariant.
     """
     if not isinstance(data, dict):
-        raise ProjectSerializationError(
-            f"project data must be a dict, got {type(data).__name__}"
-        )
+        raise ProjectSerializationError(f"project data must be a dict, got {type(data).__name__}")
 
     schema_version = _require_int(data, "schema_version")
     if schema_version != CURRENT_SCHEMA_VERSION:
         raise ProjectSerializationError(
-            f"unsupported schema_version: {schema_version} "
-            f"(expected {CURRENT_SCHEMA_VERSION})"
+            f"unsupported schema_version: {schema_version} (expected {CURRENT_SCHEMA_VERSION})"
         )
 
     try:
@@ -142,13 +139,9 @@ def _parse_datetime(value: str, field_name: str) -> datetime:
     try:
         parsed = datetime.fromisoformat(value)
     except ValueError as exc:
-        raise ProjectSerializationError(
-            f"invalid ISO 8601 for {field_name!r}: {value!r}"
-        ) from exc
+        raise ProjectSerializationError(f"invalid ISO 8601 for {field_name!r}: {value!r}") from exc
     if parsed.tzinfo is None:
-        raise ProjectSerializationError(
-            f"{field_name!r} must be timezone-aware, got {value!r}"
-        )
+        raise ProjectSerializationError(f"{field_name!r} must be timezone-aware, got {value!r}")
     return parsed
 
 
@@ -158,8 +151,7 @@ def _parse_optional_datetime(data: dict[str, Any], key: str) -> datetime | None:
         return None
     if not isinstance(value, str):
         raise ProjectSerializationError(
-            f"invalid type for {key!r}: expected str or null, "
-            f"got {type(value).__name__}"
+            f"invalid type for {key!r}: expected str or null, got {type(value).__name__}"
         )
     return _parse_datetime(value, key)
 

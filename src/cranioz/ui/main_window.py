@@ -121,9 +121,7 @@ class MainWindow(QMainWindow):
         self._current_project_id: ProjectId | None = None
         self._workspace: Workspace | None = None
 
-        self._editor_registry.register(
-            PLACEHOLDER_EDITOR_ID, PLACEHOLDER_EDITOR_CLASS
-        )
+        self._editor_registry.register(PLACEHOLDER_EDITOR_ID, PLACEHOLDER_EDITOR_CLASS)
 
         self._home = HomePage(
             catalog=self._catalog,
@@ -233,9 +231,7 @@ class MainWindow(QMainWindow):
     # ----- HomePage action handlers (placeholders) ------------------
 
     def _on_new_project_requested(self) -> None:
-        QMessageBox.information(
-            self, "New project", "Available after Bloco 8 (Patient Module)."
-        )
+        QMessageBox.information(self, "New project", "Available after Bloco 8 (Patient Module).")
 
     def _on_manage_projects_requested(self) -> None:
         QMessageBox.information(
@@ -245,42 +241,28 @@ class MainWindow(QMainWindow):
         )
 
     def _on_manage_flows_requested(self) -> None:
-        QMessageBox.information(
-            self, "Manage flows", "Available after Bloco 9 (Flow Catalog)."
-        )
+        QMessageBox.information(self, "Manage flows", "Available after Bloco 9 (Flow Catalog).")
 
     def _on_settings_requested(self) -> None:
-        QMessageBox.information(
-            self, "Settings", "Available after piece 7.6d (Settings)."
-        )
+        QMessageBox.information(self, "Settings", "Available after piece 7.6d (Settings).")
 
     def _on_help_requested(self) -> None:
-        QMessageBox.information(
-            self, "Help", "Available after piece 7.6d (Documentation)."
-        )
+        QMessageBox.information(self, "Help", "Available after piece 7.6d (Documentation).")
 
     def _on_community_requested(self) -> None:
-        QMessageBox.information(
-            self, "Community", "Available in a future piece."
-        )
+        QMessageBox.information(self, "Community", "Available in a future piece.")
 
     def _on_library_requested(self) -> None:
-        QMessageBox.information(
-            self, "Object library", "Available in a future piece."
-        )
+        QMessageBox.information(self, "Object library", "Available in a future piece.")
 
     def _on_news_requested(self) -> None:
         QMessageBox.information(self, "News", "Available in a future piece.")
 
     def _on_feedback_requested(self) -> None:
-        QMessageBox.information(
-            self, "Suggest improvements", "Available in a future piece."
-        )
+        QMessageBox.information(self, "Suggest improvements", "Available in a future piece.")
 
     def _on_contribute_requested(self) -> None:
-        QMessageBox.information(
-            self, "Contribute", "Available in a future piece."
-        )
+        QMessageBox.information(self, "Contribute", "Available in a future piece.")
 
     # ----- Convenience for tests ------------------------------------
 

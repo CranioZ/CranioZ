@@ -41,29 +41,22 @@ def flow_to_dict(flow: FlowDefinition) -> dict[str, Any]:
 
 def flow_from_dict(data: dict[str, Any]) -> FlowDefinition:
     if not isinstance(data, dict):
-        raise FlowSerializationError(
-            f"flow data must be a dict, got {type(data).__name__}"
-        )
+        raise FlowSerializationError(f"flow data must be a dict, got {type(data).__name__}")
 
     schema_version = _require_int(data, "schema_version")
     if schema_version != CURRENT_SCHEMA_VERSION:
         raise FlowSerializationError(
-            f"unsupported schema_version: {schema_version} "
-            f"(expected {CURRENT_SCHEMA_VERSION})"
+            f"unsupported schema_version: {schema_version} (expected {CURRENT_SCHEMA_VERSION})"
         )
 
     raw_steps = data.get("steps")
     if not isinstance(raw_steps, list) or not raw_steps:
-        raise FlowSerializationError(
-            "flow data must have a non-empty 'steps' list"
-        )
+        raise FlowSerializationError("flow data must have a non-empty 'steps' list")
 
     steps: list[FlowStep] = []
     for i, raw in enumerate(raw_steps):
         if not isinstance(raw, dict):
-            raise FlowSerializationError(
-                f"steps[{i}] must be a dict, got {type(raw).__name__}"
-            )
+            raise FlowSerializationError(f"steps[{i}] must be a dict, got {type(raw).__name__}")
         try:
             step = FlowStep(
                 step_id=_require_str(raw, "step_id"),
@@ -73,9 +66,7 @@ def flow_from_dict(data: dict[str, Any]) -> FlowDefinition:
         except FlowSerializationError:
             raise
         except Exception as exc:
-            raise FlowSerializationError(
-                f"invalid steps[{i}]: {exc}"
-            ) from exc
+            raise FlowSerializationError(f"invalid steps[{i}]: {exc}") from exc
         steps.append(step)
 
     try:

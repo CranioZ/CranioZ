@@ -33,7 +33,6 @@ from cranioz.application.project.project_access_policy import (
 )
 from cranioz.application.project.project_catalog import ProjectCatalog
 from cranioz.application.project.project_manager import ProjectManager
-from cranioz.application.tasks.noop_task_manager import NoOpTaskManager
 from cranioz.application.telemetry.noop_sink import NoOpTelemetrySink
 from cranioz.config.loader import ConfigurationLoader
 from cranioz.config.schema import Config
@@ -47,6 +46,7 @@ from cranioz.infrastructure.flows.filesystem_flow_repository import (
 from cranioz.infrastructure.project.filesystem_project_repository import (
     FilesystemProjectRepository,
 )
+from cranioz.infrastructure.tasks.qt_task_manager import QtTaskManager
 from cranioz.modules.builtin import BUILTIN_MANIFESTS
 from cranioz.modules.registry.module_registry import InMemoryModuleRegistry
 from cranioz.ui.editors.editor_registry import EditorRegistry
@@ -123,9 +123,9 @@ def main() -> int:
     command_bus = InMemoryCommandBus()
     _logger.debug("Command bus initialized: %r", command_bus)
 
-    task_manager = NoOpTaskManager()
+    task_manager = QtTaskManager()
     telemetry = NoOpTelemetrySink()
-    _logger.debug("TaskManager and TelemetrySink initialized (no-op)")
+    _logger.debug("TaskManager initialized (QtTaskManager); TelemetrySink still no-op")
 
     event_bus_adapter = EventBusAdapter(event_bus)
     _logger.debug("EventBusAdapter initialized: %r", event_bus_adapter)
@@ -174,7 +174,10 @@ def main() -> int:
     window.show()
 
     _logger.info("Boot complete; MainWindow shown (actor=%r)", actor)
-    return app.exec()
+    exit_code = app.exec()
+    _logger.info("Qt event loop exited; shutting down TaskManager")
+    task_manager.shutdown()
+    return exit_code
 
 
 if __name__ == "__main__":

@@ -56,9 +56,7 @@ class FilesystemFlowRepository:
         try:
             entries = list(self._flows_root.iterdir())
         except OSError as exc:
-            raise FlowStorageError(
-                f"cannot list flows root: {self._flows_root}: {exc}"
-            ) from exc
+            raise FlowStorageError(f"cannot list flows root: {self._flows_root}: {exc}") from exc
 
         ids: list[str] = []
         for entry in entries:
@@ -72,9 +70,7 @@ class FilesystemFlowRepository:
     def get(self, flow_id: str) -> FlowDefinition:
         resolver = self._resolver_for(flow_id)
         if not resolver.flow_file.is_file():
-            raise FlowNotFound(
-                f"flow not found: {flow_id!r}", flow_id=flow_id
-            )
+            raise FlowNotFound(f"flow not found: {flow_id!r}", flow_id=flow_id)
         data = self._read_json(resolver.flow_file, flow_id)
         try:
             return flow_from_dict(data)
@@ -93,26 +89,18 @@ class FilesystemFlowRepository:
 
     def _resolver_for(self, flow_id: str) -> FlowPathResolver:
         try:
-            return FlowPathResolver(
-                flows_root=self._flows_root, flow_id=flow_id
-            )
+            return FlowPathResolver(flows_root=self._flows_root, flow_id=flow_id)
         except FlowPathInaccessible as exc:
-            raise FlowStorageError(
-                f"invalid flow_id: {flow_id!r}: {exc}", flow_id=flow_id
-            ) from exc
+            raise FlowStorageError(f"invalid flow_id: {flow_id!r}: {exc}", flow_id=flow_id) from exc
 
     def _read_json(self, path: Path, flow_id: str) -> dict[str, Any]:
         try:
             with path.open("r", encoding="utf-8") as fh:
                 data = json.load(fh)
         except json.JSONDecodeError as exc:
-            raise FlowCorrupted(
-                f"invalid JSON in {path}: {exc}", flow_id=flow_id
-            ) from exc
+            raise FlowCorrupted(f"invalid JSON in {path}: {exc}", flow_id=flow_id) from exc
         except OSError as exc:
-            raise FlowStorageError(
-                f"cannot read {path}: {exc}", flow_id=flow_id
-            ) from exc
+            raise FlowStorageError(f"cannot read {path}: {exc}", flow_id=flow_id) from exc
         if not isinstance(data, dict):
             raise FlowCorrupted(
                 f"flow file must be a JSON object: {path}",

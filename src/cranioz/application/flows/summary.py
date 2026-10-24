@@ -26,9 +26,7 @@ class FlowSummary:
         if not self.name_key:
             raise ValueError("FlowSummary.name_key must not be empty")
         if self.step_count < 1:
-            raise ValueError(
-                f"FlowSummary.step_count must be >= 1, got {self.step_count}"
-            )
+            raise ValueError(f"FlowSummary.step_count must be >= 1, got {self.step_count}")
 
     @classmethod
     def from_definition(cls, definition: FlowDefinition) -> FlowSummary:

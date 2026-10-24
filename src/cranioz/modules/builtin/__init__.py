@@ -1,4 +1,4 @@
-﻿"""Built-in modules.
+"""Built-in modules.
 
 The application bootstrap populates ModuleRegistry from BUILTIN_MANIFESTS
 (modules.md v10 §10.5). Each entry is a ModuleManifest imported from the

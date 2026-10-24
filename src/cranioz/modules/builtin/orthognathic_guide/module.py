@@ -1,1 +1,1 @@
-﻿# Module implementation: orthognathic_guide (stub).
+# Module implementation: orthognathic_guide (stub).

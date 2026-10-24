@@ -1,1 +1,1 @@
-﻿# Cephalometry built-in module.
+# Cephalometry built-in module.

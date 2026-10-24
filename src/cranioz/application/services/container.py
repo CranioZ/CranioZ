@@ -45,9 +45,7 @@ class EmptyServiceContainer:
     """
 
     def resolve(self, service_type: type[T]) -> T:
-        raise ServiceNotFoundError(
-            f"no service registered for {service_type.__name__}"
-        )
+        raise ServiceNotFoundError(f"no service registered for {service_type.__name__}")
 
     def contains(self, service_type: type) -> bool:
         return False

@@ -1,1 +1,1 @@
-﻿# Module manifest: alignment (stub).
+# Module manifest: alignment (stub).

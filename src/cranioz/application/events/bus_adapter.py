@@ -90,9 +90,7 @@ class _ScopedEventSubscription:
         handler: EventHandler,
     ) -> SubscriptionHandle:
         if self._disposed:
-            raise SubscriptionClosed(
-                "cannot subscribe on a disposed EventSubscription"
-            )
+            raise SubscriptionClosed("cannot subscribe on a disposed EventSubscription")
         self._event_bus.subscribe(event_type, handler)
         handle = _SubscriptionHandle(self._event_bus, event_type, handler)
         self._handles.append(handle)
@@ -120,6 +118,4 @@ class _EventBusPublisher:
         try:
             self._event_bus.publish(event)
         except Exception:
-            _logger.exception(
-                "event publication failed for %r", type(event).__name__
-            )
+            _logger.exception("event publication failed for %r", type(event).__name__)

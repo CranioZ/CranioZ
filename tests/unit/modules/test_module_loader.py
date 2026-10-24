@@ -204,15 +204,15 @@ def test_unload_refuses_if_dependent_is_loaded(
     instances: dict[str, Module],
 ) -> None:
     # Register a dependent.
-    registry.register(_manifest("orthognathic_guide", dependencies=(
-        ModuleDependency("osteotomies", ">=1.0.0"),
-    )))
+    registry.register(
+        _manifest("orthognathic_guide", dependencies=(ModuleDependency("osteotomies", ">=1.0.0"),))
+    )
     registry.register(_manifest("osteotomies"))
 
     guide = ModuleBase()
-    guide.manifest = _manifest("orthognathic_guide", dependencies=(
-        ModuleDependency("osteotomies", ">=1.0.0"),
-    ))
+    guide.manifest = _manifest(
+        "orthognathic_guide", dependencies=(ModuleDependency("osteotomies", ">=1.0.0"),)
+    )
     instances["orthognathic_guide"] = guide
     instances["osteotomies"] = ModuleBase()
     instances["osteotomies"].manifest = _manifest("osteotomies")

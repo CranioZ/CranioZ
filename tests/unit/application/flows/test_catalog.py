@@ -118,6 +118,7 @@ def test_corrupted_flow_is_invisible(
     with pytest.raises(FlowCorrupted):
         catalog.get_flow("bad")
 
+
 def test_list_definitions(repository: InMemoryFlowRepository) -> None:
     repository.add(_flow("a"))
     repository.add(_flow("b"))

@@ -122,9 +122,7 @@ class ProjectManager:
             ProjectStorageError: the repository cannot persist.
         """
         if not self._access_policy.can_create(actor):
-            raise ProjectAccessDenied(
-                f"actor {actor!r} is not allowed to create projects"
-            )
+            raise ProjectAccessDenied(f"actor {actor!r} is not allowed to create projects")
 
         now = _now()
         metadata = ProjectMetadata(
@@ -142,9 +140,7 @@ class ProjectManager:
         project = Project(project_id=project_id, metadata=metadata)
 
         self._repository.create(project)
-        self._event_bus.publish(
-            ProjectCreated(project_id=project.project_id, metadata=metadata)
-        )
+        self._event_bus.publish(ProjectCreated(project_id=project.project_id, metadata=metadata))
         return project
 
     # ----- Open ------------------------------------------------------
@@ -194,9 +190,7 @@ class ProjectManager:
         )
         self._active_contexts[project_id] = context
 
-        self._event_bus.publish(
-            ProjectOpened(project_id=project_id, context=context)
-        )
+        self._event_bus.publish(ProjectOpened(project_id=project_id, context=context))
         return context
 
     # ----- Update ----------------------------------------------------
@@ -211,8 +205,7 @@ class ProjectManager:
         """
         if not self._access_policy.can_update(actor, project.project_id):
             raise ProjectAccessDenied(
-                f"actor {actor!r} is not allowed to update "
-                f"{project.project_id.value!r}"
+                f"actor {actor!r} is not allowed to update {project.project_id.value!r}"
             )
 
         self._repository.update(project)
@@ -261,15 +254,11 @@ class ProjectManager:
         """
         if not self._access_policy.can_delete(actor, project_id):
             raise ProjectAccessDenied(
-                f"actor {actor!r} is not allowed to delete "
-                f"{project_id.value!r}"
+                f"actor {actor!r} is not allowed to delete {project_id.value!r}"
             )
 
         if project_id in self._active_contexts:
-            raise ProjectInUse(
-                f"cannot delete open project {project_id.value!r}; "
-                f"close it first"
-            )
+            raise ProjectInUse(f"cannot delete open project {project_id.value!r}; close it first")
 
         self._repository.delete(project_id)
         self._event_bus.publish(ProjectDeleted(project_id=project_id))

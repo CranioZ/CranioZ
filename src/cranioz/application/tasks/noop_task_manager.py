@@ -105,9 +105,7 @@ class NoOpTaskManager:
     ) -> TaskHandle:
         key = id(task)
         if key in self._dispatched:
-            raise TaskAlreadyDispatched(
-                f"task {type(task).__name__} has already been dispatched"
-            )
+            raise TaskAlreadyDispatched(f"task {type(task).__name__} has already been dispatched")
         self._dispatched.add(key)
 
         token = _SimpleCancelToken()

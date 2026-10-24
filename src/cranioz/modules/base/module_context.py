@@ -48,6 +48,4 @@ class ModuleContext:
         if not self.module_id:
             raise ValueError("ModuleContext.module_id must not be empty")
         if self.correlation_id is not None and not self.correlation_id:
-            raise ValueError(
-                "ModuleContext.correlation_id, when set, must not be empty"
-            )
+            raise ValueError("ModuleContext.correlation_id, when set, must not be empty")

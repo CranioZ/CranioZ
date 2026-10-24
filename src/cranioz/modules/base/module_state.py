@@ -1,4 +1,4 @@
-﻿"""ModuleState enum (see modules.md v10 §4.1)."""
+"""ModuleState enum (see modules.md v10 §4.1)."""
 
 from __future__ import annotations
 

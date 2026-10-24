@@ -1,1 +1,1 @@
-﻿# Module loader internals (private).
+# Module loader internals (private).

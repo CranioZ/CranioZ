@@ -1,1 +1,1 @@
-﻿# Built-in module: orthognathic_guide.
+# Built-in module: orthognathic_guide.

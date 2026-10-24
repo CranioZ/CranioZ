@@ -25,9 +25,7 @@ def test_has_five_buttons(qtbot: QtBot) -> None:
         ("contribute", "contribute_requested"),
     ],
 )
-def test_buttons_emit_signals(
-    qtbot: QtBot, key: str, signal_name: str
-) -> None:
+def test_buttons_emit_signals(qtbot: QtBot, key: str, signal_name: str) -> None:
     sidebar = CommunitySidebar()
     qtbot.addWidget(sidebar)
     signal = getattr(sidebar, signal_name)

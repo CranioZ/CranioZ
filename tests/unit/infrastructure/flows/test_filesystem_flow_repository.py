@@ -52,9 +52,7 @@ def _write_flow(
         # Copy the valid template and override flow_id.
         data = dict(_VALID_FLOW)
         data["flow_id"] = flow_id
-    (d / "flow.json").write_text(
-        json.dumps(data), encoding="utf-8"
-    )
+    (d / "flow.json").write_text(json.dumps(data), encoding="utf-8")
 
 
 def test_satisfies_protocol(repo: FilesystemFlowRepository) -> None:
@@ -101,9 +99,7 @@ def test_list_summaries(repo: FilesystemFlowRepository, root: Path) -> None:
     assert {s.flow_id for s in summaries} == {"a", "b"}
 
 
-def test_list_summaries_skips_corrupted(
-    repo: FilesystemFlowRepository, root: Path
-) -> None:
+def test_list_summaries_skips_corrupted(repo: FilesystemFlowRepository, root: Path) -> None:
     _write_flow(root, "ok")
     d = root / "bad"
     d.mkdir()

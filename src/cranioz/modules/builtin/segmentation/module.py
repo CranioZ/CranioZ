@@ -1,1 +1,1 @@
-﻿# Module implementation: segmentation (stub).
+# Module implementation: segmentation (stub).

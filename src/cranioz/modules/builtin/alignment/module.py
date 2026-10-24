@@ -1,1 +1,1 @@
-﻿# Module implementation: alignment (stub).
+# Module implementation: alignment (stub).

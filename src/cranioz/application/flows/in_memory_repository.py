@@ -36,15 +36,11 @@ class InMemoryFlowRepository:
 
     def get(self, flow_id: str) -> FlowDefinition:
         if flow_id in self._corrupted:
-            raise FlowCorrupted(
-                f"flow is corrupted: {flow_id!r}", flow_id=flow_id
-            )
+            raise FlowCorrupted(f"flow is corrupted: {flow_id!r}", flow_id=flow_id)
         try:
             return self._flows[flow_id]
         except KeyError as exc:
-            raise FlowNotFound(
-                f"flow not found: {flow_id!r}", flow_id=flow_id
-            ) from exc
+            raise FlowNotFound(f"flow not found: {flow_id!r}", flow_id=flow_id) from exc
 
     def exists(self, flow_id: str) -> bool:
         return flow_id in self._flows and flow_id not in self._corrupted

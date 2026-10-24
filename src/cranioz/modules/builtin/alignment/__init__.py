@@ -1,1 +1,1 @@
-﻿# Built-in module: alignment.
+# Built-in module: alignment.

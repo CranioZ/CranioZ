@@ -127,9 +127,7 @@ def test_open_project_creates_workspace(
 ) -> None:
     window.home().refresh()
 
-    window.home().project_open_requested.emit(
-        ProjectId("p-001"), "orthognathic"
-    )
+    window.home().project_open_requested.emit(ProjectId("p-001"), "orthognathic")
 
     workspace = window.current_workspace()
     assert workspace is not None
@@ -143,9 +141,7 @@ def test_open_project_switches_stack(
 ) -> None:
     window.home().refresh()
 
-    window.home().project_open_requested.emit(
-        ProjectId("p-001"), "orthognathic"
-    )
+    window.home().project_open_requested.emit(ProjectId("p-001"), "orthognathic")
 
     assert _stack(window).currentWidget() is window.current_workspace()
 
@@ -156,9 +152,7 @@ def test_open_project_injects_home_button(
 ) -> None:
     window.home().refresh()
 
-    window.home().project_open_requested.emit(
-        ProjectId("p-001"), "orthognathic"
-    )
+    window.home().project_open_requested.emit(ProjectId("p-001"), "orthognathic")
 
     workspace = window.current_workspace()
     assert workspace is not None
@@ -178,9 +172,7 @@ def test_open_project_loads_default_spec(
     """The Workspace is loaded with the default (placeholder) spec."""
     window.home().refresh()
 
-    window.home().project_open_requested.emit(
-        ProjectId("p-001"), "orthognathic"
-    )
+    window.home().project_open_requested.emit(ProjectId("p-001"), "orthognathic")
 
     workspace = window.current_workspace()
     assert workspace is not None
@@ -196,9 +188,7 @@ def test_home_button_closes_workspace(
     seeded_manager: ProjectManager,
 ) -> None:
     window.home().refresh()
-    window.home().project_open_requested.emit(
-        ProjectId("p-001"), "orthognathic"
-    )
+    window.home().project_open_requested.emit(ProjectId("p-001"), "orthognathic")
     assert window.current_workspace() is not None
 
     home_button = window.findChild(QPushButton, "workspace.home_button")
@@ -214,9 +204,7 @@ def test_home_button_returns_to_home_page(
     seeded_manager: ProjectManager,
 ) -> None:
     window.home().refresh()
-    window.home().project_open_requested.emit(
-        ProjectId("p-001"), "orthognathic"
-    )
+    window.home().project_open_requested.emit(ProjectId("p-001"), "orthognathic")
 
     home_button = window.findChild(QPushButton, "workspace.home_button")
     assert home_button is not None
@@ -241,16 +229,12 @@ def test_home_button_does_not_close_another_project(
     window.home().refresh()
 
     # Open p-001, close it, then open p-002. Only p-002 is closed.
-    window.home().project_open_requested.emit(
-        ProjectId("p-001"), "orthognathic"
-    )
+    window.home().project_open_requested.emit(ProjectId("p-001"), "orthognathic")
     home_button = window.findChild(QPushButton, "workspace.home_button")
     assert home_button is not None
     home_button.click()
 
-    window.home().project_open_requested.emit(
-        ProjectId("p-002"), "orthognathic"
-    )
+    window.home().project_open_requested.emit(ProjectId("p-002"), "orthognathic")
     assert window.current_project_id() == ProjectId("p-002")
 
     # Open again: p-002 should be the one closed.
@@ -272,13 +256,9 @@ def test_open_missing_project_shows_error(
     def fake_critical(parent, title, text):  # noqa: ANN001
         calls.append((title, text))
 
-    monkeypatch.setattr(
-        QMessageBox, "critical", staticmethod(fake_critical)
-    )
+    monkeypatch.setattr(QMessageBox, "critical", staticmethod(fake_critical))
 
-    window.home().project_open_requested.emit(
-        ProjectId("p-999"), "orthognathic"
-    )
+    window.home().project_open_requested.emit(ProjectId("p-999"), "orthognathic")
 
     assert len(calls) == 1
     assert calls[0][0] == "Cannot open project"
@@ -315,9 +295,7 @@ def test_placeholder_shows_information(
     def fake_information(parent, title, text):  # noqa: ANN001
         calls.append((title, text))
 
-    monkeypatch.setattr(
-        QMessageBox, "information", staticmethod(fake_information)
-    )
+    monkeypatch.setattr(QMessageBox, "information", staticmethod(fake_information))
 
     signal = getattr(window.home(), signal_name)
     signal.emit()
@@ -336,9 +314,7 @@ def test_destroy_workspace_after_close(
 ) -> None:
     """After Home is clicked, the old Workspace is no longer reachable."""
     window.home().refresh()
-    window.home().project_open_requested.emit(
-        ProjectId("p-001"), "orthognathic"
-    )
+    window.home().project_open_requested.emit(ProjectId("p-001"), "orthognathic")
     workspace = window.current_workspace()
     assert workspace is not None
 
@@ -357,9 +333,7 @@ def test_open_after_close_creates_a_new_workspace(
 ) -> None:
     window.home().refresh()
 
-    window.home().project_open_requested.emit(
-        ProjectId("p-001"), "orthognathic"
-    )
+    window.home().project_open_requested.emit(ProjectId("p-001"), "orthognathic")
     first = window.current_workspace()
     assert first is not None
 
@@ -367,9 +341,7 @@ def test_open_after_close_creates_a_new_workspace(
     assert home_button is not None
     home_button.click()
 
-    window.home().project_open_requested.emit(
-        ProjectId("p-001"), "orthognathic"
-    )
+    window.home().project_open_requested.emit(ProjectId("p-001"), "orthognathic")
     second = window.current_workspace()
     assert second is not None
     assert second is not first

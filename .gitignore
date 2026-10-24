@@ -134,13 +134,13 @@ temp/
 /cranioZ_contexto.txt
 /folder_structure.txt
 
-# --- Tool caches ---
-tools/**/.ruff_cache/
-tools/**/.mypy_cache/
-tools/**/__pycache__/
-tools/**/*.egg-info/
-
 # --- Development drafts ---
 # Drafts and generated files not meant for version control.
 /docs/development/*.txt
 /docs/development/drafts/
+
+# --- Local development tools ---
+# Packing scripts, code dumps, folder-tree generators, i18n helpers.
+# Local to each developer, regenerated per developer, not part of the
+# shipped application, and not consumed by CI.
+/tools/

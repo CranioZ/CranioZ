@@ -109,7 +109,4 @@ class InMemoryCommandStack:
         return len(self._undo)
 
     def __repr__(self) -> str:
-        return (
-            f"InMemoryCommandStack(undo={len(self._undo)}, "
-            f"redo={len(self._redo)})"
-        )
+        return f"InMemoryCommandStack(undo={len(self._undo)}, redo={len(self._redo)})"

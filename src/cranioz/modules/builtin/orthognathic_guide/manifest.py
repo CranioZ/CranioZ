@@ -1,4 +1,4 @@
-﻿"""Manifest for the ``orthognathic_guide`` built-in module.
+"""Manifest for the ``orthognathic_guide`` built-in module.
 
 Declares the module identity, version, and dependencies
 (see ``modules.md`` v10 §5). Contributions (Commands, Tools, Editors,
@@ -24,10 +24,7 @@ MANIFEST = ModuleManifest(
     version="1.0.0",
     label_key="modules.orthognathic_guide.label",
     description_key="modules.orthognathic_guide.description",
-    entry_point=(
-        "cranioz.modules.builtin.orthognathic_guide.module:"
-        "OrthognathicGuideModule"
-    ),
+    entry_point=("cranioz.modules.builtin.orthognathic_guide.module:OrthognathicGuideModule"),
     dependencies=(
         ModuleDependency("osteotomies", ">=1.0.0"),
         ModuleDependency("cephalometry", ">=1.0.0"),

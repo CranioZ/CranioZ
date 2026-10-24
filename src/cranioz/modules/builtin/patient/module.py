@@ -1,1 +1,1 @@
-﻿# Module implementation: patient (stub).
+# Module implementation: patient (stub).

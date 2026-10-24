@@ -87,7 +87,7 @@ The implementation is divided into 11 phases. These phases are designed to build
 
 ### 5.1 Immediate priorities (in order)
 
-1. **Replace boot placeholders.** `QtTaskManager` and `LoggingTelemetrySink` in the boot; remove `NoOpTaskManager`/`NoOpTelemetrySink` from the production boot path (keep them for tests).
+1. **Replace boot placeholders.** ✅ `QtTaskManager` substituiu `NoOpTaskManager` no boot. 🚧 `LoggingTelemetrySink` ainda pendente; `NoOpTelemetrySink` continua no boot.
 2. **Fix Phase 2 debt.** `AreaWidget.refresh` must not destroy Editor-owned widgets; `compute_region_bounds` must map geometries to Workspace coordinates; `Workspace.clear` must call `Editor.dispose()`; `Workspace.load_spec` must be atomic.
 3. **Propagate `EditorContext`.** `LayoutBuilder` must build a per-Editor `EditorContext` with `task_manager`, `telemetry` and `correlation_id`, and `Workspace` must pass them through.
 4. **Implement `CommandExecutor`.** A component that ties `CommandBus`, transaction boundary, post-commit event publication and `CommandStack` together. Without it, the `CommandDispatcher` has no useful target.
@@ -224,7 +224,8 @@ No *contract* blockers remain. The ADRs (0007 Commands, 0008 Scene, 0009 Persist
   - ⏳ Scene serialization (JSON).
 
 - **Boot wiring (pending):**
-  - ⏳ Replace `NoOpTaskManager`/`NoOpTelemetrySink` in `__main__.py` with `QtTaskManager`/`LoggingTelemetrySink`.
+  - ✅ `QtTaskManager` substituiu `NoOpTaskManager` no boot.
+  - ⏳ `LoggingTelemetrySink` ainda substitui `NoOpTelemetrySink`.
   - ⏳ Propagate `task_manager`, `telemetry`, `correlation_id` from `MainWindow` → `Workspace` → `LayoutBuilder` → `EditorContext` → `Editor`.
   - ⏳ Populate `BUILTIN_MANIFESTS` and make `InMemoryModuleLoader` (or a real loader) resolve dependencies and `entry_point`.
 

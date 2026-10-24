@@ -1,1 +1,1 @@
-﻿# Module manifest: segmentation (stub).
+# Module manifest: segmentation (stub).

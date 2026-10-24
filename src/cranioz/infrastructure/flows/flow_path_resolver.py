@@ -54,26 +54,18 @@ class FlowPathResolver:
     @staticmethod
     def _validate_flow_id(flow_id: str) -> None:
         if not flow_id or not flow_id.strip():
-            raise FlowPathInaccessible(
-                "FlowId value must not be empty or whitespace only"
-            )
+            raise FlowPathInaccessible("FlowId value must not be empty or whitespace only")
         if "/" in flow_id or "\\" in flow_id:
             raise FlowPathInaccessible(
                 f"FlowId value must not contain path separators: {flow_id!r}"
             )
         if ".." in flow_id:
-            raise FlowPathInaccessible(
-                f"FlowId value must not contain '..': {flow_id!r}"
-            )
+            raise FlowPathInaccessible(f"FlowId value must not contain '..': {flow_id!r}")
         if ":" in flow_id:
-            raise FlowPathInaccessible(
-                f"FlowId value must not contain ':': {flow_id!r}"
-            )
+            raise FlowPathInaccessible(f"FlowId value must not contain ':': {flow_id!r}")
         if any(ord(ch) < 0x20 for ch in flow_id):
             raise FlowPathInaccessible(
                 f"FlowId value must not contain control characters: {flow_id!r}"
             )
         if flow_id.startswith("."):
-            raise FlowPathInaccessible(
-                f"FlowId value must not start with '.': {flow_id!r}"
-            )
+            raise FlowPathInaccessible(f"FlowId value must not start with '.': {flow_id!r}")

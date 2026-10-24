@@ -1,1 +1,1 @@
-﻿# Built-in module: segmentation.
+# Built-in module: segmentation.

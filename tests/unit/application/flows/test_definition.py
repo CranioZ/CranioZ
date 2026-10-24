@@ -81,9 +81,7 @@ def test_empty_flow_id_raises() -> None:
 
 def test_version_zero_raises() -> None:
     with pytest.raises(ValueError, match="version"):
-        FlowDefinition(
-            flow_id="f", name_key="k", version=0, steps=(_step(),)
-        )
+        FlowDefinition(flow_id="f", name_key="k", version=0, steps=(_step(),))
 
 
 def test_empty_steps_raises() -> None:

@@ -39,8 +39,7 @@ class InMemoryCommandBus:
             return
         if existing is not None:
             raise ValueError(
-                f"a different handler is already registered for "
-                f"{command_type.__name__}"
+                f"a different handler is already registered for {command_type.__name__}"
             )
         self._handlers[command_type] = handler
 
@@ -52,15 +51,12 @@ class InMemoryCommandBus:
     def dispatch(self, command: Command) -> Any:
         handler = self._handlers.get(type(command))
         if handler is None:
-            raise CommandNotRegistered(
-                f"no handler registered for {type(command).__name__}"
-            )
+            raise CommandNotRegistered(f"no handler registered for {type(command).__name__}")
         try:
             return handler.handle(command)
         except Exception as exc:
             raise CommandDispatchError(
-                f"handler for {type(command).__name__} raised "
-                f"{type(exc).__name__}: {exc}",
+                f"handler for {type(command).__name__} raised {type(exc).__name__}: {exc}",
                 command_id=command.command_id,
                 command_type=type(command).__name__,
             ) from exc

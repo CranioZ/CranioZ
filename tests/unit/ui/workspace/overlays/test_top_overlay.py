@@ -252,6 +252,7 @@ def test_content_layout_returns_qlayout(overlay: TopOverlay) -> None:
 def test_content_layout_is_stable(overlay: TopOverlay) -> None:
     assert overlay.content_layout() is overlay.content_layout()
 
+
 # ----- set_left_content (ADR-0006) ----------------------------------
 
 

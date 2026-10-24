@@ -52,10 +52,7 @@ class _PlaceholderEditor(Editor):
 
     def content_widget(self) -> QWidget:
         if self._label is None:
-            self._label = QLabel(
-                "No flow loaded — select a flow on the Home Page "
-                "and click Start."
-            )
+            self._label = QLabel("No flow loaded — select a flow on the Home Page and click Start.")
             self._label.setObjectName("workspace.placeholder.label")
             self._label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self._label.setStyleSheet(

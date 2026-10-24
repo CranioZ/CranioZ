@@ -201,9 +201,7 @@ def test_start_button_emits_open_requested(qtbot: QtBot) -> None:
     page._project_table_widget()._table.selectRow(0)
     _select_flow(page)
 
-    with qtbot.waitSignal(
-        page.project_open_requested, timeout=1000
-    ) as blocker:
+    with qtbot.waitSignal(page.project_open_requested, timeout=1000) as blocker:
         page._start_button_widget().click()
 
     assert blocker.args[0] == ProjectId("p-001")

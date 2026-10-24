@@ -61,6 +61,5 @@ class FlowCatalog:
         projection).
         """
         return tuple(
-            self._repository.get(summary.flow_id)
-            for summary in self._repository.list_summaries()
+            self._repository.get(summary.flow_id) for summary in self._repository.list_summaries()
         )

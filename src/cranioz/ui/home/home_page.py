@@ -97,11 +97,11 @@ class HomePage(QWidget):
     project_open_requested = Signal(object, str)  # ProjectId, flow_id
 
     def __init__(
-            self,
-            catalog: ProjectCatalog,
-            parent: QWidget | None = None,
-            *,
-            flow_list_translate: Callable[[str], str] | None = None,
+        self,
+        catalog: ProjectCatalog,
+        parent: QWidget | None = None,
+        *,
+        flow_list_translate: Callable[[str], str] | None = None,
     ) -> None:
         super().__init__(parent)
         self._catalog = catalog
@@ -210,18 +210,13 @@ class HomePage(QWidget):
         self._sync_start_button()
 
     def _sync_start_button(self) -> None:
-        ready = (
-            self._selected_project_id is not None
-            and self._selected_flow_id is not None
-        )
+        ready = self._selected_project_id is not None and self._selected_flow_id is not None
         self._start_button.set_ready(ready)
 
     def _on_start_requested(self) -> None:
         if self._selected_project_id is None or self._selected_flow_id is None:
             return  # defensive; button should not be enabled
-        self.project_open_requested.emit(
-            self._selected_project_id, self._selected_flow_id
-        )
+        self.project_open_requested.emit(self._selected_project_id, self._selected_flow_id)
 
     def _on_toggle_sidebar(self) -> None:
         self._sidebar.setVisible(not self._sidebar.isVisible())

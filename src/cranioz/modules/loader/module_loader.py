@@ -104,24 +104,20 @@ class InMemoryModuleLoader:
             instance = self._instances.get(module_id)
             if instance is None:
                 raise ModuleLoadFailed(
-                    f"registry says {module_id!r} is loaded but no instance "
-                    f"is held"
+                    f"registry says {module_id!r} is loaded but no instance is held"
                 )
             return instance
         if state is ModuleState.ACTIVE:
             instance = self._instances.get(module_id)
             if instance is None:
                 raise ModuleLoadFailed(
-                    f"registry says {module_id!r} is active but no instance "
-                    f"is held"
+                    f"registry says {module_id!r} is active but no instance is held"
                 )
             return instance
 
         instance = self._instances.get(module_id)
         if instance is None:
-            raise ModuleLoadFailed(
-                f"no instance supplied for module {module_id!r}"
-            )
+            raise ModuleLoadFailed(f"no instance supplied for module {module_id!r}")
 
         registered_handlers: list[type[Command]] = []
         try:
@@ -137,9 +133,7 @@ class InMemoryModuleLoader:
                 with contextlib.suppress(Exception):
                     self._command_bus.unregister(command_type)
             self._registry.set_state(module_id, ModuleState.REGISTERED)
-            raise ModuleLoadFailed(
-                f"failed to load module {module_id!r}: {exc}"
-            ) from exc
+            raise ModuleLoadFailed(f"failed to load module {module_id!r}: {exc}") from exc
 
         self._registry.set_state(module_id, ModuleState.LOADED)
         return instance
@@ -155,9 +149,7 @@ class InMemoryModuleLoader:
         if state is ModuleState.REGISTERED:
             return
         if state is ModuleState.ACTIVE:
-            raise ModuleInUse(
-                f"cannot unload {module_id!r}: state is 'active'"
-            )
+            raise ModuleInUse(f"cannot unload {module_id!r}: state is 'active'")
 
         for other in self._registry.list():
             if other.module_id == module_id:
@@ -171,15 +163,12 @@ class InMemoryModuleLoader:
                         ModuleState.DEACTIVATED,
                     ):
                         raise ModuleInUse(
-                            f"cannot unload {module_id!r}: "
-                            f"{other.module_id!r} depends on it"
+                            f"cannot unload {module_id!r}: {other.module_id!r} depends on it"
                         )
 
         instance = self._instances.get(module_id)
         if instance is None:
-            raise ModuleLoadFailed(
-                f"registry says {module_id!r} is loaded but no instance is held"
-            )
+            raise ModuleLoadFailed(f"registry says {module_id!r} is loaded but no instance is held")
 
         for command_type in reversed(instance.commands()):
             with contextlib.suppress(Exception):
@@ -199,22 +188,16 @@ class InMemoryModuleLoader:
 
     # ----- Internals -------------------------------------------------
 
-    def _resolve_handler(
-        self, command_type: type[Command]
-    ) -> CommandHandler[Any, Any]:
+    def _resolve_handler(self, command_type: type[Command]) -> CommandHandler[Any, Any]:
         handler = getattr(command_type, "_handler", None)
         if handler is None:
-            raise ModuleLoadFailed(
-                f"no handler is available for {command_type.__name__}"
-            )
+            raise ModuleLoadFailed(f"no handler is available for {command_type.__name__}")
         return cast(CommandHandler[Any, Any], handler)
 
     def _build_context(self, module_id: str) -> ModuleContext:
         event_bus = EventBus()
         adapter = EventBusAdapter(event_bus)
-        subscription = cast(
-            EventSubscription, adapter.create_subscription()
-        )
+        subscription = cast(EventSubscription, adapter.create_subscription())
         publisher = cast(EventPublisher, adapter.create_publisher())
 
         return ModuleContext(

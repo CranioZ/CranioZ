@@ -195,12 +195,8 @@ def test_search_matches_project_name_case_insensitive(
 def test_search_matches_patient_display_name(
     repository: InMemoryProjectRepository,
 ) -> None:
-    repository.create(
-        _project("p-001", project_name="A", patient_display_name="Maria Souza")
-    )
-    repository.create(
-        _project("p-002", project_name="B", patient_display_name="Gabriel Silva")
-    )
+    repository.create(_project("p-001", project_name="A", patient_display_name="Maria Souza"))
+    repository.create(_project("p-002", project_name="B", patient_display_name="Gabriel Silva"))
     catalog = ProjectCatalog(repository=repository)
 
     result = catalog.search_projects("maria")
