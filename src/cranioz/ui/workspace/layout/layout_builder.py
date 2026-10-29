@@ -131,12 +131,11 @@ class LayoutBuilder:
             context_extras: extras propagated into each EditorContext.
                 Each Editor receives a copy, so mutations do not leak
                 between Editors (ADR-0002 §2.1).
-            shared_context: extension point reserved for shared
-                services (SceneQuery, CommandDispatcher,
-                EventSubscription). Accepted and validated for type,
-                but not yet propagated, because EditorContext has no
-                fields to receive them (ADR-0002 §2.3). Passing a
-                non-mapping raises TypeError.
+            shared_context: shared services propagated by reference into
+                each EditorContext. Accepted keys: ``task_manager``,
+                ``telemetry``, ``correlation_id``, ``command_dispatcher``,
+                ``scene_query``. The builder does not interpret the
+                contents; it only propagates them (ADR-0002 §2.3).
 
         Returns:
             A BuildResult containing the Areas, the LayoutTree, the
@@ -161,12 +160,9 @@ class LayoutBuilder:
         # Defensive copies: the builder does not retain references to
         # caller-owned mutable state beyond the build() call.
         extras = dict(context_extras) if context_extras else {}
-        # shared_context is intentionally not copied. When it becomes
-        # functional (ADR-0002 §2.3), it will be propagated by
-        # reference to preserve resource identity across Editors.
-        # Today it is accepted but not used; we discard it explicitly
-        # to avoid an unused-argument warning and to keep intent clear.
-        _ = shared_context
+        # shared_context is NOT copied. It is propagated by reference to
+        # preserve resource identity across Editors (ADR-0002 §2.3).
+        shared = shared_context if shared_context else {}
 
         # 1. Instantiate Editors and create Areas.
         areas: list[Area] = []
@@ -174,7 +170,7 @@ class LayoutBuilder:
         editors_by_area: dict[str, tuple[Editor, ...]] = {}
 
         for area_spec in spec.areas:
-            editors = self._instantiate_editors(area_spec, extras)
+            editors = self._instantiate_editors(area_spec, extras, shared)
 
             area = Area(
                 area_id=area_spec.area_id,
@@ -189,14 +185,9 @@ class LayoutBuilder:
             editors_by_area[area.area_id] = tuple(editors)
 
         # 2. Build the LayoutTree.
-        #    from_specs validates that at least one Area is CENTRAL and
-        #    that every AreaSpec references a known area_id. It also
-        #    preserves the grouping of LEFT, CENTRAL, RIGHT, BOTTOM.
         try:
             tree = LayoutTree.from_specs(tuple(spec.areas), areas_by_id)
         except ValueError as exc:
-            # Re-raise as LayoutBuilderError so callers of the builder
-            # catch a single error type, without losing the cause.
             raise LayoutBuilderError(str(exc)) from exc
 
         # 3. Register the Areas in the AreaManager.
@@ -217,19 +208,19 @@ class LayoutBuilder:
         self,
         area_spec: AreaSpec,
         extras: dict[str, Any],
+        shared: dict[str, Any],
     ) -> list[Editor]:
         """Walk the EditorLayoutSpec depth-first and create one Editor
         per LEAF, each with its own EditorContext.
 
         The EditorContext is per Editor (ADR-0002 §2.1). The extras are
         copied per Editor so that mutations do not leak between them.
+        The shared services are propagated by reference (ADR-0002 §2.3).
         """
         editor_ids = self._collect_editor_ids(area_spec.editor_layout)
         editors: list[Editor] = []
 
         for editor_id in editor_ids:
-            # The EditorRegistry resolves the id to a class and creates
-            # an instance. KeyError propagates with a clear message.
             editor = self._registry.create(
                 editor_id,
                 editor_id=editor_id,
@@ -238,10 +229,11 @@ class LayoutBuilder:
 
             # A fresh EditorContext per Editor. extras is copied so
             # that two Editors with the same editor_id do not share
-            # mutable state.
+            # mutable state. shared is propagated by reference.
             context = EditorContext(
                 editor_id=editor_id,
                 extras=dict(extras),
+                **shared,
             )
             editor.initialize(context)
             editors.append(editor)

@@ -133,10 +133,7 @@ class LayoutRenderer:
 
     # ----- Region geometry ------------------------------------------
 
-    def compute_region_bounds(
-        self,
-        workspace: QWidget,
-    ) -> dict[Placement, Bounds]:
+    def compute_region_bounds(self, workspace: QWidget) -> dict[Placement, Bounds]:
         """Compute the geometric Bounds of each Region in Workspace coordinates.
 
         `widget.geometry()` is relative to the widget's parent. In nested
@@ -157,12 +154,7 @@ class LayoutRenderer:
             rects: list[tuple[int, int, int, int]] = []
             for w in widgets:
                 try:
-                    # Guard: if the widget is not yet laid out by Qt,
-                    # its geometry is invalid. Skip it.
-                    if not w.isVisible() or w.width() <= 0 or w.height() <= 0:
-                        continue
                     top_left = w.mapTo(workspace, w.rect().topLeft())
-                    # QPoint does NOT have isValid(). Just check the widget's size.
                     rects.append(
                         (
                             top_left.x(),

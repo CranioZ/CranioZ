@@ -27,7 +27,10 @@ if TYPE_CHECKING:
 class EditorContext:
     """Dependencies an Editor receives at insertion time."""
 
+    # Required fields (no default).
     editor_id: str
+
+    # Optional fields (with default).
     correlation_id: str | None = None
     extras: dict[str, Any] = field(default_factory=dict)
     task_manager: TaskManager | None = None

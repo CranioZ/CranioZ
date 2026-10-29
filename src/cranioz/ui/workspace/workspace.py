@@ -27,7 +27,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QTimer
-from PySide6.QtGui import QResizeEvent
+from PySide6.QtGui import QResizeEvent, QShowEvent
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from cranioz.application.project.project_context import ProjectContext
@@ -129,48 +129,53 @@ class Workspace(QWidget):
         return self._telemetry
 
     def load_spec(self, spec: ModuleUISpec) -> None:
-        # 1. Build the new composition FIRST (validates the spec).
-        new_result = self._layout_builder.build(spec)
+        """Materialize a ModuleUISpec atomically.
 
-        # 2. Clear the cache BEFORE rendering, so render() creates
-        #    fresh AreaWidgets instead of reusing deleted ones.
+        The new composition is built first (validates the spec). If
+        the build succeeds, the old composition is torn down and the
+        new one is rendered and installed. If the build fails, the
+        old composition remains intact.
+        """
+        # 1. Build the new composition (validates the spec).
+        new_result = self._layout_builder.build(
+            spec,
+            shared_context={
+                "task_manager": self._task_manager,
+                "telemetry": self._telemetry,
+            },
+        )
+
+        # 2. Clear the old composition (disposes Editors, clears cache).
         self.clear()
 
-        # 3. Render the new composition (fresh widgets).
+        # 3. Render the new composition (populates a fresh cache).
         new_root = self._layout_renderer.render(new_result.tree)
 
-        # 4. Install the new composition.
+        # 4. Install.
         self._build_result = new_result
         self._root_widget = new_root
         self._root_layout.addWidget(new_root)
 
-        # 5. Raise TopOverlay and reposition.
+        # 5. Ensure the TopOverlay floats above.
         self._top_overlay.widget().raise_()
+
+        # 6. Position overlays after the layout is computed.
         QTimer.singleShot(0, self._reposition_overlays)
 
     def clear(self) -> None:
         """Tear down the current composition.
 
-        Disposes every Editor hosted by every Area before destroying
-        the widgets. This fulfills the Editor lifecycle contract
-        (ADR-0001, editors.md §4): `dispose()` must be called when an
-        Editor is removed.
-
-        Widgets are deleted via `deleteLater()`, which is safe during
-        signal handlers and event processing.
+        Disposes every Editor, detaches the rendered widget tree,
+        clears the renderer cache, and drops the build result.
         """
-        # 1. Dispose every Editor. This releases Tasks, subscriptions,
-        #    and any other resources the Editor owns.
+        # 1. Dispose every Editor.
         if self._build_result is not None:
             for area in self._build_result.areas:
                 for editor in area.editors():
                     try:
                         editor.dispose()
                     except Exception:
-                        _logger.exception(
-                            "Editor.dispose() failed for %r; continuing teardown",
-                            editor.editor_id,
-                        )
+                        _logger.exception("Editor.dispose() failed for %r", editor.editor_id)
 
         # 2. Detach and delete the rendered widget tree.
         if self._root_widget is not None:
@@ -179,8 +184,12 @@ class Workspace(QWidget):
             self._root_widget.deleteLater()
             self._root_widget = None
 
-        # 3. Drop the cached widgets and the build result.
+        # 3. Clear the renderer cache. Required so that a subsequent
+        #    render() creates fresh AreaWidgets instead of reusing
+        #    the ones that were just deleted.
         self._layout_renderer.clear_cache()
+
+        # 4. Drop the build result.
         self._build_result = None
 
     def areas(self) -> tuple[Area, ...]:
@@ -208,10 +217,21 @@ class Workspace(QWidget):
         super().resizeEvent(event)
         self._reposition_overlays()
 
+    def showEvent(self, event: QShowEvent) -> None:  # noqa: N802
+        """Reposition overlays after the workspace is shown.
+
+        When the workspace is shown, Qt computes the layout of the
+        AreaWidgets. We need to reposition overlays once the
+        AreaWidgets have valid geometry. QTimer.singleShot(0, ...)
+        defers the reposition to the next event loop iteration, when
+        the layout is complete.
+        """
+        super().showEvent(event)
+        QTimer.singleShot(0, self._reposition_overlays)
+
     # ----- Internals ------------------------------------------------
 
     def _reposition_overlays(self) -> None:
-        """Recompute Region bounds and reposition every Overlay."""
         bounds_by_placement = self._layout_renderer.compute_region_bounds(self)
         regions = self._regions_from_bounds(bounds_by_placement)
         self._overlay_manager.reposition_all(regions)

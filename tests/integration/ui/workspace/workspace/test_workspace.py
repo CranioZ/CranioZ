@@ -412,11 +412,6 @@ def test_top_overlay_is_positioned_over_central_area(
     This is a regression test for the bug where the TopOverlay was
     positioned at (0, 0) with zero width when the splitter was moved,
     instead of following the Central Area's geometry.
-
-    The test verifies:
-    - The TopOverlay has a non-zero width and height.
-    - The TopOverlay starts at x > 0 (not over Area Left).
-    - The TopOverlay is contained within the Central Area's bounds.
     """
     spec = _spec(
         _area("area.left", Placement.LEFT, "editor.object_list"),
@@ -424,38 +419,52 @@ def test_top_overlay_is_positioned_over_central_area(
         _area("area.right", Placement.RIGHT, "editor.properties"),
     )
     workspace.resize(1200, 800)
+    workspace.load_spec(spec)
     workspace.show()
     qtbot.waitExposed(workspace)
-    workspace.load_spec(spec)
 
-    # Wait until the TopOverlay is ACTUALLY positioned over the
-    # Central Area. Checking width > 0 is insufficient because the
-    # TopOverlay has a default width of 100 even before positioning.
-    # x > 0 only happens when the Central Area is found and the
-    # OverlayManager positions the TopOverlay over it.
-    qtbot.waitUntil(
-        lambda: workspace.top_overlay().widget().geometry().x() > 0,
-        timeout=2000,
-    )
-
-    overlay_geom = workspace.top_overlay().widget().geometry()
-    assert overlay_geom.width() > 0, "TopOverlay must have a non-zero width"
-    assert overlay_geom.height() > 0, "TopOverlay must have a non-zero height"
-    assert overlay_geom.x() > 0, "TopOverlay must not start at x=0 (that would be over Area Left)"
-
-    # Find the AreaWidget for the Central Area.
+    # Find the Central Area widget first, so the waitUntil condition
+    # can compare against its actual position.
     central_widget = None
     for area in workspace.areas():
         if area.area_id == "area.central":
             for widget in workspace.findChildren(QWidget):
-                if hasattr(widget, "area_id") and widget.area_id == "area.central":
+                if (
+                    hasattr(widget, "area_id")
+                    and widget.area_id == "area.central"
+                ):
                     central_widget = widget
                     break
             break
 
     assert central_widget is not None, "Central Area widget must exist"
 
-    central_top_left = central_widget.mapTo(workspace, central_widget.rect().topLeft())
+    # Wait until the TopOverlay is ACTUALLY positioned inside the
+    # Central Area. Checking x > 0 is insufficient because the
+    # TopOverlay may be positioned at x=8 (with bounds from the
+    # old layout) before the Qt layout is complete.
+    def _overlay_is_over_central() -> bool:
+        overlay_geom = workspace.top_overlay().widget().geometry()
+        central_top_left = central_widget.mapTo(
+            workspace, central_widget.rect().topLeft()
+        )
+        central_right = central_top_left.x() + central_widget.width()
+        return (
+            overlay_geom.x() >= central_top_left.x()
+            and overlay_geom.x() + overlay_geom.width() <= central_right
+            and overlay_geom.width() > 0
+        )
+
+    qtbot.waitUntil(_overlay_is_over_central, timeout=2000)
+
+    # Final assertions (redundant but document the contract).
+    overlay_geom = workspace.top_overlay().widget().geometry()
+    assert overlay_geom.width() > 0, "TopOverlay must have a non-zero width"
+    assert overlay_geom.height() > 0, "TopOverlay must have a non-zero height"
+
+    central_top_left = central_widget.mapTo(
+        workspace, central_widget.rect().topLeft()
+    )
     central_right = central_top_left.x() + central_widget.width()
 
     assert overlay_geom.x() >= central_top_left.x(), (

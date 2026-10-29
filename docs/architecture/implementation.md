@@ -80,15 +80,15 @@ The implementation is divided into 11 phases. These phases are designed to build
 
 ### 5.1 Immediate priorities (in order)
 
-1.  **Replace remaining boot placeholders.**
-    *   ✅ `QtTaskManager` substituiu `NoOpTaskManager` no boot.
-    *   ✅ `LoggingTelemetrySink` substituiu `NoOpTelemetrySink` no boot.
-2.  **Fix Phase 2 debt (Workspace lifecycle and geometry).** ✅ Resolvido.
-3.  **Propagate `EditorContext`.** ⏳ Próximo.
-4.  **Implement `CommandExecutor` and `CommandDispatcher`.** ⏳ Pendente.
-5.  **Implement `domain/scene/`** per ADR-0008 and `scene.md`. ⏳ Pendente.
-6.  **Implement `RenderingAdapter`** and the first concrete Editors. ⏳ Pendente.
-7.  **Implement `application/modules/` for real.** ⏳ Pendente.
+1. **Replace remaining boot placeholders.** 
+- ✅ `QtTaskManager` replaced `NoOpTaskManager` at boot. 
+- ✅ `LoggingTelemetrySink` replaced `NoOpTelemetrySink` on boot.
+2. **Fix Phase 2 debt (Workspace lifecycle and geometry).** ✅ Resolved.
+3. **Propagate `EditorContext`.** ✅ Resolved (shared_context propagated).
+4. **Implement `CommandExecutor` and `CommandDispatcher`.** ⏳ Next.
+5. **Implement `domain/scene/`** per ADR-0008 and `scene.md`. ⏳ Pending.
+6. **Implement `RenderingAdapter`** and the first concrete Editors. ⏳ Pending.
+7. **Implement `application/modules/` for real.** ⏳ Pending.
 
 ### 5.2 What blocks Phase 4
 
@@ -394,28 +394,11 @@ This section records debt that is known, accepted for now, and must be resolved 
 ### 10.1 Phase 2 — Workspace lifecycle and geometry
 
 - ✅ **`AreaWidget.refresh()` no longer invalidates Editor content.**
-  The content_widget() is cached and detached before the container
-  is deleted, then re-parented to the new container.
-  Test: `test_area_widget_refresh_preserves_editor_content`.
-
 - ✅ **`LayoutRenderer.compute_region_bounds()` now maps to Workspace coordinates.**
-  Uses `mapTo(workspace, ...)` to compute the union in Workspace
-  coordinates. Test: `test_top_overlay_is_positioned_over_central_area`.
-
-- ✅ **`Workspace.clear()` now calls `Editor.dispose()`.**
-  Errors are logged, not silenced.
-  Test: `test_workspace_clear_calls_editor_dispose`.
-
+- ✅ **`Workspace.clear()` now calls `Editor.dispose()` and `clear_cache()`.**
 - ✅ **`Workspace.load_spec()` is now atomic.**
-  The new composition is built and rendered before the old one is
-  torn down. Test: `test_load_spec_atomic_on_failure`.
-
 - ✅ **`TopOverlay` follows the splitter when moved manually.**
-  `LayoutRenderer` connects `QSplitter.splitterMoved` to
-  `Workspace._reposition_overlays()`.
-
 - ✅ **`QTabBar` is centered via stylesheet.**
-
 - ✅ **Debug visual is clean** (no Log/Toggle buttons, editor_ids visible).
 
 ### 10.2 Phase 1 / Phase 4 — `EditorContext` propagation

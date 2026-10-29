@@ -41,7 +41,7 @@ What these tests cover:
 - Unknown editor_id → KeyError with a clear message.
 - context_extras are copied per Editor (hybrid EditorContext model,
   ADR-0002 §2.1).
-- shared_context is accepted without error but is not yet propagated
+- shared_context is propagated by reference to each EditorContext
   (ADR-0002 §2.3).
 - Invalid argument types raise TypeError.
 """
@@ -520,25 +520,41 @@ def test_build_does_not_mutate_caller_extras(
     assert original == snapshot
 
 
-# ----- shared_context (extension point, ADR-0002 §2.3) --------------
+# ----- shared_context (ADR-0002 §2.3) -------------------------------
 
 
-def test_build_accepts_shared_context_without_error(
+def test_build_propagates_shared_context_to_each_editor(
     builder: LayoutBuilder,
 ) -> None:
-    """shared_context is accepted today as an extension point.
-
-    It is not yet propagated, because EditorContext has no fields to
-    receive shared services. This test documents that the parameter
-    exists and does not break the build.
-    """
+    """shared_context must be propagated by reference to each EditorContext."""
     spec = _spec(
-        _area("area.central", Placement.CENTRAL, _leaf("editor.patient")),
+        _area(
+            "area.central",
+            Placement.CENTRAL,
+            EditorLayoutSpec.split(
+                SplitDirection.HORIZONTAL,
+                (_leaf("editor.mpr_axial"), _leaf("editor.mpr_sagittal")),
+            ),
+        ),
     )
 
-    # Passing a dict must not raise.
-    result = builder.build(spec, shared_context={"scene_query": object()})
-    assert len(result.areas) == 1
+    task_manager = object()  # sentinel
+    telemetry = object()  # sentinel
+
+    result = builder.build(
+        spec,
+        shared_context={
+            "task_manager": task_manager,
+            "telemetry": telemetry,
+        },
+    )
+
+    editors = result.editors("area.central")
+    assert len(editors) == 2
+    for editor in editors:
+        context = editor._context  # type: ignore[attr-defined]
+        assert context.task_manager is task_manager
+        assert context.telemetry is telemetry
 
 
 def test_build_rejects_non_mapping_context_extras(
