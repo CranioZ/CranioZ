@@ -104,9 +104,7 @@ def main() -> int:
         )
     )
     window.home().flow_selected.connect(
-        lambda fid: print(
-            f"[selected] flow={fid!r} current={window.home().selected_flow_id()!r}"
-        )
+        lambda fid: print(f"[selected] flow={fid!r} current={window.home().selected_flow_id()!r}")
     )
 
     _orig_set_ready = window.home()._start_button_widget().set_ready

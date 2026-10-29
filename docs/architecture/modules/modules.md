@@ -47,9 +47,7 @@ MANIFEST = ModuleManifest(
     version="1.0.0",
     label_key="modules.orthognathic.label",
     description_key="modules.orthognathic.description",
-    entry_point=(
-        "cranioz.modules.builtin.orthognathic.module:OrthognathicModule"
-    ),
+    entry_point=("cranioz.modules.builtin.orthognathic.module:OrthognathicModule"),
     dependencies=(
         ModuleDependency("tomography", ">=1.0.0"),
         ModuleDependency("cephalometry", ">=1.0.0,<2.0.0"),
@@ -148,17 +146,38 @@ class Module(Protocol):
 
 ```python
 class ModuleBase:
-    def commands(self) -> tuple[type[Command], ...]: return ()
-    def services(self) -> tuple[type[Service], ...]: return ()
-    def tools(self) -> tuple[type[Tool], ...]: return ()
-    def editors(self) -> tuple[type[Editor], ...]: return ()
-    def data_types(self) -> tuple[type[DataType], ...]: return ()
-    def flows(self) -> tuple[FlowDefinition, ...]: return ()
-    def ui_specs(self) -> tuple[ModuleUISpec, ...]: return ()
-    def on_load(self, context: ModuleContext) -> None: pass
-    def on_unload(self) -> None: pass
-    def on_activate(self, spec: ModuleUISpec) -> None: pass
-    def on_deactivate(self) -> None: pass
+    def commands(self) -> tuple[type[Command], ...]:
+        return ()
+
+    def services(self) -> tuple[type[Service], ...]:
+        return ()
+
+    def tools(self) -> tuple[type[Tool], ...]:
+        return ()
+
+    def editors(self) -> tuple[type[Editor], ...]:
+        return ()
+
+    def data_types(self) -> tuple[type[DataType], ...]:
+        return ()
+
+    def flows(self) -> tuple[FlowDefinition, ...]:
+        return ()
+
+    def ui_specs(self) -> tuple[ModuleUISpec, ...]:
+        return ()
+
+    def on_load(self, context: ModuleContext) -> None:
+        pass
+
+    def on_unload(self) -> None:
+        pass
+
+    def on_activate(self, spec: ModuleUISpec) -> None:
+        pass
+
+    def on_deactivate(self) -> None:
+        pass
 ```
 
 Contribution methods are declarative and return classes or immutable definitions, not service instances. The loader registers Commands, Services, Tools, Editors, Data Types, and Flows in their respective registries. Command handlers remain registered through the Application's command-handler mechanism. `ui_specs()` is read by the Application; it is not a registry operation.
@@ -274,6 +293,7 @@ class ModuleRegistry(Protocol):
     def get(self, module_id: str) -> ModuleManifest | None: ...
     def list(self) -> tuple[ModuleManifest, ...]: ...
     def state(self, module_id: str) -> ModuleState | None: ...
+
 
 class ModuleLoader(Protocol):
     def load(self, module_id: str) -> Module: ...

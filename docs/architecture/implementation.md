@@ -3,7 +3,7 @@
 **Document type:** Roadmap and execution plan
 **Status:** Living document
 **Scope:** Phased implementation of the CranioZ platform from foundation to release.
-**Last updated:** 2026-10-23 (post Application layer and dívidas de Phase 2/4)
+**Last updated:** 2026-10-29 (post initial Application layer wiring and Phase 2 debt analysis)
 
 ---
 
@@ -50,11 +50,11 @@ The implementation is divided into 11 phases. These phases are designed to build
 | Phase | Name | Status | Done / Pending |
 |---|---|---|---|
 | **Phase 0** | Foundation & Boot | ✅ Implemented | — |
-| **Phase 1** | Contracts & Core Domain | ✅ Implemented / 🚧 dívidas de `EditorContext` híbrido | `task_manager`, `telemetry`, `correlation_id` existem no dataclass mas não são propagados |
-| **Phase 2** | Workspace | ✅ Implemented / 🚧 dívidas de lifecycle e geometria | `AreaWidget.refresh`, `compute_region_bounds`, `Editor.dispose`, atomicidade de `load_spec` |
+| **Phase 1** | Contracts & Core Domain | ✅ Implemented / 🚧 débito de `EditorContext` | `task_manager`, `telemetry`, `correlation_id` existem no dataclass mas não são propagados |
+| **Phase 2** | Workspace | ✅ Implemented / 🚧 débito de lifecycle e geometria | `AreaWidget.refresh`, `compute_region_bounds`, `Editor.dispose`, atomicidade de `load_spec` |
 | **Phase 3** | Project & Home Page | ✅ Core / 🚧 periféricos | Recent Projects, WorkflowEngine, Layout persistence |
-| **Phase 4** | Scene & Visualization | 🚧 In Progress | Application layer implementada; Scene, rendering e editores clínicos pendentes |
-| **Phase 5** | Clinical Flows | ⏳ Planned | Blocked by Phase 4 |
+| **Phase 4** | Scene & Visualization | 🚧 In Progress | Application layer implementada e parcialmente conectada; Scene, rendering e editores clínicos pendentes |
+| **Phase 5** | Clinical Flows | ⏳ Planned | Blocked by Phase 4 and real `ModuleLoader` |
 | **Phase 6** | Clinical Pipeline (MVP) | ⏳ Planned | — |
 | **Phase 7** | Scientific Validation | ⏳ Planned | — |
 | **Phase 8** | Scientific Product (Release 1.0) | ⏳ Planned | — |
@@ -76,24 +76,19 @@ The implementation is divided into 11 phases. These phases are designed to build
 
 **Phase 3 is functionally complete for its core.** The lifecycle core (`ProjectManager`, `ProjectCatalog`), the discovery UI (`HomePage`, `MainWindow`), the boot wiring, the `FlowCatalog`, the `InMemoryFlowRepository`, the `FilesystemFlowRepository` and the flow serialization are implemented and tested. The peripherals (Recent Projects, WorkflowEngine execution, Layout persistence) are deferred and do not block Phase 4.
 
-**Phase 4 is the active phase.** Its contracts are in place. The Application layer is implemented as contracts + reference in-memory implementations. The real work remaining is:
-
-1. **Close the boot wiring with real services.** Replace `NoOpTaskManager` and `NoOpTelemetrySink` in `__main__.py` with real implementations (`QtTaskManager`, `LoggingTelemetrySink`). Wire the `CommandBus` into the actual dispatch path. Inject `TaskManager`, `TelemetrySink` and `CommandDispatcher` into `MainWindow` → `Workspace` → `LayoutBuilder` → `EditorContext` → `Editor`. Today the `Workspace` holds the references but does not propagate them to Editors.
-2. **Implement `domain/scene/`** — `Scene`, `DomainObjectStore` (ADR-0008, `scene.md`).
-3. **Implement `infrastructure/rendering/`** — `RenderingAdapter`, VTK bridge.
-4. **Implement `ui/editors/`** — `Viewport3DEditor`, `MPRViewerEditor`.
-5. **Implement `application/modules/` for real** — dependency resolution, cycle detection, `entry_point` import, registration of Tools/Editors/Services/Flows, and explicit handler registration for Commands.
-6. **Fix Phase 2 debt before adding real Editors.** The known debt in `AreaWidget.refresh`, `LayoutRenderer.compute_region_bounds`, `Workspace.clear` and `Workspace.load_spec` will affect any non-placeholder Editor. See §10.
+**Phase 4 is the active phase.** Its contracts are in place, and the Application layer is implemented as contracts + reference in-memory implementations. The `QtTaskManager` is wired into the boot. The real work remaining is to **close the wiring** and **fix the Phase 2 debt** before adding the Scene and the first real Editors.
 
 ### 5.1 Immediate priorities (in order)
 
-1. **Replace boot placeholders.** ✅ `QtTaskManager` substituiu `NoOpTaskManager` no boot. 🚧 `LoggingTelemetrySink` ainda pendente; `NoOpTelemetrySink` continua no boot.
-2. **Fix Phase 2 debt.** `AreaWidget.refresh` must not destroy Editor-owned widgets; `compute_region_bounds` must map geometries to Workspace coordinates; `Workspace.clear` must call `Editor.dispose()`; `Workspace.load_spec` must be atomic.
-3. **Propagate `EditorContext`.** `LayoutBuilder` must build a per-Editor `EditorContext` with `task_manager`, `telemetry` and `correlation_id`, and `Workspace` must pass them through.
-4. **Implement `CommandExecutor`.** A component that ties `CommandBus`, transaction boundary, post-commit event publication and `CommandStack` together. Without it, the `CommandDispatcher` has no useful target.
-5. **Implement `domain/scene/`** per ADR-0008 and `scene.md`.
-6. **Implement `RenderingAdapter`** and the first concrete Editors (`Viewport3DEditor`, `MPRViewerEditor`).
-7. **Implement `application/modules/` for real** (dependencies, `entry_point`, registration, handler registration). Populate `BUILTIN_MANIFESTS`.
+1.  **Replace remaining boot placeholders.**
+    *   ✅ `QtTaskManager` substituiu `NoOpTaskManager` no boot.
+    *   🚧 Implement and integrate `LoggingTelemetrySink` to replace `NoOpTelemetrySink`.
+2.  **Fix Phase 2 debt (Workspace lifecycle and geometry).** See §10.1 for details. This is a prerequisite for any non-placeholder Editor.
+3.  **Propagate `EditorContext`.** `LayoutBuilder` must build a per-Editor `EditorContext` with `task_manager`, `telemetry`, `correlation_id`, and the future `CommandDispatcher` and `SceneQuery`. `Workspace` must pass them through.
+4.  **Implement `CommandExecutor` and `CommandDispatcher`.** Tie `CommandBus`, transaction boundary, post-commit event publication and `CommandStack` together. Wire the dispatcher into the `EditorContext`.
+5.  **Implement `domain/scene/`** per ADR-0008 and `scene.md`.
+6.  **Implement `RenderingAdapter`** and the first concrete Editors (`Viewport3DEditor`, `MPRViewerEditor`).
+7.  **Implement `application/modules/` for real** (dependencies, `entry_point`, registration, handler registration). Populate `BUILTIN_MANIFESTS`.
 
 ### 5.2 What blocks Phase 4
 
@@ -128,7 +123,7 @@ No *contract* blockers remain. The ADRs (0007 Commands, 0008 Scene, 0009 Persist
   - ✅ `infrastructure/flows/` — `FilesystemFlowRepository`, `FlowPathResolver`, `flow_serialization`.
 
 - **Placeholders in boot (known, must be replaced before Phase 4 is "done"):**
-  - 🚧 `NoOpTaskManager` and `NoOpTelemetrySink` are constructed at boot. They are correct for tests but must not be the production implementation.
+  - 🚧 `NoOpTelemetrySink` is still constructed at boot. It must be replaced by `LoggingTelemetrySink`.
   - 🚧 `InMemoryModuleRegistry` is constructed and populated from `BUILTIN_MANIFESTS`, but `BUILTIN_MANIFESTS` is empty.
   - 🚧 `command_bus` is constructed but not wired into any dispatch path.
 
@@ -223,7 +218,7 @@ No *contract* blockers remain. The ADRs (0007 Commands, 0008 Scene, 0009 Persist
   - ⏳ `ui/editors/` — `Viewport3DEditor`, `MPRViewerEditor`.
   - ⏳ Scene serialization (JSON).
 
-- **Boot wiring (pending):**
+- **Boot wiring (partial):**
   - ✅ `QtTaskManager` substituiu `NoOpTaskManager` no boot.
   - ⏳ `LoggingTelemetrySink` ainda substitui `NoOpTelemetrySink`.
   - ⏳ Propagate `task_manager`, `telemetry`, `correlation_id` from `MainWindow` → `Workspace` → `LayoutBuilder` → `EditorContext` → `Editor`.
@@ -436,3 +431,12 @@ This section records debt that is known, accepted for now, and must be resolved 
 - **Some documents still reference `EditorHost`**, which ADR-0001 removed.
 - **The main `README.md` is empty.**
 - **i18n test files are empty** (`tests/infrastructure/i18n/`).
+
+### 10.8 New debt discovered during analysis (2026-10-29)
+
+- **UI Modules and Widgets are Stubs.** The directories `ui/widgets/` (except for empty subfolders), `ui/editors/overlays/`, and most of `modules/builtin/` contain only empty or placeholder files. They represent the *intent* to build these components but do not contain functional code.
+- **`TranslationService` not wired to UI.** The `TranslationService` and its catalogs exist, but the UI layer (e.g., `HomePage`, `FlowRow`) uses hardcoded strings. The i18n infrastructure is not actually in use.
+- **`ThemeService` lacks semantic colors.** The `ThemeService` resolves icon names but does not yet expose the semantic colors (`color("active")`, `color("disabled")`, etc.) required by ADR-0003. The UI uses hardcoded hex values.
+- **`Project deletion` not coordinated.** As noted in §10.4, deleting a project only removes `project.json`. The `ProjectManager` must coordinate with other persistence layers (Patient, Scene, Layout) to perform a full, atomic deletion.
+- **`Filesystem repositories` need integration tests.** The `FilesystemProjectRepository` and `FilesystemFlowRepository` have unit tests, but their integration with the real filesystem (permissions, atomic writes, directory traversal) needs more thorough testing.
+- **`HomePage` uses `_humanize_translation_key`.** `MainWindow` uses a temporary helper function `_humanize_translation_key` to make flow names readable. This is a placeholder for the `TranslationService` and should be removed once i18n is wired.

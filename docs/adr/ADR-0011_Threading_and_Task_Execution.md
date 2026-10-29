@@ -75,6 +75,7 @@ class TaskManager(Protocol):
         on_cancel: Callable[[], None] | None = None,
     ) -> TaskHandle: ...
 
+
 class TaskHandle(Protocol):
     @property
     def id(self) -> str: ...
@@ -83,6 +84,7 @@ class TaskHandle(Protocol):
     def cancel(self) -> None: ...
     def wait(self, timeout: float | None = None) -> None: ...
 
+
 class Task(Protocol):
     def run(
         self,
@@ -90,10 +92,12 @@ class Task(Protocol):
         cancel_token: CancelToken,
     ) -> Any: ...
 
+
 class CancelToken(Protocol):
     @property
     def is_cancelled(self) -> bool: ...
     def raise_if_cancelled(self) -> None: ...
+
 
 class TaskState(Enum):
     PENDING = "pending"

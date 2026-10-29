@@ -78,12 +78,14 @@ class TelemetrySink(Protocol):
         attributes: Mapping[str, Any] | None = None,
     ) -> None: ...
 
+
 class Severity(Enum):
     DEBUG = "debug"
     INFO = "info"
     WARNING = "warning"
     ERROR = "error"
     CRITICAL = "critical"
+
 
 class MeasurementUnit(Enum):
     NONE = "none"

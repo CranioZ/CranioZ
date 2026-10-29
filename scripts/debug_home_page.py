@@ -108,9 +108,7 @@ def _connect_debug_signals(page: HomePage) -> None:
     page.manage_flows_requested.connect(_log("manage_flows_requested"))
     page.project_open_requested.connect(_log("project_open_requested"))
     page._top_bar_widget().toggle_sidebar_requested.connect(
-        lambda: print(
-            f"[toggle] sidebar hidden={page._sidebar_widget().isHidden()}"
-        )
+        lambda: print(f"[toggle] sidebar hidden={page._sidebar_widget().isHidden()}")
     )
 
 

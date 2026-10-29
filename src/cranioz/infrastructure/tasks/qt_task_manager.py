@@ -339,7 +339,13 @@ class QtTaskManager(QObject):
     @Slot(object)
     def _run_callback(self, payload: object) -> None:
         """Execute a marshalled callback on the GUI thread."""
-        callback, args = payload  # type: ignore[misc]
+        if not isinstance(payload, tuple) or len(payload) != 2:
+            _logger.error("invalid callback payload: %r", payload)
+            return
+        callback, args = payload
+        if not callable(callback) or not isinstance(args, tuple):
+            _logger.error("invalid callback tuple: callback=%r args=%r", callback, args)
+            return
         try:
             callback(*args)
         except Exception:
