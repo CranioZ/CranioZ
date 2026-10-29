@@ -23,6 +23,7 @@ Non-responsibilities:
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QTimer
@@ -49,6 +50,8 @@ from cranioz.ui.workspace.specs.module_ui_spec import ModuleUISpec
 if TYPE_CHECKING:
     from cranioz.application.tasks.base import TaskManager
     from cranioz.application.telemetry.base import TelemetrySink
+
+_logger = logging.getLogger(__name__)
 
 
 class WorkspaceError(RuntimeError):
@@ -125,23 +128,57 @@ class Workspace(QWidget):
         return self._telemetry
 
     def load_spec(self, spec: ModuleUISpec) -> None:
+        # 1. Build the new composition FIRST (validates the spec).
+        new_result = self._layout_builder.build(spec)
+
+        # 2. Clear the cache BEFORE rendering, so render() creates
+        #    fresh AreaWidgets instead of reusing deleted ones.
         self.clear()
-        result = self._layout_builder.build(spec)
-        self._build_result = result
-        root = self._layout_renderer.render(result.tree)
-        self._root_widget = root
-        self._root_layout.addWidget(root)
-        self._top_overlay.widget().setParent(self)
+
+        # 3. Render the new composition (fresh widgets).
+        new_root = self._layout_renderer.render(new_result.tree)
+
+        # 4. Install the new composition.
+        self._build_result = new_result
+        self._root_widget = new_root
+        self._root_layout.addWidget(new_root)
+
+        # 5. Raise TopOverlay and reposition.
         self._top_overlay.widget().raise_()
-        self._reposition_overlays()
         QTimer.singleShot(0, self._reposition_overlays)
 
     def clear(self) -> None:
+        """Tear down the current composition.
+
+        Disposes every Editor hosted by every Area before destroying
+        the widgets. This fulfills the Editor lifecycle contract
+        (ADR-0001, editors.md §4): `dispose()` must be called when an
+        Editor is removed.
+
+        Widgets are deleted via `deleteLater()`, which is safe during
+        signal handlers and event processing.
+        """
+        # 1. Dispose every Editor. This releases Tasks, subscriptions,
+        #    and any other resources the Editor owns.
+        if self._build_result is not None:
+            for area in self._build_result.areas:
+                for editor in area.editors():
+                    try:
+                        editor.dispose()
+                    except Exception:
+                        _logger.exception(
+                            "Editor.dispose() failed for %r; continuing teardown",
+                            editor.editor_id,
+                        )
+
+        # 2. Detach and delete the rendered widget tree.
         if self._root_widget is not None:
             self._root_layout.removeWidget(self._root_widget)
             self._root_widget.setParent(None)
             self._root_widget.deleteLater()
             self._root_widget = None
+
+        # 3. Drop the cached widgets and the build result.
         self._layout_renderer.clear_cache()
         self._build_result = None
 
@@ -173,7 +210,14 @@ class Workspace(QWidget):
     # ----- Internals ------------------------------------------------
 
     def _reposition_overlays(self) -> None:
-        bounds_by_placement = self._layout_renderer.compute_region_bounds()
+        """Recompute Region bounds and reposition every Overlay.
+
+        `compute_region_bounds()` now receives `self` (the Workspace)
+        so that each AreaWidget's geometry is mapped to Workspace
+        coordinates before being unioned. This is the fix for the
+        parent-relative geometry bug (implementation.md §10.1).
+        """
+        bounds_by_placement = self._layout_renderer.compute_region_bounds(self)
         regions = self._regions_from_bounds(bounds_by_placement)
         self._overlay_manager.reposition_all(regions)
         self._top_overlay.widget().raise_()

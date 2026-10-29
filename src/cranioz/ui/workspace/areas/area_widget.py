@@ -6,48 +6,11 @@ The Area is a pure domain model (no Qt). The AreaWidget is the
 presentation layer for one Area: it renders the Editor's Toolbars,
 the Editor's content widget, tabs (when there are multiple Editors),
 and a placeholder (when the Area is empty).
-
-Responsibilities:
-
-- Reflect the Area model. The Area is the source of truth. The
-  AreaWidget never modifies the Area.
-- Emit signals when the user requests a change (close an Editor,
-  add an Editor, change the active Editor). The signals have no
-  consumers in this piece; they will be connected by the Workspace
-  in a future piece.
-- Consume ToolRegistry and ThemeService to materialize Toolbars.
-- Consult the Editor for the ToolContext used to materialize its
-  Toolbars.
-
-Non-responsibilities:
-
-- The AreaWidget does not create Editors. The Editors come from the
-  LayoutBuilder (Piece 4), already initialized.
-- The AreaWidget does not mutate the Area. All mutations are
-  performed by higher-level components in response to signals.
-- The AreaWidget does not know about the LayoutTree, the
-  LayoutRenderer, or the Workspace.
-
-Structure of the produced widget:
-
-- Empty Area:    a centered QLabel with "{title} (empty)".
-- 1 Editor:      a QVBoxLayout with the Editor's Toolbars and the
-                 Editor's content_widget().
-- >= 2 Editors:  a QTabWidget (tabs at the bottom) with one tab per
-                 Editor. Each tab contains the Editor's Toolbars and
-                 its content_widget(). Tabs are closable. A '+' corner
-                 button is present for future use.
-
-Note on the '+' button and the ``editor_add_requested`` signal:
-
-The ``editor_add_requested`` signal is declared for the future '+'
-corner button on the tab widget. In this piece, the signal is not
-emitted by any widget yet. When the '+' button is implemented, it
-will emit this signal, and a higher-level component will decide
-whether to add an Editor and how.
 """
 
 from __future__ import annotations
+
+import logging
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor, QPalette
@@ -65,17 +28,15 @@ from cranioz.ui.tools.registry.tool_registry import ToolRegistry
 from cranioz.ui.workspace.areas.area import Area
 from cranioz.ui.workspace.areas.placement import Placement
 
+_logger = logging.getLogger(__name__)
+
 
 class AreaWidget(QWidget):
-    """Qt widget that materializes a single Area.
+    """Qt widget that materializes a single Area."""
 
-    The widget reflects the Area model. It never modifies the Area.
-    User actions that would change the Area are emitted as signals.
-    """
-
-    active_editor_changed = Signal(str, str)  # area_id, editor_id
-    editor_close_requested = Signal(str, str)  # area_id, editor_id
-    editor_add_requested = Signal(str)  # area_id
+    active_editor_changed = Signal(str, str)
+    editor_close_requested = Signal(str, str)
+    editor_add_requested = Signal(str)
 
     def __init__(
         self,
@@ -89,11 +50,14 @@ class AreaWidget(QWidget):
         self._area = area
         self._tool_registry = tool_registry
         self._theme_service = theme_service
+        # Cache of content widgets, keyed by editor_id.
+        # The AreaWidget owns the *container*; the Editor owns the
+        # content_widget(). We cache the content widget here so that
+        # we can re-parent it safely across refresh() calls.
+        self._content_widgets: dict[str, QWidget] = {}
 
         self.setObjectName(f"area_widget.{area.area_id}")
 
-        # The root layout is created once and reused. refresh()
-        # clears its children and rebuilds them.
         self._root_layout = QVBoxLayout(self)
         self._root_layout.setContentsMargins(0, 0, 0, 0)
         self._root_layout.setSpacing(0)
@@ -107,24 +71,13 @@ class AreaWidget(QWidget):
 
     @property
     def area_id(self) -> str:
-        """The area_id of the Area this widget reflects."""
         return self._area.area_id
 
     def area_placement(self) -> Placement:
-        """Return the Placement of the Area this widget reflects.
-
-        Exposed so that the LayoutRenderer can group AreaWidgets by
-        Placement when computing Region Bounds.
-        """
         return self._area.placement
 
     def refresh(self) -> None:
-        """Re-render the widget from the Area model.
-
-        Called when the Area's Editors or active Editor change.
-        The method is idempotent: calling it twice with the same
-        Area produces the same widget structure.
-        """
+        """Re-render the widget from the Area model."""
         self._clear_layout()
 
         if self._area.is_empty():
@@ -141,45 +94,53 @@ class AreaWidget(QWidget):
     # ----- Internals ------------------------------------------------
 
     def _apply_debug_background(self) -> None:
-        """Apply a soft background color based on Placement.
-
-        Used only for visual debugging. The color makes the
-        boundary of each Area visible so that layout issues can be
-        spotted at a glance. It does not affect production builds
-        when ``debug_colors`` is False.
-        """
         palette = {
-            Placement.LEFT: "#dbe9f4",  # soft blue
-            Placement.CENTRAL: "#dff0d8",  # soft green
-            Placement.RIGHT: "#fcf3cf",  # soft yellow
-            Placement.BOTTOM: "#e8daef",  # soft lavender
+            Placement.LEFT: "#dbe9f4",
+            Placement.CENTRAL: "#dff0d8",
+            Placement.RIGHT: "#fcf3cf",
+            Placement.BOTTOM: "#e8daef",
         }
         color = palette.get(self._area.placement)
         if color is None:
             return
-
-        # 1. Palette so the widget paints the color even under dark
-        #    OS themes.
         qcolor = QColor(color)
         pal = self.palette()
         pal.setColor(QPalette.ColorRole.Window, qcolor)
         self.setPalette(pal)
-
-        # 2. Auto-fill so Qt paints the Window role.
         self.setAutoFillBackground(True)
-
-        # 3. Styled background + stylesheet, so the color survives
-        #    inside a QSplitter.
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.setStyleSheet(f"QWidget#{self.objectName()} {{ background-color: {color}; }}")
 
     def _clear_layout(self) -> None:
-        """Remove all widgets from the root layout and dispose them.
+        """Remove widgets from the layout without destroying Editor content.
 
-        Uses deleteLater() so that Qt can clean up after the current
-        event loop iteration. This is safe even during refresh(),
-        which may be triggered from a signal handler.
+        For each Editor, we detach its content_widget() from any
+        container that is about to be destroyed. The content_widget()
+        is owned by the Editor and must survive refresh().
+
+        The containers themselves (the QWidget that holds the toolbars
+        and the content_widget) are deleted via deleteLater(). They
+        are recreated on the next refresh().
         """
+        # 1. Detach every Editor's content_widget() from its container.
+        #    This must happen BEFORE the container is deleted, otherwise
+        #    the QLabel would be destroyed along with the container.
+        for editor in self._area.editors():
+            content = self._content_widgets.pop(editor.editor_id, None)
+            if content is None:
+                continue
+            try:
+                # A widget that was already deleted by Qt would raise
+                # RuntimeError here. We catch and log it to keep refresh()
+                # idempotent even after a partial teardown.
+                content.setParent(None)
+            except RuntimeError:
+                _logger.exception(
+                    "content_widget for %r was already deleted; skipping detach",
+                    editor.editor_id,
+                )
+
+        # 2. Now it's safe to delete the containers.
         while self._root_layout.count():
             item = self._root_layout.takeAt(0)
             widget = item.widget() if item is not None else None
@@ -188,22 +149,17 @@ class AreaWidget(QWidget):
                 widget.deleteLater()
 
     def _build_empty_placeholder(self) -> QWidget:
-        """Build the placeholder for an empty Area.
-
-        A centered QLabel with "{title} (empty)". The placeholder is
-        intentionally minimal for this piece; a '+' button to add an
-        Editor will be added in a future piece.
-        """
         label = QLabel(f"{self._area.title} (empty)")
         label.setObjectName(f"area_widget.{self._area.area_id}.placeholder")
         label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         return label
 
     def _build_editor_content(self, editor: Editor) -> QWidget:
-        """Build the content container for a single Editor.
+        """Build the container for a single Editor.
 
-        The container holds the Editor's Toolbars (in declared order)
-        followed by the Editor's content_widget().
+        The container is owned by AreaWidget. The content_widget() is
+        owned by the Editor and is cached in `_content_widgets` so it
+        can be safely detached and re-attached across refresh() calls.
         """
         container = QWidget()
         container.setObjectName(f"area_widget.{self._area.area_id}.editor.{editor.editor_id}")
@@ -215,16 +171,17 @@ class AreaWidget(QWidget):
         for toolbar_widget in self._build_toolbars(editor):
             layout.addWidget(toolbar_widget)
 
-        layout.addWidget(editor.content_widget(), stretch=1)
+        # Get (or create) the content_widget() and cache it.
+        content = editor.content_widget()
+        self._content_widgets[editor.editor_id] = content
+
+        # Ensure it's parented to the new container.
+        content.setParent(container)
+        layout.addWidget(content, stretch=1)
+
         return container
 
     def _build_toolbars(self, editor: Editor) -> list[Toolbar]:
-        """Materialize the Editor's Toolbars from its ToolbarSpecs.
-
-        Each ToolbarSpec is resolved against the ToolRegistry and the
-        ThemeService. The ToolContext is taken from the Editor: the
-        Editor is the owner of the ToolContext, not the AreaWidget.
-        """
         context = editor.tool_context()
         result: list[Toolbar] = []
         for spec in editor.toolbar_specs():
@@ -238,19 +195,12 @@ class AreaWidget(QWidget):
         return result
 
     def _build_tabs(self, editors: tuple[Editor, ...]) -> QTabWidget:
-        """Build the tabbed container for multiple Editors.
-
-        Tabs are placed at the bottom (South). Each tab contains the
-        Editor's Toolbars and its content_widget(). Tabs are closable.
-        The active tab corresponds to the Area's active_editor_id.
-        """
         tabs = QTabWidget()
         tabs.setObjectName(f"area_widget.{self._area.area_id}.tabs")
         tabs.setTabPosition(QTabWidget.TabPosition.South)
         tabs.setTabsClosable(True)
         tabs.setDocumentMode(True)
 
-        # Map editor_id -> index for restoring the active tab.
         index_by_editor_id: dict[str, int] = {}
 
         for editor in editors:
@@ -267,15 +217,7 @@ class AreaWidget(QWidget):
 
         return tabs
 
-    # ----- Signal handlers ------------------------------------------
-
     def _on_tab_close_requested(self, index: int) -> None:
-        """Forward a tab close request as a signal.
-
-        The AreaWidget does not remove the Editor. It only emits the
-        intent. A higher-level component (the Workspace) will decide
-        what to do, likely by dispatching a Command.
-        """
         tabs = self._current_tabs()
         if tabs is None:
             return
@@ -285,12 +227,6 @@ class AreaWidget(QWidget):
         self.editor_close_requested.emit(self._area.area_id, editor_id)
 
     def _on_current_tab_changed(self, index: int) -> None:
-        """Forward a tab change as a signal.
-
-        Emits (area_id, editor_id) so that a higher-level component
-        can record the new active Editor. The AreaWidget does not
-        mutate the Area.
-        """
         tabs = self._current_tabs()
         if tabs is None:
             return
@@ -299,10 +235,7 @@ class AreaWidget(QWidget):
             return
         self.active_editor_changed.emit(self._area.area_id, editor_id)
 
-    # ----- Helpers --------------------------------------------------
-
     def _current_tabs(self) -> QTabWidget | None:
-        """Return the QTabWidget currently hosted by this widget, if any."""
         for i in range(self._root_layout.count()):
             item = self._root_layout.itemAt(i)
             widget = item.widget() if item is not None else None
@@ -315,12 +248,6 @@ class AreaWidget(QWidget):
         tabs: QTabWidget,
         index: int,
     ) -> str | None:
-        """Return the editor_id associated with a given tab index.
-
-        The mapping is done by consulting the Area: the Editors are in
-        the same order as the tabs, since both derive from
-        Area.editors().
-        """
         editors = self._area.editors()
         if index < 0 or index >= len(editors):
             return None

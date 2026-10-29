@@ -45,6 +45,8 @@ Qt dependency:
 
 from __future__ import annotations
 
+import logging
+
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QSplitter, QWidget
 
@@ -60,6 +62,8 @@ from cranioz.ui.workspace.layout.layout_tree import (
 )
 from cranioz.ui.workspace.overlays.region import Bounds
 from cranioz.ui.workspace.specs.editor_layout_spec import SplitDirection
+
+_logger = logging.getLogger(__name__)
 
 
 class LayoutRendererError(ValueError):
@@ -130,39 +134,57 @@ class LayoutRenderer:
 
     def compute_region_bounds(
         self,
+        workspace: QWidget,
     ) -> dict[Placement, Bounds]:
-        """Compute the geometric Bounds of each Region.
+        """Compute the geometric Bounds of each Region in Workspace coordinates.
 
-        A Region groups every Area that shares the same Placement.
-        Its Bounds is the axis-aligned union of the geometries of
-        the AreaWidgets that belong to it.
-
-        The method reads the current geometry of the cached
-        AreaWidgets. It therefore produces meaningful results only
-        after ``render()`` has been called and Qt has assigned the
-        widgets their real geometry (typically after the parent
-        widget has been shown or laid out).
-
-        Placements with no AreaWidget in the cache produce no
-        entry in the result. Callers that need a stable shape may
-        use ``regions_from_bounds()`` (see below) to build a list
-        of Regions in a documented order.
+        `widget.geometry()` is relative to the widget's parent. In nested
+        QSplitter layouts, AreaWidgets may have different parents, so the
+        union of their geometries does NOT represent a Workspace-coordinate
+        Region. This method maps each AreaWidget's rect to Workspace
+        coordinates via `mapTo(workspace, ...)` before unioning.
         """
-        # Group the AreaWidgets by their Area's Placement.
         grouped: dict[Placement, list[AreaWidget]] = {}
         for widget in self._area_widgets.values():
-            # The AreaWidget exposes its area_id; we need the
-            # Placement. We look it up through the widget's Area,
-            # which is stored inside the widget.
             placement = widget.area_placement()
             grouped.setdefault(placement, []).append(widget)
 
-        # Compute the union rectangle for each Placement.
         result: dict[Placement, Bounds] = {}
         for placement, widgets in grouped.items():
-            union = self._union_bounds(widgets)
-            if union is not None:
-                result[placement] = union
+            if not widgets:
+                continue
+            rects: list[tuple[int, int, int, int]] = []
+            for w in widgets:
+                try:
+                    # Guard: if the widget is not yet laid out by Qt,
+                    # its geometry is invalid. Skip it.
+                    if not w.isVisible() or w.width() <= 0 or w.height() <= 0:
+                        continue
+                    top_left = w.mapTo(workspace, w.rect().topLeft())
+                    # QPoint does NOT have isValid(). Just check the widget's size.
+                    rects.append(
+                        (
+                            top_left.x(),
+                            top_left.y(),
+                            top_left.x() + w.width(),
+                            top_left.y() + w.height(),
+                        )
+                    )
+                except RuntimeError:
+                    _logger.exception("cannot map area widget %r to workspace", w.area_id)
+                    continue
+            if not rects:
+                continue
+            left = min(r[0] for r in rects)
+            top = min(r[1] for r in rects)
+            right = max(r[2] for r in rects)
+            bottom = max(r[3] for r in rects)
+            result[placement] = Bounds(
+                x=float(left),
+                y=float(top),
+                width=float(right - left),
+                height=float(bottom - top),
+            )
         return result
 
     @staticmethod
