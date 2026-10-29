@@ -95,6 +95,7 @@ class Workspace(QWidget):
             tool_registry,
             theme_service,
             debug_colors=debug_colors,
+            on_splitter_moved=self._reposition_overlays,
         )
         self._overlay_manager = OverlayManager()
         self._top_overlay = TopOverlay(parent=self)
@@ -210,13 +211,7 @@ class Workspace(QWidget):
     # ----- Internals ------------------------------------------------
 
     def _reposition_overlays(self) -> None:
-        """Recompute Region bounds and reposition every Overlay.
-
-        `compute_region_bounds()` now receives `self` (the Workspace)
-        so that each AreaWidget's geometry is mapped to Workspace
-        coordinates before being unioned. This is the fix for the
-        parent-relative geometry bug (implementation.md §10.1).
-        """
+        """Recompute Region bounds and reposition every Overlay."""
         bounds_by_placement = self._layout_renderer.compute_region_bounds(self)
         regions = self._regions_from_bounds(bounds_by_placement)
         self._overlay_manager.reposition_all(regions)

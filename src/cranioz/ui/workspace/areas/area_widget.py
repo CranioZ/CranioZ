@@ -50,6 +50,7 @@ class AreaWidget(QWidget):
         self._area = area
         self._tool_registry = tool_registry
         self._theme_service = theme_service
+        self._debug_colors = debug_colors
         # Cache of content widgets, keyed by editor_id.
         # The AreaWidget owns the *container*; the Editor owns the
         # content_widget(). We cache the content widget here so that
@@ -77,12 +78,18 @@ class AreaWidget(QWidget):
         return self._area.placement
 
     def refresh(self) -> None:
-        """Re-render the widget from the Area model."""
         self._clear_layout()
 
         if self._area.is_empty():
             self._root_layout.addWidget(self._build_empty_placeholder())
             return
+
+        if getattr(self, "_debug_colors", False):
+            debug_label = QLabel(f"[{self._area.area_id}]")
+            debug_label.setStyleSheet(
+                "QLabel { background: rgba(255,255,255,200); font-weight: bold; padding: 2px; }"
+            )
+            self._root_layout.addWidget(debug_label)
 
         editors = self._area.editors()
         if len(editors) == 1:
@@ -201,8 +208,9 @@ class AreaWidget(QWidget):
         tabs.setTabsClosable(True)
         tabs.setDocumentMode(True)
 
-        index_by_editor_id: dict[str, int] = {}
+        tabs.tabBar().setStyleSheet("QTabBar { alignment: center; }")
 
+        index_by_editor_id: dict[str, int] = {}
         for editor in editors:
             content = self._build_editor_content(editor)
             index = tabs.addTab(content, editor.title)

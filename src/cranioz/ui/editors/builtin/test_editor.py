@@ -7,7 +7,8 @@ ToolbarSpec contract, and the EditorRegistry.
 The Editor:
 - declares a unique editor_id;
 - returns a QLabel as its content widget;
-- declares a ToolbarSpec with LogTool and ToggleTool;
+- declares a ToolbarSpec with LogTool and ToggleTool (unless
+  show_toolbar=False);
 - supports persistent_state / restore_state trivially.
 
 This Editor does not touch the Scene, does not issue Commands, and
@@ -38,9 +39,11 @@ class DummyEditor(Editor):
         editor_id: str = "editor.test",
         title: str = "Test Editor",
         toolbar_orientation: ToolbarOrientation = ToolbarOrientation.HORIZONTAL,
+        show_toolbar: bool = True,
     ) -> None:
         super().__init__(editor_id=editor_id, title=title)
         self._toolbar_orientation = toolbar_orientation
+        self._show_toolbar = show_toolbar
         self._label: QLabel | None = None
         self._context: EditorContext | None = None
         self._tool_context = ToolContext()
@@ -59,6 +62,9 @@ class DummyEditor(Editor):
         return self._label
 
     def toolbar_specs(self) -> list[ToolbarSpec]:
+        """Return the Editor's ToolbarSpec list (empty if show_toolbar=False)."""
+        if not self._show_toolbar:
+            return []
         return [
             ToolbarSpec(
                 toolbar_id=f"toolbar.{self.editor_id}",
@@ -86,3 +92,28 @@ class DummyEditor(Editor):
 
     def tool_context(self) -> ToolContext:
         return self._tool_context
+
+
+class DebugEditor(DummyEditor):
+    """DummyEditor without toolbars, for debug visual.
+
+    Used by scripts/debug_workspace.py to show only the editor_id
+    (no Log/Toggle buttons polluting the visual).
+    """
+
+    def __init__(
+        self,
+        editor_id: str = "editor.test",
+        title: str = "Test Editor",
+        toolbar_orientation: ToolbarOrientation = ToolbarOrientation.HORIZONTAL,
+    ) -> None:
+        super().__init__(
+            editor_id=editor_id,
+            title=title,
+            toolbar_orientation=toolbar_orientation,
+            show_toolbar=False,
+        )
+
+    def toolbar_specs(self) -> list[ToolbarSpec]:
+        """Always empty: DebugEditor has no toolbars."""
+        return []

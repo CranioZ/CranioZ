@@ -4,7 +4,8 @@ This script is a development tool. It is NOT part of production.
 
 It builds a Workspace with:
 
-- A fake EditorRegistry populated with DummyEditor instances.
+- A fake EditorRegistry populated with DebugEditor instances
+  (no toolbars, so only the editor_id is visible).
 - A ToolRegistry with LogTool and ToggleTool.
 - A ThemeService (dark).
 - A fake, coherent ProjectContext (ADR-0006 requires one).
@@ -47,7 +48,7 @@ from cranioz.domain.patient.value_objects.patient_id import PatientId
 from cranioz.domain.project.project_id import ProjectId
 from cranioz.domain.project.project_metadata import ProjectMetadata
 from cranioz.domain.project.project_status import ProjectStatus
-from cranioz.ui.editors.builtin.test_editor import DummyEditor
+from cranioz.ui.editors.builtin.test_editor import DebugEditor
 from cranioz.ui.editors.editor_registry import EditorRegistry
 from cranioz.ui.theme.service import ThemeName, ThemeService
 from cranioz.ui.tools.builtin.log_tool import LogTool
@@ -102,12 +103,10 @@ def build_project_context() -> ProjectContext:
 
 
 def build_editor_registry() -> EditorRegistry:
-    """Register DummyEditor under several editor_ids.
+    """Register DebugEditor under several editor_ids.
 
-    A single DummyEditor class is registered under several ids so
-    that the LayoutBuilder can create independent instances for
-    each slot. This mirrors the future reality where several
-    concrete Editor classes will be registered under distinct ids.
+    DebugEditor is a DummyEditor without toolbars, so the debug
+    visual shows only the editor_id (no Log/Toggle buttons).
     """
     registry = EditorRegistry()
     for editor_id in (
@@ -118,7 +117,7 @@ def build_editor_registry() -> EditorRegistry:
         "editor.properties",
         "editor.console",
     ):
-        registry.register(editor_id, DummyEditor)
+        registry.register(editor_id, DebugEditor)
     return registry
 
 

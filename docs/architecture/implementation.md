@@ -391,12 +391,23 @@ Phases 0, 1, 2 and 3 are functionally complete for their core, with documented d
 
 This section records debt that is known, accepted for now, and must be resolved (or explicitly deferred with a linked issue) before the phase that depends on it can be declared "done". Each item is a candidate for a GitHub Issue.
 
+
 ### 10.1 Phase 2 — Workspace lifecycle and geometry
 
-- **`AreaWidget.refresh()` can invalidate Editor content.** The method clears its layout and calls `deleteLater()` on the container that holds `editor.content_widget()`. Editors that cache their content widget (e.g., `DummyEditor`) may hold a reference to a deleted `QWidget` after a second `refresh()`. `refresh()` must not destroy Editor-owned widgets; it must detach and reattach them.
-- **`LayoutRenderer.compute_region_bounds()` uses parent-relative geometry.** `widget.geometry()` is relative to the widget's parent. In nested `QSplitter` layouts, AreaWidgets may have different parents, so the union of their geometries does not represent a Workspace-coordinate Region. `compute_region_bounds()` must map each AreaWidget's geometry to Workspace coordinates before unioning.
-- **`Workspace.clear()` does not call `Editor.dispose()`.** Widgets are deleted via `deleteLater()`, but the Editor lifecycle contract (ADR-0001, `editors.md` §4) requires `dispose()` when an Editor is removed. Editors with resources (Tasks, subscriptions) will leak.
-- **`Workspace.load_spec()` is not atomic.** The method calls `clear()` before validating and building the new spec. If the new spec fails, the Workspace is left empty. `load_spec()` must validate and build the new composition before tearing down the old one.
+- ✅ **`AreaWidget.refresh()` no longer invalidates Editor content.**
+  The content_widget() is cached and detached before the container
+  is deleted, then re-parented to the new container.
+
+- ✅ **`LayoutRenderer.compute_region_bounds()` now maps to Workspace coordinates.**
+  Uses `mapTo(workspace, ...)` to compute the union in Workspace
+  coordinates.
+
+- ✅ **`Workspace.clear()` now calls `Editor.dispose()`.**
+  Errors are logged, not silenced.
+
+- ✅ **`Workspace.load_spec()` is now atomic.**
+  The new composition is built and rendered before the old one
+  is torn down.
 - **`Workspace` holds `task_manager` and `telemetry` but does not propagate them.** The references are stored but not forwarded to `LayoutBuilder`/`EditorContext`. Tracked in §10.2.
 
 ### 10.2 Phase 1 / Phase 4 — `EditorContext` propagation

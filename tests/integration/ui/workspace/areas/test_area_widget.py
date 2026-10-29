@@ -355,3 +355,29 @@ def test_area_widget_refresh_idempotent(
     toolbars_after = widget.findChildren(Toolbar)
 
     assert len(toolbars_before) == len(toolbars_after) == 1
+
+
+def test_area_widget_tabs_are_centered(
+    qtbot,
+    tool_registry: ToolRegistry,
+    theme_service: ThemeService,
+) -> None:
+    """Multi-editor tabs must be centered, not left-aligned.
+
+    The QTabWidget's QTabBar must have a stylesheet that sets
+    'alignment: center', so the tabs appear centered at the bottom
+    of the Area, matching the prototype.
+    """
+    area = _area()
+    _add_editor(area, "editor.a", title="Alpha")
+    _add_editor(area, "editor.b", title="Beta")
+
+    widget = AreaWidget(area, tool_registry, theme_service)
+    qtbot.addWidget(widget)
+
+    tabs = widget.findChild(QTabWidget)
+    assert tabs is not None
+    # The tabBar stylesheet must contain 'alignment: center'
+    assert "alignment: center" in tabs.tabBar().styleSheet(), (
+        "QTabBar must be centered via stylesheet"
+    )

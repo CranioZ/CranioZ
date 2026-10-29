@@ -46,6 +46,7 @@ Qt dependency:
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QSplitter, QWidget
@@ -84,17 +85,17 @@ class LayoutRenderer:
         tool_registry: ToolRegistry,
         theme_service: ThemeService,
         debug_colors: bool = False,
+        on_splitter_moved: Callable[[], None] | None = None,
     ) -> None:
         self._tool_registry = tool_registry
         self._theme_service = theme_service
         self._debug_colors = debug_colors
+        self._splitter_moved_callback = on_splitter_moved
 
-        # Caches. Keyed by the identity of the model object (id(Split))
-        # or by the stable domain identifier (area_id).
         self._split_widgets: dict[int, QSplitter] = {}
         self._area_widgets: dict[str, AreaWidget] = {}
 
-    # ----- Public API -----------------------------------------------
+        # ----- Public API -----------------------------------------------
 
     def render(self, tree: LayoutTree) -> QWidget:
         """Render the LayoutTree and return the root widget.
@@ -237,27 +238,23 @@ class LayoutRenderer:
         return widget
 
     def _render_split(self, split: Split) -> QSplitter:
-        """Return (or create) a QSplitter for the split node.
-
-        The QSplitter is created once per Split node (keyed by
-        id(split)) and reused on subsequent renders of the same tree.
-        Children are always re-inserted in the correct order, so the
-        splitter reflects the current structure of the tree.
-        """
         key = id(split)
         splitter = self._split_widgets.get(key)
         if splitter is None:
             splitter = QSplitter(self._orientation_for(split.direction))
             splitter.setObjectName(f"split_{key}")
             splitter.setChildrenCollapsible(False)
+            # NOVO: conectar splitterMoved ao callback
+            splitter.splitterMoved.connect(self._on_splitter_moved)
             self._split_widgets[key] = splitter
 
-        # Ensure children are present and in the right order. We do
-        # not recreate children that are already attached to the
-        # splitter, to preserve their internal state (e.g. tab
-        # selection inside an AreaWidget).
         self._reconcile_children(splitter, split)
         return splitter
+
+    def _on_splitter_moved(self, pos: int, index: int) -> None:
+        """Notify the Workspace that a splitter was moved."""
+        if self._splitter_moved_callback is not None:
+            self._splitter_moved_callback()
 
     def _reconcile_children(
         self,
