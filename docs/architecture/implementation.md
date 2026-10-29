@@ -82,13 +82,13 @@ The implementation is divided into 11 phases. These phases are designed to build
 
 1.  **Replace remaining boot placeholders.**
     *   ✅ `QtTaskManager` substituiu `NoOpTaskManager` no boot.
-    *   🚧 Implement and integrate `LoggingTelemetrySink` to replace `NoOpTelemetrySink`.
-2.  **Fix Phase 2 debt (Workspace lifecycle and geometry).** See §10.1 for details. This is a prerequisite for any non-placeholder Editor.
-3.  **Propagate `EditorContext`.** `LayoutBuilder` must build a per-Editor `EditorContext` with `task_manager`, `telemetry`, `correlation_id`, and the future `CommandDispatcher` and `SceneQuery`. `Workspace` must pass them through.
-4.  **Implement `CommandExecutor` and `CommandDispatcher`.** Tie `CommandBus`, transaction boundary, post-commit event publication and `CommandStack` together. Wire the dispatcher into the `EditorContext`.
-5.  **Implement `domain/scene/`** per ADR-0008 and `scene.md`.
-6.  **Implement `RenderingAdapter`** and the first concrete Editors (`Viewport3DEditor`, `MPRViewerEditor`).
-7.  **Implement `application/modules/` for real** (dependencies, `entry_point`, registration, handler registration). Populate `BUILTIN_MANIFESTS`.
+    *   ✅ `LoggingTelemetrySink` substituiu `NoOpTelemetrySink` no boot.
+2.  **Fix Phase 2 debt (Workspace lifecycle and geometry).** ✅ Resolvido.
+3.  **Propagate `EditorContext`.** ⏳ Próximo.
+4.  **Implement `CommandExecutor` and `CommandDispatcher`.** ⏳ Pendente.
+5.  **Implement `domain/scene/`** per ADR-0008 and `scene.md`. ⏳ Pendente.
+6.  **Implement `RenderingAdapter`** and the first concrete Editors. ⏳ Pendente.
+7.  **Implement `application/modules/` for real.** ⏳ Pendente.
 
 ### 5.2 What blocks Phase 4
 
@@ -220,9 +220,9 @@ No *contract* blockers remain. The ADRs (0007 Commands, 0008 Scene, 0009 Persist
 
 - **Boot wiring (partial):**
   - ✅ `QtTaskManager` substituiu `NoOpTaskManager` no boot.
-  - ⏳ `LoggingTelemetrySink` ainda substitui `NoOpTelemetrySink`.
+  - ✅ `LoggingTelemetrySink` substituiu `NoOpTelemetrySink` no boot.
   - ⏳ Propagate `task_manager`, `telemetry`, `correlation_id` from `MainWindow` → `Workspace` → `LayoutBuilder` → `EditorContext` → `Editor`.
-  - ⏳ Populate `BUILTIN_MANIFESTS` and make `InMemoryModuleLoader` (or a real loader) resolve dependencies and `entry_point`.
+  - ⏳ Populate `BUILTIN_MANIFESTS` and make `InMemoryModuleLoader` resolve dependencies and `entry_point`.
 
 - **Blockers:** No contract blockers. Implementation and wiring blockers tracked in §5.1.
 
@@ -391,24 +391,32 @@ Phases 0, 1, 2 and 3 are functionally complete for their core, with documented d
 
 This section records debt that is known, accepted for now, and must be resolved (or explicitly deferred with a linked issue) before the phase that depends on it can be declared "done". Each item is a candidate for a GitHub Issue.
 
-
 ### 10.1 Phase 2 — Workspace lifecycle and geometry
 
 - ✅ **`AreaWidget.refresh()` no longer invalidates Editor content.**
   The content_widget() is cached and detached before the container
   is deleted, then re-parented to the new container.
+  Test: `test_area_widget_refresh_preserves_editor_content`.
 
 - ✅ **`LayoutRenderer.compute_region_bounds()` now maps to Workspace coordinates.**
   Uses `mapTo(workspace, ...)` to compute the union in Workspace
-  coordinates.
+  coordinates. Test: `test_top_overlay_is_positioned_over_central_area`.
 
 - ✅ **`Workspace.clear()` now calls `Editor.dispose()`.**
   Errors are logged, not silenced.
+  Test: `test_workspace_clear_calls_editor_dispose`.
 
 - ✅ **`Workspace.load_spec()` is now atomic.**
-  The new composition is built and rendered before the old one
-  is torn down.
-- **`Workspace` holds `task_manager` and `telemetry` but does not propagate them.** The references are stored but not forwarded to `LayoutBuilder`/`EditorContext`. Tracked in §10.2.
+  The new composition is built and rendered before the old one is
+  torn down. Test: `test_load_spec_atomic_on_failure`.
+
+- ✅ **`TopOverlay` follows the splitter when moved manually.**
+  `LayoutRenderer` connects `QSplitter.splitterMoved` to
+  `Workspace._reposition_overlays()`.
+
+- ✅ **`QTabBar` is centered via stylesheet.**
+
+- ✅ **Debug visual is clean** (no Log/Toggle buttons, editor_ids visible).
 
 ### 10.2 Phase 1 / Phase 4 — `EditorContext` propagation
 

@@ -33,7 +33,6 @@ from cranioz.application.project.project_access_policy import (
 )
 from cranioz.application.project.project_catalog import ProjectCatalog
 from cranioz.application.project.project_manager import ProjectManager
-from cranioz.application.telemetry.noop_sink import NoOpTelemetrySink
 from cranioz.config.loader import ConfigurationLoader
 from cranioz.config.schema import Config
 from cranioz.infrastructure.app.app_path_resolver import (
@@ -47,6 +46,9 @@ from cranioz.infrastructure.project.filesystem_project_repository import (
     FilesystemProjectRepository,
 )
 from cranioz.infrastructure.tasks.qt_task_manager import QtTaskManager
+from cranioz.infrastructure.telemetry.logging_sink import (
+    LoggingTelemetrySink,
+)
 from cranioz.modules.builtin import BUILTIN_MANIFESTS
 from cranioz.modules.registry.module_registry import InMemoryModuleRegistry
 from cranioz.ui.editors.editor_registry import EditorRegistry
@@ -124,7 +126,7 @@ def main() -> int:
     _logger.debug("Command bus initialized: %r", command_bus)
 
     task_manager = QtTaskManager()
-    telemetry = NoOpTelemetrySink()
+    telemetry = LoggingTelemetrySink()
     _logger.debug("TaskManager initialized (QtTaskManager); TelemetrySink still no-op")
 
     event_bus_adapter = EventBusAdapter(event_bus)
