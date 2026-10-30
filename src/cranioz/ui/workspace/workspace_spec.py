@@ -69,9 +69,9 @@ DEFAULT: ModuleUISpec = ModuleUISpec(
     areas=(
         AreaSpec(
             area_id="area.central",
-            title="Workspace",
+            title="Tomography",
             placement=Placement.CENTRAL,
-            editor_layout=EditorLayoutSpec.leaf("editor.placeholder.no_flow"),
+            editor_layout=EditorLayoutSpec.leaf("editor.tomography"),
         ),
     ),
 )

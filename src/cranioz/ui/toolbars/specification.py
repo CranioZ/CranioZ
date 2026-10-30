@@ -8,7 +8,7 @@ The same Tool may be referenced by multiple Toolbars across Editors.
 Two concepts are separated here:
 
 - ToolbarSpec describes *what* a Toolbar is: identity, orientation,
-  tools, and its presentation policy.
+  position, tools, and its presentation policy.
 - ToolbarState (see state.py) describes *whether* a Toolbar is
   currently visible. It is runtime state, not declarative.
 
@@ -27,6 +27,31 @@ class ToolbarOrientation(Enum):
 
     HORIZONTAL = "horizontal"
     VERTICAL = "vertical"
+
+
+class ToolbarPosition(Enum):
+    """Position of a Toolbar inside an Editor (ADR-0013 §2.6).
+
+    The position determines where the Toolbar is rendered relative
+    to the Editor's View Layout Tree. A Toolbar with position LEFT
+    is rendered on the left side of the Views; a Toolbar with
+    position RIGHT is rendered on the right side, and so on.
+
+    Orientation and position are orthogonal:
+
+    - A VERTICAL Toolbar is typically LEFT or RIGHT.
+    - A HORIZONTAL Toolbar is typically TOP or BOTTOM.
+
+    The LayoutRenderer materializes the Toolbar at the requested
+    position. If the position is incompatible with the orientation
+    (e.g., a HORIZONTAL Toolbar on the LEFT), the renderer may
+    still render it, but the result is visually awkward.
+    """
+
+    TOP = "top"
+    BOTTOM = "bottom"
+    LEFT = "left"
+    RIGHT = "right"
 
 
 class ToolbarVisibilityMode(Enum):
@@ -67,6 +92,7 @@ class ToolbarSpec:
     toolbar_id: str
     title: str
     orientation: ToolbarOrientation = ToolbarOrientation.HORIZONTAL
+    position: ToolbarPosition = ToolbarPosition.TOP
     tool_ids: tuple[str, ...] = field(default_factory=tuple)
     visibility_mode: ToolbarVisibilityMode = ToolbarVisibilityMode.ALWAYS
 
@@ -75,3 +101,23 @@ class ToolbarSpec:
             raise ToolbarSpecError("toolbar_id must not be empty")
         if not self.title:
             raise ToolbarSpecError("title must not be empty")
+
+        # Consistency check: a VERTICAL Toolbar should not be TOP or
+        # BOTTOM (it would be visually awkward). We do not raise an
+        # error to preserve backward compatibility, but we document
+        # the expected pairing in the enum docstring.
+        #
+        # If strict enforcement is desired in the future, uncomment:
+        #
+        # if self.orientation is ToolbarOrientation.VERTICAL and self.position in (
+        #     ToolbarPosition.TOP, ToolbarPosition.BOTTOM
+        # ):
+        #     raise ToolbarSpecError(
+        #         "a VERTICAL Toolbar must be positioned LEFT or RIGHT"
+        #     )
+        # if self.orientation is ToolbarOrientation.HORIZONTAL and self.position in (
+        #     ToolbarPosition.LEFT, ToolbarPosition.RIGHT
+        # ):
+        #     raise ToolbarSpecError(
+        #         "a HORIZONTAL Toolbar must be positioned TOP or BOTTOM"
+        #     )

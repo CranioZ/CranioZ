@@ -34,6 +34,7 @@ from cranioz.application.project.project_manager import ProjectManager
 from cranioz.domain.patient.value_objects.patient_id import PatientId
 from cranioz.domain.project.project_id import ProjectId
 from cranioz.ui.editors.editor_registry import EditorRegistry
+from cranioz.ui.editors.tomography.editor import TomographyEditor
 from cranioz.ui.main_window import MainWindow
 from cranioz.ui.theme.service import ThemeName, ThemeService
 from cranioz.ui.tools.builtin.log_tool import LogTool
@@ -66,6 +67,8 @@ def window(
     manager, catalog = manager_and_catalog
 
     editor_registry = EditorRegistry()
+    editor_registry.register("editor.tomography", TomographyEditor)
+
     tool_registry = ToolRegistry()
     tool_registry.register("tool.log", LogTool)
     tool_registry.register("tool.toggle", ToggleTool)
