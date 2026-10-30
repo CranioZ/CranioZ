@@ -1,32 +1,23 @@
 """Integration tests for AreaWidget.
 
 The AreaWidget is the first widget in CranioZ that materializes the
-contents of a single Area: its Editors' Toolbars, their content
-widgets, and tabs when there are multiple Editors.
+contents of a single Area: its Editors' Toolbars (inside each Editor)
+and their content widgets.
+
+Per ADR-0013, multiple Editors are organized in a QSplitter (the
+Editor Layout Tree), not a QTabWidget. The tests below validate this
+new behavior, as well as the placement of Toolbars inside the Editor
+(ADR-0002).
 
 These tests use qtbot: an AreaWidget is a real QWidget, and the
 Editors it hosts (DummyEditor) return a QLabel as content. A
 QApplication is therefore required.
-
-What these tests cover:
-
-- Empty Area: placeholder widget is shown.
-- Single-Editor Area: no tabs, content is rendered directly.
-- Single-Editor Area: Toolbars are materialized.
-- Multi-Editor Area: a QTabWidget is created with the expected tabs.
-- Tab position is South (bottom of the Area).
-- Tabs are closable.
-- The active tab matches the Area's active_editor_id.
-- Switching tabs emits active_editor_changed.
-- Closing a tab emits editor_close_requested.
-- The widget exposes its area_id.
-- refresh() rebuilds the widget from the Area model.
 """
 
 from __future__ import annotations
 
 import pytest
-from PySide6.QtWidgets import QLabel, QTabWidget
+from PySide6.QtWidgets import QLabel, QSplitter, QTabWidget, QWidget
 
 from cranioz.ui.editors.builtin.test_editor import DummyEditor
 from cranioz.ui.theme.service import ThemeName, ThemeService
@@ -114,20 +105,20 @@ def test_area_widget_placeholder_includes_area_title(
     assert "Central" in labels[0].text()
 
 
-def test_area_widget_empty_has_no_tabs(
+def test_area_widget_empty_has_no_splitter(
     qtbot, tool_registry: ToolRegistry, theme_service: ThemeService
 ) -> None:
     area = _area()
     widget = AreaWidget(area, tool_registry, theme_service)
     qtbot.addWidget(widget)
 
-    assert widget.findChild(QTabWidget) is None
+    assert widget.findChild(QSplitter) is None
 
 
 # ----- Single-Editor Area -------------------------------------------
 
 
-def test_area_widget_no_tabs_with_one_editor(
+def test_area_widget_no_splitter_with_one_editor(
     qtbot, tool_registry: ToolRegistry, theme_service: ThemeService
 ) -> None:
     area = _area()
@@ -136,7 +127,8 @@ def test_area_widget_no_tabs_with_one_editor(
     widget = AreaWidget(area, tool_registry, theme_service)
     qtbot.addWidget(widget)
 
-    assert widget.findChild(QTabWidget) is None
+    # A single Editor is rendered directly (no QSplitter).
+    assert widget.findChild(QSplitter) is None
 
 
 def test_area_widget_renders_content_widget_of_single_editor(
@@ -149,8 +141,6 @@ def test_area_widget_renders_content_widget_of_single_editor(
     qtbot.addWidget(widget)
 
     content = editor.content_widget()
-    # The content widget is a QLabel whose text is the editor_id.
-    # It must be a descendant of the AreaWidget.
     assert content is not None
     assert widget.isAncestorOf(content)
 
@@ -166,16 +156,37 @@ def test_area_widget_renders_toolbars_of_single_editor(
 
     toolbars = widget.findChildren(Toolbar)
     assert len(toolbars) == 1
-    # DummyEditor declares tool.log and tool.toggle.
     assert set(toolbars[0].tool_ids()) == {"tool.log", "tool.toggle"}
+
+
+def test_area_widget_toolbar_is_inside_editor_container(
+    qtbot, tool_registry: ToolRegistry, theme_service: ThemeService
+) -> None:
+    """Per ADR-0002, the Toolbar is inside the Editor, not beside it."""
+    area = _area()
+    editor = _add_editor(area, "editor.a")
+
+    widget = AreaWidget(area, tool_registry, theme_service)
+    qtbot.addWidget(widget)
+
+    container = widget.findChild(
+        QWidget,
+        f"area_widget.{area.area_id}.editor.{editor.editor_id}",
+    )
+    assert container is not None
+
+    # The Toolbar is a descendant of the Editor container.
+    toolbars = container.findChildren(Toolbar)
+    assert len(toolbars) == 1
 
 
 # ----- Multi-Editor Area --------------------------------------------
 
 
-def test_area_widget_tabs_with_multiple_editors(
+def test_area_widget_uses_qsplitter_for_multiple_editors(
     qtbot, tool_registry: ToolRegistry, theme_service: ThemeService
 ) -> None:
+    """Multiple Editors are rendered in a QSplitter, not QTabWidget (ADR-0013)."""
     area = _area()
     _add_editor(area, "editor.a", title="Alpha")
     _add_editor(area, "editor.b", title="Beta")
@@ -183,113 +194,38 @@ def test_area_widget_tabs_with_multiple_editors(
     widget = AreaWidget(area, tool_registry, theme_service)
     qtbot.addWidget(widget)
 
-    tabs = widget.findChild(QTabWidget)
-    assert tabs is not None
-    assert tabs.count() == 2
+    splitter = widget.findChild(QSplitter)
+    assert splitter is not None
+    assert splitter.count() == 2
 
 
-def test_area_widget_tab_labels_match_editor_titles(
+def test_area_widget_no_tabwidget_with_multiple_editors(
     qtbot, tool_registry: ToolRegistry, theme_service: ThemeService
 ) -> None:
+    """Tabs are removed; the split tree is the organization (ADR-0013)."""
+
     area = _area()
-    _add_editor(area, "editor.a", title="Alpha")
-    _add_editor(area, "editor.b", title="Beta")
+    _add_editor(area, "editor.a")
+    _add_editor(area, "editor.b")
 
     widget = AreaWidget(area, tool_registry, theme_service)
     qtbot.addWidget(widget)
 
-    tabs = widget.findChild(QTabWidget)
-    assert tabs is not None
-    assert tabs.tabText(0) == "Alpha"
-    assert tabs.tabText(1) == "Beta"
+    assert widget.findChild(QTabWidget) is None
 
 
-def test_area_widget_tab_position_is_south(
+def test_area_widget_multiple_editors_content_present(
     qtbot, tool_registry: ToolRegistry, theme_service: ThemeService
 ) -> None:
     area = _area()
-    _add_editor(area, "editor.a", title="Alpha")
-    _add_editor(area, "editor.b", title="Beta")
+    editor_a = _add_editor(area, "editor.a")
+    editor_b = _add_editor(area, "editor.b")
 
     widget = AreaWidget(area, tool_registry, theme_service)
     qtbot.addWidget(widget)
 
-    tabs = widget.findChild(QTabWidget)
-    assert tabs is not None
-    assert tabs.tabPosition() == QTabWidget.TabPosition.South
-
-
-def test_area_widget_tabs_are_closable(
-    qtbot, tool_registry: ToolRegistry, theme_service: ThemeService
-) -> None:
-    area = _area()
-    _add_editor(area, "editor.a", title="Alpha")
-    _add_editor(area, "editor.b", title="Beta")
-
-    widget = AreaWidget(area, tool_registry, theme_service)
-    qtbot.addWidget(widget)
-
-    tabs = widget.findChild(QTabWidget)
-    assert tabs is not None
-    assert tabs.tabsClosable() is True
-
-
-def test_area_widget_active_tab_matches_active_editor(
-    qtbot, tool_registry: ToolRegistry, theme_service: ThemeService
-) -> None:
-    area = _area()
-    _add_editor(area, "editor.a", title="Alpha")
-    _add_editor(area, "editor.b", title="Beta")
-    area.set_active_editor("editor.b")
-
-    widget = AreaWidget(area, tool_registry, theme_service)
-    qtbot.addWidget(widget)
-
-    tabs = widget.findChild(QTabWidget)
-    assert tabs is not None
-    assert tabs.currentIndex() == 1  # editor.b is at index 1
-
-
-# ----- Signals ------------------------------------------------------
-
-
-def test_area_widget_emits_active_editor_changed_on_tab_switch(
-    qtbot, tool_registry: ToolRegistry, theme_service: ThemeService
-) -> None:
-    area = _area()
-    _add_editor(area, "editor.a", title="Alpha")
-    _add_editor(area, "editor.b", title="Beta")
-
-    widget = AreaWidget(area, tool_registry, theme_service)
-    qtbot.addWidget(widget)
-
-    tabs = widget.findChild(QTabWidget)
-    assert tabs is not None
-
-    with qtbot.waitSignal(widget.active_editor_changed, timeout=1000) as blocker:
-        tabs.setCurrentIndex(1)
-
-    assert blocker.args == ["area.central", "editor.b"]
-
-
-def test_area_widget_emits_close_requested_on_tab_close(
-    qtbot, tool_registry: ToolRegistry, theme_service: ThemeService
-) -> None:
-    area = _area()
-    _add_editor(area, "editor.a", title="Alpha")
-    _add_editor(area, "editor.b", title="Beta")
-
-    widget = AreaWidget(area, tool_registry, theme_service)
-    qtbot.addWidget(widget)
-
-    tabs = widget.findChild(QTabWidget)
-    assert tabs is not None
-
-    with qtbot.waitSignal(widget.editor_close_requested, timeout=1000) as blocker:
-        # Emit the signal as if the user clicked the 'X' on the first tab.
-        tabs.tabCloseRequested.emit(0)
-
-    assert blocker.args == ["area.central", "editor.a"]
+    assert widget.isAncestorOf(editor_a.content_widget())
+    assert widget.isAncestorOf(editor_b.content_widget())
 
 
 # ----- Metadata -----------------------------------------------------
@@ -311,12 +247,7 @@ def test_area_widget_exposes_area_id(
 def test_area_widget_refresh_rebuilds_from_area(
     qtbot, tool_registry: ToolRegistry, theme_service: ThemeService
 ) -> None:
-    """refresh() reflects changes to the Area model.
-
-    We start with an empty Area, verify the placeholder is shown,
-    then add an Editor and call refresh(). The widget must now show
-    the Editor's content and no placeholder.
-    """
+    """refresh() reflects changes to the Area model."""
     area = _area()
     widget = AreaWidget(area, tool_registry, theme_service)
     qtbot.addWidget(widget)
@@ -328,10 +259,7 @@ def test_area_widget_refresh_rebuilds_from_area(
     editor = _add_editor(area, "editor.patient")
     widget.refresh()
 
-    # After refresh: no placeholder, content present, one toolbar.
     labels_after = widget.findChildren(QLabel)
-    # The content widget of DummyEditor is itself a QLabel. We expect
-    # exactly one QLabel now (the content), not the placeholder.
     assert len(labels_after) == 1
     assert "empty" not in labels_after[0].text().lower()
     assert widget.isAncestorOf(editor.content_widget())
@@ -355,29 +283,3 @@ def test_area_widget_refresh_idempotent(
     toolbars_after = widget.findChildren(Toolbar)
 
     assert len(toolbars_before) == len(toolbars_after) == 1
-
-
-def test_area_widget_tabs_are_centered(
-    qtbot,
-    tool_registry: ToolRegistry,
-    theme_service: ThemeService,
-) -> None:
-    """Multi-editor tabs must be centered, not left-aligned.
-
-    The QTabWidget's QTabBar must have a stylesheet that sets
-    'alignment: center', so the tabs appear centered at the bottom
-    of the Area, matching the prototype.
-    """
-    area = _area()
-    _add_editor(area, "editor.a", title="Alpha")
-    _add_editor(area, "editor.b", title="Beta")
-
-    widget = AreaWidget(area, tool_registry, theme_service)
-    qtbot.addWidget(widget)
-
-    tabs = widget.findChild(QTabWidget)
-    assert tabs is not None
-    # The tabBar stylesheet must contain 'alignment: center'
-    assert "alignment: center" in tabs.tabBar().styleSheet(), (
-        "QTabBar must be centered via stylesheet"
-    )

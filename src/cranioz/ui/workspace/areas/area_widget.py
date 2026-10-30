@@ -3,9 +3,13 @@
 Qt widget that materializes a single Area.
 
 The Area is a pure domain model (no Qt). The AreaWidget is the
-presentation layer for one Area: it renders the Editor's Toolbars,
-the Editor's content widget, tabs (when there are multiple Editors),
-and a placeholder (when the Area is empty).
+presentation layer for one Area: it renders the Editor Layout Tree
+as nested QSplitters (ADR-0013), with each Editor's Toolbars inside
+the Editor (ADR-0002), and a placeholder when the Area is empty.
+
+Per ADR-0013, the default organization is the split tree, not tabs.
+The Editor Layout Tree is rendered as QSplitters: each Split becomes
+a QSplitter, each Leaf becomes the Editor widget.
 """
 
 from __future__ import annotations
@@ -15,8 +19,9 @@ import logging
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import (
+    QHBoxLayout,
     QLabel,
-    QTabWidget,
+    QSplitter,
     QVBoxLayout,
     QWidget,
 )
@@ -24,6 +29,7 @@ from PySide6.QtWidgets import (
 from cranioz.ui.editors.base_editor import Editor
 from cranioz.ui.theme.service import ThemeService
 from cranioz.ui.toolbars.base import Toolbar
+from cranioz.ui.toolbars.specification import ToolbarPosition
 from cranioz.ui.tools.registry.tool_registry import ToolRegistry
 from cranioz.ui.workspace.areas.area import Area
 from cranioz.ui.workspace.areas.placement import Placement
@@ -51,10 +57,6 @@ class AreaWidget(QWidget):
         self._tool_registry = tool_registry
         self._theme_service = theme_service
         self._debug_colors = debug_colors
-        # Cache of content widgets, keyed by editor_id.
-        # The AreaWidget owns the *container*; the Editor owns the
-        # content_widget(). We cache the content widget here so that
-        # we can re-parent it safely across refresh() calls.
         self._content_widgets: dict[str, QWidget] = {}
 
         self.setObjectName(f"area_widget.{area.area_id}")
@@ -93,10 +95,20 @@ class AreaWidget(QWidget):
 
         editors = self._area.editors()
         if len(editors) == 1:
-            self._root_layout.addWidget(self._build_editor_content(editors[0]))
+            # Single editor: render directly, no splitter needed.
+            self._root_layout.addWidget(self._build_editor_widget(editors[0]))
             return
 
-        self._root_layout.addWidget(self._build_tabs(editors))
+        # Multiple editors: build a QSplitter (Editor Layout Tree).
+        # For now, a simple horizontal split. A full Editor Layout
+        # Tree (from EditorLayoutSpec) will be added when the
+        # LayoutBuilder exposes it to the AreaWidget.
+        splitter = QSplitter(Qt.Orientation.Horizontal)
+        splitter.setObjectName(f"area_widget.{self._area.area_id}.splitter")
+        splitter.setChildrenCollapsible(False)
+        for editor in editors:
+            splitter.addWidget(self._build_editor_widget(editor))
+        self._root_layout.addWidget(splitter)
 
     # ----- Internals ------------------------------------------------
 
@@ -124,22 +136,12 @@ class AreaWidget(QWidget):
         For each Editor, we detach its content_widget() from any
         container that is about to be destroyed. The content_widget()
         is owned by the Editor and must survive refresh().
-
-        The containers themselves (the QWidget that holds the toolbars
-        and the content_widget) are deleted via deleteLater(). They
-        are recreated on the next refresh().
         """
-        # 1. Detach every Editor's content_widget() from its container.
-        #    This must happen BEFORE the container is deleted, otherwise
-        #    the QLabel would be destroyed along with the container.
         for editor in self._area.editors():
             content = self._content_widgets.pop(editor.editor_id, None)
             if content is None:
                 continue
             try:
-                # A widget that was already deleted by Qt would raise
-                # RuntimeError here. We catch and log it to keep refresh()
-                # idempotent even after a partial teardown.
                 content.setParent(None)
             except RuntimeError:
                 _logger.exception(
@@ -147,7 +149,6 @@ class AreaWidget(QWidget):
                     editor.editor_id,
                 )
 
-        # 2. Now it's safe to delete the containers.
         while self._root_layout.count():
             item = self._root_layout.takeAt(0)
             widget = item.widget() if item is not None else None
@@ -161,30 +162,60 @@ class AreaWidget(QWidget):
         label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         return label
 
-    def _build_editor_content(self, editor: Editor) -> QWidget:
-        """Build the container for a single Editor.
+    def _build_editor_widget(self, editor: Editor) -> QWidget:
+        """Build the widget for a single Editor (Toolbars + Content).
 
-        The container is owned by AreaWidget. The content_widget() is
-        owned by the Editor and is cached in `_content_widgets` so it
-        can be safely detached and re-attached across refresh() calls.
+        Per ADR-0013 §2.6, the Editor declares Toolbars with a
+        `position` (LEFT, RIGHT, TOP, BOTTOM). The Editor widget
+        places them accordingly:
+
+            [LEFT] [TOP] [Content] [BOTTOM] [RIGHT]
+
+        If the Editor declares no Toolbars, the content fills the
+        whole container.
         """
         container = QWidget()
         container.setObjectName(f"area_widget.{self._area.area_id}.editor.{editor.editor_id}")
 
-        layout = QVBoxLayout(container)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
+        # Group Toolbars by position.
+        toolbars_by_position: dict[ToolbarPosition, list[Toolbar]] = {
+            ToolbarPosition.TOP: [],
+            ToolbarPosition.BOTTOM: [],
+            ToolbarPosition.LEFT: [],
+            ToolbarPosition.RIGHT: [],
+        }
+        for toolbar in self._build_toolbars(editor):
+            toolbars_by_position[toolbar.spec.position].append(toolbar)
 
-        for toolbar_widget in self._build_toolbars(editor):
-            layout.addWidget(toolbar_widget)
+        # Outer layout: [LEFT] [inner] [RIGHT]
+        outer = QHBoxLayout(container)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(0)
 
-        # Get (or create) the content_widget() and cache it.
+        for toolbar in toolbars_by_position[ToolbarPosition.LEFT]:
+            outer.addWidget(toolbar)
+
+        # Inner layout: [TOP] [content] [BOTTOM]
+        inner = QWidget(container)
+        inner_layout = QVBoxLayout(inner)
+        inner_layout.setContentsMargins(0, 0, 0, 0)
+        inner_layout.setSpacing(0)
+
+        for toolbar in toolbars_by_position[ToolbarPosition.TOP]:
+            inner_layout.addWidget(toolbar)
+
         content = editor.content_widget()
         self._content_widgets[editor.editor_id] = content
+        content.setParent(inner)
+        inner_layout.addWidget(content, stretch=1)
 
-        # Ensure it's parented to the new container.
-        content.setParent(container)
-        layout.addWidget(content, stretch=1)
+        for toolbar in toolbars_by_position[ToolbarPosition.BOTTOM]:
+            inner_layout.addWidget(toolbar)
+
+        outer.addWidget(inner, stretch=1)
+
+        for toolbar in toolbars_by_position[ToolbarPosition.RIGHT]:
+            outer.addWidget(toolbar)
 
         return container
 
@@ -200,63 +231,3 @@ class AreaWidget(QWidget):
             )
             result.append(toolbar)
         return result
-
-    def _build_tabs(self, editors: tuple[Editor, ...]) -> QTabWidget:
-        tabs = QTabWidget()
-        tabs.setObjectName(f"area_widget.{self._area.area_id}.tabs")
-        tabs.setTabPosition(QTabWidget.TabPosition.South)
-        tabs.setTabsClosable(True)
-        tabs.setDocumentMode(True)
-
-        tabs.tabBar().setStyleSheet("QTabBar { alignment: center; }")
-
-        index_by_editor_id: dict[str, int] = {}
-        for editor in editors:
-            content = self._build_editor_content(editor)
-            index = tabs.addTab(content, editor.title)
-            index_by_editor_id[editor.editor_id] = index
-
-        tabs.tabCloseRequested.connect(self._on_tab_close_requested)
-        tabs.currentChanged.connect(self._on_current_tab_changed)
-
-        active_editor_id = self._area.active_editor_id
-        if active_editor_id is not None and active_editor_id in index_by_editor_id:
-            tabs.setCurrentIndex(index_by_editor_id[active_editor_id])
-
-        return tabs
-
-    def _on_tab_close_requested(self, index: int) -> None:
-        tabs = self._current_tabs()
-        if tabs is None:
-            return
-        editor_id = self._editor_id_for_tab_index(tabs, index)
-        if editor_id is None:
-            return
-        self.editor_close_requested.emit(self._area.area_id, editor_id)
-
-    def _on_current_tab_changed(self, index: int) -> None:
-        tabs = self._current_tabs()
-        if tabs is None:
-            return
-        editor_id = self._editor_id_for_tab_index(tabs, index)
-        if editor_id is None:
-            return
-        self.active_editor_changed.emit(self._area.area_id, editor_id)
-
-    def _current_tabs(self) -> QTabWidget | None:
-        for i in range(self._root_layout.count()):
-            item = self._root_layout.itemAt(i)
-            widget = item.widget() if item is not None else None
-            if isinstance(widget, QTabWidget):
-                return widget
-        return None
-
-    def _editor_id_for_tab_index(
-        self,
-        tabs: QTabWidget,
-        index: int,
-    ) -> str | None:
-        editors = self._area.editors()
-        if index < 0 or index >= len(editors):
-            return None
-        return editors[index].editor_id
