@@ -19,6 +19,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+    from cranioz.application.commands.dispatcher import CommandDispatcher
     from cranioz.application.tasks.base import TaskManager
     from cranioz.application.telemetry.base import TelemetrySink
 
@@ -35,3 +36,4 @@ class EditorContext:
     extras: dict[str, Any] = field(default_factory=dict)
     task_manager: TaskManager | None = None
     telemetry: TelemetrySink | None = None
+    command_dispatcher: CommandDispatcher | None = None

@@ -48,6 +48,7 @@ from cranioz.ui.workspace.overlays.top_overlay import TopOverlay
 from cranioz.ui.workspace.specs.module_ui_spec import ModuleUISpec
 
 if TYPE_CHECKING:
+    from cranioz.application.commands.dispatcher import CommandDispatcher
     from cranioz.application.tasks.base import TaskManager
     from cranioz.application.telemetry.base import TelemetrySink
 
@@ -70,11 +71,13 @@ class Workspace(QWidget):
         project_context: ProjectContext,
         task_manager: TaskManager | None = None,
         telemetry: TelemetrySink | None = None,
+        command_dispatcher: CommandDispatcher | None = None,
         debug_colors: bool = False,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self.setObjectName("workspace")
+        self._command_dispatcher = command_dispatcher
 
         if project_context is None:
             raise WorkspaceError(
@@ -142,6 +145,7 @@ class Workspace(QWidget):
             shared_context={
                 "task_manager": self._task_manager,
                 "telemetry": self._telemetry,
+                "command_dispatcher": self._command_dispatcher,
             },
         )
 

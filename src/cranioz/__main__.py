@@ -5,8 +5,8 @@ Boot sequence:
 2. Configure logging.
 3. Create the QApplication.
 4. Initialize application paths.
-5. Initialize shared services (EventBus, CommandBus, TaskManager,
-   TelemetrySink, ModuleRegistry).
+5. Initialize shared services (EventBus, CommandBus, CommandStack,
+   CommandExecutor, TaskManager, TelemetrySink, ModuleRegistry).
 6. Initialize the project subsystem.
 7. Initialize the UI registries (editors, tools) and the theme service.
 8. Create and show the MainWindow.
@@ -24,7 +24,9 @@ import yaml
 from PySide6.QtWidgets import QApplication, QMessageBox
 
 from cranioz import __version__
+from cranioz.application.commands.executor import CommandExecutor
 from cranioz.application.commands.in_memory_bus import InMemoryCommandBus
+from cranioz.application.commands.stack import InMemoryCommandStack
 from cranioz.application.event_bus import EventBus
 from cranioz.application.events import EventBusAdapter
 from cranioz.application.flows.catalog import FlowCatalog
@@ -125,9 +127,19 @@ def main() -> int:
     command_bus = InMemoryCommandBus()
     _logger.debug("Command bus initialized: %r", command_bus)
 
+    command_stack = InMemoryCommandStack()
+    command_executor = CommandExecutor(
+        command_bus=command_bus,
+        command_stack=command_stack,
+        event_bus=event_bus,
+    )
+    _logger.debug("CommandExecutor initialized: %r", command_executor)
+
     task_manager = QtTaskManager()
     telemetry = LoggingTelemetrySink()
-    _logger.debug("TaskManager initialized (QtTaskManager); TelemetrySink still no-op")
+    _logger.debug(
+        "TaskManager initialized (QtTaskManager); TelemetrySink initialized (LoggingTelemetrySink)"
+    )
 
     event_bus_adapter = EventBusAdapter(event_bus)
     _logger.debug("EventBusAdapter initialized: %r", event_bus_adapter)
@@ -172,6 +184,7 @@ def main() -> int:
         task_manager=task_manager,
         telemetry=telemetry,
         flow_catalog=flow_catalog,
+        command_dispatcher=command_executor,
     )
     window.show()
 

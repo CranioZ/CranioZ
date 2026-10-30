@@ -429,10 +429,7 @@ def test_top_overlay_is_positioned_over_central_area(
     for area in workspace.areas():
         if area.area_id == "area.central":
             for widget in workspace.findChildren(QWidget):
-                if (
-                    hasattr(widget, "area_id")
-                    and widget.area_id == "area.central"
-                ):
+                if hasattr(widget, "area_id") and widget.area_id == "area.central":
                     central_widget = widget
                     break
             break
@@ -445,9 +442,7 @@ def test_top_overlay_is_positioned_over_central_area(
     # old layout) before the Qt layout is complete.
     def _overlay_is_over_central() -> bool:
         overlay_geom = workspace.top_overlay().widget().geometry()
-        central_top_left = central_widget.mapTo(
-            workspace, central_widget.rect().topLeft()
-        )
+        central_top_left = central_widget.mapTo(workspace, central_widget.rect().topLeft())
         central_right = central_top_left.x() + central_widget.width()
         return (
             overlay_geom.x() >= central_top_left.x()
@@ -462,9 +457,7 @@ def test_top_overlay_is_positioned_over_central_area(
     assert overlay_geom.width() > 0, "TopOverlay must have a non-zero width"
     assert overlay_geom.height() > 0, "TopOverlay must have a non-zero height"
 
-    central_top_left = central_widget.mapTo(
-        workspace, central_widget.rect().topLeft()
-    )
+    central_top_left = central_widget.mapTo(workspace, central_widget.rect().topLeft())
     central_right = central_top_left.x() + central_widget.width()
 
     assert overlay_geom.x() >= central_top_left.x(), (

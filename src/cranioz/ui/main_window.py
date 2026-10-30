@@ -61,6 +61,7 @@ from cranioz.ui.workspace.workspace_spec import (
 )
 
 if TYPE_CHECKING:
+    from cranioz.application.commands.dispatcher import CommandDispatcher
     from cranioz.application.tasks.base import TaskManager
     from cranioz.application.telemetry.base import TelemetrySink
 
@@ -104,6 +105,7 @@ class MainWindow(QMainWindow):
         theme_service: ThemeService,
         task_manager: TaskManager | None = None,
         telemetry: TelemetrySink | None = None,
+        command_dispatcher: CommandDispatcher | None = None,
         flow_catalog: FlowCatalog | None = None,
         parent: QWidget | None = None,
     ) -> None:
@@ -116,6 +118,7 @@ class MainWindow(QMainWindow):
         self._theme_service = theme_service
         self._task_manager = task_manager
         self._telemetry = telemetry
+        self._command_dispatcher = command_dispatcher
         self._flow_catalog = flow_catalog
 
         self._current_project_id: ProjectId | None = None
@@ -204,6 +207,7 @@ class MainWindow(QMainWindow):
             project_context=context,
             task_manager=self._task_manager,
             telemetry=self._telemetry,
+            command_dispatcher=self._command_dispatcher,
         )
 
         home_button = QPushButton("Home")

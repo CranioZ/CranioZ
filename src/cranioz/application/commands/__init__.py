@@ -28,6 +28,8 @@ from cranioz.application.commands.bus import (
     CommandBus,
     CommandHandlerRegistry,
 )
+from cranioz.application.commands.dispatcher import CommandDispatcher
+from cranioz.application.commands.executor import CommandExecutor
 from cranioz.application.commands.in_memory_bus import InMemoryCommandBus
 from cranioz.application.commands.stack import (
     CommandStack,
@@ -38,7 +40,9 @@ __all__ = [
     "Command",
     "CommandBus",
     "CommandDispatchError",
+    "CommandDispatcher",
     "CommandError",
+    "CommandExecutor",
     "CommandHandler",
     "CommandHandlerRegistry",
     "CommandNotRegistered",
