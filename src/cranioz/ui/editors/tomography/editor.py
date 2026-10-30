@@ -6,7 +6,7 @@ This Editor coordinates the four Views of a tomography study in a
 one on the left (image tools) and one on the right (visibility).
 
 Per ADR-0013, the Views are internal to the Editor. The Editor
-organizes them in a View Layout Tree, and the LayoutRenderer
+organizes them in a View Layout Tree, and the ViewLayoutRenderer
 materializes it as nested QSplitters.
 
 The TomographyEditor does not own the Scene. It reads the Scene
@@ -17,11 +17,12 @@ future piece.
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QWidget
 
 from cranioz.ui.editors.base_editor import Editor
 from cranioz.ui.editors.mpr_viewer.view import MPRView
+from cranioz.ui.editors.view import View
+from cranioz.ui.editors.view_layout_renderer import ViewLayoutRenderer
 from cranioz.ui.editors.view_layout_spec import (
     SplitDirection,
     ViewLayoutSpec,
@@ -50,16 +51,29 @@ class TomographyEditor(Editor):
         self._sagittal = MPRView(view_id="view.sagittal", view_type="sagittal")
         self._viewport = Viewport3DView(view_id="view.3d")
 
+        self._view_layout_renderer = ViewLayoutRenderer()
         self._content: QWidget | None = None
 
     # ----- Views (ADR-0013) -----------------------------------------
 
-    def views(self) -> tuple[MPRView | Viewport3DView, ...]:
+    def views(self) -> tuple[View, ...]:
         """Return the four Views hosted by this Editor."""
         return (self._axial, self._coronal, self._sagittal, self._viewport)
 
     def view_layout(self) -> ViewLayoutSpec:
-        """Return the 2x2 grid layout of the Views."""
+        """Return the 2x2 grid layout of the Views.
+
+        Layout:
+            ┌───────────────┬─────────────────────────────────┐
+            │               │                                 │
+            │  Axial        │  Coronal                        │
+            │               │                                 │
+            │               ├─────────────────────────────────┤
+            │               │                                 │
+            │               │  Sagittal  │  3D                │
+            │               │            │                    │
+            └───────────────┴────────────┴────────────────────┘
+        """
         return ViewLayoutSpec.split(
             SplitDirection.HORIZONTAL,
             (
@@ -83,27 +97,17 @@ class TomographyEditor(Editor):
     # ----- Content --------------------------------------------------
 
     def content_widget(self) -> QWidget:
-        """Return the container that arranges the Views. (...)"""
-        if self._content is None:
-            self._content = QWidget()
-            layout = QVBoxLayout(self._content)
-            layout.setContentsMargins(8, 8, 8, 8)
+        """Return the container that materializes the 4 Views as a 2x2 grid.
 
-            label = QLabel(
-                f"TomographyEditor\n\n"
-                f"Views:\n"
-                f"  - {self._axial.view_id} ({self._axial.view_type})\n"
-                f"  - {self._coronal.view_id} ({self._coronal.view_type})\n"
-                f"  - {self._sagittal.view_id} ({self._sagittal.view_type})\n"
-                f"  - {self._viewport.view_id} ({self._viewport.view_type})\n\n"
-                f"(2x2 grid will be materialized by the LayoutRenderer)"
+        The ViewLayoutRenderer materializes the View Layout Tree as
+        nested QSplitters. Each Leaf becomes the View's content widget.
+        """
+        if self._content is None:
+            views_by_id: dict[str, View] = {v.view_id: v for v in self.views()}
+            self._content = self._view_layout_renderer.render(
+                self.view_layout(),
+                views_by_id,
             )
-            label.setObjectName(f"tomography.editor.{self.editor_id}.placeholder")
-            label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            label.setStyleSheet(
-                "QLabel { background-color: #2a2a2a; color: #eee; font-size: 14px; padding: 24px; }"
-            )
-            layout.addWidget(label)
         return self._content
 
     # ----- Toolbars (ADR-0013) --------------------------------------
@@ -133,7 +137,10 @@ class TomographyEditor(Editor):
 
     def dispose(self) -> None:
         """Dispose the Views and the content widget."""
-        super().dispose()
+        super().dispose()  # disposes each View
+
+        self._view_layout_renderer.clear_cache()
+
         if self._content is not None:
             self._content.setParent(None)
             self._content.deleteLater()
