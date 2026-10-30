@@ -54,6 +54,8 @@ from cranioz.infrastructure.telemetry.logging_sink import (
 from cranioz.modules.builtin import BUILTIN_MANIFESTS
 from cranioz.modules.registry.module_registry import InMemoryModuleRegistry
 from cranioz.ui.editors.editor_registry import EditorRegistry
+from cranioz.ui.editors.mpr_viewer import MPRViewerEditor
+from cranioz.ui.editors.viewport_3d import Viewport3DEditor
 from cranioz.ui.main_window import MainWindow
 from cranioz.ui.theme.service import ThemeName, ThemeService
 from cranioz.ui.tools.builtin.log_tool import LogTool
@@ -80,9 +82,20 @@ def _resolve_actor() -> str:
 
 
 def _build_tool_registry() -> ToolRegistry:
+    """Build the ToolRegistry with the built-in tools."""
     registry = ToolRegistry()
     registry.register("tool.log", LogTool)
     registry.register("tool.toggle", ToggleTool)
+    return registry
+
+
+def _build_editor_registry() -> EditorRegistry:
+    """Build the EditorRegistry with the built-in editors."""
+    registry = EditorRegistry()
+    registry.register("editor.viewport_3d", Viewport3DEditor)
+    registry.register("editor.mpr_axial", MPRViewerEditor)
+    registry.register("editor.mpr_sagittal", MPRViewerEditor)
+    registry.register("editor.mpr_coronal", MPRViewerEditor)
     return registry
 
 
@@ -161,7 +174,7 @@ def main() -> int:
     )
 
     # ----- UI services ------------------------------------------------
-    editor_registry = EditorRegistry()
+    editor_registry = _build_editor_registry()
     tool_registry = _build_tool_registry()
     theme_service = _build_theme_service(config)
     actor = _resolve_actor()

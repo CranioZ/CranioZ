@@ -262,6 +262,7 @@ exclude = [
 [[tool.mypy.overrides]]
 module = [
     "vtk.*",
+    "vtkmodules.*",
     "PySide6.*",
     "pydicom.*",
     "reportlab.*",
