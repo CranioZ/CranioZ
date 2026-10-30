@@ -1,5 +1,5 @@
-"""MPRViewerEditor."""
+"""MPRView — a 2D MPR view (axial, coronal, sagittal)."""
 
-from cranioz.ui.editors.mpr_viewer.editor import MPRViewerEditor
+from cranioz.ui.editors.mpr_viewer.view import MPRView
 
-__all__ = ["MPRViewerEditor"]
+__all__ = ["MPRView"]

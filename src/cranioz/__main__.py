@@ -54,8 +54,6 @@ from cranioz.infrastructure.telemetry.logging_sink import (
 from cranioz.modules.builtin import BUILTIN_MANIFESTS
 from cranioz.modules.registry.module_registry import InMemoryModuleRegistry
 from cranioz.ui.editors.editor_registry import EditorRegistry
-from cranioz.ui.editors.mpr_viewer import MPRViewerEditor
-from cranioz.ui.editors.viewport_3d import Viewport3DEditor
 from cranioz.ui.main_window import MainWindow
 from cranioz.ui.theme.service import ThemeName, ThemeService
 from cranioz.ui.tools.builtin.log_tool import LogTool
@@ -90,12 +88,18 @@ def _build_tool_registry() -> ToolRegistry:
 
 
 def _build_editor_registry() -> EditorRegistry:
-    """Build the EditorRegistry with the built-in editors."""
+    """Build the EditorRegistry with the built-in editors.
+
+    Per ADR-0013, ``Viewport3D`` and ``MPR`` are Views, not Editors.
+    The ``TomographyEditor`` is the Editor that hosts them. The
+    registry maps editor_id to the concrete Editor class; the Views
+    are internal to the Editor.
+
+    For now, only ``TomographyEditor`` is registered. Other editors
+    (Cephalometry, Osteotomy, etc.) will be added as they are
+    implemented.
+    """
     registry = EditorRegistry()
-    registry.register("editor.viewport_3d", Viewport3DEditor)
-    registry.register("editor.mpr_axial", MPRViewerEditor)
-    registry.register("editor.mpr_sagittal", MPRViewerEditor)
-    registry.register("editor.mpr_coronal", MPRViewerEditor)
     return registry
 
 
@@ -141,12 +145,12 @@ def main() -> int:
     _logger.debug("Command bus initialized: %r", command_bus)
 
     command_stack = InMemoryCommandStack()
-    command_executor = CommandExecutor(
+    command_dispatcher = CommandExecutor(
         command_bus=command_bus,
         command_stack=command_stack,
         event_bus=event_bus,
     )
-    _logger.debug("CommandExecutor initialized: %r", command_executor)
+    _logger.debug("CommandDispatcher initialized: %r", command_dispatcher)
 
     task_manager = QtTaskManager()
     telemetry = LoggingTelemetrySink()
@@ -197,7 +201,7 @@ def main() -> int:
         task_manager=task_manager,
         telemetry=telemetry,
         flow_catalog=flow_catalog,
-        command_dispatcher=command_executor,
+        command_dispatcher=command_dispatcher,
     )
     window.show()
 
