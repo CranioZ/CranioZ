@@ -54,6 +54,7 @@ from PySide6.QtWidgets import QWidget
 from pytestqt.qtbot import QtBot
 
 from cranioz.application.project.project_context import ProjectContext
+from cranioz.application.scene.scene_query import InMemorySceneQuery
 from cranioz.domain.patient.enums.patient_sex import PatientSex
 from cranioz.domain.patient.patient_summary import PatientSummary
 from cranioz.domain.patient.value_objects.patient_id import PatientId
@@ -466,3 +467,34 @@ def test_top_overlay_is_positioned_over_central_area(
     assert overlay_geom.x() + overlay_geom.width() <= central_right, (
         "TopOverlay must not extend beyond the Central Area"
     )
+
+
+def test_workspace_propagates_scene_query_to_editor(
+    qtbot: QtBot,
+    editor_registry: EditorRegistry,
+    tool_registry: ToolRegistry,
+    theme_service: ThemeService,
+    project_context: ProjectContext,
+) -> None:
+    """The Editor receives the SceneQuery via its EditorContext."""
+    scene_query = InMemorySceneQuery()
+    workspace = Workspace(
+        editor_registry=editor_registry,
+        tool_registry=tool_registry,
+        theme_service=theme_service,
+        project_context=project_context,
+        scene_query=scene_query,
+    )
+    qtbot.addWidget(workspace)
+
+    spec = _spec(_area("area.central", Placement.CENTRAL, "editor.patient"))
+    workspace.load_spec(spec)
+
+    build_result = workspace._build_result
+    assert build_result is not None
+    editors = build_result.editors("area.central")
+    assert len(editors) == 1
+    # DummyEditor stores the context.
+    context = editors[0]._context  # type: ignore[attr-defined]
+    assert context is not None
+    assert context.scene_query is scene_query

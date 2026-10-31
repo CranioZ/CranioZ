@@ -9,8 +9,9 @@ Responsibilities:
 - Materialize a ModuleUISpec as Areas, QSplitters, and Editor widgets.
 - Manage the AreaManager, the LayoutRenderer, and the OverlayManager.
 - Own the shared TopOverlay (ADR-0005).
-- Receive and forward the TaskManager and TelemetrySink to the
-  Editors it hosts (ADR-0011, ADR-0012).
+- Receive and forward the TaskManager, TelemetrySink, CommandDispatcher,
+  SceneQuery, and EventSubscription to the Editors it hosts
+  (ADR-0011, ADR-0012, ADR-0007, ADR-0013).
 
 Non-responsibilities:
 
@@ -49,6 +50,8 @@ from cranioz.ui.workspace.specs.module_ui_spec import ModuleUISpec
 
 if TYPE_CHECKING:
     from cranioz.application.commands.dispatcher import CommandDispatcher
+    from cranioz.application.events.base import EventSubscription
+    from cranioz.application.scene.scene_query import SceneQuery
     from cranioz.application.tasks.base import TaskManager
     from cranioz.application.telemetry.base import TelemetrySink
 
@@ -72,12 +75,16 @@ class Workspace(QWidget):
         task_manager: TaskManager | None = None,
         telemetry: TelemetrySink | None = None,
         command_dispatcher: CommandDispatcher | None = None,
+        scene_query: SceneQuery | None = None,
+        event_subscription: EventSubscription | None = None,
         debug_colors: bool = False,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self.setObjectName("workspace")
         self._command_dispatcher = command_dispatcher
+        self._scene_query = scene_query
+        self._event_subscription = event_subscription
 
         if project_context is None:
             raise WorkspaceError(
@@ -146,6 +153,8 @@ class Workspace(QWidget):
                 "task_manager": self._task_manager,
                 "telemetry": self._telemetry,
                 "command_dispatcher": self._command_dispatcher,
+                "scene_query": self._scene_query,
+                "event_subscription": self._event_subscription,
             },
         )
 
@@ -222,14 +231,7 @@ class Workspace(QWidget):
         self._reposition_overlays()
 
     def showEvent(self, event: QShowEvent) -> None:  # noqa: N802
-        """Reposition overlays after the workspace is shown.
-
-        When the workspace is shown, Qt computes the layout of the
-        AreaWidgets. We need to reposition overlays once the
-        AreaWidgets have valid geometry. QTimer.singleShot(0, ...)
-        defers the reposition to the next event loop iteration, when
-        the layout is complete.
-        """
+        """Reposition overlays after the workspace is shown."""
         super().showEvent(event)
         QTimer.singleShot(0, self._reposition_overlays)
 

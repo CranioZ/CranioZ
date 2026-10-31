@@ -20,6 +20,8 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from cranioz.application.commands.dispatcher import CommandDispatcher
+    from cranioz.application.events.base import EventSubscription
+    from cranioz.application.scene.scene_query import SceneQuery
     from cranioz.application.tasks.base import TaskManager
     from cranioz.application.telemetry.base import TelemetrySink
 
@@ -37,3 +39,5 @@ class EditorContext:
     task_manager: TaskManager | None = None
     telemetry: TelemetrySink | None = None
     command_dispatcher: CommandDispatcher | None = None
+    scene_query: SceneQuery | None = None
+    event_subscription: EventSubscription | None = None
