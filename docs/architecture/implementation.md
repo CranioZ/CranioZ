@@ -80,11 +80,15 @@ The implementation is divided into 11 phases. These phases are designed to build
 
 ### 5.1 Immediate priorities (in order)
 
-1. **Replace remaining boot placeholders.** 
-- ✅ `QtTaskManager` replaced `NoOpTaskManager` at boot. 
-- ✅ `LoggingTelemetrySink` replaced `NoOpTelemetrySink` on boot.
+0. **Refactor the Workspace UI hierarchy (ADR-0013).** ✅ Resolved.
+   - `View` abstraction (`ViewLayoutSpec`, `MPRView`, `Viewport3DView`).
+   - `TomographyEditor` hosting the 4 Views.
+   - `ViewLayoutRenderer` (synchronized 2x2 grid).
+   - `AreaWidget` uses `QSplitter` instead of `QTabWidget`.
+   - Toolbar inside the Editor (ADR-0002 + ADR-0013).
+1. **Replace remaining boot placeholders.** ✅ Resolved.
 2. **Fix Phase 2 debt (Workspace lifecycle and geometry).** ✅ Resolved.
-3. **Propagate `EditorContext`.** ✅ Resolved (shared_context propagated).
+3. **Propagate `EditorContext`.** ✅ Resolved (shared_context propagated). `SceneQuery` and `EventSubscription` still pending.
 4. **Implement `CommandExecutor` and `CommandDispatcher`.** ⏳ Next.
 5. **Implement `domain/scene/`** per ADR-0008 and `scene.md`. ⏳ Pending.
 6. **Implement `RenderingAdapter`** and the first concrete Editors. ⏳ Pending.
@@ -403,16 +407,16 @@ This section records debt that is known, accepted for now, and must be resolved 
 
 ### 10.2 Phase 1 / Phase 4 — `EditorContext` propagation
 
-- **`LayoutBuilder` accepts `shared_context` but discards it.** ADR-0002 §2.3 defines `shared_context` as the extension point for shared services. Today it is `_ = shared_context`. When `TaskManager`, `TelemetrySink` and `CommandDispatcher` are shared services, they must be propagated by reference.
-- **`EditorContext` fields `task_manager`, `telemetry` and `correlation_id` default to `None`.** They must be populated by `LayoutBuilder` and the `Workspace`, and consumed by `Editor` and `Toolbar`.
-- **`EditorContext` has no `CommandDispatcher` or `SceneQuery`.** These are defined in ADR-0002 and `editors.md` §15 but are not yet fields on the dataclass.
+- ✅ **`LayoutBuilder` propagates `shared_context`.** ADR-0002 §2.3 defines `shared_context` as the extension point for shared services. The builder now propagates `task_manager`, `telemetry`, `correlation_id` and `command_dispatcher` by reference into each `EditorContext`.
+- ✅ **`EditorContext` fields `task_manager`, `telemetry`, `correlation_id` and `command_dispatcher` are populated.** The `Workspace` provides them via `shared_context`; the `LayoutBuilder` propagates them; the `Editor` consumes them.
+- **`EditorContext` has no `SceneQuery` or `EventSubscription`.** These are defined in ADR-0002 and `editors.md` §15 but are not yet fields on the dataclass. `SceneQuery` is the next prerequisite for the VTK/MPR Views.
 
 ### 10.3 Phase 4 — Module system
 
-- **`InMemoryModuleLoader` is skeletal.** It does not resolve dependencies, does not detect cycles, does not import `entry_point`, does not register Tools/Editors/Services/Flows, and resolves Command handlers via an ad hoc `_handler` attribute on the Command class. A real loader (or a completed `InMemoryModuleLoader`) is required before `application/modules/` can be marked ✅.
-- **`BUILTIN_MANIFESTS` is empty.** Every `modules/builtin/*/manifest.py` and `modules/builtin/*/module.py` is a stub. The module system has no real module to load.
-- **`InMemoryModuleLoader` creates a new `EventBus` per `ModuleContext`.** Module events are isolated from the application-wide bus. This contradicts the Event Bus contract (`modules.md` v10, `commands.md` §8.3).
-- **No `CommandExecutor`.** `CommandBus` and `CommandStack` exist, but there is no component that ties transaction boundary, post-commit event publication and undo/redo together. Without it, the `CommandDispatcher` (ADR-0007) has no useful target.
+- **`InMemoryModuleLoader` is skeletal.** (unchanged)
+- **`BUILTIN_MANIFESTS` is empty.** (unchanged)
+- **`InMemoryModuleLoader` creates a new `EventBus` per `ModuleContext`.** (unchanged)
+- **No `CommandExecutor`.** (unchanged — this is the next priority, §5.1 item 4).
 
 ### 10.4 Phase 3 — Project deletion
 
@@ -442,3 +446,5 @@ This section records debt that is known, accepted for now, and must be resolved 
 - **`Project deletion` not coordinated.** As noted in §10.4, deleting a project only removes `project.json`. The `ProjectManager` must coordinate with other persistence layers (Patient, Scene, Layout) to perform a full, atomic deletion.
 - **`Filesystem repositories` need integration tests.** The `FilesystemProjectRepository` and `FilesystemFlowRepository` have unit tests, but their integration with the real filesystem (permissions, atomic writes, directory traversal) needs more thorough testing.
 - **`HomePage` uses `_humanize_translation_key`.** `MainWindow` uses a temporary helper function `_humanize_translation_key` to make flow names readable. This is a placeholder for the `TranslationService` and should be removed once i18n is wired.
+- - **`Viewport3DView` uses a `QLabel` placeholder.** The real VTK integration (`QVTKRenderWindowInteractor` with a functional `RenderWindow`) was attempted but caused resize artifacts. It is deferred to a later piece. The `Viewport3DView.content_widget()` returns a `QLabel`; `VTKSceneRenderer` and `VTKActorFactory` are not used by the View.
+- **`MPRView` uses a `QLabel` placeholder.** The real MPR (`vtkResliceImageViewer` or similar) is deferred to a later piece.
