@@ -1,31 +1,23 @@
-"""Debug script: launch the Workspace with a fake ModuleUISpec.
+"""Debug script: launch the Workspace with the real TomographyEditor.
 
 This script is a development tool. It is NOT part of production.
 
 It builds a Workspace with:
-
-- A fake EditorRegistry populated with DebugEditor instances
-  (no toolbars, so only the editor_id is visible).
+- A real EditorRegistry populated with TomographyEditor.
 - A ToolRegistry with LogTool and ToggleTool.
 - A ThemeService (dark).
 - A fake, coherent ProjectContext (ADR-0006 requires one).
-- A ModuleUISpec that mirrors a typical clinical layout:
-    LEFT     -> object_list
-    CENTRAL  -> viewport_3d | (mpr_axial / mpr_sagittal)
-    RIGHT    -> properties
-    BOTTOM   -> console
+- A ModuleUISpec with a single Central Area hosting the
+  TomographyEditor (editor.tomography).
 
-The Workspace is created with ``debug_colors=True`` so that each
-Area has a soft background color that makes its boundary visible:
-
-    LEFT     -> soft blue
-    CENTRAL  -> soft green
-    RIGHT    -> soft yellow
-    BOTTOM   -> soft lavender
-
-The TopOverlay is registered automatically by the Workspace and
-will be positioned over the Central Region. During debug it is
-painted red so it becomes visible.
+What you should see:
+- The Top Bar floating over the Central Area.
+- A 2x2 grid of Views inside the TomographyEditor:
+    Axial (top-left) | Coronal (top-right)
+    Sagittal (bottom-left) | 3D (bottom-right)
+- Two Toolbars inside the Editor:
+    "Image Tools" on the LEFT, "Visibility" on the RIGHT.
+- No QTabWidget at the bottom of the Area.
 
 Run with:
 
@@ -48,18 +40,15 @@ from cranioz.domain.patient.value_objects.patient_id import PatientId
 from cranioz.domain.project.project_id import ProjectId
 from cranioz.domain.project.project_metadata import ProjectMetadata
 from cranioz.domain.project.project_status import ProjectStatus
-from cranioz.ui.editors.builtin.test_editor import DebugEditor
 from cranioz.ui.editors.editor_registry import EditorRegistry
+from cranioz.ui.editors.tomography.editor import TomographyEditor
 from cranioz.ui.theme.service import ThemeName, ThemeService
 from cranioz.ui.tools.builtin.log_tool import LogTool
 from cranioz.ui.tools.builtin.toggle_tool import ToggleTool
 from cranioz.ui.tools.registry.tool_registry import ToolRegistry
 from cranioz.ui.workspace.areas.placement import Placement
 from cranioz.ui.workspace.specs.area_spec import AreaSpec
-from cranioz.ui.workspace.specs.editor_layout_spec import (
-    EditorLayoutSpec,
-    SplitDirection,
-)
+from cranioz.ui.workspace.specs.editor_layout_spec import EditorLayoutSpec
 from cranioz.ui.workspace.specs.module_ui_spec import ModuleUISpec
 from cranioz.ui.workspace.workspace import Workspace
 
@@ -67,13 +56,7 @@ from cranioz.ui.workspace.workspace import Workspace
 
 
 def build_project_context() -> ProjectContext:
-    """Build a fake, coherent ProjectContext for the debug Workspace.
-
-    The Workspace never inspects the context beyond checking for its
-    presence (see ADR-0006), but a coherent context keeps the debug
-    run representative of production. All timestamps are timezone-aware
-    UTC, as required by ProjectMetadata.
-    """
+    """Build a fake, coherent ProjectContext for the debug Workspace."""
     pid = ProjectId("p-debug")
     now = datetime(2026, 1, 1, 12, 0, tzinfo=UTC)
     return ProjectContext(
@@ -103,21 +86,9 @@ def build_project_context() -> ProjectContext:
 
 
 def build_editor_registry() -> EditorRegistry:
-    """Register DebugEditor under several editor_ids.
-
-    DebugEditor is a DummyEditor without toolbars, so the debug
-    visual shows only the editor_id (no Log/Toggle buttons).
-    """
+    """Register the real TomographyEditor."""
     registry = EditorRegistry()
-    for editor_id in (
-        "editor.viewport_3d",
-        "editor.mpr_axial",
-        "editor.mpr_sagittal",
-        "editor.object_list",
-        "editor.properties",
-        "editor.console",
-    ):
-        registry.register(editor_id, DebugEditor)
+    registry.register("editor.tomography", TomographyEditor)
     return registry
 
 
@@ -135,44 +106,14 @@ def build_tool_registry() -> ToolRegistry:
 
 
 def build_spec() -> ModuleUISpec:
-    """Build a ModuleUISpec that mirrors the prototype layout."""
+    """Build a ModuleUISpec with a single Central Area hosting TomographyEditor."""
     return ModuleUISpec(
         areas=(
             AreaSpec(
-                area_id="area.left",
-                title="Lists",
-                placement=Placement.LEFT,
-                editor_layout=EditorLayoutSpec.leaf("editor.object_list"),
-            ),
-            AreaSpec(
                 area_id="area.central",
-                title="Editing",
+                title="Tomography",
                 placement=Placement.CENTRAL,
-                editor_layout=EditorLayoutSpec.split(
-                    SplitDirection.HORIZONTAL,
-                    (
-                        EditorLayoutSpec.leaf("editor.viewport_3d"),
-                        EditorLayoutSpec.split(
-                            SplitDirection.VERTICAL,
-                            (
-                                EditorLayoutSpec.leaf("editor.mpr_axial"),
-                                EditorLayoutSpec.leaf("editor.mpr_sagittal"),
-                            ),
-                        ),
-                    ),
-                ),
-            ),
-            AreaSpec(
-                area_id="area.right",
-                title="Tools",
-                placement=Placement.RIGHT,
-                editor_layout=EditorLayoutSpec.leaf("editor.properties"),
-            ),
-            AreaSpec(
-                area_id="area.bottom",
-                title="Console",
-                placement=Placement.BOTTOM,
-                editor_layout=EditorLayoutSpec.leaf("editor.console"),
+                editor_layout=EditorLayoutSpec.leaf("editor.tomography"),
             ),
         ),
     )
@@ -183,7 +124,6 @@ def build_spec() -> ModuleUISpec:
 
 def main() -> int:
     app = QApplication.instance() or QApplication([])
-
     app.setStyle("Fusion")
 
     workspace = Workspace(
@@ -196,7 +136,7 @@ def main() -> int:
     workspace.load_spec(build_spec())
 
     window = QMainWindow()
-    window.setWindowTitle("CranioZ — Workspace debug")
+    window.setWindowTitle("CranioZ — TomographyEditor debug")
     window.setCentralWidget(workspace)
     window.resize(1280, 800)
     window.show()

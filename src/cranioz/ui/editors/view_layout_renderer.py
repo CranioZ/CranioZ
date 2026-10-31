@@ -153,6 +153,23 @@ class ViewLayoutRenderer:
                 continue
             splitter.insertWidget(index, widget)
 
+        # Set a minimum size for each child so QSplitter does not
+        # collapse any of them.
+        for widget in expected:
+            widget.setMinimumSize(50, 50)
+
+        # Give all children the same stretch factor, so the splitter
+        # distributes space evenly.
+        for i in range(splitter.count()):
+            splitter.setStretchFactor(i, 1)
+
+        # Set the initial sizes to 50/50 (or evenly distributed).
+        # This is only applied once, when the splitter is first populated.
+        if splitter.count() >= 2 and splitter.sizes() == [0] * splitter.count():
+            n = splitter.count()
+            base = 1000 // n
+            splitter.setSizes([base] * n)
+
     @staticmethod
     def _orientation_for(direction: SplitDirection | None) -> Qt.Orientation:
         if direction is SplitDirection.HORIZONTAL:

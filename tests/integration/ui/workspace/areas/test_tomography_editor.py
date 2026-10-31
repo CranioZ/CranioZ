@@ -21,6 +21,7 @@ from cranioz.ui.editors.mpr_viewer.view import MPRView
 from cranioz.ui.editors.tomography.editor import TomographyEditor
 from cranioz.ui.editors.view_layout_spec import (
     SplitDirection,
+    ViewLayoutSpec,
     ViewLayoutType,
 )
 from cranioz.ui.editors.viewport_3d.view import Viewport3DView
@@ -62,10 +63,35 @@ def test_editor_views_are_correct_classes(editor: TomographyEditor) -> None:
 
 
 def test_editor_view_layout_is_split(editor: TomographyEditor) -> None:
+    """The view_layout is a 2x2 grid: a vertical split of two horizontal splits."""
     layout = editor.view_layout()
     assert layout.type is ViewLayoutType.SPLIT
-    assert layout.direction is SplitDirection.HORIZONTAL
+    assert layout.direction is SplitDirection.VERTICAL
     assert len(layout.children) == 2
+
+    # Both children are horizontal splits (top row, bottom row).
+    top_row, bottom_row = layout.children
+    assert top_row.type is ViewLayoutType.SPLIT
+    assert top_row.direction is SplitDirection.HORIZONTAL
+    assert bottom_row.type is ViewLayoutType.SPLIT
+    assert bottom_row.direction is SplitDirection.HORIZONTAL
+
+
+def test_editor_view_layout_leaves(editor: TomographyEditor) -> None:
+    """The view_layout contains the four Views at the leaves."""
+    layout = editor.view_layout()
+    view_ids: set[str] = set()
+
+    def visit(node: ViewLayoutSpec) -> None:
+        if node.type is ViewLayoutType.LEAF:
+            assert node.view_id is not None
+            view_ids.add(node.view_id)
+        else:
+            for child in node.children:
+                visit(child)
+
+    visit(layout)
+    assert view_ids == {"view.axial", "view.coronal", "view.sagittal", "view.3d"}
 
 
 # ----- Content Widget -----------------------------------------------

@@ -264,6 +264,13 @@ class LayoutRenderer:
           split is detached (its parent is cleared, but the widget is
           not destroyed — it may be reused elsewhere, or it lives in
           the area_widgets cache).
+        - Each child receives a minimum size, so QSplitter does not
+          collapse any of them when space is tight.
+        - Each child receives the same stretch factor, so the splitter
+          distributes space evenly among them.
+        - The initial sizes are set to equal proportions, so the
+          first render produces a symmetric layout instead of one
+          based on each widget's sizeHint().
         """
         expected_widgets: list[QWidget] = [self._render_node(child) for child in split.children]
 
@@ -294,6 +301,25 @@ class LayoutRenderer:
             if current_index == index:
                 continue
             splitter.insertWidget(index, widget)
+
+        # Ensure every child has a minimum size, so the splitter does
+        # not collapse any of them.
+        for widget in expected_widgets:
+            widget.setMinimumSize(50, 50)
+
+        # Give every child the same stretch factor, so the splitter
+        # distributes space evenly.
+        for index in range(splitter.count()):
+            splitter.setStretchFactor(index, 1)
+
+        # Set the initial sizes to equal proportions, so the first
+        # render is symmetric.
+        if splitter.count() >= 2:
+            sizes = splitter.sizes()
+            if all(size == 0 for size in sizes):
+                n = splitter.count()
+                base = 1000 // n
+                splitter.setSizes([base] * n)
 
     @staticmethod
     def _orientation_for(direction: SplitDirection) -> Qt.Orientation:

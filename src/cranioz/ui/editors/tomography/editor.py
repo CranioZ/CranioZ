@@ -63,32 +63,32 @@ class TomographyEditor(Editor):
     def view_layout(self) -> ViewLayoutSpec:
         """Return the 2x2 grid layout of the Views.
 
-        Layout:
-            ┌───────────────┬─────────────────────────────────┐
-            │               │                                 │
-            │  Axial        │  Coronal                        │
-            │               │                                 │
-            │               ├─────────────────────────────────┤
-            │               │                                 │
-            │               │  Sagittal  │  3D                │
-            │               │            │                    │
-            └───────────────┴────────────┴────────────────────┘
+        Conventional 2x2 grid:
+            ┌───────────────┬───────────────┐
+            │               │               │
+            │     Axial     │    Coronal    │
+            │               │               │
+            ├───────────────┼───────────────┤
+            │               │               │
+            │   Sagittal    │      3D       │
+            │               │               │
+            └───────────────┴───────────────┘
         """
         return ViewLayoutSpec.split(
-            SplitDirection.HORIZONTAL,
+            SplitDirection.VERTICAL,
             (
-                ViewLayoutSpec.leaf("view.axial"),
                 ViewLayoutSpec.split(
-                    SplitDirection.VERTICAL,
+                    SplitDirection.HORIZONTAL,
                     (
+                        ViewLayoutSpec.leaf("view.axial"),
                         ViewLayoutSpec.leaf("view.coronal"),
-                        ViewLayoutSpec.split(
-                            SplitDirection.HORIZONTAL,
-                            (
-                                ViewLayoutSpec.leaf("view.sagittal"),
-                                ViewLayoutSpec.leaf("view.3d"),
-                            ),
-                        ),
+                    ),
+                ),
+                ViewLayoutSpec.split(
+                    SplitDirection.HORIZONTAL,
+                    (
+                        ViewLayoutSpec.leaf("view.sagittal"),
+                        ViewLayoutSpec.leaf("view.3d"),
                     ),
                 ),
             ),
@@ -136,12 +136,10 @@ class TomographyEditor(Editor):
     # ----- Lifecycle ------------------------------------------------
 
     def dispose(self) -> None:
-        """Dispose the Views and the content widget."""
+        if self._content is None:
+            return  # idempotent
         super().dispose()  # disposes each View
-
         self._view_layout_renderer.clear_cache()
-
-        if self._content is not None:
-            self._content.setParent(None)
-            self._content.deleteLater()
-            self._content = None
+        self._content.setParent(None)
+        self._content.deleteLater()
+        self._content = None
