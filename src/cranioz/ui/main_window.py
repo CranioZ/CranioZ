@@ -14,8 +14,8 @@ Responsibilities:
   destroy the Workspace, and switch back to the HomePage.
 - Forward other HomePage signals to MessageBox placeholders for
   pieces that are not yet implemented (Bloco 8 / Bloco 9 / 7.6d).
-- Forward shared application services (TaskManager, TelemetrySink)
-  to the Workspace (ADR-0011, ADR-0012).
+- Forward shared application services (TaskManager, TelemetrySink,
+  SceneProvider) to the Workspace (ADR-0011, ADR-0012).
 - Populate the HomePage's FlowList from the FlowCatalog (A5).
 - Translate flow labels for the HomePage via a temporary humanizer
   until the TranslationService is wired.
@@ -47,6 +47,7 @@ from cranioz.application.project.project_context import ProjectContext
 from cranioz.application.project.project_errors import ProjectError
 from cranioz.application.project.project_manager import ProjectManager
 from cranioz.domain.project.project_id import ProjectId
+from cranioz.infrastructure.scene.scene_query_adapter import SceneQueryAdapter
 from cranioz.ui.editors.editor_registry import EditorRegistry
 from cranioz.ui.home.home_page import HomePage
 from cranioz.ui.theme.service import ThemeService
@@ -62,6 +63,7 @@ from cranioz.ui.workspace.workspace_spec import (
 
 if TYPE_CHECKING:
     from cranioz.application.commands.dispatcher import CommandDispatcher
+    from cranioz.application.scene.scene_provider import SceneProvider
     from cranioz.application.tasks.base import TaskManager
     from cranioz.application.telemetry.base import TelemetrySink
 
@@ -107,6 +109,7 @@ class MainWindow(QMainWindow):
         telemetry: TelemetrySink | None = None,
         command_dispatcher: CommandDispatcher | None = None,
         flow_catalog: FlowCatalog | None = None,
+        scene_provider: SceneProvider | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -120,6 +123,7 @@ class MainWindow(QMainWindow):
         self._telemetry = telemetry
         self._command_dispatcher = command_dispatcher
         self._flow_catalog = flow_catalog
+        self._scene_provider = scene_provider
 
         self._current_project_id: ProjectId | None = None
         self._workspace: Workspace | None = None
@@ -200,6 +204,15 @@ class MainWindow(QMainWindow):
         self._current_project_id = project_id
 
     def _create_workspace(self, context: ProjectContext) -> Workspace:
+        # Build the SceneQueryAdapter from the provider's Scene, if any.
+        # The adapter is recreated per Workspace, but the underlying
+        # Scene is owned by the provider (single source of truth).
+        # See ADR-0008, scene.md, editors.md §15.
+        scene_query = None
+        if self._scene_provider is not None:
+            scene = self._scene_provider.get_scene()
+            scene_query = SceneQueryAdapter(scene)
+
         workspace = Workspace(
             editor_registry=self._editor_registry,
             tool_registry=self._tool_registry,
@@ -208,6 +221,7 @@ class MainWindow(QMainWindow):
             task_manager=self._task_manager,
             telemetry=self._telemetry,
             command_dispatcher=self._command_dispatcher,
+            scene_query=scene_query,
         )
 
         home_button = QPushButton("Home")

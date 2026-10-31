@@ -38,6 +38,7 @@ from cranioz.application.project.project_access_policy import (
 )
 from cranioz.application.project.project_catalog import ProjectCatalog
 from cranioz.application.project.project_manager import ProjectManager
+from cranioz.application.scene.scene_provider import InMemorySceneProvider
 from cranioz.config.loader import ConfigurationLoader
 from cranioz.config.schema import Config
 from cranioz.infrastructure.app.app_path_resolver import (
@@ -174,6 +175,14 @@ def main() -> int:
         access_policy=AllowAllProjectAccessPolicy(),
     )
 
+    # ----- Scene -----------------------------------------------------
+    # Phase 4: the Scene is created empty (InMemorySceneProvider).
+    # The real Scene will be loaded from scene.json when the
+    # FilesystemSceneProvider is implemented (Phase 4, Scene serialization).
+    # See ADR-0008, scene.md.
+    scene_provider = InMemorySceneProvider()
+    _logger.debug("SceneProvider initialized: %r", scene_provider)
+
     # ----- UI services ------------------------------------------------
     editor_registry = _build_editor_registry()
     tool_registry = _build_tool_registry()
@@ -199,6 +208,7 @@ def main() -> int:
         telemetry=telemetry,
         flow_catalog=flow_catalog,
         command_dispatcher=command_dispatcher,
+        scene_provider=scene_provider,
     )
     window.show()
 

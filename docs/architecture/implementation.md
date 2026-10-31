@@ -11,7 +11,7 @@
 
 This document defines the **execution strategy** for building the CranioZ platform. It translates the architectural decisions (ADRs), the domain contracts, and the clinical requirements into a sequenced, testable, and iterative implementation plan.
 
-Its primary goal is to serve as a scientific, technical, and managerial instrument, distinguishing between the strict scope of the PhD research and the long-term evolution of the open-source platform.
+Its primary goal is to serve as a scientific, technical, and managerial instrument.
 
 It is also meant to be an **honest status record**: it distinguishes between *contracts that exist*, *reference implementations that exist*, *production implementations that exist*, and *wiring that connects them*. A deliverable marked ✅ means it is implemented and tested; 🚧 means a contract or partial implementation exists but the deliverable is not complete; ⏳ means it has not started.
 
@@ -45,7 +45,7 @@ The implementation follows five strict rules:
 
 ## 4. Phase Overview
 
-The implementation is divided into 11 phases. These phases are designed to build the *platform* progressively, ensuring the PhD delivers a validated clinical core.
+The implementation is divided into 11 phases. These phases are designed to build the *platform* progressively.
 
 | Phase | Name | Status | Done / Pending |
 |---|---|---|---|
@@ -252,7 +252,7 @@ No *contract* blockers remain. The ADRs (0007 Commands, 0008 Scene, 0009 Persist
 
 - **Status:** ⏳ Planned (Flow Catalog portion ✅).
 
-### Phase 6: Clinical Pipeline (PhD MVP)
+### Phase 6: Clinical Pipeline
 
 **Goal:** Build the specific clinical tools required for the orthognathic workflow.
 
@@ -270,7 +270,7 @@ This phase is divided into sub-phases to accurately measure scientific progress:
 
 ### Phase 7: Scientific Validation
 
-**Goal:** Execute the validation protocols defined in the PhD project.
+**Goal:** Execute the validation protocols defined in the project.
 
 - **Deliverables:**
   - Geometric validation reports (phantoms, ground-truth).
@@ -338,8 +338,8 @@ Testing is a clinical requirement. Metrics must be contextualized to avoid false
 - **UI Layer:** 80% coverage of `ui/workspace/`.
 
 ### 7.2 Performance Metrics (Reference Hardware)
+All performance metrics must be measured against a defined **Reference Dataset** and **Reference Hardware**.
 
-All performance metrics must be measured against a defined **Reference Dataset** and **Reference Hardware** (e.g., the workstations specified in the PhD infrastructure plan).
 
 - **DICOM Import:** Load a reference dataset of 500 slices in < 10 seconds (including indexing and readiness for first visualization).
 - **Rendering:** 30+ FPS for a mesh of 1,000,000 polygons.
@@ -375,9 +375,9 @@ A phase is "Done" when:
 8. **No production `NoOp*` placeholders remain in the boot path for a service that the phase claims to deliver.**
 9. **Known debt that affects the phase is either fixed or recorded in §10 with a linked issue.**
 
-### 8.1 The PhD Deliverable (Release 1.0)
+### 8.1 The Deliverable (Release 1.0)
 
-The PhD concludes with the delivery of the validated clinical core. It **does not** include Plugins, Nodes, AI/MCP, or multi-monitor support. These are explicitly deferred to Releases 2.0 and 3.0, demonstrating the platform's long-term vision and extensibility without compromising the thesis deadline.
+The concludes with the delivery of the validated clinical core. It **does not** include Plugins, Nodes, AI/MCP, or multi-monitor support. These are explicitly deferred to Releases 2.0 and 3.0, demonstrating the platform's long-term vision and extensibility without compromising the thesis deadline.
 
 ---
 
