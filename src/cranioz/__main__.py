@@ -27,6 +27,9 @@ from cranioz import __version__
 from cranioz.application.commands.executor import CommandExecutor
 from cranioz.application.commands.in_memory_bus import InMemoryCommandBus
 from cranioz.application.commands.stack import InMemoryCommandStack
+from cranioz.application.commands.transaction import (
+    InMemoryTransactionManager,
+)
 from cranioz.application.event_bus import EventBus
 from cranioz.application.events import EventBusAdapter
 from cranioz.application.flows.catalog import FlowCatalog
@@ -137,10 +140,12 @@ def main() -> int:
     _logger.debug("Command bus initialized: %r", command_bus)
 
     command_stack = InMemoryCommandStack()
+    transaction_manager = InMemoryTransactionManager()
     command_dispatcher = CommandExecutor(
         command_bus=command_bus,
         command_stack=command_stack,
         event_bus=event_bus,
+        transaction_manager=transaction_manager,
     )
     _logger.debug("CommandDispatcher initialized: %r", command_dispatcher)
 

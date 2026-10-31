@@ -1,14 +1,4 @@
-"""Base types for the Command mechanism (ADR-0007).
-
-A Command is immutable data expressing an intent to change persistent
-state. A CommandHandler validates, opens a transaction, mutates the
-domain, commits, and publishes events. The CommandBus routes a Command
-to its Handler by type.
-
-This module defines the data and error types shared by every Command,
-Handler, Bus, and Stack. It has no Qt, filesystem, or EventBus
-dependency.
-"""
+"""Base types for the Command mechanism (ADR-0007)."""
 
 from __future__ import annotations
 
@@ -26,6 +16,11 @@ class Command:
 
     command_id: str = field(default="")
     metadata: dict[str, Any] = field(default_factory=dict)
+    # ADR-0007 §2.5: every Command declares reversibility.
+    is_reversible: bool = True
+    # The compensating Command (Undo). Set by the executor after a
+    # successful dispatch, or by the caller for pre-planned undo.
+    compensating: Command | None = None
 
     @classmethod
     def new(
@@ -35,7 +30,6 @@ class Command:
         metadata: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> Command:
-        """Return a new Command with a generated ``command_id``."""
         if command_id is None:
             command_id = str(uuid.uuid4())
         if metadata is None:
@@ -44,7 +38,6 @@ class Command:
 
     @staticmethod
     def new_id() -> str:
-        """Return a fresh ``command_id``."""
         return str(uuid.uuid4())
 
 
