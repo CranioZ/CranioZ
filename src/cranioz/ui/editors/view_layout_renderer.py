@@ -1,8 +1,17 @@
 """ViewLayoutRenderer.
 
 Materializes a ViewLayoutSpec (nested split tree of Views) into Qt
-widgets, using QSplitter for Splits and each View's content_widget()
-for Leaves.
+widgets.
+
+For the common 2x2 grid pattern (Split(VERTICAL) with two
+Split(HORIZONTAL) children, each with two leaves), the renderer uses
+a QGridLayout, so the row and column dividers are shared (dragging
+one divider moves all cells in that row/column). This is the
+expected behavior for a 2x2 grid.
+
+For other layouts (arbitrary N-ary split trees), the renderer falls
+back to nested QSplitters, each managing its own children
+independently. This is the expected behavior for non-grid layouts.
 
 This is the counterpart of LayoutRenderer (which materializes the
 Area Layout Tree). The ViewLayoutRenderer does the same job for the
@@ -18,9 +27,10 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable
+from typing import cast
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QSplitter, QWidget
+from PySide6.QtWidgets import QSplitter, QVBoxLayout, QWidget
 
 from cranioz.ui.editors.view import View
 from cranioz.ui.editors.view_layout_spec import (
@@ -37,11 +47,12 @@ class ViewLayoutRendererError(ValueError):
 
 
 class ViewLayoutRenderer:
-    """Materializes a ViewLayoutSpec into nested QSplitters + View widgets."""
+    """Materializes a ViewLayoutSpec into Qt widgets."""
 
     def __init__(self, on_splitter_moved: Callable[[], None] | None = None) -> None:
         self._splitter_moved_callback = on_splitter_moved
         self._split_widgets: dict[int, QSplitter] = {}
+        self._grid_widgets: dict[int, QWidget] = {}
 
     # ----- Public API -----------------------------------------------
 
@@ -50,35 +61,20 @@ class ViewLayoutRenderer:
         spec: ViewLayoutSpec,
         views_by_id: dict[str, View],
     ) -> QWidget:
-        """Render the ViewLayoutSpec and return the root widget.
-
-        Args:
-            spec: the declarative layout of the Views.
-            views_by_id: mapping from view_id to the View instance.
-                Every view_id referenced in the spec must exist in
-                this mapping.
-
-        Returns:
-            The root widget (a QSplitter for a Split root, or the
-            View's content widget for a Leaf root).
-
-        Raises:
-            ViewLayoutRendererError: if a view_id is missing from
-                `views_by_id`, or if the spec is malformed.
-        """
+        """Render the ViewLayoutSpec and return the root widget."""
         return self._render_node(spec, views_by_id)
 
     def clear_cache(self) -> None:
-        """Discard all cached splitters.
-
-        Called when the Editor is disposed or when the layout is
-        rebuilt from scratch. After clear_cache(), a subsequent
-        render() creates new splitters.
-        """
+        """Discard all cached widgets."""
         for splitter in self._split_widgets.values():
             splitter.setParent(None)
             splitter.deleteLater()
         self._split_widgets.clear()
+
+        for grid in self._grid_widgets.values():
+            grid.setParent(None)
+            grid.deleteLater()
+        self._grid_widgets.clear()
 
     # ----- Internals ------------------------------------------------
 
@@ -90,6 +86,8 @@ class ViewLayoutRenderer:
         if node.type is ViewLayoutType.LEAF:
             return self._render_leaf(node, views_by_id)
         if node.type is ViewLayoutType.SPLIT:
+            if self._is_2x2_grid(node):
+                return self._render_2x2_grid(node, views_by_id)
             return self._render_split(node, views_by_id)
         raise ViewLayoutRendererError(f"unknown view layout type: {node.type!r}")
 
@@ -105,6 +103,112 @@ class ViewLayoutRenderer:
         if view is None:
             raise ViewLayoutRendererError(f"no View registered for view_id: {view_id!r}")
         return view.content_widget()
+
+    # ----- 2x2 grid (QGridLayout) -----------------------------------
+
+    @staticmethod
+    def _is_2x2_grid(node: ViewLayoutSpec) -> bool:
+        """Return True if node is a 2x2 grid pattern."""
+        if node.type is not ViewLayoutType.SPLIT:
+            return False
+        if node.direction is not SplitDirection.VERTICAL:
+            return False
+        if len(node.children) != 2:
+            return False
+        return all(
+            row.type is ViewLayoutType.SPLIT
+            and row.direction is SplitDirection.HORIZONTAL
+            and len(row.children) == 2
+            and all(
+                leaf.type is ViewLayoutType.LEAF and leaf.view_id is not None
+                for leaf in row.children
+            )
+            for row in node.children
+        )
+
+    def _render_2x2_grid(
+        self,
+        node: ViewLayoutSpec,
+        views_by_id: dict[str, View],
+    ) -> QWidget:
+        key = id(node)
+        container = self._grid_widgets.get(key)
+        if container is None:
+            container = QWidget()
+            container.setObjectName(f"view_layout_grid_{key}")
+
+            outer_layout = QVBoxLayout(container)
+            outer_layout.setContentsMargins(0, 0, 0, 0)
+            outer_layout.setSpacing(0)
+
+            outer_splitter = QSplitter(Qt.Orientation.Vertical)
+            outer_splitter.setObjectName(f"view_layout_grid_{key}_rows")
+            outer_splitter.setChildrenCollapsible(False)
+
+            top_splitter = QSplitter(Qt.Orientation.Horizontal)
+            top_splitter.setObjectName(f"view_layout_grid_{key}_top")
+            top_splitter.setChildrenCollapsible(False)
+
+            bottom_splitter = QSplitter(Qt.Orientation.Horizontal)
+            bottom_splitter.setObjectName(f"view_layout_grid_{key}_bottom")
+            bottom_splitter.setChildrenCollapsible(False)
+
+            outer_splitter.addWidget(top_splitter)
+            outer_splitter.addWidget(bottom_splitter)
+            outer_layout.addWidget(outer_splitter)
+
+            self._sync_splitters(top_splitter, bottom_splitter)
+            self._grid_widgets[key] = container
+
+        # Find the outer splitter and the two inner splitters.
+        outer_layout = cast(QVBoxLayout, container.layout())
+        item = outer_layout.itemAt(0)
+        if item is None:
+            raise ViewLayoutRendererError("2x2 grid layout has no items")
+        outer_splitter = cast(QSplitter, item.widget())
+        top_splitter = cast(QSplitter, outer_splitter.widget(0))
+        bottom_splitter = cast(QSplitter, outer_splitter.widget(1))
+
+        # Clear existing children from the inner splitters.
+        for splitter in (top_splitter, bottom_splitter):
+            while splitter.count():
+                widget = splitter.widget(0)
+                if widget is not None:
+                    widget.setParent(None)
+
+        top_row, bottom_row = node.children
+        top_left, top_right = top_row.children
+        bottom_left, bottom_right = bottom_row.children
+
+        top_splitter.addWidget(self._render_leaf(top_left, views_by_id))
+        top_splitter.addWidget(self._render_leaf(top_right, views_by_id))
+        bottom_splitter.addWidget(self._render_leaf(bottom_left, views_by_id))
+        bottom_splitter.addWidget(self._render_leaf(bottom_right, views_by_id))
+
+        for splitter in (outer_splitter, top_splitter, bottom_splitter):
+            n = splitter.count()
+            if n >= 2:
+                base = 1000 // n
+                splitter.setSizes([base] * n)
+
+        return container
+
+    def _sync_splitters(
+        self,
+        a: QSplitter,
+        b: QSplitter,
+    ) -> None:
+        """Synchronize two splitters: dragging one moves the other."""
+
+        def _sync(source: QSplitter, target: QSplitter) -> None:
+            target.blockSignals(True)
+            target.setSizes(source.sizes())
+            target.blockSignals(False)
+
+        a.splitterMoved.connect(lambda pos, idx: _sync(a, b))
+        b.splitterMoved.connect(lambda pos, idx: _sync(b, a))
+
+    # ----- QSplitter fallback (arbitrary layouts) -------------------
 
     def _render_split(
         self,
@@ -137,7 +241,6 @@ class ViewLayoutRenderer:
         """Ensure the splitter's children match the spec's children."""
         expected: list[QWidget] = [self._render_node(child, views_by_id) for child in node.children]
 
-        # Detach children that are no longer part of the split.
         current: list[QWidget] = []
         for i in range(splitter.count()):
             widget = splitter.widget(i)
@@ -147,25 +250,17 @@ class ViewLayoutRenderer:
             if widget not in expected:
                 widget.setParent(None)
 
-        # Insert expected children in the right order.
         for index, widget in enumerate(expected):
             if splitter.indexOf(widget) == index:
                 continue
             splitter.insertWidget(index, widget)
 
-        # Set a minimum size for each child so QSplitter does not
-        # collapse any of them.
-        for widget in expected:
-            widget.setMinimumSize(50, 50)
+        # Give every child the same stretch factor.
+        for index in range(splitter.count()):
+            splitter.setStretchFactor(index, 1)
 
-        # Give all children the same stretch factor, so the splitter
-        # distributes space evenly.
-        for i in range(splitter.count()):
-            splitter.setStretchFactor(i, 1)
-
-        # Set the initial sizes to 50/50 (or evenly distributed).
-        # This is only applied once, when the splitter is first populated.
-        if splitter.count() >= 2 and splitter.sizes() == [0] * splitter.count():
+        # Force a perfectly equal distribution of sizes.
+        if splitter.count() >= 2:
             n = splitter.count()
             base = 1000 // n
             splitter.setSizes([base] * n)

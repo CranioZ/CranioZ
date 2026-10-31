@@ -14,6 +14,7 @@ These tests verify:
 from __future__ import annotations
 
 import pytest
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QSplitter
 from pytestqt.qtbot import QtBot
 
@@ -120,18 +121,29 @@ def test_content_widget_renders_nested_splitters(
     qtbot: QtBot,
     editor: TomographyEditor,
 ) -> None:
-    """The 2x2 grid has a horizontal splitter containing a vertical splitter."""
+    """The 2x2 grid is rendered as nested QSplitters inside a container."""
     widget = editor.content_widget()
     qtbot.addWidget(widget)
 
-    # The root is a horizontal splitter.
-    assert isinstance(widget, QSplitter)
-    assert widget.count() == 2
+    # The root is a container (QWidget) with the grid.
+    assert widget is not None
 
-    # The right child is a vertical splitter.
-    right = widget.widget(1)
-    assert isinstance(right, QSplitter)
-    assert right.count() == 2
+    # Find the QSplitters inside the container.
+    splitters = widget.findChildren(QSplitter)
+    assert len(splitters) >= 1, "Expected at least one QSplitter in the grid"
+
+    # The outer splitter is vertical (divides rows).
+    outer = splitters[0]
+    assert outer.orientation() == Qt.Orientation.Vertical
+    assert outer.count() == 2
+
+    # Each row is a horizontal splitter (divides columns).
+    top_row = outer.widget(0)
+    bottom_row = outer.widget(1)
+    assert isinstance(top_row, QSplitter)
+    assert isinstance(bottom_row, QSplitter)
+    assert top_row.orientation() == Qt.Orientation.Horizontal
+    assert bottom_row.orientation() == Qt.Orientation.Horizontal
 
 
 # ----- Toolbars -----------------------------------------------------

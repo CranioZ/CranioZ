@@ -1,53 +1,42 @@
 """Viewport3DView — a 3D view of the Scene.
 
-This is a View, not an Editor. It is hosted by an Editor (e.g.,
-TomographyEditor) that coordinates it with other Views (Axial,
-Coronal, Sagittal).
+For the first version, this View renders a placeholder QLabel.
+The real VTK integration (QVTKRenderWindowInteractor with a
+functional RenderWindow) will be implemented in a later piece.
+
+This placeholder allows the layout (grid 2x2, Toolbars, split
+tree) to be validated without VTK's resize artifacts.
 """
 
 from __future__ import annotations
 
-from typing import Any
-
-from PySide6.QtWidgets import QWidget
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QLabel, QWidget
 
 from cranioz.ui.editors.view import View
 
 
 class Viewport3DView(View):
-    """A 3D view of the Scene."""
+    """A 3D view of the Scene (placeholder)."""
 
     def __init__(self, view_id: str = "view.viewport_3d") -> None:
         super().__init__(view_id=view_id, view_type="3d")
         self._content: QWidget | None = None
-        self._renderer: Any = None
 
     def content_widget(self) -> QWidget:
         if self._content is None:
-            try:
-                from vtkmodules.qt.QVTKRenderWindowInteractor import (  # noqa: PLC0415
-                    QVTKRenderWindowInteractor,
-                )
-            except ImportError as exc:
-                raise RuntimeError(
-                    "VTK Qt integration is not installed. Install it with 'pip install vtk'."
-                ) from exc
-            self._content = QVTKRenderWindowInteractor()  # type: ignore[no-untyped-call]
-            self._content.setObjectName(f"viewport_3d.view.{self.view_id}")
-            from cranioz.infrastructure.rendering.vtk_scene_renderer import (  # noqa: PLC0415
-                VTKSceneRenderer,
+            self._content = QLabel(
+                f"Viewport 3D\n{self.view_id}\n\n"
+                "(Placeholder — VTK 3D will be implemented in a later piece)"
             )
-
-            self._renderer = VTKSceneRenderer()
-            self._content.GetRenderWindow().AddRenderer(  # type: ignore[no-untyped-call]
-                self._renderer.renderer
+            self._content.setObjectName(f"viewport_3d.view.{self.view_id}")
+            self._content.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self._content.setStyleSheet(
+                "QLabel { background-color: #2a2a2a; color: #eee; font-size: 14px; padding: 24px; }"
             )
         return self._content
 
     def dispose(self) -> None:
-        if self._renderer is not None:
-            self._renderer.detach_scene()
-            self._renderer = None
         if self._content is not None:
             self._content.setParent(None)
             self._content.deleteLater()
