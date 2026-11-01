@@ -86,13 +86,66 @@ The implementation is divided into 11 phases. These phases are designed to build
    - `ViewLayoutRenderer` (synchronized 2x2 grid).
    - `AreaWidget` uses `QSplitter` instead of `QTabWidget`.
    - Toolbar inside the Editor (ADR-0002 + ADR-0013).
+
 1. **Replace remaining boot placeholders.** ✅ Resolved.
+   - `QtTaskManager` (não `NoOpTaskManager`).
+   - `LoggingTelemetrySink` (não `NoOpTelemetrySink`).
+
 2. **Fix Phase 2 debt (Workspace lifecycle and geometry).** ✅ Resolved.
-3. **Propagate `EditorContext`.** ✅ Resolved (shared_context propagated). `SceneQuery` and `EventSubscription` still pending.
-4. **Implement `CommandExecutor` and `CommandDispatcher`.** ⏳ Next.
-5. **Implement `domain/scene/`** per ADR-0008 and `scene.md`. ⏳ Pending.
-6. **Implement `RenderingAdapter`** and the first concrete Editors. ⏳ Pending.
-7. **Implement `application/modules/` for real.** ⏳ Pending.
+   - `AreaWidget.refresh`, `compute_region_bounds`, `Editor.dispose`,
+     atomicidade de `load_spec`, `TopOverlay` seguindo o splitter.
+
+3. **Propagate `EditorContext`.** 🚧 Partial.
+   - ✅ `task_manager`, `telemetry`, `correlation_id`,
+     `command_dispatcher` propagados via `shared_context`.
+   - ✅ `SceneQuery` propagado (Passo 7: `SceneProvider` +
+     `SceneQueryAdapter` + `MainWindow` + `Workspace`).
+   - ⏳ `EventSubscription` ainda pendente (Passo 9 ou 10).
+   - ⏳ `SelectionService`, `ViewStateStore`, `EditorServices` ainda
+     não existem no dataclass.
+
+4. **Complete the Command mechanism.** 🚧 Partial.
+   - ✅ `CommandExecutor` existe e é wireado no boot.
+   - ✅ `CommandBus`, `CommandStack`, `TransactionManager`
+     implementados (referência in-memory).
+   - ❌ `CommandExecutor.dispatch()` **não publica eventos**
+     pós-commit (viola ADR-0007 §2.4).
+   - ❌ `CommandExecutor` **nunca seta `command.compensating`**
+     (o `Command` é `frozen`; undo/redo está quebrado na prática).
+   - ❌ `undo()`/`redo()` **não usam transaction boundary**
+     nem publicam eventos.
+   - ❌ Nenhum Editor/Module dispatcha Commands reais ainda
+     (todos são placeholders).
+
+5. **Complete `domain/scene/` wiring.** 🚧 Partial.
+   - ✅ `Scene`, `DomainObjectStore`, `Transform`,
+     `SpatialRelationship` implementados (Passo 4).
+   - ✅ `SceneQueryAdapter` implementa `SceneQuery` (Passo 7).
+   - ✅ `SceneProvider` + `InMemorySceneProvider` (Passo 7).
+   - ❌ `DomainObjectStore` **não é instanciado no boot**.
+   - ❌ `ImportDicomSeriesCommand` (ou similar) não existe —
+     a `Scene` nunca recebe objetos reais.
+   - ⏳ `FilesystemSceneProvider` deferido (Phase 4,
+     Scene serialization).
+
+6. **Implement DICOM import (Passo 8a).** ⏳ Next.
+   - `infrastructure/imaging/dicom_loader.py` (pydicom + vtkImageData).
+   - `ImportDicomSeriesCommand` + handler.
+   - Wire `DomainObjectStore` no boot.
+   - Primeiro objeto real na `Scene` → `SceneQueryAdapter`
+     deixa de retornar `()`.
+
+7. **Implement `RenderingAdapter` e o primeiro Editor real.** ⏳ Pending.
+   - `MPRView` real (VTK `vtkResliceImageViewer`) — Passo 8b.
+   - `Viewport3DView` real (VTK `QVTKRenderWindowInteractor`).
+   - `RenderingAdapter` (observa `Scene`, atualiza VTK).
+
+8. **Implement `application/modules/` for real.** ⏳ Pending.
+   - `InMemoryModuleLoader` resolve dependências, importa
+     `entry_point`, registra Tools/Editors/Services/Flows.
+   - `BUILTIN_MANIFESTS` populado (Patient Module primeiro).
+   - `ModuleContext` com `EventBus` compartilhado (não um por
+     módulo — bug atual).
 
 ### 5.2 What blocks Phase 4
 
