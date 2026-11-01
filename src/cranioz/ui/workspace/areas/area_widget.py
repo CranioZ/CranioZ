@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import logging
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import (
     QHBoxLayout,
@@ -112,17 +112,59 @@ class AreaWidget(QWidget):
         if len(editors) == 1:
             # Single editor: render directly, no splitter needed.
             self._root_layout.addWidget(self._build_editor_widget(editors[0]))
-            return
+        else:
+            # Multiple editors: build a QSplitter (Editor Layout Tree).
+            splitter = QSplitter(Qt.Orientation.Horizontal)
+            splitter.setObjectName(f"area_widget.{self._area.area_id}.splitter")
+            splitter.setChildrenCollapsible(False)
+            for editor in editors:
+                splitter.addWidget(self._build_editor_widget(editor))
+            self._root_layout.addWidget(splitter)
 
-        # Multiple editors: build a QSplitter (Editor Layout Tree).
-        splitter = QSplitter(Qt.Orientation.Horizontal)
-        splitter.setObjectName(f"area_widget.{self._area.area_id}.splitter")
-        splitter.setChildrenCollapsible(False)
-        for editor in editors:
-            splitter.addWidget(self._build_editor_widget(editor))
-        self._root_layout.addWidget(splitter)
+        # 6. Force VTK to render its first frame. The QVTKRenderWindowInteractor
+        #    is created inside the Editor's content_widget(), but the widget
+        #    has no geometry yet (the Qt layout has not run). Schedule the
+        #    render for the next event-loop iteration AND for a delayed
+        #    moment, to cover the case where the first call runs before
+        #    the widget is actually shown.
+        QTimer.singleShot(0, self._force_vtk_render)
+        QTimer.singleShot(100, self._force_vtk_render)
 
     # ----- Internals ------------------------------------------------
+
+    def _force_vtk_render(self) -> None:
+        """Ask every QVTKRenderWindowInteractor under this Area to render.
+
+        This is a workaround for the first-frame issue with
+        QVTKRenderWindowInteractor: the widget is created and Render()
+        is called, but the VTK render window has no context yet
+        (the widget is not shown). Scheduling the render for the next
+        event-loop iteration fixes it.
+        """
+        found = 0
+        for child in self.findChildren(QWidget):
+            render_window = getattr(child, "GetRenderWindow", None)
+            if render_window is None:
+                continue
+            found += 1
+            try:
+                rw = render_window()
+                if rw is not None:
+                    rw.Render()
+            except Exception:
+                _logger.exception("VTK first-frame render failed for %r", child)
+
+        if found == 0:
+            _logger.debug(
+                "_force_vtk_render(%r): no QVTKRenderWindowInteractor found",
+                self.area_id,
+            )
+        else:
+            _logger.debug(
+                "_force_vtk_render(%r): rendered %d interactor(s)",
+                self.area_id,
+                found,
+            )
 
     def _apply_debug_background(self) -> None:
         palette = {

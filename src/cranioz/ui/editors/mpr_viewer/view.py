@@ -62,6 +62,7 @@ class MPRView(View):
         The view is created lazily on first call. Subsequent calls
         replace the volume and reset the slice to the middle.
         """
+        # 1. Create the VTK pipeline (interactor + image viewer) once.
         if self._image_viewer is None:
             self._interactor = QVTKRenderWindowInteractor()  # type: ignore[no-untyped-call]
             self._image_viewer = vtkResliceImageViewer()
@@ -76,18 +77,28 @@ class MPRView(View):
             self._image_viewer.SetColorLevel(500.0)
             self._image_viewer.SetResliceModeToAxisAligned()
 
-            if self._container is None:
-                self._container = QWidget()
-                self._container.setObjectName(f"mpr.view.{self.view_id}")
-                layout = QVBoxLayout(self._container)
-                layout.setContentsMargins(0, 0, 0, 0)
-                layout.setSpacing(0)
-                layout.addWidget(self._interactor)
+        # 2. Ensure the container exists. This may already have been
+        #    created by content_widget() (which the Editor calls before
+        #    set_volume in some paths). Creating it here is idempotent.
+        if self._container is None:
+            self._container = QWidget()
+            self._container.setObjectName(f"mpr.view.{self.view_id}")
+            self._container.setMinimumSize(1, 1)
+            layout = QVBoxLayout(self._container)
+            layout.setContentsMargins(0, 0, 0, 0)
+            layout.setSpacing(0)
 
-        # After the block above, both are guaranteed to be set.
+        # 3. Ensure the interactor is in the container's layout. This
+        #    is the fix for the bug: when content_widget() ran first,
+        #    the container existed but the interactor was never added
+        #    to its layout. addWidget is idempotent for the same widget.
         assert self._interactor is not None  # noqa: S101
-        assert self._image_viewer is not None  # noqa: S101
+        layout = self._container.layout()
+        if layout is not None and layout.indexOf(self._interactor) == -1:
+            layout.addWidget(self._interactor)
 
+        # 4. Push the data to VTK and render.
+        assert self._image_viewer is not None  # noqa: S101
         self._image_viewer.SetInputData(vtk_image_data)
         self._image_viewer.SetSlice(
             self._image_viewer.GetSliceMin()
@@ -114,6 +125,7 @@ class MPRView(View):
             # call set_volume() when a VolumeData becomes available.
             self._container = QWidget()
             self._container.setObjectName(f"mpr.view.{self.view_id}")
+            self._container.setMinimumSize(1, 1)
             layout = QVBoxLayout(self._container)
             layout.setContentsMargins(0, 0, 0, 0)
         return self._container
