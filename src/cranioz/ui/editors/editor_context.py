@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     from cranioz.application.scene.scene_query import SceneQuery
     from cranioz.application.tasks.base import TaskManager
     from cranioz.application.telemetry.base import TelemetrySink
+    from cranioz.domain.scene.domain_object_store import DomainObjectStore
 
 
 @dataclass(frozen=True)
@@ -40,4 +41,5 @@ class EditorContext:
     telemetry: TelemetrySink | None = None
     command_dispatcher: CommandDispatcher | None = None
     scene_query: SceneQuery | None = None
+    domain_object_store: DomainObjectStore | None = None
     event_subscription: EventSubscription | None = None

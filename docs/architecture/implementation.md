@@ -87,65 +87,83 @@ The implementation is divided into 11 phases. These phases are designed to build
    - `AreaWidget` uses `QSplitter` instead of `QTabWidget`.
    - Toolbar inside the Editor (ADR-0002 + ADR-0013).
 
+0.5. **Fix Startup Performance Debt.** ✅/🚧
+   - ✅ **Lazy Editor Registry:** `EditorRegistry` registers reference
+     strings (`cranioz.ui...:TomographyEditor`), not classes.
+     `importlib.import_module` is only called in `create()`.
+   - 🚧 **Async Flow Loading:** `MainWindow._populate_flow_list()`
+     must be asynchronous (via `QTimer.singleShot(0, ...)` or
+     `TaskManager`). The `MainWindow` constructor must not perform I/O.
+   - 🚧 **Async Project Refresh:** `ProjectTable.refresh()` must be
+     asynchronous. The HomePage must display "Loading..." and populate
+     the table when data arrives.
+   - 🚧 **Rollback in `_on_project_open_requested`:** If
+     `_create_workspace()` fails, call `manager.close_project()`.
+
+0.6. **Persistent Project Index.** ⏳ Next.
+   - `infrastructure/project/project_index.py` (SQLite).
+   - `ProjectCatalog` reads from the index (O(1)); reconciliation
+     (disk scan) is a `Background Initialization` task.
+
 1. **Replace remaining boot placeholders.** ✅ Resolved.
-   - `QtTaskManager` (não `NoOpTaskManager`).
-   - `LoggingTelemetrySink` (não `NoOpTelemetrySink`).
+   - `QtTaskManager` (not `NoOpTaskManager`).
+   - `LoggingTelemetrySink` (not `NoOpTelemetrySink`).
 
 2. **Fix Phase 2 debt (Workspace lifecycle and geometry).** ✅ Resolved.
    - `AreaWidget.refresh`, `compute_region_bounds`, `Editor.dispose`,
-     atomicidade de `load_spec`, `TopOverlay` seguindo o splitter.
+     `load_spec` atomicity, `TopOverlay` following the splitter.
 
 3. **Propagate `EditorContext`.** 🚧 Partial.
    - ✅ `task_manager`, `telemetry`, `correlation_id`,
-     `command_dispatcher` propagados via `shared_context`.
-   - ✅ `SceneQuery` propagado (Passo 7: `SceneProvider` +
+     `command_dispatcher` propagated via `shared_context`.
+   - ✅ `SceneQuery` propagated (Passo 7: `SceneProvider` +
      `SceneQueryAdapter` + `MainWindow` + `Workspace`).
-   - ⏳ `EventSubscription` ainda pendente (Passo 9 ou 10).
-   - ⏳ `SelectionService`, `ViewStateStore`, `EditorServices` ainda
-     não existem no dataclass.
+   - ⏳ `EventSubscription` still pending (Passo 9 or 10).
+   - ⏳ `SelectionService`, `ViewStateStore`, `EditorServices` still
+     do not exist in the dataclass.
 
 4. **Complete the Command mechanism.** 🚧 Partial.
-   - ✅ `CommandExecutor` existe e é wireado no boot.
+   - ✅ `CommandExecutor` exists and is wired at boot.
    - ✅ `CommandBus`, `CommandStack`, `TransactionManager`
-     implementados (referência in-memory).
-   - ❌ `CommandExecutor.dispatch()` **não publica eventos**
-     pós-commit (viola ADR-0007 §2.4).
-   - ❌ `CommandExecutor` **nunca seta `command.compensating`**
-     (o `Command` é `frozen`; undo/redo está quebrado na prática).
-   - ❌ `undo()`/`redo()` **não usam transaction boundary**
-     nem publicam eventos.
-   - ❌ Nenhum Editor/Module dispatcha Commands reais ainda
-     (todos são placeholders).
+     implemented (in-memory reference).
+   - ❌ `CommandExecutor.dispatch()` **does not publish events**
+     post-commit (violates ADR-0007 §2.4).
+   - ❌ `CommandExecutor` **never sets `command.compensating`**
+     (the `Command` is `frozen`; undo/redo is broken in practice).
+   - ❌ `undo()`/`redo()` **do not use transaction boundary**
+     nor publish events.
+   - ❌ No Editor/Module dispatches real Commands yet
+     (all are placeholders).
 
 5. **Complete `domain/scene/` wiring.** 🚧 Partial.
    - ✅ `Scene`, `DomainObjectStore`, `Transform`,
-     `SpatialRelationship` implementados (Passo 4).
-   - ✅ `SceneQueryAdapter` implementa `SceneQuery` (Passo 7).
+     `SpatialRelationship` implemented (Passo 4).
+   - ✅ `SceneQueryAdapter` implements `SceneQuery` (Passo 7).
    - ✅ `SceneProvider` + `InMemorySceneProvider` (Passo 7).
-   - ❌ `DomainObjectStore` **não é instanciado no boot**.
-   - ❌ `ImportDicomSeriesCommand` (ou similar) não existe —
-     a `Scene` nunca recebe objetos reais.
-   - ⏳ `FilesystemSceneProvider` deferido (Phase 4,
+   - ❌ `DomainObjectStore` **is not instantiated at boot**.
+   - ❌ `ImportDicomSeriesCommand` (or similar) does not exist —
+     the `Scene` never receives real objects.
+   - ⏳ `FilesystemSceneProvider` deferred (Phase 4,
      Scene serialization).
 
 6. **Implement DICOM import (Passo 8a).** ⏳ Next.
    - `infrastructure/imaging/dicom_loader.py` (pydicom + vtkImageData).
    - `ImportDicomSeriesCommand` + handler.
-   - Wire `DomainObjectStore` no boot.
-   - Primeiro objeto real na `Scene` → `SceneQueryAdapter`
-     deixa de retornar `()`.
+   - Wire `DomainObjectStore` at boot.
+   - First real object in the `Scene` → `SceneQueryAdapter`
+     stops returning `()`.
 
-7. **Implement `RenderingAdapter` e o primeiro Editor real.** ⏳ Pending.
-   - `MPRView` real (VTK `vtkResliceImageViewer`) — Passo 8b.
-   - `Viewport3DView` real (VTK `QVTKRenderWindowInteractor`).
-   - `RenderingAdapter` (observa `Scene`, atualiza VTK).
+7. **Implement `RenderingAdapter` and the first real Editor.** ⏳ Pending.
+   - Real `MPRView` (VTK `vtkResliceImageViewer`) — Passo 8b.
+   - Real `Viewport3DView` (VTK `QVTKRenderWindowInteractor`).
+   - `RenderingAdapter` (observes `Scene`, updates VTK).
 
 8. **Implement `application/modules/` for real.** ⏳ Pending.
-   - `InMemoryModuleLoader` resolve dependências, importa
-     `entry_point`, registra Tools/Editors/Services/Flows.
-   - `BUILTIN_MANIFESTS` populado (Patient Module primeiro).
-   - `ModuleContext` com `EventBus` compartilhado (não um por
-     módulo — bug atual).
+   - `InMemoryModuleLoader` resolves dependencies, imports
+     `entry_point`, registers Tools/Editors/Services/Flows.
+   - `BUILTIN_MANIFESTS` populated (Patient Module first).
+   - `ModuleContext` with shared `EventBus` (not one per
+     module — current bug).
 
 ### 5.2 What blocks Phase 4
 
@@ -179,10 +197,10 @@ No *contract* blockers remain. The ADRs (0007 Commands, 0008 Scene, 0009 Persist
   - ✅ `application/flows/` — `FlowDefinition`, `FlowStep`, `FlowSummary`, `FlowRepository`, `InMemoryFlowRepository`, `FlowCatalog`.
   - ✅ `infrastructure/flows/` — `FilesystemFlowRepository`, `FlowPathResolver`, `flow_serialization`.
 
-- **Placeholders in boot (known, must be replaced before Phase 4 is "done"):**
-  - 🚧 `NoOpTelemetrySink` is still constructed at boot. It must be replaced by `LoggingTelemetrySink`.
-  - 🚧 `InMemoryModuleRegistry` is constructed and populated from `BUILTIN_MANIFESTS`, but `BUILTIN_MANIFESTS` is empty.
-  - 🚧 `command_bus` is constructed but not wired into any dispatch path.
+- **Performance placeholders (to be resolved in Phase 3/4):**
+  - 🚧 `__main__.py` imports `TomographyEditor` and `Workspace` at module level (eager import).
+  - 🚧 `MainWindow.__init__` performs synchronous I/O (`_populate_flow_list`).
+  - 🚧 `ProjectTable.__init__` performs synchronous I/O (`refresh`).
 
 - **Tests:** Unit tests for config validation and path resolution; smoke test for boot-time dependency construction.
 
@@ -246,6 +264,13 @@ No *contract* blockers remain. The ADRs (0007 Commands, 0008 Scene, 0009 Persist
 
 - **Status:** ✅ Core implemented. 🚧 Peripherals deferred.
 
+- **Startup Performance (mandatory for Phase 3 "Done"):**
+  - 🚧 `EditorRegistry` with lazy resolution (importlib).
+  - 🚧 `MainWindow` without I/O in its constructor.
+  - 🚧 `ProjectTable` with asynchronous loading.
+  - 🚧 Rollback in `_on_project_open_requested`.
+  - 🚧 `ProjectIndex` (SQLite) for O(1) project listing.
+
 ### Phase 4: Scene & Visualization
 
 **Goal:** Introduce the 3D/2D visualization layer and the spatial domain.
@@ -276,8 +301,8 @@ No *contract* blockers remain. The ADRs (0007 Commands, 0008 Scene, 0009 Persist
   - ⏳ Scene serialization (JSON).
 
 - **Boot wiring (partial):**
-  - ✅ `QtTaskManager` substituiu `NoOpTaskManager` no boot.
-  - ✅ `LoggingTelemetrySink` substituiu `NoOpTelemetrySink` no boot.
+  - ✅ `QtTaskManager` replaced `NoOpTaskManager` at boot.
+  - ✅ `LoggingTelemetrySink` replaced `NoOpTelemetrySink` at boot.
   - ⏳ Propagate `task_manager`, `telemetry`, `correlation_id` from `MainWindow` → `Workspace` → `LayoutBuilder` → `EditorContext` → `Editor`.
   - ⏳ Populate `BUILTIN_MANIFESTS` and make `InMemoryModuleLoader` resolve dependencies and `entry_point`.
 
@@ -501,3 +526,16 @@ This section records debt that is known, accepted for now, and must be resolved 
 - **`HomePage` uses `_humanize_translation_key`.** `MainWindow` uses a temporary helper function `_humanize_translation_key` to make flow names readable. This is a placeholder for the `TranslationService` and should be removed once i18n is wired.
 - - **`Viewport3DView` uses a `QLabel` placeholder.** The real VTK integration (`QVTKRenderWindowInteractor` with a functional `RenderWindow`) was attempted but caused resize artifacts. It is deferred to a later piece. The `Viewport3DView.content_widget()` returns a `QLabel`; `VTKSceneRenderer` and `VTKActorFactory` are not used by the View.
 - **`MPRView` uses a `QLabel` placeholder.** The real MPR (`vtkResliceImageViewer` or similar) is deferred to a later piece.
+
+### 10.9 Phase 0 / Phase 3 — Startup Performance Debt
+
+- **Eager import of `TomographyEditor` and `Workspace` in `__main__.py`.**
+  The `EditorRegistry` must use reference strings (see §5.1 item 0.5).
+- **Synchronous I/O in `MainWindow.__init__`.** `_populate_flow_list`
+  must be asynchronous.
+- **Synchronous I/O in `ProjectTable.__init__`.** `refresh` must be
+  asynchronous or use `ProjectIndex`.
+- **Missing rollback in `_on_project_open_requested`.** If the
+  `Workspace` fails, the project remains open in the `ProjectManager`.
+- **Missing `ProjectIndex`.** The HomePage scans the entire disk
+  on every launch.

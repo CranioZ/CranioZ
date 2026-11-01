@@ -41,6 +41,7 @@ from cranioz.application.project.project_manager import ProjectManager
 from cranioz.application.scene.scene_provider import InMemorySceneProvider
 from cranioz.config.loader import ConfigurationLoader
 from cranioz.config.schema import Config
+from cranioz.domain.scene.domain_object_store import DomainObjectStore
 from cranioz.infrastructure.app.app_path_resolver import (
     AppPathInaccessible,
     AppPathResolver,
@@ -181,6 +182,7 @@ def main() -> int:
     # FilesystemSceneProvider is implemented (Phase 4, Scene serialization).
     # See ADR-0008, scene.md.
     scene_provider = InMemorySceneProvider()
+    domain_object_store = DomainObjectStore()
     _logger.debug("SceneProvider initialized: %r", scene_provider)
 
     # ----- UI services ------------------------------------------------
@@ -209,6 +211,7 @@ def main() -> int:
         flow_catalog=flow_catalog,
         command_dispatcher=command_dispatcher,
         scene_provider=scene_provider,
+        domain_object_store=domain_object_store,
     )
     window.show()
 

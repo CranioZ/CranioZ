@@ -47,6 +47,7 @@ from cranioz.application.project.project_context import ProjectContext
 from cranioz.application.project.project_errors import ProjectError
 from cranioz.application.project.project_manager import ProjectManager
 from cranioz.domain.project.project_id import ProjectId
+from cranioz.domain.scene.domain_object_store import DomainObjectStore
 from cranioz.infrastructure.scene.scene_query_adapter import SceneQueryAdapter
 from cranioz.ui.editors.editor_registry import EditorRegistry
 from cranioz.ui.home.home_page import HomePage
@@ -110,6 +111,7 @@ class MainWindow(QMainWindow):
         command_dispatcher: CommandDispatcher | None = None,
         flow_catalog: FlowCatalog | None = None,
         scene_provider: SceneProvider | None = None,
+        domain_object_store: DomainObjectStore | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -124,6 +126,7 @@ class MainWindow(QMainWindow):
         self._command_dispatcher = command_dispatcher
         self._flow_catalog = flow_catalog
         self._scene_provider = scene_provider
+        self._domain_object_store = domain_object_store
 
         self._current_project_id: ProjectId | None = None
         self._workspace: Workspace | None = None
@@ -222,6 +225,7 @@ class MainWindow(QMainWindow):
             telemetry=self._telemetry,
             command_dispatcher=self._command_dispatcher,
             scene_query=scene_query,
+            domain_object_store=self._domain_object_store,
         )
 
         home_button = QPushButton("Home")

@@ -213,7 +213,7 @@ The presentation state associated with a Workspace layout: proportions (`QSplitt
 ### MainWindow
 The top-level application window. It hosts the Workspace and provides the application frame (native OS window controls and, when applicable, the OS menu bar). It does not own the Workspace layout state, clinical state, or workflow semantics.
 
-**See:** `architecture/main_window/main_window.md`
+**See:** `architecture/application/main_window.md`
 
 ### ModuleUISpec
 The declarative specification a Module provides to the Workspace, describing which Areas it wants the Workspace to materialize, their placement, and their internal Editor Layout Trees.

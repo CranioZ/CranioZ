@@ -54,6 +54,7 @@ if TYPE_CHECKING:
     from cranioz.application.scene.scene_query import SceneQuery
     from cranioz.application.tasks.base import TaskManager
     from cranioz.application.telemetry.base import TelemetrySink
+    from cranioz.domain.scene.domain_object_store import DomainObjectStore
 
 _logger = logging.getLogger(__name__)
 
@@ -76,6 +77,7 @@ class Workspace(QWidget):
         telemetry: TelemetrySink | None = None,
         command_dispatcher: CommandDispatcher | None = None,
         scene_query: SceneQuery | None = None,
+        domain_object_store: DomainObjectStore | None = None,
         event_subscription: EventSubscription | None = None,
         debug_colors: bool = False,
         parent: QWidget | None = None,
@@ -85,6 +87,7 @@ class Workspace(QWidget):
         self._command_dispatcher = command_dispatcher
         self._scene_query = scene_query
         self._event_subscription = event_subscription
+        self._domain_object_store = domain_object_store
 
         if project_context is None:
             raise WorkspaceError(
@@ -154,6 +157,7 @@ class Workspace(QWidget):
                 "telemetry": self._telemetry,
                 "command_dispatcher": self._command_dispatcher,
                 "scene_query": self._scene_query,
+                "domain_object_store": self._domain_object_store,
                 "event_subscription": self._event_subscription,
             },
         )

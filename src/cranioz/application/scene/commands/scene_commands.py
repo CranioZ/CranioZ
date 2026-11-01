@@ -49,3 +49,25 @@ class TransformObjectCommand(Command):
 class AddRelationshipCommand(Command):
     scene_id: str
     relationship: SpatialRelationship
+
+
+@dataclass(frozen=True, kw_only=True)
+class ImportDicomSeriesCommand(Command):
+    """Import a DICOM series into the Scene.
+
+    The handler loads the series, registers the resulting
+    ``VolumeData`` in the ``DomainObjectStore``, and adds the new
+    ``object_id`` to the ``Scene``.
+    """
+
+    scene_id: str
+    path: str
+    object_id: str
+
+    def __post_init__(self) -> None:
+        if not self.scene_id:
+            raise ValueError("scene_id must not be empty")
+        if not self.path:
+            raise ValueError("path must not be empty")
+        if not self.object_id:
+            raise ValueError("object_id must not be empty")
