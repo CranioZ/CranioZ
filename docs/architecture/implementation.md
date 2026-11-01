@@ -146,17 +146,20 @@ The implementation is divided into 11 phases. These phases are designed to build
    - ⏳ `FilesystemSceneProvider` deferred (Phase 4,
      Scene serialization).
 
-6. **Implement DICOM import (Passo 8a).** ⏳ Next.
-   - `infrastructure/imaging/dicom_loader.py` (pydicom + vtkImageData).
-   - `ImportDicomSeriesCommand` + handler.
-   - Wire `DomainObjectStore` at boot.
-   - First real object in the `Scene` → `SceneQueryAdapter`
-     stops returning `()`.
+6. **Implement DICOM import (Passo 8a).** ✅ Resolved.
+   - ✅ `infrastructure/imaging/dicom_loader.py` (pydicom + vtkImageData).
+   - ✅ `ImportDicomSeriesCommand` + `ImportDicomSeriesHandler`.
+   - ✅ `DomainObjectStore` instantiated at boot and wired through
+     `MainWindow` → `Workspace` → `EditorContext`.
+   - ✅ First real object in the `Scene` (via integration test).
+   - ⏳ UI of import (QFileDialog + button) — Passo 8e.
 
-7. **Implement `RenderingAdapter` and the first real Editor.** ⏳ Pending.
-   - Real `MPRView` (VTK `vtkResliceImageViewer`) — Passo 8b.
-   - Real `Viewport3DView` (VTK `QVTKRenderWindowInteractor`).
-   - `RenderingAdapter` (observes `Scene`, updates VTK).
+7. **Implement the first real Editor (VTK).** 🚧 Partial.
+   - ✅ Real `MPRView` (`vtkResliceImageViewer`, axial/coronal/sagittal) — Passo 8b.
+   - ✅ `TomographyEditor` resolves `VolumeData` from `DomainObjectStore` and passes to Views.
+   - 🚧 Real `Viewport3DView` with volume rendering (`vtkSmartVolumeMapper`) — Passo 8c (in progress).
+   - ⏳ `RenderingAdapter` (observes `Scene`, updates VTK) — Passo 9.
+   - ⏳ Window/level controls in the Toolbar — Passo 8d.
 
 8. **Implement `application/modules/` for real.** ⏳ Pending.
    - `InMemoryModuleLoader` resolves dependencies, imports
@@ -294,17 +297,22 @@ No *contract* blockers remain. The ADRs (0007 Commands, 0008 Scene, 0009 Persist
   - ⏳ `CommandExecutor` — ties transaction boundary, post-commit event publication, `CommandStack` and `CommandBus`. Not implemented.
   - ⏳ `CommandDispatcher` — the interface used by Editors/Tools to dispatch Commands. Not wired.
 
-- **Domain / infrastructure / UI (pending):**
-  - ⏳ `domain/scene/` — `Scene`, `DomainObjectStore`.
-  - ⏳ `infrastructure/rendering/` — `RenderingAdapter`, VTK bridge.
-  - ⏳ `ui/editors/` — `Viewport3DEditor`, `MPRViewerEditor`.
+- **Domain / infrastructure / UI (partial):**
+  - ✅ `domain/scene/` — `Scene`, `DomainObjectStore`, `Transform`, `SpatialRelationship`.
+  - ✅ `infrastructure/imaging/` — `dicom_loader.py` (pydicom + vtkImageData).
+  - ✅ `application/scene/` — `SceneProvider`, `InMemorySceneProvider`, `SceneQueryAdapter`, `ImportDicomSeriesCommand` + handler.
+  - ✅ `ui/editors/mpr_viewer/` — real `MPRView` (`vtkResliceImageViewer`).
+  - 🚧 `ui/editors/viewport_3d/` — `Viewport3DView` com `vtkOutlineFilter` (volume rendering em 8c).
+  - ⏳ `infrastructure/rendering/` — `RenderingAdapter` (observes `Scene`, updates VTK).
   - ⏳ Scene serialization (JSON).
 
 - **Boot wiring (partial):**
-  - ✅ `QtTaskManager` replaced `NoOpTaskManager` at boot.
-  - ✅ `LoggingTelemetrySink` replaced `NoOpTelemetrySink` at boot.
-  - ⏳ Propagate `task_manager`, `telemetry`, `correlation_id` from `MainWindow` → `Workspace` → `LayoutBuilder` → `EditorContext` → `Editor`.
-  - ⏳ Populate `BUILTIN_MANIFESTS` and make `InMemoryModuleLoader` resolve dependencies and `entry_point`.
+  - ✅ `QtTaskManager` substituiu `NoOpTaskManager`.
+  - ✅ `LoggingTelemetrySink` substituiu `NoOpTelemetrySink`.
+  - ✅ `SceneProvider` + `InMemorySceneProvider` no boot (Passo 7).
+  - ✅ `DomainObjectStore` no boot (Passo 8a).
+  - ⏳ Propagate `SceneQuery` and `EventSubscription` to `EditorContext` — `SceneQuery` ✅, `EventSubscription` ⏳ (Passo 9).
+  - ⏳ `BUILTIN_MANIFESTS` + `InMemoryModuleLoader` real (Passo 10).
 
 - **Blockers:** No contract blockers. Implementation and wiring blockers tracked in §5.1.
 
@@ -524,9 +532,11 @@ This section records debt that is known, accepted for now, and must be resolved 
 - **`Project deletion` not coordinated.** As noted in §10.4, deleting a project only removes `project.json`. The `ProjectManager` must coordinate with other persistence layers (Patient, Scene, Layout) to perform a full, atomic deletion.
 - **`Filesystem repositories` need integration tests.** The `FilesystemProjectRepository` and `FilesystemFlowRepository` have unit tests, but their integration with the real filesystem (permissions, atomic writes, directory traversal) needs more thorough testing.
 - **`HomePage` uses `_humanize_translation_key`.** `MainWindow` uses a temporary helper function `_humanize_translation_key` to make flow names readable. This is a placeholder for the `TranslationService` and should be removed once i18n is wired.
-- - **`Viewport3DView` uses a `QLabel` placeholder.** The real VTK integration (`QVTKRenderWindowInteractor` with a functional `RenderWindow`) was attempted but caused resize artifacts. It is deferred to a later piece. The `Viewport3DView.content_widget()` returns a `QLabel`; `VTKSceneRenderer` and `VTKActorFactory` are not used by the View.
-- **`MPRView` uses a `QLabel` placeholder.** The real MPR (`vtkResliceImageViewer` or similar) is deferred to a later piece.
-
+- ✅ **`MPRView` is now backed by `vtkResliceImageViewer`.** (Passo 8b)   Axial, coronal, and sagittal orientations are supported. The View
+  receives a `vtkImageData` via `set_volume()` from the   `TomographyEditor`.
+- 🚧 **`Viewport3DView` uses `vtkOutlineFilter`.** (Passo 8b)   Volume rendering (`vtkSmartVolumeMapper` + presets) is planned for
+  Passo 8c. Window/level controls are planned for Passo 8d.
+- 
 ### 10.9 Phase 0 / Phase 3 — Startup Performance Debt
 
 - **Eager import of `TomographyEditor` and `Workspace` in `__main__.py`.**
@@ -539,3 +549,13 @@ This section records debt that is known, accepted for now, and must be resolved 
   `Workspace` fails, the project remains open in the `ProjectManager`.
 - **Missing `ProjectIndex`.** The HomePage scans the entire disk
   on every launch.
+
+### 10.10 Phase 4 — Volume rendering and window/level
+
+- **Volume rendering is not implemented.** `Viewport3DView` uses   `vtkOutlineFilter` (bounding box) as a placeholder. The real
+  rendering (`vtkSmartVolumeMapper` + presets) is Passo 8c.
+- **Window/level controls are not exposed.** `set_window_level()` in   `Viewport3DView` stores the values but does not apply them to the
+  transfer function; the MPR `set_window_level` is applied directly.
+  UI controls are Passo 8d.
+- **Preset editor and import/export are deferred.** The 4 built-in   presets (`bone`, `soft_tissue`, `skin`, `ct_angio`) are hardcoded
+  in `presets.py`. Custom presets, editor, and serialization are   Phase 8.

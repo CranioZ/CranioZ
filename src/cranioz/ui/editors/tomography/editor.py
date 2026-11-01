@@ -182,6 +182,7 @@ class TomographyEditor(Editor):
         store: DomainObjectStore,
         scene_query: Any,
     ) -> VolumeData | None:
+        """Resolve the first VolumeData from the DomainObjectStore."""
         from cranioz.domain.scene.volume_data import VolumeData  # noqa: PLC0415
 
         for object_id in scene_query.list_objects():
@@ -191,6 +192,12 @@ class TomographyEditor(Editor):
             if isinstance(candidate, VolumeData):
                 return candidate
         return None
+
+    # ----- Volume preset ---------------------------------------------
+
+    def set_volume_preset(self, name: str) -> None:
+        """Change the 3D volume rendering preset."""
+        self._viewport.set_preset(name)
 
     # ----- Lifecycle (dispose) --------------------------------------
 

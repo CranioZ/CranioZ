@@ -30,6 +30,7 @@ from cranioz.domain.scene.volume_data import VolumeData
 from cranioz.ui.editors.editor_context import EditorContext
 from cranioz.ui.editors.mpr_viewer.view import MPRView
 from cranioz.ui.editors.tomography.editor import TomographyEditor
+from cranioz.ui.editors.viewport_3d.presets import get_preset
 from cranioz.ui.editors.viewport_3d.view import Viewport3DView
 
 
@@ -143,3 +144,24 @@ def test_tomography_editor_dispose_clears_volume_flag(qtbot) -> None:
 
     # The Views were disposed; the Editor must reset its internal flag.
     assert editor._volume_applied is False  # noqa: SLF001
+
+
+@pytest.mark.qt
+@pytest.mark.integration
+def test_tomography_editor_viewport3d_has_volume_rendering(qtbot) -> None:
+    """The Viewport3DView is created with volume rendering (not outline)."""
+    volume = _make_volume_data()
+    store = DomainObjectStore()
+    store.add("volume-1", volume)
+    scene_query = InMemorySceneQuery()
+    scene_query._add("volume-1", object())
+
+    editor = TomographyEditor()
+    editor.initialize(_make_context(store, scene_query))
+    qtbot.addWidget(editor.content_widget())
+
+    viewport = editor.views()[-1]  # the 4th view is the 3D
+    assert isinstance(viewport, Viewport3DView)
+    assert viewport.has_volume is True
+    assert viewport.volume is not None
+    assert viewport.preset is get_preset("bone")
