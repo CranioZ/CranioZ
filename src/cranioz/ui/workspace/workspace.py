@@ -225,6 +225,30 @@ class Workspace(QWidget):
     def top_overlay(self) -> TopOverlay:
         return self._top_overlay
 
+    def reload_volume(self) -> None:
+        """Ask every hosted Editor to re-resolve its volume.
+
+        Editors that expose ``reload_volume()`` are called; others
+        are ignored. This is a placeholder for the real mechanism:
+        when the ``CommandExecutor`` publishes ``SceneObjectAdded``
+        events (ADR-0007), the Editor will subscribe and react
+        automatically. Until then, the ``MainWindow`` calls
+        ``reload_volume()`` after a successful import.
+        """
+        if self._build_result is None:
+            return
+        for area in self._build_result.areas:
+            for editor in area.editors():
+                reload = getattr(editor, "reload_volume", None)
+                if callable(reload):
+                    try:
+                        reload()
+                    except Exception:
+                        _logger.exception(
+                            "Editor.reload_volume() failed for %r",
+                            editor.editor_id,
+                        )
+
     def is_loaded(self) -> bool:
         return self._build_result is not None
 

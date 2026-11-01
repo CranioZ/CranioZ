@@ -199,6 +199,19 @@ class TomographyEditor(Editor):
         """Change the 3D volume rendering preset."""
         self._viewport.set_preset(name)
 
+    def reload_volume(self) -> None:
+        """Re-resolve the first VolumeData and pass it to the Views.
+
+        Called by ``Workspace.reload_volume()`` after a successful
+        DICOM import (Passo 8e). Idempotent: if the volume is
+        already applied and the store has not changed, it is a no-op
+        (the ``_volume_applied`` flag is reset, but
+        ``_try_apply_volume`` will only mark it True again if a
+        VolumeData is found).
+        """
+        self._volume_applied = False
+        self._try_apply_volume()
+
     # ----- Lifecycle (dispose) --------------------------------------
 
     def dispose(self) -> None:

@@ -559,3 +559,10 @@ This section records debt that is known, accepted for now, and must be resolved 
   UI controls are Passo 8d.
 - **Preset editor and import/export are deferred.** The 4 built-in   presets (`bone`, `soft_tissue`, `skin`, `ct_angio`) are hardcoded
   in `presets.py`. Custom presets, editor, and serialization are   Phase 8.
+
+
+### 10.X VTK OpenGL on Windows
+
+- **`QVTKRenderWindowInteractor` fails on Windows without a valid OpenGL context.** The `wglMakeCurrent` errors appear when a `MPRView` or `Viewport3DView` is created in a CI/servidor environment. The test passes (the volume is loaded), but the log is noisy.
+- **Solution:** use `vtkFixedPointVolumeRayCastMapper` (already done), or set `QT_QPA_PLATFORM=offscreen` in CI, or check OpenGL availability before creating the interactor.
+- **Affected:** `MPRView`, `Viewport3DView`.

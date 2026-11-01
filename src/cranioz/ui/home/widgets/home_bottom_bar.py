@@ -39,7 +39,7 @@ from cranioz.ui.home.widgets.start_button import StartButton
 class HomeBottomBar(QWidget):
     """Bottom bar of the Home Page, hosting the StartButton."""
 
-    MINIMUM_HEIGHT: int = 56
+    MINIMUM_HEIGHT: int = 80
 
     def __init__(
         self,
@@ -54,7 +54,7 @@ class HomeBottomBar(QWidget):
         # call setParent manually (that would fight the layout).
 
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(4, 4, 4, 4)
+        layout.setContentsMargins(2, 2, 2, 2)
         layout.setSpacing(0)
         layout.addStretch(1)
         layout.addWidget(self._start_button, alignment=Qt.AlignmentFlag.AlignRight)

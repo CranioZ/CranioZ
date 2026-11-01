@@ -9,13 +9,20 @@ Responsibilities:
 - Host the HomePage and the Workspace in a QStackedWidget.
 - Listen to HomePage.project_open_requested; call ProjectManager,
   create the Workspace with the resulting ProjectContext, inject
-  the "Home" button into the TopOverlay, and switch to the Workspace.
-- Listen to the "Home" button's clicked; call ProjectManager.close_project,
-  destroy the Workspace, and switch back to the HomePage.
+  the "Home" and "Import DICOM" buttons into the TopOverlay, and
+  switch to the Workspace.
+- Listen to the "Home" button's clicked; call
+  ProjectManager.close_project, destroy the Workspace, and switch
+  back to the HomePage.
+- Listen to the "Import DICOM" button's clicked; open a folder
+  picker, load the DICOM series, register the volume in the
+  DomainObjectStore and the Scene, and reload the Workspace's
+  volume.
 - Forward other HomePage signals to MessageBox placeholders for
   pieces that are not yet implemented (Bloco 8 / Bloco 9 / 7.6d).
 - Forward shared application services (TaskManager, TelemetrySink,
-  SceneProvider) to the Workspace (ADR-0011, ADR-0012).
+  SceneProvider, DomainObjectStore) to the Workspace (ADR-0011,
+  ADR-0012).
 - Populate the HomePage's FlowList from the FlowCatalog (A5).
 - Translate flow labels for the HomePage via a temporary humanizer
   until the TranslationService is wired.
@@ -31,9 +38,13 @@ Non-responsibilities (see main_window.md §9 and ADR-0006):
 from __future__ import annotations
 
 import logging
+import uuid
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from PySide6.QtWidgets import (
+    QFileDialog,
+    QHBoxLayout,
     QMainWindow,
     QMessageBox,
     QPushButton,
@@ -47,7 +58,10 @@ from cranioz.application.project.project_context import ProjectContext
 from cranioz.application.project.project_errors import ProjectError
 from cranioz.application.project.project_manager import ProjectManager
 from cranioz.domain.project.project_id import ProjectId
-from cranioz.domain.scene.domain_object_store import DomainObjectStore
+from cranioz.infrastructure.imaging.dicom_loader import (
+    DicomLoadError,
+    load_dicom_series,
+)
 from cranioz.infrastructure.scene.scene_query_adapter import SceneQueryAdapter
 from cranioz.ui.editors.editor_registry import EditorRegistry
 from cranioz.ui.home.home_page import HomePage
@@ -67,6 +81,7 @@ if TYPE_CHECKING:
     from cranioz.application.scene.scene_provider import SceneProvider
     from cranioz.application.tasks.base import TaskManager
     from cranioz.application.telemetry.base import TelemetrySink
+    from cranioz.domain.scene.domain_object_store import DomainObjectStore
 
 _logger = logging.getLogger(__name__)
 
@@ -228,11 +243,23 @@ class MainWindow(QMainWindow):
             domain_object_store=self._domain_object_store,
         )
 
+        # TopOverlay left segment: [Home] [Importar DICOM]
         home_button = QPushButton("Home")
         home_button.setObjectName("workspace.home_button")
         home_button.clicked.connect(self._on_home_clicked)
-        workspace.top_overlay().set_left_content(home_button)
 
+        import_button = QPushButton("Importar DICOM")
+        import_button.setObjectName("workspace.import_dicom_button")
+        import_button.clicked.connect(self._on_import_dicom_clicked)
+
+        top_left = QWidget()
+        top_left_layout = QHBoxLayout(top_left)
+        top_left_layout.setContentsMargins(0, 0, 0, 0)
+        top_left_layout.setSpacing(4)
+        top_left_layout.addWidget(home_button)
+        top_left_layout.addWidget(import_button)
+
+        workspace.top_overlay().set_left_content(top_left)
         workspace.load_spec(WORKSPACE_SPEC_DEFAULT)
         return workspace
 
@@ -249,6 +276,58 @@ class MainWindow(QMainWindow):
 
         self._stack.setCurrentWidget(self._home)
         self._home.refresh()
+
+    # ----- DICOM import ----------------------------------------------
+
+    def _on_import_dicom_clicked(self) -> None:
+        """Open a folder picker, load the DICOM series, and register it."""
+        if self._workspace is None:
+            return
+
+        path = QFileDialog.getExistingDirectory(
+            self,
+            "Selecionar pasta com DICOM",
+            "",
+            QFileDialog.Option.ShowDirsOnly,
+        )
+        if not path:
+            return
+
+        try:
+            volume = load_dicom_series(Path(path))
+        except DicomLoadError as exc:
+            QMessageBox.critical(self, "Falha ao importar DICOM", str(exc))
+            return
+        except Exception as exc:
+            _logger.exception("unexpected error importing DICOM from %s", path)
+            QMessageBox.critical(
+                self,
+                "Falha ao importar DICOM",
+                f"Erro inesperado: {exc}",
+            )
+            return
+
+        object_id = f"volume-{uuid.uuid4().hex[:8]}"
+
+        if self._domain_object_store is not None:
+            self._domain_object_store.add(object_id, volume)
+
+        if self._scene_provider is not None:
+            scene = self._scene_provider.get_scene()
+            scene.add_object(object_id)
+
+        # Ask the Workspace to re-resolve the volume in its Editors.
+        # This is a placeholder: when the CommandExecutor publishes
+        # SceneObjectAdded events (ADR-0007), the Editor will react
+        # automatically. Until then, the MainWindow triggers the
+        # reload explicitly.
+        self._workspace.reload_volume()
+        _logger.info(
+            "Imported DICOM series from %s as %s (dimensions=%s)",
+            path,
+            object_id,
+            volume.dimensions,
+        )
 
     # ----- HomePage action handlers (placeholders) ------------------
 
