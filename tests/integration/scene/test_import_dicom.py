@@ -46,4 +46,4 @@ def test_import_dicom_series_adds_volume_to_scene(tmp_path: Path) -> None:
     assert scene.list_objects() == ("volume-1",)
     assert store.contains("volume-1")
     volume = store.get("volume-1")
-    assert volume.series_uid == series_uid
+    assert volume.metadata.series_instance_uid == series_uid

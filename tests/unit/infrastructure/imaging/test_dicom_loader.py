@@ -28,7 +28,14 @@ def _write_synthetic_dcm(  # noqa: PLR0917
     rows: int = 4,
     cols: int = 4,
 ) -> None:
+    """Write a single synthetic axial DICOM slice with full geometry.
 
+    Includes the geometry attributes required by ``DicomSorter``:
+    ``ImagePositionPatient``, ``ImageOrientationPatient``, and
+    ``PixelSpacing``. The default orientation is a standard axial
+    stack (row = +X, col = +Y), which is enough for the loader and
+    the integration test to assemble a valid volume.
+    """
     file_meta = FileMetaDataset()
     file_meta.MediaStorageSOPClassUID = generate_uid()
     file_meta.MediaStorageSOPInstanceUID = generate_uid()
@@ -37,6 +44,7 @@ def _write_synthetic_dcm(  # noqa: PLR0917
 
     ds = Dataset()
     ds.file_meta = file_meta
+    ds.Modality = "CT"
     ds.Rows = rows
     ds.Columns = cols
     ds.BitsAllocated = 16
@@ -45,14 +53,25 @@ def _write_synthetic_dcm(  # noqa: PLR0917
     ds.PixelRepresentation = 1
     ds.SamplesPerPixel = 1
     ds.PhotometricInterpretation = "MONOCHROME2"
+
+    # Geometry attributes (required by DicomSorter).
     ds.PixelSpacing = [0.5, 0.5]
     ds.SliceThickness = 1.0
     ds.ImagePositionPatient = [0.0, 0.0, z_position]
+    ds.ImageOrientationPatient = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0]
+
+    # Rescale attributes (used by DicomCalibrator).
+    ds.RescaleSlope = 1.0
+    ds.RescaleIntercept = -1024.0
+
+    # Identifiers.
     ds.SeriesInstanceUID = series_uid
-    ds.InstanceNumber = instance_number
+    ds.StudyInstanceUID = "1.2.3.4"
     ds.SOPInstanceUID = file_meta.MediaStorageSOPInstanceUID
     ds.SOPClassUID = file_meta.MediaStorageSOPClassUID
+    ds.InstanceNumber = instance_number
 
+    # Pixel data.
     pixel_data = np.zeros((rows, cols), dtype=np.int16) + instance_number
     ds.PixelData = pixel_data.tobytes()
     ds.save_as(str(path), enforce_file_format=True)

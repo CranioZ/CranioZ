@@ -53,11 +53,15 @@ class AddRelationshipCommand(Command):
 
 @dataclass(frozen=True, kw_only=True)
 class ImportDicomSeriesCommand(Command):
-    """Import a DICOM series into the Scene.
+    """Import a DICOM series from a folder into the Scene.
 
-    The handler loads the series, registers the resulting
-    ``VolumeData`` in the ``DomainObjectStore``, and adds the new
-    ``object_id`` to the ``Scene``.
+    The handler uses `DicomSeriesReader` (from
+    `infrastructure/imaging/dicom/`) to load, validate, sort,
+    calibrate, and assemble the series into a `Volume`.
+
+    The `object_id` is the stable identifier under which the Volume
+    is registered in the `DomainObjectStore`. The caller is
+    responsible for generating a unique ID.
     """
 
     scene_id: str
