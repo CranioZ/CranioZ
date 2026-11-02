@@ -5,6 +5,8 @@ from __future__ import annotations
 from collections.abc import Callable
 
 import pytest
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QSurfaceFormat
 from PySide6.QtWidgets import QApplication
 
 from cranioz.ui.editors.builtin.test_editor import DummyEditor
@@ -91,3 +93,15 @@ def make_toolbar_spec() -> Callable[..., ToolbarSpec]:
         )
 
     return _factory
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _configure_qt_surface_format():
+    QApplication.setAttribute(Qt.ApplicationAttribute.AA_ShareOpenGLContexts)
+    fmt = QSurfaceFormat()
+    fmt.setDepthBufferSize(24)
+    fmt.setStencilBufferSize(8)
+    fmt.setVersion(3, 2)
+    fmt.setProfile(QSurfaceFormat.OpenGLContextProfile.CoreProfile)
+    QSurfaceFormat.setDefaultFormat(fmt)
+    yield

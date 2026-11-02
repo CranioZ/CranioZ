@@ -292,18 +292,3 @@ class Workspace(QWidget):
                 )
             )
         return tuple(regions)
-
-    def showEvent(self, event) -> None:
-        super().showEvent(event)
-        QTimer.singleShot(100, self._force_all_vtk_render)
-
-    def _force_all_vtk_render(self) -> None:
-        for area in self.areas():
-            # Encontra o AreaWidget e força o render
-            for child in self.findChildren(QWidget):
-                rw = getattr(child, "GetRenderWindow", None)
-                if rw is not None:
-                    try:
-                        rw().Render()
-                    except Exception:
-                        pass
