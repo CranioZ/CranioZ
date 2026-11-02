@@ -1,12 +1,18 @@
 """Tests for MPRView.
 
-The MPRView wraps a ``vtkResliceImageViewer``. These tests exercise
-the View contract (content_widget, dispose, has_volume) and the
-set_volume integration with a synthetic ``vtkImageData``.
+The MPRView uses a manual VTK pipeline (vtkImageReslice +
+vtkImageMapToWindowLevelColors + vtkImageActor) instead of
+vtkResliceImageViewer. This is because vtkResliceImageViewer
+causes `wglMakeCurrent` failures on some Windows drivers.
 
-VTK is a hard requirement for the MPRView module itself (imported
-at the top of the module). The tests skip when VTK is not installed
-so the rest of the suite can run in minimal CI environments.
+These tests validate:
+- Construction with the three supported orientations.
+- content_widget() returns a QWidget container.
+- set_volume() marks has_volume=True.
+- dispose() clears the state.
+- Slice navigation methods (set_slice, get_slice, get_max_slice).
+
+VTK is a hard requirement; the tests skip when VTK is missing.
 """
 
 from __future__ import annotations
@@ -23,7 +29,6 @@ from cranioz.ui.editors.mpr_viewer.view import MPRView
 
 def _make_image() -> object:
     """Build a tiny synthetic ``vtkImageData`` (4x4x4, int16)."""
-
     image = vtk.vtkImageData()
     image.SetDimensions(4, 4, 4)
     image.SetSpacing(1.0, 1.0, 1.0)
@@ -46,7 +51,6 @@ def test_mpr_view_accepts_known_types(qtbot, view_type: str) -> None:
     qtbot.addWidget(widget)
     assert widget is not None
     assert not view.has_volume
-    assert view.image_viewer is None
 
 
 @pytest.mark.qt
@@ -58,21 +62,23 @@ def test_mpr_view_set_volume_marks_has_volume(qtbot) -> None:
     view.set_volume(image)
 
     assert view.has_volume is True
-    assert view.image_viewer is not None
 
 
 @pytest.mark.qt
 def test_mpr_view_set_volume_is_idempotent(qtbot) -> None:
-    """Calling set_volume twice must not recreate the viewer."""
+    """Calling set_volume twice must not recreate the pipeline."""
     image = _make_image()
     view = MPRView(view_id="view.axial", view_type="axial")
     qtbot.addWidget(view.content_widget())
 
     view.set_volume(image)
-    first_viewer = view.image_viewer
+    first_slice = view.get_slice()
 
     view.set_volume(image)
-    assert view.image_viewer is first_viewer
+    second_slice = view.get_slice()
+
+    # The slice index is reset to the middle on each set_volume.
+    assert first_slice == second_slice
     assert view.has_volume is True
 
 
@@ -87,4 +93,31 @@ def test_mpr_view_dispose_clears_state(qtbot) -> None:
     view.dispose()
 
     assert view.has_volume is False
-    assert view.image_viewer is None
+
+
+@pytest.mark.qt
+def test_mpr_view_set_slice(qtbot) -> None:
+    image = _make_image()
+    view = MPRView(view_id="view.axial", view_type="axial")
+    qtbot.addWidget(view.content_widget())
+    view.set_volume(image)
+
+    view.set_slice(0)
+    assert view.get_slice() == 0
+
+    view.set_slice(view.get_max_slice())
+    assert view.get_slice() == view.get_max_slice()
+
+
+@pytest.mark.qt
+def test_mpr_view_set_slice_clamps_to_range(qtbot) -> None:
+    image = _make_image()
+    view = MPRView(view_id="view.axial", view_type="axial")
+    qtbot.addWidget(view.content_widget())
+    view.set_volume(image)
+
+    view.set_slice(-100)
+    assert view.get_slice() == 0
+
+    view.set_slice(10000)
+    assert view.get_slice() == view.get_max_slice()

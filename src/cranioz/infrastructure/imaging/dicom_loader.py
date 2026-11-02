@@ -13,7 +13,12 @@ Scope (Passo 8a):
 Limitations are documented as errors (``DicomLoadError``) when
 encountered, so the caller can react. Expanding support is Phase 4+.
 
-See ADR-0008, scene.md.
+NOTE: This module is **temporary**. It will be replaced by the
+Medical Imaging Infrastructure (`infrastructure/imaging/dicom/`)
+in Sprint 3. The `# type: ignore` comments below are pragmatic
+fixes to keep `mypy` green until the replacement is ready.
+
+See ADR-0008, scene.md, medical_imaging_infrastructure.md.
 """
 
 from __future__ import annotations
@@ -187,8 +192,8 @@ def _sort_slices(slices: list[Any]) -> None:
     the volume.
 
     Strategy:
-    1. If ``ImagePositionPatient`` is present and has 248 distinct
-       Z values, sort by it (ascending).
+    1. If ``ImagePositionPatient`` is present and has distinct Z
+       values, sort by it (ascending).
     2. Otherwise, fall back to ``InstanceNumber`` (ascending).
     """
     positions: list[float] = []
@@ -241,17 +246,14 @@ def _build_volume_data(vtk: Any, slices: list[Any]) -> VolumeData:
 
     # --- SMOOTHING (CBCT denoising) ---
     # Apply a Gaussian filter to reduce CBCT noise.
+    # This is a pragmatic fallback until the Medical Imaging
+    # Infrastructure provides explicit calibration and filtering.
     smooth_filter = vtk.vtkImageGaussianSmooth()
     smooth_filter.SetInputData(image_data)
     smooth_filter.SetStandardDeviations(1.0, 1.0, 1.0)
     smooth_filter.SetRadiusFactors(1.0, 1.0, 1.0)
     smooth_filter.Update()
     image_data = smooth_filter.GetOutput()
-
-    print(f"VTK Image Dimensions: {image_data.GetDimensions()}")
-    print(f"VTK Image Spacing: {image_data.GetSpacing()}")
-    print(f"VTK Image Origin: {image_data.GetOrigin()}")
-    print(f"VTK Image Bounds: {image_data.GetBounds()}")
 
     series_uid = str(getattr(first, "SeriesInstanceUID", ""))
     return VolumeData(
@@ -314,7 +316,8 @@ def _stack_slices(
     (0-4095).
 
     This is a pragmatic approach: it guarantees the volume is viewable.
-    A future piece will handle proper CBCT-specific calibration.
+    A future piece (Medical Imaging Infrastructure) will handle proper
+    CBCT-specific calibration.
     """
     # First, stack the raw data to find the global min/max.
     raw_volume = np.zeros((num_slices, rows, cols), dtype=np.float32)
@@ -333,12 +336,12 @@ def _stack_slices(
                 if pixel_representation == 1:  # signed
                     dtype = np.int16
                 else:  # unsigned
-                    dtype = np.uint16
+                    dtype = np.uint16  # type: ignore[assignment]
             elif bits_allocated == 8:
                 if pixel_representation == 1:
-                    dtype = np.int8
+                    dtype = np.int8  # type: ignore[assignment]
                 else:
-                    dtype = np.uint8
+                    dtype = np.uint8  # type: ignore[assignment]
             else:
                 raise DicomLoadError(
                     _log_error(
@@ -351,7 +354,7 @@ def _stack_slices(
             raw_pixels = np.frombuffer(raw_bytes, dtype=dtype)
 
             # Reshape to (rows, cols).
-            raw_pixels = raw_pixels.reshape(rows, cols)
+            raw_pixels = raw_pixels.reshape(rows, cols)  # type: ignore[assignment]
 
             # Store in the raw volume.
             raw_volume[index, :, :] = raw_pixels.astype(np.float32)
@@ -376,8 +379,5 @@ def _stack_slices(
     normalized = (raw_volume - raw_min) / (raw_max - raw_min)
     scaled = normalized * 4095.0
     volume_array = scaled.astype(np.int16)
-
-    print(f"DEBUG Loader: raw_min={raw_min}, raw_max={raw_max}, "
-          f"scaled_range=({volume_array.min()}, {volume_array.max()})")
 
     return volume_array

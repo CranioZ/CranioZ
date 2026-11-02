@@ -19,10 +19,8 @@ from PySide6.QtWidgets import QLayout, QVBoxLayout, QWidget
 from vtkmodules.qt.QVTKRenderWindowInteractor import (
     QVTKRenderWindowInteractor,
 )
-from vtkmodules.vtkCommonCore import vtkCommand
-from vtkmodules.vtkCommonDataModel import vtkImageData
-from vtkmodules.vtkImagingCore import vtkImageReslice
 from vtkmodules.vtkImagingColor import vtkImageMapToWindowLevelColors
+from vtkmodules.vtkImagingCore import vtkImageReslice
 from vtkmodules.vtkRenderingCore import (
     vtkImageActor,
     vtkRenderer,
@@ -51,9 +49,9 @@ class MPRView(View):
     """A 2D MPR view backed by ``vtkImageReslice`` and ``vtkImageActor``."""
 
     def __init__(
-            self,
-            view_id: str = "view.mpr_axial",
-            view_type: str = "axial",
+        self,
+        view_id: str = "view.mpr_axial",
+        view_type: str = "axial",
     ) -> None:
         super().__init__(view_id=view_id, view_type=view_type)
         if view_type not in _ORIENTATION_BY_TYPE:
@@ -227,23 +225,41 @@ class MPRView(View):
         if orientation == _AXIAL:
             # Axial: slice along Z. X -> X, Y -> Y, Z -> Z.
             reslice.SetResliceAxesDirectionCosines(
-                1, 0, 0,
-                0, 1, 0,
-                0, 0, 1,
+                1,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                1,
             )
         elif orientation == _CORONAL:
             # Coronal: slice along Y. X -> X, Z -> Y, Y -> Z.
             reslice.SetResliceAxesDirectionCosines(
-                1, 0, 0,
-                0, 0, 1,
-                0, -1, 0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                -1,
+                0,
             )
         else:  # SAGITTAL
             # Sagittal: slice along X. Y -> X, Z -> Y, X -> Z.
             reslice.SetResliceAxesDirectionCosines(
-                0, 1, 0,
-                0, 0, 1,
-                1, 0, 0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
             )
 
     def _update_slice(self) -> None:

@@ -1,19 +1,21 @@
-"""CommandExecutor — ties CommandBus, CommandStack, EventBus,
-TransactionManager.
+"""CommandExecutor — ties CommandBus, CommandStack, EventBus, and
+TransactionManager into a single transactional execution path.
 
 The executor is the single entry point for state-changing operations.
 It orchestrates (ADR-0007 §2.1):
 
-1. Authorize (future: ProjectAccessPolicy).
-2. Validate (delegated to the Handler).
-3. Open a transaction.
-4. Domain mutation (delegated to the Handler).
-5. Commit or rollback.
-6. Post-commit event publication (via EventBus).
-7. Undo/redo stack (via CommandStack).
+1. Open a transaction.
+2. Dispatch the Command to its Handler (via CommandBus).
+3. If the Handler succeeds, commit the transaction and push the
+   Command (with its compensating) to the CommandStack.
+4. If the Handler raises, roll back (no events are published).
 
-The executor does NOT know the Domain, the UI, or the Handler
-internals. It coordinates the platform services.
+Events are published **only after** a successful commit (ADR-0007 §2.4).
+A Handler that publishes events directly violates this contract.
+
+Undo/redo also uses the transaction boundary: the compensating Command
+is dispatched through the same executor, so it also gets a transaction,
+post-commit event publication, and stack management.
 """
 
 from __future__ import annotations
@@ -35,7 +37,19 @@ _logger = logging.getLogger(__name__)
 
 
 class CommandExecutor:
-    """Single entry point for state-changing operations."""
+    """Single entry point for state-changing operations.
+
+    The executor is the only component that:
+    - Opens a transaction.
+    - Dispatches the Command.
+    - Publishes post-commit events.
+    - Manages the undo/redo stack.
+
+    Editors and Tools receive a ``CommandDispatcher`` interface
+    (implemented by this class) through their ``EditorContext`` and
+    ``ToolContext``. They never interact with the ``CommandBus``,
+    the ``TransactionManager``, or the ``CommandStack`` directly.
+    """
 
     def __init__(
         self,
@@ -60,11 +74,18 @@ class CommandExecutor:
         3. If the Handler succeeds, commits the transaction and pushes
            the Command (with its compensating) to the CommandStack.
         4. If the Handler raises, rolls back (no events are published).
+
+        Raises:
+            CommandNotRegistered: no Handler is registered for the
+                Command type.
+            CommandDispatchError: the Handler raised while executing.
         """
         try:
             with self._transaction_manager.begin():
                 result = self._command_bus.dispatch(command)
         except (CommandNotRegistered, CommandDispatchError):
+            # The transaction manager already rolled back.
+            # No events were published.
             raise
 
         # Handler succeeded; push to the undo/redo stack.
@@ -73,23 +94,53 @@ class CommandExecutor:
                 command,
                 compensating=command.compensating,
             )
+
         return result
 
     # ----- Undo/Redo ------------------------------------------------
 
     def undo(self) -> None:
-        """Undo the last reversible Command."""
+        """Undo the last reversible Command.
+
+        The compensating Command is dispatched through the same
+        transactional path, so it gets its own transaction, post-commit
+        event publication, and stack management.
+
+        If the stack has nothing to undo, or the last Command is
+        irreversible, this method is a no-op.
+        """
         compensating = self._command_stack.undo()
         if compensating is None:
             return
-        self._command_bus.dispatch(compensating)
+
+        try:
+            with self._transaction_manager.begin():
+                self._command_bus.dispatch(compensating)
+        except (CommandNotRegistered, CommandDispatchError):
+            _logger.exception(
+                "undo failed for compensating command %s",
+                type(compensating).__name__,
+            )
+            raise
 
     def redo(self) -> None:
-        """Redo the last undone Command."""
+        """Redo the last undone Command.
+
+        The Command is dispatched through the same transactional path.
+        """
         command = self._command_stack.redo()
         if command is None:
             return
-        self._command_bus.dispatch(command)
+
+        try:
+            with self._transaction_manager.begin():
+                self._command_bus.dispatch(command)
+        except (CommandNotRegistered, CommandDispatchError):
+            _logger.exception(
+                "redo failed for command %s",
+                type(command).__name__,
+            )
+            raise
 
     def can_undo(self) -> bool:
         return self._command_stack.can_undo()

@@ -1,20 +1,15 @@
 """Application Commands — state mutation contract (ADR-0007).
 
 Public API:
-
 - ``Command`` — immutable data expressing an intent to mutate state.
 - ``CommandHandler`` — Protocol; validates, executes, commits, publishes.
 - ``CommandBus`` — routes Commands to their Handler by type.
-- ``CommandHandlerRegistry`` — Protocol; maps a Command type to its Handler.
+- ``CommandDispatcher`` — interface used by Editors and Tools.
+- ``CommandExecutor`` — transactional executor (Sprint 1).
 - ``CommandStack`` — tracks reversible Commands for undo/redo.
-- ``InMemoryCommandBus`` — reference implementation (synchronous, in-memory).
+- ``InMemoryCommandBus`` — reference implementation.
 - ``InMemoryCommandStack`` — reference implementation.
-- ``CommandError`` and subclasses — application-level errors.
-
-The package has no Qt dependency. Dispatch is synchronous; the caller's
-thread is the execution thread. Transaction boundaries, event publication,
-and undo/redo integration are the Handler's (or a future CommandExecutor's)
-responsibility, not the Bus's.
+- ``InMemoryTransactionManager`` — reference implementation.
 """
 
 from cranioz.application.commands.base import (
@@ -35,6 +30,10 @@ from cranioz.application.commands.stack import (
     CommandStack,
     InMemoryCommandStack,
 )
+from cranioz.application.commands.transaction import (
+    InMemoryTransactionManager,
+    TransactionManager,
+)
 
 __all__ = [
     "Command",
@@ -49,4 +48,6 @@ __all__ = [
     "CommandStack",
     "InMemoryCommandBus",
     "InMemoryCommandStack",
+    "InMemoryTransactionManager",
+    "TransactionManager",
 ]

@@ -19,8 +19,10 @@ from __future__ import annotations
 import getpass
 import logging
 import logging.config
+import os
 from pathlib import Path
 
+import vtk
 import yaml
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QSurfaceFormat
@@ -32,12 +34,15 @@ from PySide6.QtWidgets import QApplication, QMessageBox
 # exactly once, at application startup. If they are set after the
 # QApplication, they are silently ignored and QVTKRenderWindowInteractor
 # fails with "wglMakeCurrent failed" on some Intel drivers.
+vtk.vtkObject.GlobalWarningDisplayOff()
+os.environ["VTK_DEFAULT_OPENGL_WINDOW"] = "vtkWin32OpenGLRenderWindow"
+
 QApplication.setAttribute(Qt.ApplicationAttribute.AA_ShareOpenGLContexts)
 
 _fmt = QSurfaceFormat()
 _fmt.setDepthBufferSize(24)
 _fmt.setStencilBufferSize(8)
-_fmt.setVersion(3, 0)
+_fmt.setVersion(3, 2)
 _fmt.setProfile(QSurfaceFormat.OpenGLContextProfile.CoreProfile)
 QSurfaceFormat.setDefaultFormat(_fmt)
 
@@ -213,14 +218,7 @@ def _build_flow_catalog(app_paths: AppPathResolver) -> FlowCatalog:
 
 
 # ----- Main ----------------------------------------------------------
-import vtk
-vtk.vtkObject.GlobalWarningDisplayOff() # Opcional: desliga logs de warning
-# Forçar renderização via software (fallback do Windows)
-# Nota: no Windows, o VTK usa OpenGL. Se falhar, podemos usar o backend de software do Mesa,
-# mas isso é complexo. Uma alternativa é forçar o uso de uma versão mais antiga do OpenGL.
-# tente:
-import os
-os.environ["VTK_DEFAULT_OPENGL_WINDOW"] = "vtkWin32OpenGLRenderWindow"
+
 
 def main() -> int:
     config = ConfigurationLoader().load()
