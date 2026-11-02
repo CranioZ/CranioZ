@@ -146,6 +146,8 @@ Do not rebuild existing DICOM import functionality without first reviewing the c
 - Validate physical orientation, spacing, origin and coordinate consistency.
 - Resolve Windows OpenGL and Qt rendering-context issues through reproducible tests.
 
+**DICOM visualization bug (paused):** The MPR and 3D views do not render the imported DICOM volume correctly. All correction attempts so far have not resolved the issue. The work is paused to avoid further trial-and-error. A systematic approach is planned (see §10.5 and the dedicated known-issues document). This must be resolved before Phase 4 can be considered complete.
+
 **Sprint 4.2 — Consume `Volume` in Views and Editors (in progress):**
 
 - Refactor `MPRView.set_volume` to accept `Volume` (domain) instead of `vtkImageData`.
@@ -832,6 +834,7 @@ This section records known issues that must be resolved or explicitly deferred b
 - Window/Level controls are not fully integrated across the visualization pipeline.
 - The MPR pipeline (`vtkImageReslice` + `vtkImageMapToWindowLevelColors` + `vtkImageActor`) is the documented baseline. Windows OpenGL stability remains a known concern (§10.6), but the API choice itself is settled.
 - VTK resource lifecycle and rendering-context stability require further testing.
+- **DICOM visualization bug (paused):** After importing a DICOM series, the MPR views display uniform gray rectangles (or tilted polygons) instead of anatomical slices, and the 3D viewport shows only the outline (or a distorted/streaked volume). The data pipeline works (the `Volume` reaches the Views), but the rendering pipeline does not produce correct pixels. The root cause is likely in the application of the direction matrix (`SetDirectionMatrix` / `vtkImageReslice`) and the configuration of the MPR reslice axes and 3D transfer function. All correction attempts so far (W/L with percentiles, CBCT preset, dynamic transfer function, reorientation via `vtkImageReslice`, removal of `SetDirectionMatrix`) have not resolved the issue. The correction work is paused. A detailed record is available in `docs/known_issues/dicom_visualization_bug.md` (or equivalent). This must be resolved before Phase 4 can be considered complete.
 
 ### 10.6 Phase 4 — Windows OpenGL and Qt Integration
 
@@ -856,6 +859,7 @@ This section records known issues that must be resolved or explicitly deferred b
 - The main `README.md` requires content.
 - i18n tests require implementation.
 - Filesystem repository integration tests require expansion.
+- `docs/known_issues/dicom_visualization_bug.md` (or equivalent) records the paused DICOM visualization bug, with diagnosis, attempts, and next steps.
 
 ### 10.9 Startup Performance
 
