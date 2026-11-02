@@ -355,42 +355,42 @@ This phase provides the **technical foundation** for imaging. It does not implem
 
 **Current implementation:**
 
-- ✅ `infrastructure/imaging/dicom_loader.py` using pydicom and VTK.
-- ✅ DICOM series import command and handler.
-- 🚧 Current implementation must be evaluated and progressively aligned with the Medical Imaging Infrastructure architecture.
+- ✅ `Volume`, `VolumeGeometry`, `ImageMetadata`, `VolumeProvenance`, `IntensityScale` (Sprint 2).
+- ✅ `DicomSeriesReader`, `DicomSorter`, `DicomCalibrator`, `DicomValidator`, `ImportReport` (Sprint 3).
+- ✅ `VtkImageAdapter` (`Volume` → `vtkImageData`, sole bridge, Sprint 4.1).
+- ✅ DICOM series import command and handler; `ImportDicomSeriesHandler` registered by the MainWindow when a project opens (Sprint 4.2/4.3).
+- ✅ Legacy `VolumeData` and `dicom_loader.py` removed. All Views, the Editor, and the MainWindow consume `Volume`.
 
 **Deliverables:**
 
 **Volume model and geometry**
 
-- ⏳ `Volume` Domain model.
-- ⏳ `VolumeGeometry` with origin, spacing and direction.
-- ⏳ Separate image metadata and provenance.
-- ⏳ Internal RAS coordinate convention.
-- ⏳ Explicit DICOM LPS-to-RAS conversion at the infrastructure boundary.
-- ⏳ Consistent mapping between voxel indices and physical coordinates.
-- ⏳ Explicit intensity calibration state: HU, UNCALIBRATED or UNKNOWN.
+- ✅ `Volume` Domain model.
+- ✅ `VolumeGeometry` with origin, spacing and direction.
+- ✅ Separate image metadata and provenance.
+- ✅ Internal RAS coordinate convention.
+- ✅ Explicit DICOM LPS-to-RAS conversion at the infrastructure boundary.
+- ✅ Consistent mapping between voxel indices and physical coordinates.
+- ✅ Explicit intensity calibration state: HU, UNCALIBRATED or UNKNOWN.
 
 **DICOM import and validation**
 
-- 🚧 Extend the existing DICOM loader rather than replacing it without justification.
-- ⏳ Discover and group series using DICOM metadata.
-- ⏳ Order slices using physical position, not filenames or `InstanceNumber`.
-- ⏳ Validate dimensions, orientation, spacing and slice consistency.
-- ⏳ Detect unsupported transfer syntaxes.
-- ⏳ Detect irregular spacing and unsupported gantry tilt/shear.
-- ⏳ Preserve source metadata and import provenance.
-- ⏳ Generate structured validation reports with Error, Warning and Information severities.
+- ✅ `DicomSorter` orders slices by physical position (`ImagePositionPatient`), not filenames or `InstanceNumber`.
+- ✅ `DicomValidator` validates dimensions, orientation, spacing and slice consistency.
+- ✅ `DicomValidator` detects unsupported transfer syntaxes.
+- ✅ `DicomValidator` detects irregular spacing and unsupported gantry tilt/shear.
+- ✅ `DicomSeriesReader` preserves source metadata and import provenance.
+- ✅ `ImportReport` generates structured validation reports with Error, Warning and Information severities.
 - ⏳ Handle patient identity mismatches against the active project record.
 - ⏳ Avoid exposing protected health information in logs and telemetry.
 
 **Memory and interoperability**
 
-- ⏳ Define ownership of the voxel buffer.
-- ⏳ Define NumPy `[z, y, x]` array convention.
-- ⏳ Define explicit NumPy/VTK conversion and buffer lifetime handling.
-- ⏳ Avoid assuming zero-copy interoperability.
-- ⏳ Keep clinical voxel data in main memory; GPU memory stores renderable representations only.
+- ✅ Define ownership of the voxel buffer. `Volume` owns the NumPy buffer; `VtkImageAdapter` shares it (`deep=0`); Views retain a strong reference to `Volume` while the VTK pipeline is active (Medical Imaging Infrastructure §8.1).
+- ✅ NumPy `[z, y, x]` array convention.
+- ✅ Explicit NumPy/VTK conversion and buffer lifetime handling (`VtkImageAdapter`).
+- ✅ Avoid assuming zero-copy interoperability; the adapter documents the shared-buffer contract.
+- ✅ Keep clinical voxel data in main memory; GPU memory stores renderable representations only.`RenderingAdapter` observing Scene changes
 
 **Storage and export**
 
@@ -424,10 +424,10 @@ This phase provides the **technical foundation** for imaging. It does not implem
 **Pending:**
 
 - ⏳ `RenderingAdapter` observing Scene changes and updating VTK representations.
-- ⏳ Window/Level controls and display-state integration.
-- ⏳ Consistent physical orientation and coordinate handling.
-- ⏳ VTK resource lifecycle and cleanup.
-- ⏳ Headless and Windows rendering tests.
+- ⏳ Window/Level controls and display-state integration across the pipeline (the MPR pipeline applies a fixed W/L; the 3D viewport W/L is deferred to Passo 8d).
+- ⏳ Consistent physical orientation and coordinate handling validated against reference datasets.
+- ⏳ VTK resource lifecycle and cleanup validated under repeated open/close.
+- ⏳ Headless and Windows rendering tests (see §10.6).
 
 **Architectural constraints:**
 
@@ -810,20 +810,20 @@ This section records known issues that must be resolved or explicitly deferred b
 - Module entry points are not fully loaded and registered.
 - `BUILTIN_MANIFESTS` requires functional built-in module definitions.
 - `ModuleContext` must use the shared application EventBus.
-- `CommandExecutor` and `CommandDispatcher` integration remain prerequisites for real Editor operations.
+- ✅ `CommandExecutor` and `CommandDispatcher` are implemented and wired (Sprint 1). The `EditorContext` and `ToolContext` propagate the `CommandDispatcher`.
 
 ### 10.4 Phase 4 — Medical Imaging
 
-- The current DICOM loader requires a review against the Medical Imaging Infrastructure contracts.
-- The `Volume` and `VolumeGeometry` models must become the authoritative representation of imported image data.
-- Physical slice ordering and geometry validation must be explicit.
-- LPS-to-RAS conversion must be centralized at the infrastructure boundary.
-- Intensity calibration must distinguish HU from uncalibrated CBCT values.
-- NumPy/VTK buffer ownership and lifetime must be explicit.
-- Import validation and provenance reporting remain incomplete.
-- External Reference and Managed Copy storage modes require implementation and tests.
-- VTI export and round-trip validation remain pending.
-- Import UI remains pending.
+- ✅ The `Volume` and `VolumeGeometry` models are the authoritative representation of imported image data.
+- ✅ Physical slice ordering and geometry validation are explicit (`DicomSorter`, `DicomValidator`).
+- ✅ LPS-to-RAS conversion is centralized at the infrastructure boundary (`DicomSorter`).
+- ✅ Intensity calibration distinguishes HU from uncalibrated CBCT values (`DicomCalibrator`, `IntensityScale`).
+- ✅ NumPy/VTK buffer ownership and lifetime are explicit (`VtkImageAdapter`, `Volume` retention in Views).
+- ✅ Import validation and provenance reporting are implemented (`ImportReport`, `VolumeProvenance`).
+- ⏳ External Reference and Managed Copy storage modes require implementation and tests.
+- ⏳ VTI export and round-trip validation remain pending.
+- ⏳ Import UI (file/directory selection, series discovery, metadata preview, storage mode selection, validation report presentation) remains pending.
+- ⏳ Patient identity mismatch handling remains pending.
 
 ### 10.5 Phase 4 — Visualization
 
