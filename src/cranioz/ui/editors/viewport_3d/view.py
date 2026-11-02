@@ -42,6 +42,7 @@ from cranioz.ui.editors.viewport_3d.presets import (
 )
 
 _DEFAULT_PRESET = "bone"
+_CBCT_PRESET = "cbct"
 
 
 class Viewport3DView(View):
@@ -81,6 +82,16 @@ class Viewport3DView(View):
         """
         if volume is None:
             raise ValueError("Viewport3DView.set_volume requires a non-None Volume")
+
+        # --- Escolher preset com base no intensity_scale ---
+        if volume.is_hu_calibrated:
+            preset_name = _DEFAULT_PRESET
+        else:
+            preset_name = _CBCT_PRESET
+        self._preset = get_preset(preset_name)
+        self._window = self._preset.default_window
+        self._level = self._preset.default_level
+        # ---------------------------------------------------
 
         self._ensure_pipeline()
         self._ensure_interactor_in_layout()
@@ -295,11 +306,36 @@ class Viewport3DView(View):
         return actor
 
     def _apply_transfer_functions(self) -> None:
-        """Apply the current preset and window/level to the volume property."""
+        """Apply the current preset and window/level to the volume property.
+
+        **Dynamic adaptation**: if the volume's scalar range is outside
+        the preset's expected range, the transfer function is scaled
+        to cover the actual range. This guarantees that the volume
+        is visible regardless of the preset.
+        """
         volume_property = self._volume_property
         if volume_property is None:  # pragma: no cover - defensive
             return
 
+        # If the volume is not calibrated (CBCT), adapt the transfer
+        # function to the actual data range.
+        if self._volume is not None and not self._volume.is_hu_calibrated:
+            data_min, data_max = self._volume.scalar_range
+            # Normalize the preset's opacity points to the data range.
+            color = vtkColorTransferFunction()
+            color.AddRGBPoint(data_min, 0.0, 0.0, 0.0)
+            color.AddRGBPoint(data_max, 1.0, 1.0, 1.0)
+
+            opacity = vtkPiecewiseFunction()
+            opacity.AddPoint(data_min, 0.0)
+            opacity.AddPoint(data_max, 1.0)
+
+            volume_property.SetColor(color)
+            volume_property.SetScalarOpacity(opacity)
+            volume_property.SetScalarOpacityUnitDistance(1.0)
+            return
+
+        # For calibrated volumes, use the preset as-is.
         color = vtkColorTransferFunction()
         for color_point in self._preset.color_points:
             color.AddRGBPoint(

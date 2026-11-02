@@ -358,6 +358,30 @@ class MainWindow(QMainWindow):
             )
             return
 
+        # --- CORREÇÃO: garantir que o handler esteja registrado ---
+        if self._command_bus is not None and not self._command_bus.can_dispatch(
+            ImportDicomSeriesCommand
+        ):
+            if self._scene_provider is not None and self._domain_object_store is not None:
+                from cranioz.application.scene.handlers.scene_handlers import (
+                    ImportDicomSeriesHandler,
+                )
+
+                handler = ImportDicomSeriesHandler(
+                    scene=self._scene_provider.get_scene(),
+                    object_store=self._domain_object_store,
+                )
+                self._command_bus.register(ImportDicomSeriesCommand, handler)
+            else:
+                QMessageBox.critical(
+                    self,
+                    "Falha ao importar DICOM",
+                    "O Scene ou o DomainObjectStore não está disponível. "
+                    "Abra um projeto antes de importar DICOM.",
+                )
+                return
+        # -----------------------------------------------------------
+
         path = QFileDialog.getExistingDirectory(
             self,
             "Selecionar pasta com DICOM",

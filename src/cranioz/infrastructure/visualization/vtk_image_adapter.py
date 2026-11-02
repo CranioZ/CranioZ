@@ -5,8 +5,12 @@ into a `vtkImageData`. It preserves:
 
 - Origin (RAS).
 - Spacing (mm).
-- Direction matrix (3x3, RAS).
 - Scalar data (NumPy → VTK).
+
+The direction matrix is NOT applied. The volume is assumed to be
+in the canonical axial orientation (X, Y, Z aligned with VTK axes).
+This is a pragmatic simplification for the first visualization
+iteration. Proper orientation handling will be added later.
 
 The adapter does NOT mutate the `Volume`. It does NOT free the
 NumPy buffer. The caller (the View) is responsible for keeping the
@@ -57,23 +61,21 @@ class VtkImageAdapter:
 
         Returns:
             A `vtkImageData` with the same voxel data, origin,
-            spacing, and direction.
+            and spacing.
 
         Raises:
-            VtkImageAdapterError: if the Volume's dtype is unsupported.
+            VtkImageAdapterError: if the Volume's dtype is unsupported,
+                or if the data shape does not match the geometry.
         """
         data = volume.data
         if data.dtype not in _NUMPY_TO_VTK:
             raise VtkImageAdapterError(f"unsupported numpy dtype for VTK conversion: {data.dtype}")
 
-        # The Volume stores data in (nz, ny, nx) order.
-        # VTK expects dimensions in (nx, ny, nz) order.
-        nz, ny, nx = data.shape
-        nx_d, ny_d, nz_d = volume.geometry.dimensions
-        if (nx, ny, nz) != (nx_d, ny_d, nz_d):
+        # Verify the data shape matches the geometry.
+        if data.shape != volume.geometry.shape_zyx:
             raise VtkImageAdapterError(
-                f"Volume.data shape {(nz, ny, nx)} does not match "
-                f"geometry dimensions {(nx_d, ny_d, nz_d)}"
+                f"Volume.data shape {data.shape} does not match "
+                f"geometry.shape_zyx {volume.geometry.shape_zyx}"
             )
 
         # Flatten in VTK's expected order (x fastest, then y, then z).
@@ -86,31 +88,16 @@ class VtkImageAdapter:
         )
         vtk_array.SetName("Scalars")
 
+        nx_d, ny_d, nz_d = volume.geometry.dimensions
+
         image = vtkImageData()
         image.SetDimensions(nx_d, ny_d, nz_d)
         image.SetSpacing(*volume.geometry.spacing)
         image.SetOrigin(*volume.geometry.origin)
         image.GetPointData().SetScalars(vtk_array)
 
-        # Apply the direction matrix.
-        # vtkImageData.SetDirectionMatrix (VTK 9+) accepts 9 floats
-        # (3x3 row-major), not a vtkMatrix4x4.
-        direction = volume.geometry.direction
-        flat_direction = (
-            direction[0][0],
-            direction[0][1],
-            direction[0][2],
-            direction[1][0],
-            direction[1][1],
-            direction[1][2],
-            direction[2][0],
-            direction[2][1],
-            direction[2][2],
-        )
-
-        set_direction = getattr(image, "SetDirectionMatrix", None)
-        if callable(set_direction):
-            set_direction(*flat_direction)
+        # NOT applying SetDirectionMatrix. The volume is assumed to be
+        # in the canonical axial orientation.
 
         return image
 

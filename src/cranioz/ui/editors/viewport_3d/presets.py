@@ -170,11 +170,39 @@ CT_ANGIO = VolumePreset(
     default_level=300.0,
 )
 
+# ----- Novo preset para CBCT (não calibrado) -------------------------
+# Os valores de CBCT não são HU; o range bruto pode ser amplo (ex:
+# -6000 a 16000). Este preset assume um range amplo e mapeia tons de
+# cinza para os valores mais altos (osso), com opacidade crescente.
+CBCT = VolumePreset(
+    name="cbct",
+    label="CBCT (Raw)",
+    color_points=(
+        ColorPoint(-10000.0, 0.0, 0.0, 0.0),
+        ColorPoint(0.0, 0.3, 0.3, 0.3),
+        ColorPoint(5000.0, 0.8, 0.8, 0.8),
+        ColorPoint(10000.0, 1.0, 1.0, 1.0),
+        ColorPoint(20000.0, 1.0, 1.0, 1.0),
+    ),
+    opacity_points=(
+        OpacityPoint(-10000.0, 0.0),
+        OpacityPoint(-500.0, 0.0),
+        OpacityPoint(0.0, 0.05),
+        OpacityPoint(2000.0, 0.3),
+        OpacityPoint(5000.0, 0.8),
+        OpacityPoint(8000.0, 0.95),
+        OpacityPoint(20000.0, 1.0),
+    ),
+    default_window=20000.0,
+    default_level=10000.0,
+)
+
 PRESETS: dict[str, VolumePreset] = {
     BONE.name: BONE,
     SOFT_TISSUE.name: SOFT_TISSUE,
     SKIN.name: SKIN,
     CT_ANGIO.name: CT_ANGIO,
+    CBCT.name: CBCT,
 }
 
 

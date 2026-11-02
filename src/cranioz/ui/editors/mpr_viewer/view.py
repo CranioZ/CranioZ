@@ -13,6 +13,7 @@ See ADR-0013 §2.3, scene.md §24.
 
 from __future__ import annotations
 
+import numpy as np
 from PySide6.QtWidgets import QLayout, QVBoxLayout, QWidget
 from vtkmodules.qt.QVTKRenderWindowInteractor import (
     QVTKRenderWindowInteractor,
@@ -38,11 +39,6 @@ _ORIENTATION_BY_TYPE = {
     "coronal": _CORONAL,
     "sagittal": _SAGITTAL,
 }
-
-# Default Window/Level for CBCT (Soft Tissue preset).
-# The data is normalized to 0-4095 by the DICOM loader.
-_CBCT_WINDOW = 800.0
-_CBCT_LEVEL = 1500.0
 
 
 class MPRView(View):
@@ -132,9 +128,14 @@ class MPRView(View):
         self._slice_index = self._max_slice // 2
         self._update_slice()
 
-        # Set Window/Level.
-        window_level.SetWindow(_CBCT_WINDOW)
-        window_level.SetLevel(_CBCT_LEVEL)
+        # --- W/L com percentis (1% e 99%) para ignorar outliers ---
+        flat = volume.data.ravel()
+        p1, p99 = np.percentile(flat, [1, 99])
+        window = max(p99 - p1, 1.0)  # evitar janela zero
+        level = (p1 + p99) / 2.0
+        window_level.SetWindow(window)
+        window_level.SetLevel(level)
+        # -----------------------------------------------------------
 
         # Connect the pipeline:
         # vtkImageReslice -> vtkImageMapToWindowLevelColors -> vtkImageActor
@@ -217,8 +218,9 @@ class MPRView(View):
         self._configure_reslice_axes(reslice)
 
         window_level = vtkImageMapToWindowLevelColors()
-        window_level.SetWindow(_CBCT_WINDOW)
-        window_level.SetLevel(_CBCT_LEVEL)
+        # Placeholder; set_volume define os valores corretos.
+        window_level.SetWindow(1.0)
+        window_level.SetLevel(0.0)
 
         actor = vtkImageActor()
         actor.GetMapper().SetInputConnection(window_level.GetOutputPort())
@@ -296,15 +298,12 @@ class MPRView(View):
 
         # The slice position is the center of the current slice.
         if orientation == _AXIAL:
-            # Slice along Z.
             z = origin[2] + self._slice_index * spacing[2]
             reslice.SetResliceAxesOrigin(origin[0], origin[1], z)
         elif orientation == _CORONAL:
-            # Slice along Y.
             y = origin[1] + self._slice_index * spacing[1]
             reslice.SetResliceAxesOrigin(origin[0], y, origin[2])
         else:  # SAGITTAL
-            # Slice along X.
             x = origin[0] + self._slice_index * spacing[0]
             reslice.SetResliceAxesOrigin(x, origin[1], origin[2])
 
