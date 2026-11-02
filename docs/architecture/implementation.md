@@ -835,6 +835,7 @@ This section records known issues that must be resolved or explicitly deferred b
 - The MPR pipeline (`vtkImageReslice` + `vtkImageMapToWindowLevelColors` + `vtkImageActor`) is the documented baseline. Windows OpenGL stability remains a known concern (§10.6), but the API choice itself is settled.
 - VTK resource lifecycle and rendering-context stability require further testing.
 - **DICOM visualization bug (paused):** After importing a DICOM series, the MPR views display uniform gray rectangles (or tilted polygons) instead of anatomical slices, and the 3D viewport shows only the outline (or a distorted/streaked volume). The data pipeline works (the `Volume` reaches the Views), but the rendering pipeline does not produce correct pixels. The root cause is likely in the application of the direction matrix (`SetDirectionMatrix` / `vtkImageReslice`) and the configuration of the MPR reslice axes and 3D transfer function. All correction attempts so far (W/L with percentiles, CBCT preset, dynamic transfer function, reorientation via `vtkImageReslice`, removal of `SetDirectionMatrix`) have not resolved the issue. The correction work is paused. A detailed record is available in `docs/known_issues/dicom_visualization_bug.md` (or equivalent). This must be resolved before Phase 4 can be considered complete.
+- **TopOverlay** geometry is correct but its three segments (left_segment, center_segment, right_segment) are not populated. MainWindow currently injects a single QWidget with two buttons into the left segment. This is Phase 2 integration work, tracked in §10.10.
 
 ### 10.6 Phase 4 — Windows OpenGL and Qt Integration
 
@@ -868,6 +869,14 @@ This section records known issues that must be resolved or explicitly deferred b
 - Project and flow loading must not block initial window display.
 - Project opening must roll back correctly if Workspace creation fails.
 - `ProjectIndex` must avoid scanning the entire project directory on every startup.
+
+10.10 — Phase 2 — Workspace Top Bar and Area Toggles:
+
+* TopOverlay lacks set_center_content() / set_right_content().
+* HomeSegment, ModulesSegment, ExtrasSegment are not implemented. ui/workspace/structure/ is empty; top_bar.py is unused and will remain so.
+* Area toggles (Left, Right, Bottom) are not wired to any visibility mechanism.
+* Minimum WorkspaceLayoutState (visibility only) will be introduced here as a foundation for ADR-0010, not as its implementation.
+* Empty Areas are still rendered with placeholders instead of being hidden.
 
 ---
 

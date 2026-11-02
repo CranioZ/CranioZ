@@ -23,7 +23,7 @@ The tests verify:
 from __future__ import annotations
 
 import pytest
-from PySide6.QtWidgets import QFrame, QLayout, QPushButton, QWidget
+from PySide6.QtWidgets import QFrame, QLabel, QLayout, QPushButton, QWidget
 from pytestqt.qtbot import QtBot
 
 from cranioz.ui.workspace.areas.placement import Placement
@@ -302,3 +302,126 @@ def test_set_left_content_does_not_affect_center_or_right(
     assert overlay.left_segment().isAncestorOf(button)
     assert not overlay.center_segment().isAncestorOf(button)
     assert not overlay.right_segment().isAncestorOf(button)
+
+
+# ----- Content injection (Phase 2, §10.10) ---------------------------
+
+
+def _content_label(text: str) -> QLabel:
+    """Build a QLabel with a stable objectName for assertions."""
+    label = QLabel(text)
+    label.setObjectName(f"test.content.{text}")
+    return label
+
+
+def _child_labels_of(layout) -> list[QLabel]:
+    """Return the QLabel children currently hosted by a layout."""
+    labels: list[QLabel] = []
+    for i in range(layout.count()):
+        item = layout.itemAt(i)
+        widget = item.widget() if item is not None else None
+        if isinstance(widget, QLabel):
+            labels.append(widget)
+    return labels
+
+
+def test_set_center_content_injects_widget(qapp) -> None:
+    overlay = TopOverlay()
+    content = _content_label("modules")
+
+    overlay.set_center_content(content)
+
+    assert overlay.center_segment().layout().indexOf(content) != -1
+    assert _child_labels_of(overlay.center_segment().layout()) == [content]
+
+
+def test_set_center_content_replaces_previous(qapp) -> None:
+    overlay = TopOverlay()
+    first = _content_label("first")
+    second = _content_label("second")
+
+    overlay.set_center_content(first)
+    overlay.set_center_content(second)
+
+    labels = _child_labels_of(overlay.center_segment().layout())
+    assert labels == [second]
+    assert first not in labels
+
+
+def test_set_center_content_with_none_clears(qapp) -> None:
+    overlay = TopOverlay()
+    content = _content_label("modules")
+
+    overlay.set_center_content(content)
+    overlay.set_center_content(None)
+
+    assert _child_labels_of(overlay.center_segment().layout()) == []
+
+
+def test_set_right_content_injects_widget(qapp) -> None:
+    overlay = TopOverlay()
+    content = _content_label("extras")
+
+    overlay.set_right_content(content)
+
+    assert overlay.right_segment().layout().indexOf(content) != -1
+    assert _child_labels_of(overlay.right_segment().layout()) == [content]
+
+
+def test_set_right_content_replaces_previous(qapp) -> None:
+    overlay = TopOverlay()
+    first = _content_label("first")
+    second = _content_label("second")
+
+    overlay.set_right_content(first)
+    overlay.set_right_content(second)
+
+    labels = _child_labels_of(overlay.right_segment().layout())
+    assert labels == [second]
+    assert first not in labels
+
+
+def test_set_right_content_with_none_clears(qapp) -> None:
+    overlay = TopOverlay()
+    content = _content_label("extras")
+
+    overlay.set_right_content(content)
+    overlay.set_right_content(None)
+
+    assert _child_labels_of(overlay.right_segment().layout()) == []
+
+
+def test_three_segments_are_independent(qapp) -> None:
+    """Left, Center, Right must not interfere with each other."""
+    overlay = TopOverlay()
+    left = _content_label("left")
+    center = _content_label("center")
+    right = _content_label("right")
+
+    overlay.set_left_content(left)
+    overlay.set_center_content(center)
+    overlay.set_right_content(right)
+
+    assert _child_labels_of(overlay.left_segment().layout()) == [left]
+    assert _child_labels_of(overlay.center_segment().layout()) == [center]
+    assert _child_labels_of(overlay.right_segment().layout()) == [right]
+
+
+def test_center_and_right_are_symmetric_to_left(qapp) -> None:
+    """Contract: all three injection methods behave identically.
+
+    A single parametrized test would be less clear here; the explicit
+    assertions make the symmetry visible to a reader of the test file.
+    """
+    overlay = TopOverlay()
+
+    for setter, segment_getter in (
+        (overlay.set_left_content, overlay.left_segment),
+        (overlay.set_center_content, overlay.center_segment),
+        (overlay.set_right_content, overlay.right_segment),
+    ):
+        widget = _content_label(f"content.{id(setter)}")
+        setter(widget)
+        assert segment_getter().layout().indexOf(widget) != -1
+        setter(None)
+        assert _child_labels_of(segment_getter().layout()) == []

@@ -15,9 +15,9 @@ Structural behavior:
 - Each segment has a QHBoxLayout, ready to receive content.
 - The Center segment is always horizontally centered within the Top Bar.
 - The Left and Right segments are anchored to their respective edges.
-- Content is injected by the MainWindow via set_left_content(widget)
-  (and, in future pieces, set_center_content / set_right_content).
-  The TopOverlay does not know what the injected widgets do (ADR-0006).
+- Content is injected by the MainWindow via set_left_content / set_center_content /
+  set_right_content. The TopOverlay does not know what the injected widgets do
+  (ADR-0006).
 
 Design rules:
 - The TopOverlay computes its own geometry from the Region Bounds
@@ -207,9 +207,27 @@ class TopOverlay(Overlay):
 
         The TopOverlay does not know what the widget does. It is a
         generic container (ADR-0006). The MainWindow injects the
-        "Home" button here.
+        ``HomeSegment`` here.
         """
         _replace_content(self._left_layout, widget)
+
+    def set_center_content(self, widget: QWidget | None) -> None:
+        """Inject content into the Center segment.
+
+        Symmetric to ``set_left_content``. The MainWindow injects the
+        ``ModulesSegment`` here. The segment is centered horizontally
+        by the TopOverlay layout, regardless of the content width.
+        """
+        _replace_content(self._center_layout, widget)
+
+    def set_right_content(self, widget: QWidget | None) -> None:
+        """Inject content into the Right segment.
+
+        Symmetric to ``set_left_content``. The MainWindow injects the
+        ``ExtrasSegment`` here. The segment is anchored to the right
+        edge by the TopOverlay layout.
+        """
+        _replace_content(self._right_layout, widget)
 
     # ----- Content layout -------------------------------------------
 
