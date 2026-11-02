@@ -9,13 +9,16 @@ Responsibilities:
 - Materialize a ModuleUISpec as Areas, QSplitters, and Editor widgets.
 - Manage the AreaManager, the LayoutRenderer, and the OverlayManager.
 - Own the shared TopOverlay (ADR-0005).
+- Own the runtime visibility state of the toggleable Areas
+  (WorkspaceLayoutState). The state is runtime-only and is not
+  persisted (ADR-0010 is Phase 5).
 - Receive and forward the TaskManager, TelemetrySink, CommandDispatcher,
   SceneQuery, and EventSubscription to the Editors it hosts
   (ADR-0011, ADR-0012, ADR-0007, ADR-0013).
 
 Non-responsibilities:
 
-- Persistence of layout state (Bloco 11).
+- Persistence of layout state (Bloco 11 / ADR-0010).
 - Drag-and-drop, floating Areas, multi-monitor (Bloco 14).
 - Top Bar content: populated by the MainWindow (ADR-0006).
 - Steps Panel: a second shared Overlay, added with the Flow system.
@@ -43,6 +46,7 @@ from cranioz.ui.workspace.layout.layout_builder import (
     LayoutBuilder,
 )
 from cranioz.ui.workspace.layout.layout_renderer import LayoutRenderer
+from cranioz.ui.workspace.layout.layout_state import WorkspaceLayoutState
 from cranioz.ui.workspace.overlays.overlay_manager import OverlayManager
 from cranioz.ui.workspace.overlays.region import Bounds, Region
 from cranioz.ui.workspace.overlays.top_overlay import TopOverlay
@@ -112,6 +116,10 @@ class Workspace(QWidget):
         )
         self._overlay_manager = OverlayManager()
         self._top_overlay = TopOverlay(parent=self)
+
+        # Runtime visibility of the toggleable Areas. Not persisted;
+        # see the module docstring.
+        self._layout_state = WorkspaceLayoutState()
 
         self._build_result: BuildResult | None = None
         self._root_widget: QWidget | None = None
@@ -224,6 +232,48 @@ class Workspace(QWidget):
 
     def top_overlay(self) -> TopOverlay:
         return self._top_overlay
+
+    # ----- Area visibility ------------------------------------------
+
+    def layout_state(self) -> WorkspaceLayoutState:
+        """Return the runtime visibility state of the toggleable Areas.
+
+        The state is owned by the Workspace and is not persisted. A
+        future Phase 5 implementation of ADR-0010 will extend this
+        state; the current class is intentionally minimal.
+        """
+        return self._layout_state
+
+    def set_area_visible(self, placement: Placement, visible: bool) -> None:
+        """Show or hide a toggleable Area.
+
+        Updates the layout state, hides or shows the matching
+        AreaWidget, and repositions the overlays so the TopOverlay
+        follows the new Central Region bounds.
+
+        The Area model and the AreaWidget are kept in sync: the model
+        reflects the intent, the widget is the presentation.
+
+        Raises:
+            KeyError: if the Placement is not toggleable (CENTRAL).
+        """
+        self._layout_state.set_visible(placement, visible)
+
+        if self._build_result is None:
+            return
+
+        for area in self._build_result.areas:
+            if area.placement is not placement:
+                continue
+            if visible:
+                area.show()
+            else:
+                area.hide()
+            widget = self._layout_renderer.cached_area_widget(area.area_id)
+            if widget is not None:
+                widget.setVisible(visible)
+
+        self._reposition_overlays()
 
     def reload_volume(self) -> None:
         """Ask every hosted Editor to re-resolve its volume.

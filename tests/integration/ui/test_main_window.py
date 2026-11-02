@@ -3,10 +3,11 @@
 Exercise the Home <-> Workspace navigation cycle (ADR-0006):
 
 - HomePage.project_open_requested creates a Workspace, calls
-  ProjectManager.open_project, injects the "Home" button into the
-  TopOverlay, and switches the QStackedWidget.
-- Clicking the "Home" button calls ProjectManager.close_project,
-  destroys the Workspace, and returns to the HomePage.
+  ProjectManager.open_project, injects the three Top Bar segments
+  (Home, Modules, Extras), and switches the QStackedWidget.
+- Emitting the HomeSegment's close_workspace_requested signal calls
+  ProjectManager.close_project, destroys the Workspace, and returns
+  to the HomePage.
 - Placeholder actions show QMessageBox.information.
 - A repository failure (e.g. ProjectNotFound) shows QMessageBox.critical
   and leaves the HomePage as the current widget.
@@ -19,7 +20,7 @@ beyond the default placeholder, so the tests do not depend on layouts.
 from __future__ import annotations
 
 import pytest
-from PySide6.QtWidgets import QMessageBox, QPushButton, QStackedWidget
+from PySide6.QtWidgets import QMessageBox, QStackedWidget
 from pytestqt.qtbot import QtBot
 
 from cranioz.application.event_bus import EventBus
@@ -40,6 +41,7 @@ from cranioz.ui.theme.service import ThemeName, ThemeService
 from cranioz.ui.tools.builtin.log_tool import LogTool
 from cranioz.ui.tools.builtin.toggle_tool import ToggleTool
 from cranioz.ui.tools.registry.tool_registry import ToolRegistry
+from cranioz.ui.workspace.structure import HomeSegment
 
 _ACTOR = "test"
 
@@ -108,6 +110,15 @@ def _stack(window: MainWindow) -> QStackedWidget:
     return stack
 
 
+def _home_segment(window: MainWindow) -> HomeSegment:
+    """Return the HomeSegment of the current Workspace's Top Bar."""
+    workspace = window.current_workspace()
+    assert workspace is not None
+    segment = workspace.top_overlay().left_segment().findChild(HomeSegment)
+    assert segment is not None
+    return segment
+
+
 # ----- Initial state ------------------------------------------------
 
 
@@ -149,7 +160,7 @@ def test_open_project_switches_stack(
     assert _stack(window).currentWidget() is window.current_workspace()
 
 
-def test_open_project_injects_home_button(
+def test_open_project_injects_home_segment(
     window: MainWindow,
     seeded_manager: ProjectManager,
 ) -> None:
@@ -159,13 +170,8 @@ def test_open_project_injects_home_button(
 
     workspace = window.current_workspace()
     assert workspace is not None
-    home_buttons = [
-        btn
-        for btn in workspace.top_overlay().left_segment().findChildren(QPushButton)
-        if btn.text() == "Home"
-    ]
-    assert len(home_buttons) == 1
-    assert home_buttons[0].objectName() == "workspace.home_button"
+    home_segment = workspace.top_overlay().left_segment().findChild(HomeSegment)
+    assert home_segment is not None
 
 
 def test_open_project_loads_default_spec(
@@ -183,10 +189,10 @@ def test_open_project_loads_default_spec(
     assert [a.area_id for a in workspace.areas()] == ["area.central"]
 
 
-# ----- Close project (Home button) ----------------------------------
+# ----- Close workspace (HomeSegment) --------------------------------
 
 
-def test_home_button_closes_workspace(
+def test_close_workspace_signal_closes_workspace(
     window: MainWindow,
     seeded_manager: ProjectManager,
 ) -> None:
@@ -194,33 +200,29 @@ def test_home_button_closes_workspace(
     window.home().project_open_requested.emit(ProjectId("p-001"), "orthognathic")
     assert window.current_workspace() is not None
 
-    home_button = window.findChild(QPushButton, "workspace.home_button")
-    assert home_button is not None
-    home_button.click()
+    _home_segment(window).close_workspace_requested.emit()
 
     assert window.current_workspace() is None
     assert window.current_project_id() is None
 
 
-def test_home_button_returns_to_home_page(
+def test_close_workspace_returns_to_home_page(
     window: MainWindow,
     seeded_manager: ProjectManager,
 ) -> None:
     window.home().refresh()
     window.home().project_open_requested.emit(ProjectId("p-001"), "orthognathic")
 
-    home_button = window.findChild(QPushButton, "workspace.home_button")
-    assert home_button is not None
-    home_button.click()
+    _home_segment(window).close_workspace_requested.emit()
 
     assert _stack(window).currentWidget() is window.home()
 
 
-def test_home_button_does_not_close_another_project(
+def test_close_workspace_does_not_close_another_project(
     window: MainWindow,
     seeded_manager: ProjectManager,
 ) -> None:
-    """Clicking Home closes only the currently opened project."""
+    """Closing one Workspace does not close a different open project."""
     seeded_manager.create_project(
         _ACTOR,
         project_id=ProjectId("p-002"),
@@ -233,17 +235,13 @@ def test_home_button_does_not_close_another_project(
 
     # Open p-001, close it, then open p-002. Only p-002 is closed.
     window.home().project_open_requested.emit(ProjectId("p-001"), "orthognathic")
-    home_button = window.findChild(QPushButton, "workspace.home_button")
-    assert home_button is not None
-    home_button.click()
+    _home_segment(window).close_workspace_requested.emit()
 
     window.home().project_open_requested.emit(ProjectId("p-002"), "orthognathic")
     assert window.current_project_id() == ProjectId("p-002")
 
     # Open again: p-002 should be the one closed.
-    home_button = window.findChild(QPushButton, "workspace.home_button")
-    assert home_button is not None
-    home_button.click()
+    _home_segment(window).close_workspace_requested.emit()
     assert window.current_project_id() is None
 
 
@@ -315,15 +313,13 @@ def test_destroy_workspace_after_close(
     seeded_manager: ProjectManager,
     qtbot: QtBot,
 ) -> None:
-    """After Home is clicked, the old Workspace is no longer reachable."""
+    """After the Workspace closes, the old instance is not reachable."""
     window.home().refresh()
     window.home().project_open_requested.emit(ProjectId("p-001"), "orthognathic")
     workspace = window.current_workspace()
     assert workspace is not None
 
-    home_button = window.findChild(QPushButton, "workspace.home_button")
-    assert home_button is not None
-    home_button.click()
+    _home_segment(window).close_workspace_requested.emit()
 
     # The workspace reference is cleared. The object may not be deleted
     # immediately (deleteLater), but the MainWindow no longer exposes it.
@@ -340,9 +336,7 @@ def test_open_after_close_creates_a_new_workspace(
     first = window.current_workspace()
     assert first is not None
 
-    home_button = window.findChild(QPushButton, "workspace.home_button")
-    assert home_button is not None
-    home_button.click()
+    _home_segment(window).close_workspace_requested.emit()
 
     window.home().project_open_requested.emit(ProjectId("p-001"), "orthognathic")
     second = window.current_workspace()

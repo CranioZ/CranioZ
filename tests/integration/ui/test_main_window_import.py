@@ -1,6 +1,6 @@
 """Integration test: import DICOM via MainWindow.
 
-Covers the full path from the Home Page's "Importar DICOM" button to
+Covers the full path from the Top Bar's "Importar arquivos" action to
 the ``Volume`` being registered in the ``DomainObjectStore`` and the
 ``Scene``, and the registration/unregistration of the
 ``ImportDicomSeriesHandler`` in the ``CommandBus`` across the project
@@ -8,9 +8,10 @@ lifecycle.
 
 The MainWindow registers the handler when a project is opened (inside
 ``_on_project_open_requested``) and unregisters it when the project
-closes (inside ``_on_home_clicked``). This mirrors the production boot
-path, where the handler is not loaded during the boot critical path
-(Application Startup §3.1, §3.4, §4.1).
+closes (inside ``_on_home_clicked``, triggered by the Top Bar's
+``close_workspace_requested`` signal). This mirrors the production
+boot path, where the handler is not loaded during the boot critical
+path (Application Startup §3.1, §3.4, §4.1).
 """
 
 from __future__ import annotations
@@ -27,7 +28,6 @@ pytest.importorskip("vtkmodules.qt")
 
 from pydicom.dataset import Dataset, FileMetaDataset
 from pydicom.uid import ExplicitVRLittleEndian, generate_uid
-from PySide6.QtWidgets import QPushButton
 
 from cranioz.application.commands.executor import CommandExecutor
 from cranioz.application.commands.in_memory_bus import InMemoryCommandBus
@@ -59,6 +59,7 @@ from cranioz.ui.theme.service import ThemeName, ThemeService
 from cranioz.ui.tools.builtin.log_tool import LogTool
 from cranioz.ui.tools.builtin.toggle_tool import ToggleTool
 from cranioz.ui.tools.registry.tool_registry import ToolRegistry
+from cranioz.ui.workspace.structure import HomeSegment
 from cranioz.ui.workspace.workspace_spec import (
     PLACEHOLDER_EDITOR_CLASS,
     PLACEHOLDER_EDITOR_ID,
@@ -191,8 +192,8 @@ def test_import_dicom_adds_volume_to_scene(
     window: MainWindow,
     tmp_path: Path,
 ) -> None:
-    """Clicking 'Importar DICOM' dispatches the Command, which loads
-    a series and adds it to the Scene as a ``Volume``."""
+    """The 'Importar arquivos' action dispatches the Command, which
+    loads a series and adds it to the Scene as a ``Volume``."""
     # Arrange: open a project (the Workspace exists).
     window.home().refresh()
     window.home().project_open_requested.emit(ProjectId("p-001"), "orthognathic")
@@ -233,7 +234,7 @@ def test_import_dicom_adds_volume_to_scene(
 
 @pytest.mark.qt
 @pytest.mark.integration
-def test_dicom_import_handler_unregistered_on_home(
+def test_dicom_import_handler_unregistered_on_close_workspace(
     qtbot,
     window: MainWindow,
 ) -> None:
@@ -243,6 +244,10 @@ def test_dicom_import_handler_unregistered_on_home(
     which become invalid after the project closes. Leaving it
     registered would keep stale references alive and allow stale
     dispatches.
+
+    The 'close workspace' path is the Top Bar's ``HomeSegment``:
+    emitting ``close_workspace_requested`` is the architectural
+    equivalent of the old "Home" button click.
     """
     window.home().refresh()
     window.home().project_open_requested.emit(ProjectId("p-001"), "orthognathic")
@@ -250,8 +255,12 @@ def test_dicom_import_handler_unregistered_on_home(
     assert window._command_bus is not None
     assert window._command_bus.can_dispatch(ImportDicomSeriesCommand)
 
-    home_button = window.findChild(QPushButton, "workspace.home_button")
-    assert home_button is not None
-    home_button.click()
+    workspace = window.current_workspace()
+    assert workspace is not None
+    home_segment = workspace.top_overlay().left_segment().findChild(HomeSegment)
+    assert home_segment is not None
 
+    home_segment.close_workspace_requested.emit()
+
+    assert window.current_workspace() is None
     assert window._command_bus.can_dispatch(ImportDicomSeriesCommand) is False

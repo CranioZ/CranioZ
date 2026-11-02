@@ -8,20 +8,25 @@ Responsibilities:
 
 - Host the HomePage and the Workspace in a QStackedWidget.
 - Listen to HomePage.project_open_requested; call ProjectManager,
-  create the Workspace with the resulting ProjectContext, inject
-  the "Home" and "Import DICOM" buttons into the TopOverlay, and
-  switch to the Workspace.
+  create the Workspace with the resulting ProjectContext, inject the
+  three Top Bar segments (Home, Modules, Extras) into the TopOverlay,
+  and switch to the Workspace.
 - Register the DICOM import handler in the CommandBus when the
   project opens (Application Startup §3.4, §4.1: the handler pulls
   pydicom/numpy, which must not be loaded during the boot critical
   path).
-- Listen to the "Home" button's clicked; call
-  ProjectManager.close_project, unregister the DICOM import handler,
-  destroy the Workspace, and switch back to the HomePage.
-- Listen to the "Import DICOM" button's clicked; open a folder
-  picker, dispatch ImportDicomSeriesCommand (which reads the series,
-  assembles a Volume, registers it in the DomainObjectStore and the
-  Scene), and reload the Workspace's volume.
+- Listen to the Top Bar's close_workspace_requested and close_project
+  requests; call ProjectManager.close_project, unregister the DICOM
+  import handler, destroy the Workspace, and switch back to the
+  HomePage.
+- Listen to the Top Bar's import_files_requested (and the legacy
+  "Import DICOM" path); open a folder picker, dispatch
+  ImportDicomSeriesCommand (which reads the series, assembles a
+  Volume, registers it in the DomainObjectStore and the Scene), and
+  reload the Workspace's volume.
+- Toggle the visibility of Area Left, Area Right and Area Bottom in
+  response to the Top Bar signals. The Workspace owns the runtime
+  state; the MainWindow only relays the intent.
 - Forward other HomePage signals to MessageBox placeholders for
   pieces that are not yet implemented (Bloco 8 / Bloco 9 / 7.6d).
 - Forward shared application services (TaskManager, TelemetrySink,
@@ -49,10 +54,8 @@ from typing import TYPE_CHECKING
 
 from PySide6.QtWidgets import (
     QFileDialog,
-    QHBoxLayout,
     QMainWindow,
     QMessageBox,
-    QPushButton,
     QStackedWidget,
     QWidget,
 )
@@ -75,6 +78,12 @@ from cranioz.ui.editors.editor_registry import EditorRegistry
 from cranioz.ui.home.home_page import HomePage
 from cranioz.ui.theme.service import ThemeService
 from cranioz.ui.tools.registry.tool_registry import ToolRegistry
+from cranioz.ui.workspace.areas.placement import Placement
+from cranioz.ui.workspace.structure import (
+    ExtrasSegment,
+    HomeSegment,
+    ModulesSegment,
+)
 from cranioz.ui.workspace.workspace import Workspace
 from cranioz.ui.workspace.workspace_spec import (
     DEFAULT as WORKSPACE_SPEC_DEFAULT,
@@ -260,25 +269,75 @@ class MainWindow(QMainWindow):
             domain_object_store=self._domain_object_store,
         )
 
-        # TopOverlay left segment: [Home] [Importar DICOM]
-        home_button = QPushButton("Home")
-        home_button.setObjectName("workspace.home_button")
-        home_button.clicked.connect(self._on_home_clicked)
+        # TopOverlay: three segments, one per zone.
+        home_segment = HomeSegment()
+        modules_segment = ModulesSegment()
+        extras_segment = ExtrasSegment()
 
-        import_button = QPushButton("Importar DICOM")
-        import_button.setObjectName("workspace.import_dicom_button")
-        import_button.clicked.connect(self._on_import_dicom_clicked)
+        # Placeholder module list until Phase 5 delivers WorkflowEngine.
+        modules_segment.set_modules((("tomography", "Tomografia"),))
 
-        top_left = QWidget()
-        top_left_layout = QHBoxLayout(top_left)
-        top_left_layout.setContentsMargins(0, 0, 0, 0)
-        top_left_layout.setSpacing(4)
-        top_left_layout.addWidget(home_button)
-        top_left_layout.addWidget(import_button)
+        # The project is open at this point: context-dependent actions
+        # in the Home menu ("Fechar projeto", "Importar arquivos") are
+        # enabled.
+        home_segment.set_project_open(True)
 
-        workspace.top_overlay().set_left_content(top_left)
+        self._wire_top_bar_segments(workspace, home_segment, modules_segment, extras_segment)
+
+        workspace.top_overlay().set_left_content(home_segment)
+        workspace.top_overlay().set_center_content(modules_segment)
+        workspace.top_overlay().set_right_content(extras_segment)
+
         workspace.load_spec(WORKSPACE_SPEC_DEFAULT)
         return workspace
+
+    def _wire_top_bar_segments(
+        self,
+        workspace: Workspace,
+        home: HomeSegment,
+        modules: ModulesSegment,
+        extras: ExtrasSegment,
+    ) -> None:
+        """Wire the Top Bar segment signals to their handlers.
+
+        The segments are presentation widgets: they emit signals and
+        know nothing about the application. The MainWindow decides
+        what each signal means.
+        """
+        # Home zone
+        home.toggle_area_left_requested.connect(
+            lambda: self._toggle_area(workspace, Placement.LEFT)
+        )
+        home.close_workspace_requested.connect(self._on_home_clicked)
+        home.new_project_requested.connect(self._on_new_project_requested)
+        home.open_project_requested.connect(self._on_manage_projects_requested)
+        home.close_project_requested.connect(self._on_home_clicked)
+        home.import_files_requested.connect(self._on_import_dicom_clicked)
+
+        # Modules zone
+        modules.add_module_requested.connect(self._on_manage_flows_requested)
+
+        # Extras zone
+        extras.settings_requested.connect(self._on_settings_requested)
+        extras.themes_requested.connect(self._on_settings_requested)  # placeholder
+        extras.help_requested.connect(self._on_help_requested)
+        extras.updates_requested.connect(self._on_help_requested)  # placeholder
+        extras.about_requested.connect(self._on_help_requested)  # placeholder
+        extras.toggle_area_bottom_requested.connect(
+            lambda: self._toggle_area(workspace, Placement.BOTTOM)
+        )
+        extras.toggle_area_right_requested.connect(
+            lambda: self._toggle_area(workspace, Placement.RIGHT)
+        )
+
+    def _toggle_area(self, workspace: Workspace, placement: Placement) -> None:
+        """Toggle an Area's visibility and reflect the new state.
+
+        The Workspace owns the runtime visibility state; the MainWindow
+        only relays the intent.
+        """
+        current = workspace.layout_state().is_visible(placement)
+        workspace.set_area_visible(placement, not current)
 
     def _on_home_clicked(self) -> None:
         if self._current_project_id is None or self._workspace is None:
@@ -340,8 +399,6 @@ class MainWindow(QMainWindow):
 
     # ----- DICOM import ----------------------------------------------
 
-    # ----- DICOM import ----------------------------------------------
-
     def _on_import_dicom_clicked(self) -> None:
         """Open a folder picker, dispatch ImportDicomSeriesCommand,
         and reload the Workspace.
@@ -393,7 +450,11 @@ class MainWindow(QMainWindow):
                 QMessageBox.critical(self, "Falha ao importar DICOM", str(exc))
             else:
                 _logger.exception("unexpected error importing DICOM from %s", path)
-                QMessageBox.critical(self, "Falha ao importar DICOM", f"Erro inesperado: {exc}")
+                QMessageBox.critical(
+                    self,
+                    "Falha ao importar DICOM",
+                    f"Erro inesperado: {exc}",
+                )
             return
 
         self._workspace.reload_volume()
@@ -427,7 +488,7 @@ class MainWindow(QMainWindow):
         self._command_bus.register(ImportDicomSeriesCommand, handler)
         return True
 
-    # ----- HomePage action handlers (placeholders) ------------------
+    # ----- HomePage action handlers (placeholders) -------------------
 
     def _on_new_project_requested(self) -> None:
         QMessageBox.information(self, "New project", "Available after Bloco 8 (Patient Module).")
@@ -463,7 +524,7 @@ class MainWindow(QMainWindow):
     def _on_contribute_requested(self) -> None:
         QMessageBox.information(self, "Contribute", "Available in a future piece.")
 
-    # ----- Convenience for tests ------------------------------------
+    # ----- Convenience for tests -------------------------------------
 
     def home(self) -> HomePage:
         return self._home
