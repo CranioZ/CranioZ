@@ -138,15 +138,24 @@ Do not rebuild existing DICOM import functionality without first reviewing the c
 
 #### 5. Complete Visualization
 
-- Preserve the existing `MPRView` implementation as the current baseline.
-- Complete `Viewport3DView` volume rendering.
+- Preserve the existing `MPRView` implementation (manual `vtkImageReslice` pipeline) as the current baseline.
+- Preserve the existing `Viewport3DView` volume rendering (`vtkSmartVolumeMapper` + presets) as the current baseline.
 - Implement the `RenderingAdapter` between Scene and VTK.
 - Separate clinical data from renderable representations.
 - Implement Window/Level and display controls without modifying source voxel data.
 - Validate physical orientation, spacing, origin and coordinate consistency.
 - Resolve Windows OpenGL and Qt rendering-context issues through reproducible tests.
 
-The choice between `vtkResliceImageViewer` and a custom `vtkImageReslice` pipeline must be validated through an ADR or documented technical decision. Do not replace the existing implementation solely because another API appears more flexible.
+**Sprint 4.2 — Consume `Volume` in Views and Editors (in progress):**
+
+- Refactor `MPRView.set_volume` to accept `Volume` (domain) instead of `vtkImageData`.
+- Refactor `Viewport3DView.set_volume` to accept `Volume`.
+- Refactor `TomographyEditor` to resolve `Volume` (not `VolumeData`) from the `DomainObjectStore`.
+- Use `VtkImageAdapter` as the sole bridge between `Volume` and `vtkImageData`.
+- Keep `VolumeData` during this sprint; full removal is Sprint 4.3.
+- Update `MPRView`, `Viewport3DView`, and `TomographyEditor` tests.
+
+The MPR pipeline choice (`vtkImageReslice` + `vtkImageMapToWindowLevelColors` + `vtkImageActor`) is settled and is the documented baseline.
 
 #### 6. Complete Module Loading
 
@@ -405,14 +414,15 @@ This phase provides the **technical foundation** for imaging. It does not implem
 
 **Implemented:**
 
-- ✅ `MPRView` using `vtkResliceImageViewer`.
+- ✅ `MPRView` using a manual `vtkImageReslice` + `vtkImageMapToWindowLevelColors` + `vtkImageActor` pipeline.
+  - Chosen over `vtkResliceImageViewer` because the latter caused `wglMakeCurrent` failures on Windows drivers (see §10.6). The manual pipeline is the documented baseline.
 - ✅ Axial, coronal and sagittal orientations.
+- ✅ `Viewport3DView` volume rendering using `vtkSmartVolumeMapper`.
+- ✅ Volume rendering presets (Bone, Soft Tissue, Skin, CT Angio).
 - ✅ `TomographyEditor` resolves imported volume data and provides it to Views.
 
 **Pending:**
 
-- 🚧 `Viewport3DView` volume rendering using `vtkSmartVolumeMapper`.
-- ⏳ Volume rendering presets.
 - ⏳ `RenderingAdapter` observing Scene changes and updating VTK representations.
 - ⏳ Window/Level controls and display-state integration.
 - ⏳ Consistent physical orientation and coordinate handling.
@@ -817,11 +827,10 @@ This section records known issues that must be resolved or explicitly deferred b
 
 ### 10.5 Phase 4 — Visualization
 
-- `Viewport3DView` still uses `vtkOutlineFilter` as a placeholder.
-- Volume rendering using `vtkSmartVolumeMapper` remains pending.
+- `Viewport3DView` renders the volume via `vtkSmartVolumeMapper` and draws a `vtkOutlineFilter` bounding box as a complementary visual reference. The outline is not a placeholder.
 - `RenderingAdapter` is not yet implemented.
 - Window/Level controls are not fully integrated across the visualization pipeline.
-- The MPR implementation currently uses `vtkResliceImageViewer`. Its suitability must be evaluated before deciding whether to retain or replace it.
+- The MPR pipeline (`vtkImageReslice` + `vtkImageMapToWindowLevelColors` + `vtkImageActor`) is the documented baseline. Windows OpenGL stability remains a known concern (§10.6), but the API choice itself is settled.
 - VTK resource lifecycle and rendering-context stability require further testing.
 
 ### 10.6 Phase 4 — Windows OpenGL and Qt Integration
