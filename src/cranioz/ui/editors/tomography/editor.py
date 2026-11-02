@@ -6,16 +6,17 @@ and 3D (bottom-right). It also declares two Toolbars: one on the left
 (image tools) and one on the right (visibility).
 
 The Editor receives an ``EditorContext`` at ``initialize``. When a
-``VolumeData`` is available in the ``DomainObjectStore`` (via
-``context.domain_object_store``), the Editor resolves the first
-``vtk_image_data`` and passes it to each View via ``set_volume``.
+``Volume`` is available in the ``DomainObjectStore`` (via
+``context.domain_object_store``), the Editor resolves it and passes it
+to each View via ``set_volume``. The Views convert the ``Volume`` to
+``vtkImageData`` via ``VtkImageAdapter`` internally.
 
 The "first" object is a placeholder: when the ``CommandExecutor``
 publishes ``SceneObjectAdded`` events (ADR-0007), the Editor will
 subscribe and react to specific volumes. Until then, the Editor
 resolves on ``activate`` and ``content_widget``.
 
-See ADR-0013, scene.md.
+See ADR-0013, scene.md, Medical Imaging Infrastructure §3.2.
 """
 
 from __future__ import annotations
@@ -25,6 +26,7 @@ from typing import TYPE_CHECKING, Any
 
 from PySide6.QtWidgets import QWidget
 
+from cranioz.domain.imaging.volume import Volume
 from cranioz.ui.editors.base_editor import Editor
 from cranioz.ui.editors.editor_context import EditorContext
 from cranioz.ui.editors.mpr_viewer.view import MPRView
@@ -44,7 +46,6 @@ from cranioz.ui.toolbars.specification import (
 
 if TYPE_CHECKING:
     from cranioz.domain.scene.domain_object_store import DomainObjectStore
-    from cranioz.domain.scene.volume_data import VolumeData
 
 _logger = logging.getLogger(__name__)
 
@@ -140,8 +141,12 @@ class TomographyEditor(Editor):
     # ----- Volume resolution ----------------------------------------
 
     def _try_apply_volume(self) -> None:
-        """Resolve the first VolumeData from the DomainObjectStore and
+        """Resolve the first ``Volume`` from the DomainObjectStore and
         pass it to the Views. Idempotent.
+
+        Each View converts the ``Volume`` to ``vtkImageData`` via
+        ``VtkImageAdapter`` internally (Medical Imaging Infrastructure
+        §3.2). The Editor does not touch ``vtkImageData`` directly.
 
         This is a placeholder for the real mechanism: when the
         CommandExecutor publishes ``SceneObjectAdded`` events
@@ -158,15 +163,15 @@ class TomographyEditor(Editor):
         if store is None or scene_query is None:
             return
 
-        volume_data = self._resolve_first_volume(store, scene_query)
-        if volume_data is None:
+        volume = self._resolve_first_volume(store, scene_query)
+        if volume is None:
             return
 
         try:
-            self._axial.set_volume(volume_data.vtk_image_data)
-            self._coronal.set_volume(volume_data.vtk_image_data)
-            self._sagittal.set_volume(volume_data.vtk_image_data)
-            self._viewport.set_volume(volume_data.vtk_image_data)
+            self._axial.set_volume(volume)
+            self._coronal.set_volume(volume)
+            self._sagittal.set_volume(volume)
+            self._viewport.set_volume(volume)
         except RuntimeError:
             # VTK is not installed (e.g., in a CI test environment).
             # Leave the Views as empty containers.
@@ -181,15 +186,13 @@ class TomographyEditor(Editor):
     def _resolve_first_volume(
         store: DomainObjectStore,
         scene_query: Any,
-    ) -> VolumeData | None:
-        """Resolve the first VolumeData from the DomainObjectStore."""
-        from cranioz.domain.scene.volume_data import VolumeData  # noqa: PLC0415
-
+    ) -> Volume | None:
+        """Resolve the first ``Volume`` from the DomainObjectStore."""
         for object_id in scene_query.list_objects():
             if not store.contains(object_id):
                 continue
             candidate = store.get(object_id)
-            if isinstance(candidate, VolumeData):
+            if isinstance(candidate, Volume):
                 return candidate
         return None
 
@@ -200,14 +203,14 @@ class TomographyEditor(Editor):
         self._viewport.set_preset(name)
 
     def reload_volume(self) -> None:
-        """Re-resolve the first VolumeData and pass it to the Views.
+        """Re-resolve the first ``Volume`` and pass it to the Views.
 
         Called by ``Workspace.reload_volume()`` after a successful
         DICOM import (Passo 8e). Idempotent: if the volume is
         already applied and the store has not changed, it is a no-op
         (the ``_volume_applied`` flag is reset, but
         ``_try_apply_volume`` will only mark it True again if a
-        VolumeData is found).
+        Volume is found).
         """
         self._volume_applied = False
         self._try_apply_volume()

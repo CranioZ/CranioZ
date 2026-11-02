@@ -13,8 +13,6 @@ See ADR-0013 §2.3, scene.md §24.
 
 from __future__ import annotations
 
-from typing import Any
-
 from PySide6.QtWidgets import QLayout, QVBoxLayout, QWidget
 from vtkmodules.qt.QVTKRenderWindowInteractor import (
     QVTKRenderWindowInteractor,
@@ -26,6 +24,8 @@ from vtkmodules.vtkRenderingCore import (
     vtkRenderer,
 )
 
+from cranioz.domain.imaging.volume import Volume
+from cranioz.infrastructure.visualization.vtk_image_adapter import VtkImageAdapter
 from cranioz.ui.editors.view import View
 
 # Orientation indices for the reslice axes.
@@ -66,19 +66,28 @@ class MPRView(View):
         self._interactor: QVTKRenderWindowInteractor | None = None
         self._container: QWidget | None = None
         self._volume_set = False
+        self._adapter = VtkImageAdapter()
+        self._volume: Volume | None = None
         self._slice_index = 0
         self._max_slice = 0
 
     # ----- Public API --------------------------------------------------
 
-    def set_volume(self, vtk_image_data: Any) -> None:
-        """Attach a ``vtkImageData`` to this view.
+    def set_volume(self, volume: Volume) -> None:
+        """Attach a ``Volume`` to this view.
 
         The MPR pipeline is created lazily on the first call.
         The slice is reset to the middle of the new volume.
+
+        The ``Volume`` is converted to ``vtkImageData`` via
+        ``VtkImageAdapter`` (the sole bridge between the domain and
+        VTK, per Medical Imaging Infrastructure §3.2). A strong
+        reference to the ``Volume`` is retained so that the shared
+        NumPy buffer is not garbage-collected while the VTK pipeline
+        still points to it (§8.1).
         """
-        if vtk_image_data is None:
-            raise ValueError("MPRView.set_volume requires a non-None vtkImageData")
+        if volume is None:
+            raise ValueError("MPRView.set_volume requires a non-None Volume")
 
         self._ensure_pipeline()
         self._ensure_container()
@@ -97,6 +106,14 @@ class MPRView(View):
             or interactor is None
         ):  # pragma: no cover - defensive
             raise RuntimeError("MPRView pipeline was not initialized correctly")
+
+        # Convert Volume -> vtkImageData via the sole bridge.
+        vtk_image_data = self._adapter.to_vtk(volume)
+
+        # Retain a strong reference to the Volume so the shared
+        # NumPy buffer is not garbage-collected while VTK still
+        # points to it (§8.1).
+        self._volume = volume
 
         # Set the input volume.
         reslice.SetInputData(vtk_image_data)
@@ -176,6 +193,7 @@ class MPRView(View):
         self._actor = None
         self._window_level = None
         self._renderer = None
+        self._volume = None
         self._volume_set = False
 
     # ----- Internal helpers -------------------------------------------

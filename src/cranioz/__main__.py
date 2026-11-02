@@ -254,7 +254,7 @@ def main() -> int:
     _logger.debug("Event bus initialized: %r", event_bus)
 
     (
-        _command_bus,
+        command_bus,
         command_dispatcher,
         task_manager,
         telemetry,
@@ -291,6 +291,7 @@ def main() -> int:
         telemetry=telemetry,
         flow_catalog=flow_catalog,
         command_dispatcher=command_dispatcher,
+        command_bus=command_bus,
         scene_provider=scene_provider,
         domain_object_store=domain_object_store,
     )

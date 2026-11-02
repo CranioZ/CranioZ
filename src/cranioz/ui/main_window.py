@@ -11,13 +11,17 @@ Responsibilities:
   create the Workspace with the resulting ProjectContext, inject
   the "Home" and "Import DICOM" buttons into the TopOverlay, and
   switch to the Workspace.
+- Register the DICOM import handler in the CommandBus when the
+  project opens (Application Startup §3.4, §4.1: the handler pulls
+  pydicom/numpy, which must not be loaded during the boot critical
+  path).
 - Listen to the "Home" button's clicked; call
-  ProjectManager.close_project, destroy the Workspace, and switch
-  back to the HomePage.
+  ProjectManager.close_project, unregister the DICOM import handler,
+  destroy the Workspace, and switch back to the HomePage.
 - Listen to the "Import DICOM" button's clicked; open a folder
-  picker, load the DICOM series, register the volume in the
-  DomainObjectStore and the Scene, and reload the Workspace's
-  volume.
+  picker, dispatch ImportDicomSeriesCommand (which reads the series,
+  assembles a Volume, registers it in the DomainObjectStore and the
+  Scene), and reload the Workspace's volume.
 - Forward other HomePage signals to MessageBox placeholders for
   pieces that are not yet implemented (Bloco 8 / Bloco 9 / 7.6d).
 - Forward shared application services (TaskManager, TelemetrySink,
@@ -33,13 +37,14 @@ Non-responsibilities (see main_window.md §9 and ADR-0006):
 - MainWindow does not implement workflow rules.
 - MainWindow does not manage long-running operations.
 - MainWindow does not persist state.
+- MainWindow does not read DICOM or assemble volumes; that is the
+  ImportDicomSeriesHandler's responsibility.
 """
 
 from __future__ import annotations
 
 import logging
 import uuid
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 from PySide6.QtWidgets import (
@@ -52,16 +57,16 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from cranioz.application.commands.base import CommandDispatchError
 from cranioz.application.flows.catalog import FlowCatalog
 from cranioz.application.project.project_catalog import ProjectCatalog
 from cranioz.application.project.project_context import ProjectContext
 from cranioz.application.project.project_errors import ProjectError
 from cranioz.application.project.project_manager import ProjectManager
-from cranioz.domain.project.project_id import ProjectId
-from cranioz.infrastructure.imaging.dicom_loader import (
-    DicomLoadError,
-    load_dicom_series,
+from cranioz.application.scene.commands.scene_commands import (
+    ImportDicomSeriesCommand,
 )
+from cranioz.domain.project.project_id import ProjectId
 from cranioz.infrastructure.scene.scene_query_adapter import SceneQueryAdapter
 from cranioz.ui.editors.editor_registry import EditorRegistry
 from cranioz.ui.home.home_page import HomePage
@@ -77,6 +82,7 @@ from cranioz.ui.workspace.workspace_spec import (
 )
 
 if TYPE_CHECKING:
+    from cranioz.application.commands.bus import CommandBus
     from cranioz.application.commands.dispatcher import CommandDispatcher
     from cranioz.application.scene.scene_provider import SceneProvider
     from cranioz.application.tasks.base import TaskManager
@@ -124,6 +130,7 @@ class MainWindow(QMainWindow):
         task_manager: TaskManager | None = None,
         telemetry: TelemetrySink | None = None,
         command_dispatcher: CommandDispatcher | None = None,
+        command_bus: CommandBus | None = None,
         flow_catalog: FlowCatalog | None = None,
         scene_provider: SceneProvider | None = None,
         domain_object_store: DomainObjectStore | None = None,
@@ -139,6 +146,7 @@ class MainWindow(QMainWindow):
         self._task_manager = task_manager
         self._telemetry = telemetry
         self._command_dispatcher = command_dispatcher
+        self._command_bus = command_bus
         self._flow_catalog = flow_catalog
         self._scene_provider = scene_provider
         self._domain_object_store = domain_object_store
@@ -221,6 +229,12 @@ class MainWindow(QMainWindow):
         self._workspace = workspace
         self._current_project_id = project_id
 
+        # Register the DICOM import handler now, when the project is
+        # open and the Scene/DomainObjectStore exist. The handler
+        # imports pydicom/numpy, which must not be loaded during the
+        # boot critical path (Application Startup §3.4, §4.1).
+        self._register_dicom_import_handler()
+
     def _create_workspace(self, context: ProjectContext) -> Workspace:
         # Build the SceneQueryAdapter from the provider's Scene, if any.
         # The adapter is recreated per Workspace, but the underlying
@@ -268,6 +282,7 @@ class MainWindow(QMainWindow):
             return
 
         self._manager.close_project(self._actor, self._current_project_id)
+        self._unregister_dicom_import_handler()
         self._stack.removeWidget(self._workspace)
         self._workspace.setParent(None)
         self._workspace.deleteLater()
@@ -277,11 +292,70 @@ class MainWindow(QMainWindow):
         self._stack.setCurrentWidget(self._home)
         self._home.refresh()
 
+    # ----- DICOM import handler lifecycle ----------------------------
+
+    def _register_dicom_import_handler(self) -> None:
+        """Register the DICOM import handler in the CommandBus.
+
+        The handler imports DicomSeriesReader (and, transitively,
+        pydicom and numpy). Registering it here — inside the
+        project-opening flow — keeps the application boot free of
+        clinical dependencies (Application Startup §3.1, §3.4, §4.1).
+
+        The handler is unregistered in ``_on_home_clicked`` when the
+        project is closed, because it references the project's
+        Scene and DomainObjectStore.
+        """
+        if self._command_bus is None:
+            return
+        if self._scene_provider is None or self._domain_object_store is None:
+            return
+
+        # Local import: the handler pulls pydicom/numpy, which must
+        # not be loaded during the boot critical path.
+        from cranioz.application.scene.handlers.scene_handlers import (  # noqa: PLC0415
+            ImportDicomSeriesHandler,
+        )
+
+        handler = ImportDicomSeriesHandler(
+            scene=self._scene_provider.get_scene(),
+            object_store=self._domain_object_store,
+        )
+        self._command_bus.register(ImportDicomSeriesCommand, handler)
+
+    def _unregister_dicom_import_handler(self) -> None:
+        """Unregister the DICOM import handler when the project closes.
+
+        The handler references the project's Scene and
+        DomainObjectStore, which become invalid after the project is
+        closed. Leaving it registered would keep those references
+        alive and allow stale dispatches.
+        """
+        if self._command_bus is None:
+            return
+        self._command_bus.unregister(ImportDicomSeriesCommand)
+
     # ----- DICOM import ----------------------------------------------
 
     def _on_import_dicom_clicked(self) -> None:
-        """Open a folder picker, load the DICOM series, and register it."""
+        """Open a folder picker, dispatch ImportDicomSeriesCommand,
+        and reload the Workspace.
+
+        The CommandHandler (registered in the CommandBus when the
+        project is opened) reads the series, assembles a ``Volume``,
+        registers it in the ``DomainObjectStore``, and adds it to the
+        ``Scene``. The MainWindow only dispatches the Command and
+        handles the error path (Medical Imaging Infrastructure §3.3).
+        """
         if self._workspace is None:
+            return
+
+        if self._command_dispatcher is None:
+            QMessageBox.critical(
+                self,
+                "Falha ao importar DICOM",
+                "O despachante de comandos não está disponível.",
+            )
             return
 
         path = QFileDialog.getExistingDirectory(
@@ -293,10 +367,31 @@ class MainWindow(QMainWindow):
         if not path:
             return
 
+        if self._scene_provider is None:
+            QMessageBox.critical(
+                self,
+                "Falha ao importar DICOM",
+                "O provedor de Scene não está disponível.",
+            )
+            return
+        scene = self._scene_provider.get_scene()
+
+        object_id = f"volume-{uuid.uuid4().hex[:8]}"
+        command = ImportDicomSeriesCommand.new(
+            scene_id=scene.scene_id,
+            path=path,
+            object_id=object_id,
+        )
+
         try:
-            volume = load_dicom_series(Path(path))
-        except DicomLoadError as exc:
-            QMessageBox.critical(self, "Falha ao importar DICOM", str(exc))
+            self._command_dispatcher.dispatch(command)
+        except CommandDispatchError as exc:
+            _logger.exception("DICOM import failed for %s", path)
+            QMessageBox.critical(
+                self,
+                "Falha ao importar DICOM",
+                str(exc),
+            )
             return
         except Exception as exc:
             _logger.exception("unexpected error importing DICOM from %s", path)
@@ -307,26 +402,11 @@ class MainWindow(QMainWindow):
             )
             return
 
-        object_id = f"volume-{uuid.uuid4().hex[:8]}"
-
-        if self._domain_object_store is not None:
-            self._domain_object_store.add(object_id, volume)
-
-        if self._scene_provider is not None:
-            scene = self._scene_provider.get_scene()
-            scene.add_object(object_id)
-
-        # Ask the Workspace to re-resolve the volume in its Editors.
-        # This is a placeholder: when the CommandExecutor publishes
-        # SceneObjectAdded events (ADR-0007), the Editor will react
-        # automatically. Until then, the MainWindow triggers the
-        # reload explicitly.
         self._workspace.reload_volume()
         _logger.info(
-            "Imported DICOM series from %s as %s (dimensions=%s)",
+            "Imported DICOM series from %s as %s",
             path,
             object_id,
-            volume.dimensions,
         )
 
     # ----- HomePage action handlers (placeholders) ------------------

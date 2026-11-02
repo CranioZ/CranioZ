@@ -1,9 +1,9 @@
-"""Integration test: TomographyEditor applies a VolumeData to its Views.
+"""Integration test: TomographyEditor applies a Volume to its Views.
 
-The TomographyEditor resolves the first ``VolumeData`` from the
-``DomainObjectStore`` via ``SceneQuery`` and passes the
-``vtk_image_data`` to each View. This test exercises the full
-pipeline:
+The TomographyEditor resolves the first ``Volume`` from the
+``DomainObjectStore`` via ``SceneQuery`` and passes it to each View.
+Each View converts the ``Volume`` to ``vtkImageData`` via
+``VtkImageAdapter`` internally. This test exercises the full pipeline:
 
     DomainObjectStore + InMemorySceneQuery
         → EditorContext
@@ -17,16 +17,20 @@ VTK is a hard requirement; the test skips when VTK is missing.
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
+import numpy as np
 import pytest
 
 pytest.importorskip("vtk")
 pytest.importorskip("vtkmodules.qt")
 
-import vtk  # noqa: E402
-
 from cranioz.application.scene.scene_query import InMemorySceneQuery
+from cranioz.domain.imaging.image_metadata import ImageMetadata
+from cranioz.domain.imaging.volume import IntensityScale, Volume
+from cranioz.domain.imaging.volume_geometry import VolumeGeometry
+from cranioz.domain.imaging.volume_provenance import VolumeProvenance
 from cranioz.domain.scene.domain_object_store import DomainObjectStore
-from cranioz.domain.scene.volume_data import VolumeData
 from cranioz.ui.editors.editor_context import EditorContext
 from cranioz.ui.editors.mpr_viewer.view import MPRView
 from cranioz.ui.editors.tomography.editor import TomographyEditor
@@ -34,21 +38,23 @@ from cranioz.ui.editors.viewport_3d.presets import get_preset
 from cranioz.ui.editors.viewport_3d.view import Viewport3DView
 
 
-def _make_volume_data() -> VolumeData:
-    """Build a synthetic ``VolumeData`` (4x4x4, int16)."""
-
-    image = vtk.vtkImageData()
-    image.SetDimensions(4, 4, 4)
-    image.SetSpacing(1.0, 1.0, 1.0)
-    image.SetOrigin(0.0, 0.0, 0.0)
-    image.AllocateScalars(vtk.VTK_SHORT, 1)
-
-    return VolumeData(
-        vtk_image_data=image,
-        series_uid="1.2.3.4.5",
+def _make_volume() -> Volume:
+    """Build a synthetic ``Volume`` (4x4x4, int16)."""
+    data = np.zeros((4, 4, 4), dtype=np.int16)
+    geometry = VolumeGeometry.identity(
+        dimensions=(4, 4, 4),
         spacing=(1.0, 1.0, 1.0),
         origin=(0.0, 0.0, 0.0),
-        dimensions=(4, 4, 4),
+    )
+    return Volume(
+        data=data,
+        geometry=geometry,
+        metadata=ImageMetadata(),
+        intensity_scale=IntensityScale.UNKNOWN,
+        provenance=VolumeProvenance(
+            import_timestamp=datetime(2026, 1, 1, 12, 0, tzinfo=UTC),
+        ),
+        volume_id="volume-test",
     )
 
 
@@ -66,16 +72,13 @@ def _make_context(
 @pytest.mark.qt
 @pytest.mark.integration
 def test_tomography_editor_applies_volume_to_all_views(qtbot) -> None:
-    """The Editor resolves the first VolumeData and passes it to all 4 Views."""
-    volume = _make_volume_data()
+    """The Editor resolves the first Volume and passes it to all 4 Views."""
+    volume = _make_volume()
 
     store = DomainObjectStore()
     store.add("volume-1", volume)
 
     scene_query = InMemorySceneQuery()
-    # _add is the test-only helper on InMemorySceneQuery (see
-    # application/scene/scene_query.py). It registers the object so
-    # that list_objects() returns its id.
     scene_query._add("volume-1", object())
 
     editor = TomographyEditor()
@@ -105,9 +108,9 @@ def test_tomography_editor_handles_empty_store(qtbot) -> None:
 
 @pytest.mark.qt
 @pytest.mark.integration
-def test_tomography_editor_resolves_only_volume_data(qtbot) -> None:
-    """Objects that are not VolumeData are ignored."""
-    volume = _make_volume_data()
+def test_tomography_editor_resolves_only_volume(qtbot) -> None:
+    """Objects that are not Volume are ignored."""
+    volume = _make_volume()
 
     store = DomainObjectStore()
     store.add("not-a-volume", object())  # ← should be skipped
@@ -129,7 +132,7 @@ def test_tomography_editor_resolves_only_volume_data(qtbot) -> None:
 @pytest.mark.qt
 @pytest.mark.integration
 def test_tomography_editor_dispose_clears_volume_flag(qtbot) -> None:
-    volume = _make_volume_data()
+    volume = _make_volume()
     store = DomainObjectStore()
     store.add("volume-1", volume)
     scene_query = InMemorySceneQuery()
@@ -150,7 +153,7 @@ def test_tomography_editor_dispose_clears_volume_flag(qtbot) -> None:
 @pytest.mark.integration
 def test_tomography_editor_viewport3d_has_volume_rendering(qtbot) -> None:
     """The Viewport3DView is created with volume rendering (not outline)."""
-    volume = _make_volume_data()
+    volume = _make_volume()
     store = DomainObjectStore()
     store.add("volume-1", volume)
     scene_query = InMemorySceneQuery()
@@ -163,5 +166,5 @@ def test_tomography_editor_viewport3d_has_volume_rendering(qtbot) -> None:
     viewport = editor.views()[-1]  # the 4th view is the 3D
     assert isinstance(viewport, Viewport3DView)
     assert viewport.has_volume is True
-    assert viewport.volume is not None
+    assert viewport.volume_actor is not None
     assert viewport.preset is get_preset("bone")

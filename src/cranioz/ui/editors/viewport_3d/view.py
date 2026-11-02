@@ -8,7 +8,7 @@ A ``vtkOutlineFilter`` is rendered as a bounding box around the
 volume, so the user can see the extent of the data.
 
 The View does not know about the Scene. The Editor resolves the
-VolumeData and passes it via ``set_volume(...)``.
+Volume and passes it via ``set_volume(...)``.
 
 See ADR-0013 §2.3, scene.md §24, scene.md §27 (presentation state).
 """
@@ -33,6 +33,8 @@ from vtkmodules.vtkRenderingCore import (
 )
 from vtkmodules.vtkRenderingVolumeOpenGL2 import vtkSmartVolumeMapper
 
+from cranioz.domain.imaging.volume import Volume
+from cranioz.infrastructure.visualization.vtk_image_adapter import VtkImageAdapter
 from cranioz.ui.editors.view import View
 from cranioz.ui.editors.viewport_3d.presets import (
     VolumePreset,
@@ -54,7 +56,7 @@ class Viewport3DView(View):
         self._preset = get_preset(preset)
         self._interactor: QVTKRenderWindowInteractor | None = None
         self._renderer: vtkRenderer | None = None
-        self._volume: vtkVolume | None = None
+        self._volume_actor: vtkVolume | None = None
         self._volume_property: vtkVolumeProperty | None = None
         self._outline_actor: vtkActor | None = None
         self._window: float = self._preset.default_window
@@ -62,31 +64,49 @@ class Viewport3DView(View):
         self._container: QWidget | None = None
         self._vtk_image_data: Any = None
         self._volume_set = False
+        self._adapter = VtkImageAdapter()
+        self._volume: Volume | None = None
 
     # ----- Public API ---------------------------------------------------
 
-    def set_volume(self, vtk_image_data: Any) -> None:
-        """Attach a ``vtkImageData`` and render it as a volume."""
-        if vtk_image_data is None:
-            raise ValueError("Viewport3DView.set_volume requires a non-None vtkImageData")
+    def set_volume(self, volume: Volume) -> None:
+        """Attach a ``Volume`` and render it as a volume.
 
-        self._vtk_image_data = vtk_image_data
+        The ``Volume`` is converted to ``vtkImageData`` via
+        ``VtkImageAdapter`` (the sole bridge between the domain and
+        VTK, per Medical Imaging Infrastructure §3.2). A strong
+        reference to the ``Volume`` is retained so that the shared
+        NumPy buffer is not garbage-collected while VTK still points
+        to it (§8.1).
+        """
+        if volume is None:
+            raise ValueError("Viewport3DView.set_volume requires a non-None Volume")
+
         self._ensure_pipeline()
         self._ensure_interactor_in_layout()
 
-        volume = self._volume
+        # Convert Volume -> vtkImageData via the sole bridge.
+        vtk_image_data = self._adapter.to_vtk(volume)
+
+        # Retain a strong reference to the Volume so the shared
+        # NumPy buffer is not garbage-collected while VTK still
+        # points to it (§8.1).
+        self._volume = volume
+        self._vtk_image_data = vtk_image_data
+
+        volume_actor = self._volume_actor
         volume_property = self._volume_property
         renderer = self._renderer
-        if volume is None or volume_property is None or renderer is None:
+        if volume_actor is None or volume_property is None or renderer is None:
             raise RuntimeError("Viewport3DView pipeline was not initialized correctly")
 
         mapper = vtkSmartVolumeMapper()
         mapper.SetInputData(vtk_image_data)
         mapper.SetBlendModeToComposite()
 
-        volume.SetMapper(mapper)
+        volume_actor.SetMapper(mapper)
         self._apply_transfer_functions()
-        volume.SetProperty(volume_property)
+        volume_actor.SetProperty(volume_property)
 
         # Rebuild the outline for the new input.
         if self._outline_actor is not None:
@@ -139,8 +159,8 @@ class Viewport3DView(View):
         return self._renderer
 
     @property
-    def volume(self) -> vtkVolume | None:
-        return self._volume
+    def volume_actor(self) -> vtkVolume | None:
+        return self._volume_actor
 
     # ----- View API ----------------------------------------------------
 
@@ -165,7 +185,7 @@ class Viewport3DView(View):
             self._renderer = None
 
         self._outline_actor = None
-        self._volume = None
+        self._volume_actor = None
         self._volume_property = None
 
         # 2. Finalize and destroy the interactor.
@@ -182,6 +202,7 @@ class Viewport3DView(View):
             self._container = None
 
         self._vtk_image_data = None
+        self._volume = None
         self._volume_set = False
 
     # ----- Internal helpers -------------------------------------------
@@ -204,14 +225,14 @@ class Viewport3DView(View):
         volume_property.SetSpecular(0.2)
         volume_property.SetSpecularPower(10.0)
 
-        volume = vtkVolume()
-        volume.SetProperty(volume_property)
-        renderer.AddVolume(volume)
+        volume_actor = vtkVolume()
+        volume_actor.SetProperty(volume_property)
+        renderer.AddVolume(volume_actor)
 
         self._interactor = interactor
         self._renderer = renderer
         self._volume_property = volume_property
-        self._volume = volume
+        self._volume_actor = volume_actor
 
         self._ensure_container()
 

@@ -2,27 +2,42 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
+import numpy as np
 import pytest
 
 pytest.importorskip("vtk")
 pytest.importorskip("vtkmodules.qt")
 
-import vtk  # noqa: E402
-
-from cranioz.ui.editors.viewport_3d.presets import (  # noqa: E402
+from cranioz.domain.imaging.image_metadata import ImageMetadata
+from cranioz.domain.imaging.volume import IntensityScale, Volume
+from cranioz.domain.imaging.volume_geometry import VolumeGeometry
+from cranioz.domain.imaging.volume_provenance import VolumeProvenance
+from cranioz.ui.editors.viewport_3d.presets import (
     get_preset,
 )
-from cranioz.ui.editors.viewport_3d.view import Viewport3DView  # noqa: E402
+from cranioz.ui.editors.viewport_3d.view import Viewport3DView
 
 
-def _make_image() -> object:
-    """Build a tiny synthetic ``vtkImageData`` (4x4x4, int16)."""
-    image = vtk.vtkImageData()
-    image.SetDimensions(4, 4, 4)
-    image.SetSpacing(1.0, 1.0, 1.0)
-    image.SetOrigin(0.0, 0.0, 0.0)
-    image.AllocateScalars(vtk.VTK_SHORT, 1)
-    return image
+def _make_volume() -> Volume:
+    """Build a tiny synthetic ``Volume`` (4x4x4, int16)."""
+    data = np.zeros((4, 4, 4), dtype=np.int16)
+    geometry = VolumeGeometry.identity(
+        dimensions=(4, 4, 4),
+        spacing=(1.0, 1.0, 1.0),
+        origin=(0.0, 0.0, 0.0),
+    )
+    return Volume(
+        data=data,
+        geometry=geometry,
+        metadata=ImageMetadata(),
+        intensity_scale=IntensityScale.UNKNOWN,
+        provenance=VolumeProvenance(
+            import_timestamp=datetime(2026, 1, 1, 12, 0, tzinfo=UTC),
+        ),
+        volume_id="volume-test",
+    )
 
 
 @pytest.mark.qt
@@ -50,23 +65,37 @@ def test_viewport_3d_content_widget_returns_container(qtbot) -> None:
 
 @pytest.mark.qt
 def test_viewport_3d_set_volume_marks_has_volume(qtbot) -> None:
-    image = _make_image()
+    volume = _make_volume()
     view = Viewport3DView(view_id="view.3d")
     qtbot.addWidget(view.content_widget())
 
-    view.set_volume(image)
+    view.set_volume(volume)
 
     assert view.has_volume is True
     assert view.renderer is not None
-    assert view.volume is not None
+    assert view.volume_actor is not None
+
+
+@pytest.mark.qt
+def test_viewport_3d_retains_volume_reference(qtbot) -> None:
+    """The View must retain a strong reference to the Volume (§8.1)."""
+    volume = _make_volume()
+    view = Viewport3DView(view_id="view.3d")
+    qtbot.addWidget(view.content_widget())
+
+    view.set_volume(volume)
+    assert view._volume is volume  # noqa: SLF001
+
+    view.dispose()
+    assert view._volume is None  # noqa: SLF001
 
 
 @pytest.mark.qt
 def test_viewport_3d_set_preset_changes_state(qtbot) -> None:
-    image = _make_image()
+    volume = _make_volume()
     view = Viewport3DView(view_id="view.3d")
     qtbot.addWidget(view.content_widget())
-    view.set_volume(image)
+    view.set_volume(volume)
     assert view.preset is get_preset("bone")
 
     view.set_preset("soft_tissue")
@@ -77,10 +106,10 @@ def test_viewport_3d_set_preset_changes_state(qtbot) -> None:
 
 @pytest.mark.qt
 def test_viewport_3d_set_window_level_updates_state(qtbot) -> None:
-    image = _make_image()
+    volume = _make_volume()
     view = Viewport3DView(view_id="view.3d")
     qtbot.addWidget(view.content_widget())
-    view.set_volume(image)
+    view.set_volume(volume)
 
     view.set_window_level(1000.0, 200.0)
     assert view.window == 1000.0
@@ -89,10 +118,10 @@ def test_viewport_3d_set_window_level_updates_state(qtbot) -> None:
 
 @pytest.mark.qt
 def test_viewport_3d_set_window_level_rejects_non_positive(qtbot) -> None:
-    image = _make_image()
+    volume = _make_volume()
     view = Viewport3DView(view_id="view.3d")
     qtbot.addWidget(view.content_widget())
-    view.set_volume(image)
+    view.set_volume(volume)
 
     with pytest.raises(ValueError, match="window must be positive"):
         view.set_window_level(0.0, 200.0)
@@ -102,14 +131,14 @@ def test_viewport_3d_set_window_level_rejects_non_positive(qtbot) -> None:
 
 @pytest.mark.qt
 def test_viewport_3d_dispose_clears_state(qtbot) -> None:
-    image = _make_image()
+    volume = _make_volume()
     view = Viewport3DView(view_id="view.3d")
     qtbot.addWidget(view.content_widget())
-    view.set_volume(image)
+    view.set_volume(volume)
     assert view.has_volume
 
     view.dispose()
 
     assert view.has_volume is False
     assert view.renderer is None
-    assert view.volume is None
+    assert view.volume_actor is None
