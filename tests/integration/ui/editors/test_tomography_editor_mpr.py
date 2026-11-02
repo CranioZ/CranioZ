@@ -6,11 +6,11 @@ Each View converts the ``Volume`` to ``vtkImageData`` via
 ``VtkImageAdapter`` internally. This test exercises the full pipeline:
 
     DomainObjectStore + InMemorySceneQuery
-        → EditorContext
-        → TomographyEditor.initialize()
-        → TomographyEditor.content_widget()
-        → MPRView.set_volume() (x3) + Viewport3DView.set_volume()
-        → has_volume == True on all four Views
+        -> EditorContext
+        -> TomographyEditor.initialize()
+        -> TomographyEditor.content_widget()
+        -> MPRView.set_volume() (x3) + Viewport3DView.set_volume()
+        -> has_volume == True on all four Views
 
 VTK is a hard requirement; the test skips when VTK is missing.
 """
@@ -26,7 +26,10 @@ pytest.importorskip("vtk")
 pytest.importorskip("vtkmodules.qt")
 
 from cranioz.application.scene.scene_query import InMemorySceneQuery
-from cranioz.domain.imaging.image_metadata import ImageMetadata
+from cranioz.domain.imaging.image_metadata import (
+    ImageMetadata,
+    ImageModality,
+)
 from cranioz.domain.imaging.volume import IntensityScale, Volume
 from cranioz.domain.imaging.volume_geometry import VolumeGeometry
 from cranioz.domain.imaging.volume_provenance import VolumeProvenance
@@ -39,7 +42,11 @@ from cranioz.ui.editors.viewport_3d.view import Viewport3DView
 
 
 def _make_volume() -> Volume:
-    """Build a synthetic ``Volume`` (4x4x4, int16)."""
+    """Build a synthetic ``Volume`` (4x4x4, int16).
+
+    The volume is intentionally non-HU (``IntensityScale.UNKNOWN``)
+    so the Viewport3DView exercises the ``cbct`` branch.
+    """
     data = np.zeros((4, 4, 4), dtype=np.int16)
     geometry = VolumeGeometry.identity(
         dimensions=(4, 4, 4),
@@ -55,6 +62,31 @@ def _make_volume() -> Volume:
             import_timestamp=datetime(2026, 1, 1, 12, 0, tzinfo=UTC),
         ),
         volume_id="volume-test",
+    )
+
+
+def _make_hu_volume() -> Volume:
+    """Build a synthetic HU-calibrated ``Volume`` (4x4x4, int16).
+
+    Values are chosen inside a plausible HU range (air = -1000,
+    bone = 1500) so the Viewport3DView exercises the ``bone`` branch.
+    """
+    data = np.full((4, 4, 4), -1000, dtype=np.int16)
+    data[1:3, 1:3, 1:3] = 1500
+    geometry = VolumeGeometry.identity(
+        dimensions=(4, 4, 4),
+        spacing=(1.0, 1.0, 1.0),
+        origin=(0.0, 0.0, 0.0),
+    )
+    return Volume(
+        data=data,
+        geometry=geometry,
+        metadata=ImageMetadata(modality=ImageModality.CT),
+        intensity_scale=IntensityScale.HU,
+        provenance=VolumeProvenance(
+            import_timestamp=datetime(2026, 1, 1, 12, 0, tzinfo=UTC),
+        ),
+        volume_id="volume-test-hu",
     )
 
 
@@ -113,7 +145,7 @@ def test_tomography_editor_resolves_only_volume(qtbot) -> None:
     volume = _make_volume()
 
     store = DomainObjectStore()
-    store.add("not-a-volume", object())  # ← should be skipped
+    store.add("not-a-volume", object())  # <- should be skipped
     store.add("volume-1", volume)
 
     scene_query = InMemorySceneQuery()
@@ -152,8 +184,8 @@ def test_tomography_editor_dispose_clears_volume_flag(qtbot) -> None:
 @pytest.mark.qt
 @pytest.mark.integration
 def test_tomography_editor_viewport3d_has_volume_rendering(qtbot) -> None:
-    """The Viewport3DView is created with volume rendering (not outline)."""
-    volume = _make_volume()
+    """The Viewport3DView starts with the cbct preset for a non-HU volume."""
+    volume = _make_volume()  # IntensityScale.UNKNOWN
     store = DomainObjectStore()
     store.add("volume-1", volume)
     scene_query = InMemorySceneQuery()
@@ -167,4 +199,24 @@ def test_tomography_editor_viewport3d_has_volume_rendering(qtbot) -> None:
     assert isinstance(viewport, Viewport3DView)
     assert viewport.has_volume is True
     assert viewport.volume_actor is not None
+    # Non-HU volume -> cbct preset, by design.
+    assert viewport.preset is get_preset("cbct")
+
+
+@pytest.mark.qt
+@pytest.mark.integration
+def test_tomography_editor_viewport3d_uses_bone_for_hu_volume(qtbot) -> None:
+    """The Viewport3DView starts with the bone preset for an HU volume."""
+    volume = _make_hu_volume()  # IntensityScale.HU
+    store = DomainObjectStore()
+    store.add("volume-test-hu", volume)
+    scene_query = InMemorySceneQuery()
+    scene_query._add("volume-test-hu", object())
+
+    editor = TomographyEditor()
+    editor.initialize(_make_context(store, scene_query))
+    qtbot.addWidget(editor.content_widget())
+
+    viewport = editor.views()[-1]
+    assert isinstance(viewport, Viewport3DView)
     assert viewport.preset is get_preset("bone")

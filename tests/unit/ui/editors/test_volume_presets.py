@@ -6,6 +6,7 @@ import pytest
 
 from cranioz.ui.editors.viewport_3d.presets import (
     BONE,
+    CBCT,
     CT_ANGIO,
     PRESETS,
     SKIN,
@@ -15,7 +16,13 @@ from cranioz.ui.editors.viewport_3d.presets import (
 
 
 def test_presets_dict_contains_expected_names() -> None:
-    assert set(PRESETS) == {"bone", "soft_tissue", "skin", "ct_angio"}
+    assert set(PRESETS) == {
+        "bone",
+        "soft_tissue",
+        "skin",
+        "ct_angio",
+        "cbct",
+    }
 
 
 def test_get_preset_returns_known() -> None:
@@ -23,6 +30,7 @@ def test_get_preset_returns_known() -> None:
     assert get_preset("soft_tissue") is SOFT_TISSUE
     assert get_preset("skin") is SKIN
     assert get_preset("ct_angio") is CT_ANGIO
+    assert get_preset("cbct") is CBCT
 
 
 def test_get_preset_unknown_raises() -> None:

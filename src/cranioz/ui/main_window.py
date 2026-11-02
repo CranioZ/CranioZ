@@ -66,6 +66,9 @@ from cranioz.application.project.project_manager import ProjectManager
 from cranioz.application.scene.commands.scene_commands import (
     ImportDicomSeriesCommand,
 )
+from cranioz.application.scene.handlers.scene_handlers import (
+    ImportDicomSeriesHandler,
+)
 from cranioz.domain.project.project_id import ProjectId
 from cranioz.infrastructure.scene.scene_query_adapter import SceneQueryAdapter
 from cranioz.ui.editors.editor_registry import EditorRegistry
@@ -337,15 +340,11 @@ class MainWindow(QMainWindow):
 
     # ----- DICOM import ----------------------------------------------
 
+    # ----- DICOM import ----------------------------------------------
+
     def _on_import_dicom_clicked(self) -> None:
         """Open a folder picker, dispatch ImportDicomSeriesCommand,
         and reload the Workspace.
-
-        The CommandHandler (registered in the CommandBus when the
-        project is opened) reads the series, assembles a ``Volume``,
-        registers it in the ``DomainObjectStore``, and adds it to the
-        ``Scene``. The MainWindow only dispatches the Command and
-        handles the error path (Medical Imaging Infrastructure §3.3).
         """
         if self._workspace is None:
             return
@@ -358,29 +357,8 @@ class MainWindow(QMainWindow):
             )
             return
 
-        # --- CORREÇÃO: garantir que o handler esteja registrado ---
-        if self._command_bus is not None and not self._command_bus.can_dispatch(
-            ImportDicomSeriesCommand
-        ):
-            if self._scene_provider is not None and self._domain_object_store is not None:
-                from cranioz.application.scene.handlers.scene_handlers import (
-                    ImportDicomSeriesHandler,
-                )
-
-                handler = ImportDicomSeriesHandler(
-                    scene=self._scene_provider.get_scene(),
-                    object_store=self._domain_object_store,
-                )
-                self._command_bus.register(ImportDicomSeriesCommand, handler)
-            else:
-                QMessageBox.critical(
-                    self,
-                    "Falha ao importar DICOM",
-                    "O Scene ou o DomainObjectStore não está disponível. "
-                    "Abra um projeto antes de importar DICOM.",
-                )
-                return
-        # -----------------------------------------------------------
+        if not self._ensure_dicom_import_handler():
+            return
 
         path = QFileDialog.getExistingDirectory(
             self,
@@ -391,14 +369,14 @@ class MainWindow(QMainWindow):
         if not path:
             return
 
-        if self._scene_provider is None:
+        scene = self._scene_provider.get_scene() if self._scene_provider else None
+        if scene is None:
             QMessageBox.critical(
                 self,
                 "Falha ao importar DICOM",
                 "O provedor de Scene não está disponível.",
             )
             return
-        scene = self._scene_provider.get_scene()
 
         object_id = f"volume-{uuid.uuid4().hex[:8]}"
         command = ImportDicomSeriesCommand.new(
@@ -409,29 +387,45 @@ class MainWindow(QMainWindow):
 
         try:
             self._command_dispatcher.dispatch(command)
-        except CommandDispatchError as exc:
-            _logger.exception("DICOM import failed for %s", path)
-            QMessageBox.critical(
-                self,
-                "Falha ao importar DICOM",
-                str(exc),
-            )
-            return
         except Exception as exc:
-            _logger.exception("unexpected error importing DICOM from %s", path)
-            QMessageBox.critical(
-                self,
-                "Falha ao importar DICOM",
-                f"Erro inesperado: {exc}",
-            )
+            if isinstance(exc, CommandDispatchError):
+                _logger.exception("DICOM import failed for %s", path)
+                QMessageBox.critical(self, "Falha ao importar DICOM", str(exc))
+            else:
+                _logger.exception("unexpected error importing DICOM from %s", path)
+                QMessageBox.critical(self, "Falha ao importar DICOM", f"Erro inesperado: {exc}")
             return
 
         self._workspace.reload_volume()
-        _logger.info(
-            "Imported DICOM series from %s as %s",
-            path,
-            object_id,
+        _logger.info("Imported DICOM series from %s as %s", path, object_id)
+
+    def _ensure_dicom_import_handler(self) -> bool:
+        """Ensure the DICOM import handler is registered in the CommandBus.
+
+        Returns True if the handler is registered (or was successfully
+        registered now), False if registration is not possible.
+        """
+        if self._command_bus is None:
+            return False
+
+        if self._command_bus.can_dispatch(ImportDicomSeriesCommand):
+            return True
+
+        if self._scene_provider is None or self._domain_object_store is None:
+            QMessageBox.critical(
+                self,
+                "Falha ao importar DICOM",
+                "O Scene ou o DomainObjectStore não está disponível. "
+                "Abra um projeto antes de importar DICOM.",
+            )
+            return False
+
+        handler = ImportDicomSeriesHandler(
+            scene=self._scene_provider.get_scene(),
+            object_store=self._domain_object_store,
         )
+        self._command_bus.register(ImportDicomSeriesCommand, handler)
+        return True
 
     # ----- HomePage action handlers (placeholders) ------------------
 

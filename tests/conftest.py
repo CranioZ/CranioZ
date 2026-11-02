@@ -2,12 +2,30 @@
 
 from __future__ import annotations
 
+import logging
+import os
 from collections.abc import Callable
 
 import pytest
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QSurfaceFormat
 from PySide6.QtWidgets import QApplication
+
+# VTK 9 reports every failed wglMakeCurrent as an error. During tests,
+# VTK render windows are created and destroyed rapidly, which triggers
+# these spurious reports. They do not affect test outcomes; silence them.
+# Keep the variable settable from the shell for debugging.
+os.environ.setdefault("VTK_REPORT_OPENGL_ERRORS", "0")
+
+try:
+    from vtkmodules.qt.QVTKRenderWindowInteractor import (
+        QVTKRenderWindowInteractor,
+    )
+
+    _HAS_VTK = True
+except ImportError:  # pragma: no cover - VTK is optional
+    QVTKRenderWindowInteractor = None  # type: ignore[assignment,misc]
+    _HAS_VTK = False
 
 from cranioz.ui.editors.builtin.test_editor import DummyEditor
 from cranioz.ui.theme.service import ThemeName, ThemeService
@@ -20,20 +38,64 @@ from cranioz.ui.tools.builtin.log_tool import LogTool
 from cranioz.ui.tools.builtin.toggle_tool import ToggleTool
 from cranioz.ui.tools.registry.tool_registry import ToolRegistry
 
+_logger = logging.getLogger(__name__)
+
 # ----- Qt ------------------------------------------------------------
 
 
 @pytest.fixture(scope="session")
 def qapp() -> QApplication:
-    """Session-scoped QApplication.
+    """Session-scoped QApplication with a VTK-friendly surface format.
 
-    Creating multiple QApplication instances breaks Qt, so this fixture
-    guarantees a single instance is reused across the entire test session.
+    The surface format and the shared-context attribute are applied
+    *before* the QApplication is instantiated. Applying them after is a
+    no-op (Qt freezes the format at construction time), which is what
+    produced the ``code 2004`` (unsupported operation) reports.
     """
     app = QApplication.instance()
     if isinstance(app, QApplication):
         return app
+
+    QApplication.setAttribute(Qt.ApplicationAttribute.AA_ShareOpenGLContexts)
+    fmt = QSurfaceFormat()
+    fmt.setDepthBufferSize(24)
+    fmt.setStencilBufferSize(8)
+    fmt.setVersion(3, 2)
+    fmt.setProfile(QSurfaceFormat.OpenGLContextProfile.CoreProfile)
+    QSurfaceFormat.setDefaultFormat(fmt)
+
     return QApplication([])
+
+
+# ----- VTK cleanup ---------------------------------------------------
+
+
+@pytest.fixture(autouse=True)
+def _finalize_vtk_interactors() -> None:
+    """Finalize every live QVTKRenderWindowInteractor after each test.
+
+    Without this, the VTK render window is destroyed by Qt after the
+    OpenGL context is already gone, producing a flood of
+    ``wglMakeCurrent failed ... code 6`` messages. Finalizing before
+    Qt's teardown releases the context cleanly.
+    """
+    yield
+    if not _HAS_VTK:
+        return
+
+    for widget in QApplication.allWidgets():
+        if isinstance(widget, QVTKRenderWindowInteractor):
+            try:
+                widget.Finalize()
+            except Exception:
+                # Finalize can raise if the widget was already torn down
+                # by Qt. That is expected during teardown; log at debug
+                # so failures remain diagnosable without polluting output.
+                _logger.debug(
+                    "VTK Finalize failed for %r",
+                    widget,
+                    exc_info=True,
+                )
 
 
 # ----- Theme ---------------------------------------------------------
@@ -93,15 +155,3 @@ def make_toolbar_spec() -> Callable[..., ToolbarSpec]:
         )
 
     return _factory
-
-
-@pytest.fixture(scope="session", autouse=True)
-def _configure_qt_surface_format():
-    QApplication.setAttribute(Qt.ApplicationAttribute.AA_ShareOpenGLContexts)
-    fmt = QSurfaceFormat()
-    fmt.setDepthBufferSize(24)
-    fmt.setStencilBufferSize(8)
-    fmt.setVersion(3, 2)
-    fmt.setProfile(QSurfaceFormat.OpenGLContextProfile.CoreProfile)
-    QSurfaceFormat.setDefaultFormat(fmt)
-    yield

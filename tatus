@@ -1,0 +1,29 @@
+warning: in the working copy of 'src/cranioz/infrastructure/imaging/dicom/dicom_calibrator.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/cranioz/infrastructure/imaging/dicom/dicom_series_reader.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/cranioz/infrastructure/imaging/dicom/dicom_sorter.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/cranioz/infrastructure/imaging/dicom/dicom_validator.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/cranioz/infrastructure/visualization/vtk_image_adapter.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/cranioz/ui/editors/mpr_viewer/view.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/cranioz/ui/editors/viewport_3d/presets.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/cranioz/ui/editors/viewport_3d/view.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/cranioz/ui/main_window.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/conftest.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/integration/scene/test_import_dicom.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/integration/ui/editors/test_tomography_editor_mpr.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/unit/ui/editors/test_viewport_3d_view.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/unit/ui/editors/test_volume_presets.py', LF will be replaced by CRLF the next time Git touches it
+ .../imaging/dicom/dicom_calibrator.py              | 128 [32m++++++++[m
+ .../imaging/dicom/dicom_series_reader.py           | 364 [32m+++++++++++++++++++++[m
+ .../infrastructure/imaging/dicom/dicom_sorter.py   | 190 [32m+++++++++++[m
+ .../imaging/dicom/dicom_validator.py               | 223 [32m+++++++++++++[m
+ .../visualization/vtk_image_adapter.py             |   2 [32m+[m[31m-[m
+ src/cranioz/ui/editors/mpr_viewer/view.py          |   2 [32m+[m[31m-[m
+ src/cranioz/ui/editors/viewport_3d/presets.py      |   2 [32m+[m[31m-[m
+ src/cranioz/ui/editors/viewport_3d/view.py         |   2 [32m+[m[31m-[m
+ src/cranioz/ui/main_window.py                      |  88 [32m+++[m[31m--[m
+ tests/conftest.py                                  |  80 [32m++++[m[31m-[m
+ tests/integration/scene/test_import_dicom.py       |  57 [32m+++[m[31m-[m
+ .../ui/editors/test_tomography_editor_mpr.py       |  72 [32m+++[m[31m-[m
+ tests/unit/ui/editors/test_viewport_3d_view.py     |  66 [32m+++[m[31m-[m
+ tests/unit/ui/editors/test_volume_presets.py       |  10 [32m+[m[31m-[m
+ 14 files changed, 1201 insertions(+), 85 deletions(-)

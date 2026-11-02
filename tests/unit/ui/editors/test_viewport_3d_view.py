@@ -10,7 +10,10 @@ import pytest
 pytest.importorskip("vtk")
 pytest.importorskip("vtkmodules.qt")
 
-from cranioz.domain.imaging.image_metadata import ImageMetadata
+from cranioz.domain.imaging.image_metadata import (
+    ImageMetadata,
+    ImageModality,
+)
 from cranioz.domain.imaging.volume import IntensityScale, Volume
 from cranioz.domain.imaging.volume_geometry import VolumeGeometry
 from cranioz.domain.imaging.volume_provenance import VolumeProvenance
@@ -21,7 +24,11 @@ from cranioz.ui.editors.viewport_3d.view import Viewport3DView
 
 
 def _make_volume() -> Volume:
-    """Build a tiny synthetic ``Volume`` (4x4x4, int16)."""
+    """Build a tiny synthetic ``Volume`` (4x4x4, int16).
+
+    The volume is intentionally non-HU (``IntensityScale.UNKNOWN``)
+    so it exercises the ``cbct`` branch of ``Viewport3DView.set_volume()``.
+    """
     data = np.zeros((4, 4, 4), dtype=np.int16)
     geometry = VolumeGeometry.identity(
         dimensions=(4, 4, 4),
@@ -40,8 +47,41 @@ def _make_volume() -> Volume:
     )
 
 
+def _make_hu_volume() -> Volume:
+    """Build a tiny HU-calibrated synthetic Volume (4x4x4, int16).
+
+    Values are chosen inside a plausible HU range (air = -1000,
+    bone = 1500) so the ``DicomCalibrator`` classification would
+    agree with ``IntensityScale.HU``. This exercises the "HU volume"
+    branch of ``Viewport3DView.set_volume()``.
+    """
+    data = np.full((4, 4, 4), -1000, dtype=np.int16)
+    data[1:3, 1:3, 1:3] = 1500
+    geometry = VolumeGeometry.identity(
+        dimensions=(4, 4, 4),
+        spacing=(1.0, 1.0, 1.0),
+        origin=(0.0, 0.0, 0.0),
+    )
+    return Volume(
+        data=data,
+        geometry=geometry,
+        metadata=ImageMetadata(modality=ImageModality.CT),
+        intensity_scale=IntensityScale.HU,
+        provenance=VolumeProvenance(
+            import_timestamp=datetime(2026, 1, 1, 12, 0, tzinfo=UTC),
+        ),
+        volume_id="volume-test-hu",
+    )
+
+
 @pytest.mark.qt
-def test_viewport_3d_default_preset_is_bone(qtbot) -> None:
+def test_viewport_3d_initial_preset_before_volume_is_bone(qtbot) -> None:
+    """The default preset before any volume is 'bone'.
+
+    This is the *initial* state only: after ``set_volume()``, the preset
+    is selected from the volume's ``IntensityScale`` (HU -> bone,
+    otherwise -> cbct).
+    """
     view = Viewport3DView(view_id="view.3d")
     qtbot.addWidget(view.content_widget())
     assert view.preset is get_preset("bone")
@@ -59,6 +99,8 @@ def test_viewport_3d_content_widget_returns_container(qtbot) -> None:
     widget = view.content_widget()
     qtbot.addWidget(widget)
     assert widget is not None
+    # The VTK pipeline is lazy: it is created on the first set_volume(),
+    # so renderer is None until a volume is attached.
     assert not view.has_volume
     assert view.renderer is None
 
@@ -92,16 +134,30 @@ def test_viewport_3d_retains_volume_reference(qtbot) -> None:
 
 @pytest.mark.qt
 def test_viewport_3d_set_preset_changes_state(qtbot) -> None:
-    volume = _make_volume()
+    """A non-HU volume starts at 'cbct'; set_preset() overrides it."""
+    volume = _make_volume()  # IntensityScale.UNKNOWN
     view = Viewport3DView(view_id="view.3d")
     qtbot.addWidget(view.content_widget())
     view.set_volume(volume)
-    assert view.preset is get_preset("bone")
+
+    # Non-HU volume -> cbct preset, by design.
+    assert view.preset is get_preset("cbct")
 
     view.set_preset("soft_tissue")
     assert view.preset is get_preset("soft_tissue")
     assert view.window == get_preset("soft_tissue").default_window
     assert view.level == get_preset("soft_tissue").default_level
+
+
+@pytest.mark.qt
+def test_viewport_3d_uses_bone_preset_for_hu_volume(qtbot) -> None:
+    """An HU-calibrated volume starts at 'bone'."""
+    volume = _make_hu_volume()
+    view = Viewport3DView(view_id="view.3d")
+    qtbot.addWidget(view.content_widget())
+    view.set_volume(volume)
+
+    assert view.preset is get_preset("bone")
 
 
 @pytest.mark.qt
