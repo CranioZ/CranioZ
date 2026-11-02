@@ -1,185 +1,190 @@
 # Implementation Plan
 
-**Document type:** Roadmap and execution plan
-**Status:** Living document
-**Scope:** Phased implementation of the CranioZ platform from foundation to release.
-**Last updated:** 2026-10-29 (post initial Application layer wiring and Phase 2 debt analysis)
+**Document type:** Roadmap and execution plan  
+**Status:** Living document  
+**Scope:** Phased implementation of the CranioZ platform, from foundation to release  
+**Last updated:** 2026-11-01
 
 ---
 
 ## 1. Purpose
 
-This document defines the **execution strategy** for building the CranioZ platform. It translates the architectural decisions (ADRs), the domain contracts, and the clinical requirements into a sequenced, testable, and iterative implementation plan.
+This document defines the execution strategy for building the CranioZ platform. It translates architectural decisions (ADRs), domain contracts, and clinical requirements into a sequenced, testable implementation plan.
 
-Its primary goal is to serve as a scientific, technical, and managerial instrument.
+It serves as a scientific, technical, and managerial instrument, distinguishing the PhD research scope from the long-term evolution of the open-source platform.
 
-It is also meant to be an **honest status record**: it distinguishes between *contracts that exist*, *reference implementations that exist*, *production implementations that exist*, and *wiring that connects them*. A deliverable marked ✅ means it is implemented and tested; 🚧 means a contract or partial implementation exists but the deliverable is not complete; ⏳ means it has not started.
+It is also an honest implementation record. It distinguishes between contracts, reference implementations, production implementations, and integration work.
+
+A deliverable marked as implemented must exist in the codebase and have passing tests. Partial implementations and known limitations must remain visible.
 
 ---
 
 ## 2. Guiding Principles
 
-The implementation follows five strict rules:
-
-1. **Vertical Slices over Horizontal Layers:** We do not build "all models first, then all views". We build a feature from the UI down to the Domain and Persistence, and we test it end-to-end.
-2. **No Unresolved Contract Dependencies:** A phase may begin before the previous phase is fully completed, **provided** that the architectural contracts (interfaces, Protocols, ADRs) it depends on are defined, documented, and stable.
-3. **Early Persistence:** Persistence is not a final feature. Minimum viable persistence (schema, JSON serialization, repository pattern) must be established from the foundation to prevent architectural rework.
-4. **Testable at Every Step:** Every phase ships with its own test suite. The `LayoutBuilder` (pure logic) is tested without Qt. The `LayoutRenderer` is tested with `pytest-qt`. The Domain is tested with pure Python.
-5. **Reversible Decisions:** If an architectural decision proves wrong during implementation, it must be caught early and changed without rewriting the entire system.
+1. **Vertical Slices over Horizontal Layers:** Implement features across UI, Application, Domain, and Infrastructure, validating the complete workflow whenever possible.
+2. **Stable Contracts:** A phase may begin before the previous phase is complete if its architectural dependencies are defined and stable.
+3. **Early Persistence:** Establish persistence contracts and minimum viable serialization early to avoid architectural rework.
+4. **Testable at Every Step:** Each phase must include appropriate unit, contract, integration, and UI tests.
+5. **Reversible Decisions:** Validate uncertain technical decisions through prototypes, benchmarks, and ADRs before making them architectural dependencies.
+6. **Clinical Data Integrity:** Never silently modify, reinterpret, or discard source imaging data. Geometry, calibration, provenance, and validation must remain explicit.
+7. **CPU-First Execution:** The application must remain usable on conventional workstations. GPU acceleration is an optimization, not a prerequisite for core clinical functionality.
+8. **No Orphaned Implementations:** A feature is not complete merely because its backend exists. Its intended application workflow must be usable and tested.
 
 ---
 
 ## 3. External Dependencies & Tech Stack
 
 - **Language:** Python 3.12+
-- **UI Framework:** PySide6 (Qt 6)
-- **3D/Medical Visualization:** VTK, ITK
-- **DICOM Parsing:** PyDicom
+- **UI Framework:** PySide6 / Qt 6
+- **Medical Visualization:** VTK
+- **DICOM Parsing:** pydicom
+- **Scientific Computing:** NumPy, SciPy
+- **Image Processing:** ITK (optional, introduced when justified by a concrete requirement)
 - **Geometric Modeling:** Open CASCADE (OCCT), CGAL
-- **Scientific Computing:** NumPy, SciPy, Numba
-- **Persistence:** JSON (Project files, Layout, Scene), SQLite (Professional Module)
-- **Testing:** `pytest`, `pytest-qt`, `pytest-benchmark`, `hypothesis`
-- **Tooling:** `uv`, `ruff`, `mypy`
+- **Mesh Processing:** VTK, OpenMesh and other specialized libraries as required
+- **Persistence:** JSON for project metadata, scene and layout; SQLite for indexed catalogs and future professional features
+- **Testing:** pytest, pytest-qt, pytest-benchmark, hypothesis
+- **Tooling:** uv, ruff, mypy
+
+Dependencies must be introduced when required by an implementation task. Their presence in this list does not imply that every library must be integrated during the foundation phases.
 
 ---
 
 ## 4. Phase Overview
 
-The implementation is divided into 11 phases. These phases are designed to build the *platform* progressively.
+The implementation is divided into 11 phases. The sequence establishes the platform progressively while prioritizing a validated clinical core.
 
-| Phase | Name | Status | Done / Pending |
+| Phase | Name | Status | Main Pending Work |
 |---|---|---|---|
-| **Phase 0** | Foundation & Boot | ✅ Implemented | — |
-| **Phase 1** | Contracts & Core Domain | ✅ Implemented / 🚧 débito de `EditorContext` | `task_manager`, `telemetry`, `correlation_id` existem no dataclass mas não são propagados |
-| **Phase 2** | Workspace | ✅ Implemented / 🚧 débito de lifecycle e geometria | `AreaWidget.refresh`, `compute_region_bounds`, `Editor.dispose`, atomicidade de `load_spec` |
-| **Phase 3** | Project & Home Page | ✅ Core / 🚧 periféricos | Recent Projects, WorkflowEngine, Layout persistence |
-| **Phase 4** | Scene & Visualization | 🚧 In Progress | Application layer implementada e parcialmente conectada; Scene, rendering e editores clínicos pendentes |
-| **Phase 5** | Clinical Flows | ⏳ Planned | Blocked by Phase 4 and real `ModuleLoader` |
-| **Phase 6** | Clinical Pipeline (MVP) | ⏳ Planned | — |
-| **Phase 7** | Scientific Validation | ⏳ Planned | — |
-| **Phase 8** | Scientific Product (Release 1.0) | ⏳ Planned | — |
-| **Phase 9** | Extensibility (Release 2.0) | ⏳ Planned | — |
-| **Phase 10**| AI and Nodes (Release 3.0) | ⏳ Planned | — |
+| **Phase 0** | Foundation & Boot | ✅ Implemented | Startup performance improvements |
+| **Phase 1** | Contracts & Core Domain | ✅ Core implemented | Remaining context propagation |
+| **Phase 2** | Workspace Engine | ✅ Core implemented | Remaining integration and lifecycle issues |
+| **Phase 3** | Project & Home Page | ✅ Core implemented | Project index, asynchronous loading, persistence peripherals |
+| **Phase 4** | Scene & Visualization | 🚧 In Progress | Imaging infrastructure, rendering, import UI, module integration |
+| **Phase 5** | Clinical Flows | ⏳ Planned | WorkflowEngine, layout persistence, module integration |
+| **Phase 6** | Clinical Pipeline | ⏳ Planned | Tomography, segmentation, cephalometry, osteotomy and guides |
+| **Phase 7** | Scientific Validation | ⏳ Planned | Geometric, clinical and usability validation |
+| **Phase 8** | Scientific Product (Release 1.0) | ⏳ Planned | Packaging, recovery, reporting and documentation |
+| **Phase 9** | Extensibility (Release 2.0) | ⏳ Planned | Module API and Plugin API |
+| **Phase 10** | AI and Nodes (Release 3.0) | ⏳ Planned | Node system, AI assistance and MCP integration |
 
-**Legend:**
-- ✅ Implemented — the deliverable is in `src/` and tested. Does not imply absence of known debt; known debt is listed in §10.
-- 🚧 In Progress — a contract exists and/or a reference implementation exists, but the deliverable is not complete or not wired.
-- ⏳ Planned — the phase is blocked by a prior dependency or has not started.
+**Status legend:**
 
-**Contracts layer.** ADR-0001, 0002, 0004–0012 are Accepted. ADR-0003 is **Proposed** (not Accepted) and must be reviewed before widget-library work depends on it. The contracts for Commands, Scene, Persistence, Layout, Threading, and Telemetry are defined. Phase 4 can be implemented against them.
+- ✅ **Implemented:** Implemented in the codebase and tested. Known limitations may still exist.
+- 🚧 **In Progress:** A contract, partial implementation, or reference implementation exists, but the deliverable is incomplete or not fully integrated.
+- ⏳ **Planned:** Not implemented or not yet started.
 
-**Application layer status.** The Application layer contracts for Commands, Tasks, Telemetry, and Events are **implemented with reference in-memory implementations and contract tests**. The `application/modules/` layer exists but the `ModuleLoader` is skeletal (no dependency resolution, no `entry_point` import, no registration of Tools/Editors/Services/Flows, ad hoc handler resolution). `BUILTIN_MANIFESTS` is empty and every built-in module is a stub.
+**Contracts layer:** ADR-0001, ADR-0002 and ADR-0004–0012 are Accepted. ADR-0003 remains Proposed and must be reviewed before dependent widget-library and semantic-color work begins.
+
+**Application layer:** Commands, Tasks, Telemetry, Events and Flows have contracts and reference implementations with contract tests. This does not imply that all production services, module loading, or application workflows are complete.
 
 ---
 
 ## 5. Current Focus
 
-**Phase 3 is functionally complete for its core.** The lifecycle core (`ProjectManager`, `ProjectCatalog`), the discovery UI (`HomePage`, `MainWindow`), the boot wiring, the `FlowCatalog`, the `InMemoryFlowRepository`, the `FilesystemFlowRepository` and the flow serialization are implemented and tested. The peripherals (Recent Projects, WorkflowEngine execution, Layout persistence) are deferred and do not block Phase 4.
+**Phase 4 — Scene & Visualization** is the active phase.
 
-**Phase 4 is the active phase.** Its contracts are in place, and the Application layer is implemented as contracts + reference in-memory implementations. The `QtTaskManager` is wired into the boot. The real work remaining is to **close the wiring** and **fix the Phase 2 debt** before adding the Scene and the first real Editors.
+The foundation, core domain, workspace and project lifecycle are sufficiently established to support implementation of the imaging and visualization infrastructure.
 
-### 5.1 Immediate priorities (in order)
+The immediate objective is to complete the integration between the existing Application layer, Scene, imaging infrastructure, rendering adapters and Editors.
 
-0. **Refactor the Workspace UI hierarchy (ADR-0013).** ✅ Resolved.
-   - `View` abstraction (`ViewLayoutSpec`, `MPRView`, `Viewport3DView`).
-   - `TomographyEditor` hosting the 4 Views.
-   - `ViewLayoutRenderer` (synchronized 2x2 grid).
-   - `AreaWidget` uses `QSplitter` instead of `QTabWidget`.
-   - Toolbar inside the Editor (ADR-0002 + ADR-0013).
+### 5.1 Immediate Priorities
 
-0.5. **Fix Startup Performance Debt.** ✅/🚧
-   - ✅ **Lazy Editor Registry:** `EditorRegistry` registers reference
-     strings (`cranioz.ui...:TomographyEditor`), not classes.
-     `importlib.import_module` is only called in `create()`.
-   - 🚧 **Async Flow Loading:** `MainWindow._populate_flow_list()`
-     must be asynchronous (via `QTimer.singleShot(0, ...)` or
-     `TaskManager`). The `MainWindow` constructor must not perform I/O.
-   - 🚧 **Async Project Refresh:** `ProjectTable.refresh()` must be
-     asynchronous. The HomePage must display "Loading..." and populate
-     the table when data arrives.
-   - 🚧 **Rollback in `_on_project_open_requested`:** If
-     `_create_workspace()` fails, call `manager.close_project()`.
+#### 1. Complete Command Execution
 
-0.6. **Persistent Project Index.** ⏳ Next.
-   - `infrastructure/project/project_index.py` (SQLite).
-   - `ProjectCatalog` reads from the index (O(1)); reconciliation
-     (disk scan) is a `Background Initialization` task.
+- Implement `CommandExecutor`.
+- Establish the transaction boundary for command execution.
+- Publish domain/application events only after successful commit.
+- Integrate `CommandBus`, `CommandStack` and `TransactionManager`.
+- Correct compensating-command handling for undo/redo.
+- Ensure undo and redo use the same transaction and event-publication rules.
+- Introduce `CommandDispatcher` as the interface used by Editors and Tools.
+- Add integration tests for execution, rollback, undo, redo and event publication.
 
-1. **Replace remaining boot placeholders.** ✅ Resolved.
-   - `QtTaskManager` (not `NoOpTaskManager`).
-   - `LoggingTelemetrySink` (not `NoOpTelemetrySink`).
+#### 2. Complete EditorContext Propagation
 
-2. **Fix Phase 2 debt (Workspace lifecycle and geometry).** ✅ Resolved.
-   - `AreaWidget.refresh`, `compute_region_bounds`, `Editor.dispose`,
-     `load_spec` atomicity, `TopOverlay` following the splitter.
+- Preserve the existing `shared_context` mechanism.
+- Ensure `task_manager`, `telemetry`, `correlation_id` and `command_dispatcher` are propagated consistently.
+- Add `SceneQuery` to `EditorContext`.
+- Add `EventSubscription` when required by the Editor lifecycle.
+- Avoid introducing service dependencies that are not needed by current Editors.
 
-3. **Propagate `EditorContext`.** 🚧 Partial.
-   - ✅ `task_manager`, `telemetry`, `correlation_id`,
-     `command_dispatcher` propagated via `shared_context`.
-   - ✅ `SceneQuery` propagated (Passo 7: `SceneProvider` +
-     `SceneQueryAdapter` + `MainWindow` + `Workspace`).
-   - ⏳ `EventSubscription` still pending (Passo 9 or 10).
-   - ⏳ `SelectionService`, `ViewStateStore`, `EditorServices` still
-     do not exist in the dataclass.
+#### 3. Complete Scene Integration
 
-4. **Complete the Command mechanism.** 🚧 Partial.
-   - ✅ `CommandExecutor` exists and is wired at boot.
-   - ✅ `CommandBus`, `CommandStack`, `TransactionManager`
-     implemented (in-memory reference).
-   - ❌ `CommandExecutor.dispatch()` **does not publish events**
-     post-commit (violates ADR-0007 §2.4).
-   - ❌ `CommandExecutor` **never sets `command.compensating`**
-     (the `Command` is `frozen`; undo/redo is broken in practice).
-   - ❌ `undo()`/`redo()` **do not use transaction boundary**
-     nor publish events.
-   - ❌ No Editor/Module dispatches real Commands yet
-     (all are placeholders).
+- Instantiate and provide `DomainObjectStore` through the established boot path.
+- Ensure `SceneProvider` and `SceneQueryAdapter` expose the required read operations.
+- Integrate imported imaging objects with the Scene.
+- Preserve the distinction between object ownership and Scene membership.
+- Implement Scene serialization according to ADR-0009.
+- Add integration tests for object lifecycle, membership, queries and persistence.
 
-5. **Complete `domain/scene/` wiring.** 🚧 Partial.
-   - ✅ `Scene`, `DomainObjectStore`, `Transform`,
-     `SpatialRelationship` implemented (Passo 4).
-   - ✅ `SceneQueryAdapter` implements `SceneQuery` (Passo 7).
-   - ✅ `SceneProvider` + `InMemorySceneProvider` (Passo 7).
-   - ❌ `DomainObjectStore` **is not instantiated at boot**.
-   - ❌ `ImportDicomSeriesCommand` (or similar) does not exist —
-     the `Scene` never receives real objects.
-   - ⏳ `FilesystemSceneProvider` deferred (Phase 4,
-     Scene serialization).
+#### 4. Complete Medical Imaging Infrastructure
 
-6. **Implement DICOM import (Passo 8a).** ✅ Resolved.
-   - ✅ `infrastructure/imaging/dicom_loader.py` (pydicom + vtkImageData).
-   - ✅ `ImportDicomSeriesCommand` + `ImportDicomSeriesHandler`.
-   - ✅ `DomainObjectStore` instantiated at boot and wired through
-     `MainWindow` → `Workspace` → `EditorContext`.
-   - ✅ First real object in the `Scene` (via integration test).
-   - ⏳ UI of import (QFileDialog + button) — Passo 8e.
+The existing DICOM loader and import command are the starting point. Extend them according to the Medical Imaging Infrastructure architecture document.
 
-7. **Implement the first real Editor (VTK).** 🚧 Partial.
-   - ✅ Real `MPRView` (`vtkResliceImageViewer`, axial/coronal/sagittal) — Passo 8b.
-   - ✅ `TomographyEditor` resolves `VolumeData` from `DomainObjectStore` and passes to Views.
-   - 🚧 Real `Viewport3DView` with volume rendering (`vtkSmartVolumeMapper`) — Passo 8c (in progress).
-   - ⏳ `RenderingAdapter` (observes `Scene`, updates VTK) — Passo 9.
-   - ⏳ Window/level controls in the Toolbar — Passo 8d.
+Priority work:
 
-8. **Implement `application/modules/` for real.** ⏳ Pending.
-   - `InMemoryModuleLoader` resolves dependencies, imports
-     `entry_point`, registers Tools/Editors/Services/Flows.
-   - `BUILTIN_MANIFESTS` populated (Patient Module first).
-   - `ModuleContext` with shared `EventBus` (not one per
-     module — current bug).
+- Establish the `Volume` and `VolumeGeometry` contracts.
+- Separate voxel data, spatial geometry, metadata and provenance.
+- Validate physical slice ordering and volume geometry.
+- Establish the internal RAS coordinate convention and the DICOM LPS conversion boundary.
+- Define intensity calibration and distinguish HU from uncalibrated CBCT data.
+- Make NumPy buffer ownership and VTK interoperability explicit.
+- Implement structured import validation and reporting.
+- Add VTI export and round-trip validation.
+- Complete the import UI and storage-mode selection.
 
-### 5.2 What blocks Phase 4
+Do not rebuild existing DICOM import functionality without first reviewing the current implementation and identifying specific gaps.
 
-No *contract* blockers remain. The ADRs (0007 Commands, 0008 Scene, 0009 Persistence, 0011 Threading, 0012 Telemetry) and the documents (`commands.md`, `scene.md`, `modules.md`) are stable. The remaining prerequisites are implementation and wiring, tracked under §5.1.
+#### 5. Complete Visualization
 
-### 5.3 Deferred to later phases
+- Preserve the existing `MPRView` implementation as the current baseline.
+- Complete `Viewport3DView` volume rendering.
+- Implement the `RenderingAdapter` between Scene and VTK.
+- Separate clinical data from renderable representations.
+- Implement Window/Level and display controls without modifying source voxel data.
+- Validate physical orientation, spacing, origin and coordinate consistency.
+- Resolve Windows OpenGL and Qt rendering-context issues through reproducible tests.
 
-- **Recent Projects** (Phase 8): read-only projection, low impact.
-- **WorkflowEngine** (Phase 5): the `FlowCatalog` and the flow repository exist; execution is not implemented.
-- **Layout State Persistence** (Phase 5): `layout_state.py`, `layout_io.py`, `overlay_state.py` are stubs; implementation follows ADR-0010.
-- **Module-owned persisted state** (Phase 9): deferred until the first module needs it (see `modules.md` v10 §15).
-- **Plugin API** (Phase 9): deferred.
-- **AI/MCP** (Phase 10): deferred.
+The choice between `vtkResliceImageViewer` and a custom `vtkImageReslice` pipeline must be validated through an ADR or documented technical decision. Do not replace the existing implementation solely because another API appears more flexible.
+
+#### 6. Complete Module Loading
+
+- Implement dependency resolution in `InMemoryModuleLoader`.
+- Resolve and import module `entry_point` declarations.
+- Register Tools, Editors, Services and Flows.
+- Populate `BUILTIN_MANIFESTS`.
+- Ensure all modules share the application EventBus.
+- Implement the first functional built-in module.
+- Validate module activation, deactivation, failure and unload behavior.
+
+### 5.2 Phase 4 Completion Dependencies
+
+No architectural contract blocker currently prevents Phase 4 implementation.
+
+The remaining work is primarily implementation and integration:
+
+- Command execution and transaction handling.
+- Scene lifecycle and persistence.
+- Medical imaging data contracts and validation.
+- Rendering and VTK integration.
+- Import UI.
+- Real module loading and registration.
+- End-to-end Editor workflows.
+
+### 5.3 Deferred Work
+
+The following items are intentionally deferred:
+
+- **Recent Projects:** Phase 8.
+- **WorkflowEngine execution:** Phase 5.
+- **Layout State Persistence:** Phase 5, according to ADR-0010.
+- **Module-owned persisted state:** Phase 9.
+- **Plugin API:** Phase 9.
+- **Node System, AI and MCP:** Phase 10.
+- **Custom volume-rendering presets and preset editor:** Phase 8.
+- **Curved and panoramic MPR:** Future clinical extension.
+- **Additional imaging formats:** Introduce only when supported by a concrete clinical requirement.
 
 ---
 
@@ -187,382 +192,679 @@ No *contract* blockers remain. The ADRs (0007 Commands, 0008 Scene, 0009 Persist
 
 ### Phase 0: Foundation & Boot
 
-**Goal:** Establish the repository, configuration, logging, minimal persistence, and boot sequence.
+**Goal:** Establish the repository, configuration, logging, minimal persistence and application boot sequence.
 
-- **Deliverables:**
-  - ✅ `pyproject.toml`, CI pipeline (GitHub Actions).
-  - ✅ `ConfigurationLoader`, `AppPathResolver`.
-  - ✅ `EventBus`.
-  - ✅ JSON serialization for Project Metadata (in `project_serialization.py`).
-  - ✅ Boot sequence (`__main__.py`) — initializes config, logging, paths, event bus, project subsystem, UI registries, theme service, and shows the `MainWindow` before entering the Qt event loop.
-  - ✅ Error handling for `AppPathInaccessible` with `QMessageBox.critical`.
-  - ✅ Actor resolution from the OS username (`getpass.getuser`).
-  - ✅ `application/flows/` — `FlowDefinition`, `FlowStep`, `FlowSummary`, `FlowRepository`, `InMemoryFlowRepository`, `FlowCatalog`.
-  - ✅ `infrastructure/flows/` — `FilesystemFlowRepository`, `FlowPathResolver`, `flow_serialization`.
+**Deliverables:**
 
-- **Performance placeholders (to be resolved in Phase 3/4):**
-  - 🚧 `__main__.py` imports `TomographyEditor` and `Workspace` at module level (eager import).
-  - 🚧 `MainWindow.__init__` performs synchronous I/O (`_populate_flow_list`).
-  - 🚧 `ProjectTable.__init__` performs synchronous I/O (`refresh`).
+- ✅ `pyproject.toml` and CI pipeline.
+- ✅ `ConfigurationLoader` and `AppPathResolver`.
+- ✅ `EventBus`.
+- ✅ JSON serialization for Project Metadata.
+- ✅ Boot sequence in `__main__.py`.
+- ✅ Error handling for inaccessible application paths.
+- ✅ OS username resolution for the initial actor.
+- ✅ Flow contracts and repositories.
+- 🚧 Lazy imports and startup performance improvements.
 
-- **Tests:** Unit tests for config validation and path resolution; smoke test for boot-time dependency construction.
+**Tests:**
 
-- **Status:** ✅ Implemented with documented boot placeholders.
+- Configuration validation.
+- Application path resolution.
+- Boot dependency construction.
+- Application startup smoke tests.
+
+**Status:** ✅ Implemented, with startup performance work tracked separately.
 
 ### Phase 1: Contracts & Core Domain
 
-**Goal:** Define the fundamental contracts and the initial Domain models, plus minimum persistence.
+**Goal:** Establish the fundamental contracts, initial Domain models and minimum persistence.
 
-- **Deliverables:**
-  - ✅ `Patient` Domain (9 section value objects, 6 enums, 2 value objects, aggregate root with cross-section invariants).
-  - ✅ `Project` Domain (`Project`, `ProjectId`, `ProjectMetadata`, `ProjectStatus`, `ProjectSummary`).
-  - ✅ UI Contracts (`Area`, `Editor`, `EditorRegistry`, `ToolbarSpec`, `ToolSpec`, `LayoutBuilder`, `LayoutRenderer`).
-  - ✅ `ProjectRepository` (Protocol), `InMemoryProjectRepository`, `FilesystemProjectRepository`.
-  - ✅ `ProjectContext` (frozen, data-only; no service locator).
-  - ✅ `ProjectAccessPolicy` (Protocol), `AllowAllProjectAccessPolicy`.
-  - ✅ `ProjectCatalog` (read-only projection, no cache).
-  - ✅ ADRs 0001, 0002, 0004–0012 written and Accepted.
-  - 🚧 ADR-0003 is **Proposed**, not Accepted.
-  - 🚧 `EditorContext` fields `task_manager`, `telemetry` and `correlation_id` exist in the dataclass but are not propagated by `LayoutBuilder` or `Workspace`.
+**Deliverables:**
 
-- **Tests:** Domain unit tests (pure Python), contract tests for `ProjectRepository`, JSON serialization round-trips for Project.
+- ✅ Patient Domain and its value objects.
+- ✅ Project Domain.
+- ✅ UI contracts: `Area`, `Editor`, `EditorRegistry`, `ToolbarSpec`, `ToolSpec`, `LayoutBuilder` and `LayoutRenderer`.
+- ✅ `ProjectRepository` and reference implementations.
+- ✅ `ProjectContext`.
+- ✅ `ProjectAccessPolicy`.
+- ✅ `ProjectCatalog`.
+- ✅ ADRs 0001, 0002 and 0004–0012.
+- 🚧 ADR-0003 remains Proposed.
+- 🚧 Remaining `EditorContext` propagation.
 
-- **Status:** ✅ Core implemented. 🚧 EditorContext hybrid propagation pending.
+**Tests:**
+
+- Pure Python Domain tests.
+- Repository contract tests.
+- Project serialization round-trips.
+- Domain invariant and error-case tests.
+
+**Status:** ✅ Core implemented. Remaining context propagation is tracked in Phase 4.
 
 ### Phase 2: Workspace Engine
 
-**Goal:** Build the UI layout system that dynamically materializes modules.
+**Goal:** Build the UI layout system that dynamically materializes Editors and Areas.
 
-- **Deliverables:**
-  - ✅ `LayoutTree` (N-ary split tree), `AreaManager`.
-  - ✅ `LayoutBuilder` (pure Python, no Qt), `LayoutRenderer` (Qt materialization).
-  - ✅ `EditorRegistry`, `EditorContext` (hybrid model declared in ADR-0002; propagation pending).
-  - ✅ `TopOverlay` (the structural Top Bar, materialized as a floating Overlay, ADR-0005).
-  - ✅ `OverlayManager`.
-  - ✅ `Workspace` facade coordinating builder, renderer, and overlays.
-  - 🚧 Known debt (see §10): `AreaWidget.refresh` can invalidate Editor content; `compute_region_bounds` uses parent-relative geometry; `Workspace.clear` does not call `Editor.dispose()`; `load_spec` is not atomic.
+**Deliverables:**
 
-- **Tests:** `pytest-qt` for rendering; unit tests for `LayoutTree`, `Area`, `AreaManager`, `EditorRegistry`; integration tests for `Workspace`.
+- ✅ `LayoutTree` and `AreaManager`.
+- ✅ `LayoutBuilder` and `LayoutRenderer`.
+- ✅ `EditorRegistry` and `EditorContext`.
+- ✅ `TopOverlay` and `OverlayManager`.
+- ✅ `Workspace` facade.
+- ✅ Structural split rendering using `QSplitter`.
+- ✅ Editor lifecycle and Workspace cleanup improvements.
+- ✅ Atomic `Workspace.load_spec()` behavior.
 
-- **Status:** ✅ Implemented with documented debt.
+**Tests:**
+
+- Pure Python layout tests.
+- `pytest-qt` rendering tests.
+- Editor lifecycle tests.
+- Workspace integration tests.
+- Geometry and overlay positioning tests.
+
+**Status:** ✅ Core implemented. Remaining integration issues are tracked in §10.
 
 ### Phase 3: Project & Home Page
 
-**Goal:** Implement the project lifecycle, discovery UI, and project persistence.
+**Goal:** Implement project lifecycle, discovery UI and project persistence.
 
-- **Deliverables:**
-  - ✅ `ProjectManager` (single authority for lifecycle, publishes events, honors access policy).
-  - ✅ `ProjectCatalog` (read model, delegates to `ProjectRepository`).
-  - ✅ `HomePage` UI (`ProjectTable`, `FlowList`, `StartButton`, `CommunitySidebar`, `HomeTopBar`, `HomeBottomBar`).
-  - ✅ `MainWindow` (navigation Home ↔ Workspace, ADR-0006).
-  - ✅ `ProjectTable` selection lifecycle (emit `None` on deselection, preserve selection on refresh).
-  - ✅ `FlowCatalog`, `FlowRepository`, `InMemoryFlowRepository`, `FilesystemFlowRepository`, `flow_serialization`.
-  - ✅ `MainWindow` populates the `FlowList` from the `FlowCatalog` at boot (via `_populate_flow_list`).
-  - 🚧 Recent Projects — not implemented (deferred to Phase 8).
-  - 🚧 `FlowList` real population depends on the `FilesystemFlowRepository` having `flow.json` files on disk; seeding is done by `scripts/seed_flows.py`.
-  - ⏳ WorkflowEngine execution (Phase 5).
-  - ⏳ Layout State Persistence — `layout_state.py`, `layout_io.py`, `overlay_state.py` are stubs (ADR-0010 defines the contract; implementation in Phase 5).
+**Deliverables:**
 
-- **Tests:** Full suite passing, including regression tests for `ProjectTable` and `HomePage` deselection, `FlowCatalog` and `FilesystemFlowRepository`.
+- ✅ `ProjectManager`.
+- ✅ `ProjectCatalog`.
+- ✅ `HomePage` and its core UI components.
+- ✅ `MainWindow` navigation between Home and Workspace.
+- ✅ Project selection lifecycle.
+- ✅ `FlowCatalog` and Flow repositories.
+- 🚧 Recent Projects deferred to Phase 8.
+- ⏳ WorkflowEngine execution deferred to Phase 5.
+- ⏳ Layout State Persistence deferred to Phase 5.
+- 🚧 Project deletion coordination.
+- ⏳ Persistent `ProjectIndex` using SQLite.
 
-- **Status:** ✅ Core implemented. 🚧 Peripherals deferred.
+**Startup performance requirements:**
 
-- **Startup Performance (mandatory for Phase 3 "Done"):**
-  - 🚧 `EditorRegistry` with lazy resolution (importlib).
-  - 🚧 `MainWindow` without I/O in its constructor.
-  - 🚧 `ProjectTable` with asynchronous loading.
-  - 🚧 Rollback in `_on_project_open_requested`.
-  - 🚧 `ProjectIndex` (SQLite) for O(1) project listing.
+- Lazy Editor resolution.
+- No blocking I/O in `MainWindow.__init__`.
+- Asynchronous project and flow loading.
+- Rollback if Workspace creation fails after opening a project.
+- Indexed project listing, with disk reconciliation as a background task.
+
+**Tests:**
+
+- Project lifecycle tests.
+- Filesystem repository integration tests.
+- HomePage selection and refresh regression tests.
+- Project opening and rollback tests.
+- Project index consistency tests.
+
+**Status:** ✅ Core implemented. Startup performance and persistence peripherals remain.
 
 ### Phase 4: Scene & Visualization
 
-**Goal:** Introduce the 3D/2D visualization layer and the spatial domain.
+**Goal:** Establish the spatial Domain, medical imaging infrastructure and visualization layer required by clinical Editors.
 
-- **Contracts ready:**
-  - ✅ ADR-0007 (Commands, Transactions, Undo/Redo).
-  - ✅ ADR-0008 (Scene and DomainObjectStore).
-  - ✅ ADR-0009 (Project Persistence Format).
-  - ✅ ADR-0011 (Threading and Task Execution).
-  - ✅ ADR-0012 (Telemetry and Observability).
-  - ✅ `commands.md`, `scene.md`, `modules.md` v10.
+This phase provides the **technical foundation** for imaging. It does not implement the complete clinical tomography and segmentation workflow, which belongs to Phase 6A.
 
-- **Application layer (implemented, with reference in-memory implementations and contract tests):**
-  - ✅ `application/commands/` — `Command`, `CommandHandler`, `CommandBus`, `InMemoryCommandBus`, `CommandStack`, `InMemoryCommandStack`.
-  - ✅ `application/tasks/` — `Task`, `TaskHandle`, `TaskManager`, `CancelToken`, `TaskState`, `NoOpTaskManager`.
-  - ✅ `application/telemetry/` — `TelemetrySink`, `Severity`, `MeasurementUnit`, `NoOpTelemetrySink`, `RecordingTelemetrySink`.
-  - ✅ `application/events/` — `EventSubscription`, `EventPublisher`, `SubscriptionHandle`, `EventBusAdapter`, `SubscriptionClosed`.
+#### 4.1 Application Layer
 
-- **Application layer (partial or pending):**
-  - 🚧 `application/modules/` — `Module`, `ModuleBase`, `ModuleManifest`, `ModuleContext`, `ModuleRegistry`, `ModuleLoader` exist, but `InMemoryModuleLoader` does not resolve dependencies, does not import `entry_point`, does not register Tools/Editors/Services/Flows, and resolves handlers via an ad hoc `_handler` attribute. `BUILTIN_MANIFESTS` is empty; every built-in module is a stub.
-  - ⏳ `CommandExecutor` — ties transaction boundary, post-commit event publication, `CommandStack` and `CommandBus`. Not implemented.
-  - ⏳ `CommandDispatcher` — the interface used by Editors/Tools to dispatch Commands. Not wired.
+**Implemented:**
 
-- **Domain / infrastructure / UI (partial):**
-  - ✅ `domain/scene/` — `Scene`, `DomainObjectStore`, `Transform`, `SpatialRelationship`.
-  - ✅ `infrastructure/imaging/` — `dicom_loader.py` (pydicom + vtkImageData).
-  - ✅ `application/scene/` — `SceneProvider`, `InMemorySceneProvider`, `SceneQueryAdapter`, `ImportDicomSeriesCommand` + handler.
-  - ✅ `ui/editors/mpr_viewer/` — real `MPRView` (`vtkResliceImageViewer`).
-  - 🚧 `ui/editors/viewport_3d/` — `Viewport3DView` com `vtkOutlineFilter` (volume rendering em 8c).
-  - ⏳ `infrastructure/rendering/` — `RenderingAdapter` (observes `Scene`, updates VTK).
-  - ⏳ Scene serialization (JSON).
+- ✅ `application/commands/` contracts and reference implementations.
+- ✅ `application/tasks/` contracts and reference implementations.
+- ✅ `application/telemetry/` contracts and reference implementations.
+- ✅ `application/events/` contracts and reference implementations.
 
-- **Boot wiring (partial):**
-  - ✅ `QtTaskManager` substituiu `NoOpTaskManager`.
-  - ✅ `LoggingTelemetrySink` substituiu `NoOpTelemetrySink`.
-  - ✅ `SceneProvider` + `InMemorySceneProvider` no boot (Passo 7).
-  - ✅ `DomainObjectStore` no boot (Passo 8a).
-  - ⏳ Propagate `SceneQuery` and `EventSubscription` to `EditorContext` — `SceneQuery` ✅, `EventSubscription` ⏳ (Passo 9).
-  - ⏳ `BUILTIN_MANIFESTS` + `InMemoryModuleLoader` real (Passo 10).
+**Pending:**
 
-- **Blockers:** No contract blockers. Implementation and wiring blockers tracked in §5.1.
+- 🚧 `CommandExecutor`.
+- 🚧 `CommandDispatcher` integration.
+- 🚧 Transactional command execution and post-commit event publication.
+- 🚧 Production module loading and registration.
 
-- **Tests:** Headless VTK tests, spatial transform tests, performance tests (Scene update, upload to GPU, rendering FPS on reference hardware).
+#### 4.2 Scene and Domain Integration
 
-- **Status:** 🚧 In Progress. Application layer implemented; Scene, rendering, editors and real boot wiring pending.
+**Implemented:**
+
+- ✅ `domain/scene/`: `Scene`, `DomainObjectStore`, `Transform` and `SpatialRelationship`.
+- ✅ `application/scene/`: `SceneProvider`, `InMemorySceneProvider`, `SceneQueryAdapter`.
+- ✅ `ImportDicomSeriesCommand` and its handler.
+- ✅ `DomainObjectStore` boot integration.
+
+**Pending:**
+
+- 🚧 Complete `SceneQuery` propagation to Editors.
+- ⏳ Scene serialization according to ADR-0009.
+- ⏳ Filesystem-backed Scene persistence.
+- ⏳ Complete integration between Commands, Scene and imported objects.
+
+#### 4.3 Medical Imaging Infrastructure
+
+**Goal:** Provide a reliable, format-aware foundation for loading, representing, validating, storing and exporting medical image volumes.
+
+**Current implementation:**
+
+- ✅ `infrastructure/imaging/dicom_loader.py` using pydicom and VTK.
+- ✅ DICOM series import command and handler.
+- 🚧 Current implementation must be evaluated and progressively aligned with the Medical Imaging Infrastructure architecture.
+
+**Deliverables:**
+
+**Volume model and geometry**
+
+- ⏳ `Volume` Domain model.
+- ⏳ `VolumeGeometry` with origin, spacing and direction.
+- ⏳ Separate image metadata and provenance.
+- ⏳ Internal RAS coordinate convention.
+- ⏳ Explicit DICOM LPS-to-RAS conversion at the infrastructure boundary.
+- ⏳ Consistent mapping between voxel indices and physical coordinates.
+- ⏳ Explicit intensity calibration state: HU, UNCALIBRATED or UNKNOWN.
+
+**DICOM import and validation**
+
+- 🚧 Extend the existing DICOM loader rather than replacing it without justification.
+- ⏳ Discover and group series using DICOM metadata.
+- ⏳ Order slices using physical position, not filenames or `InstanceNumber`.
+- ⏳ Validate dimensions, orientation, spacing and slice consistency.
+- ⏳ Detect unsupported transfer syntaxes.
+- ⏳ Detect irregular spacing and unsupported gantry tilt/shear.
+- ⏳ Preserve source metadata and import provenance.
+- ⏳ Generate structured validation reports with Error, Warning and Information severities.
+- ⏳ Handle patient identity mismatches against the active project record.
+- ⏳ Avoid exposing protected health information in logs and telemetry.
+
+**Memory and interoperability**
+
+- ⏳ Define ownership of the voxel buffer.
+- ⏳ Define NumPy `[z, y, x]` array convention.
+- ⏳ Define explicit NumPy/VTK conversion and buffer lifetime handling.
+- ⏳ Avoid assuming zero-copy interoperability.
+- ⏳ Keep clinical voxel data in main memory; GPU memory stores renderable representations only.
+
+**Storage and export**
+
+- ⏳ Support External Reference and Managed Copy storage modes.
+- ⏳ Preserve source DICOM data as the canonical imaging source.
+- ⏳ Implement VTI export as a derived representation.
+- ⏳ Validate VTI geometry, dimensions, spacing, origin and scalar values through round-trip tests.
+- ⏳ Ensure project deletion never removes externally referenced source data.
+
+**Import UI**
+
+- ⏳ File and directory selection.
+- ⏳ Series discovery and grouping.
+- ⏳ Metadata preview with minimized PHI exposure.
+- ⏳ Patient identity validation and explicit mismatch confirmation.
+- ⏳ Storage mode selection.
+- ⏳ Validation report presentation.
+- ⏳ TaskManager progress, cancellation and error reporting.
+
+#### 4.4 Visualization Infrastructure
+
+**Implemented:**
+
+- ✅ `MPRView` using `vtkResliceImageViewer`.
+- ✅ Axial, coronal and sagittal orientations.
+- ✅ `TomographyEditor` resolves imported volume data and provides it to Views.
+
+**Pending:**
+
+- 🚧 `Viewport3DView` volume rendering using `vtkSmartVolumeMapper`.
+- ⏳ Volume rendering presets.
+- ⏳ `RenderingAdapter` observing Scene changes and updating VTK representations.
+- ⏳ Window/Level controls and display-state integration.
+- ⏳ Consistent physical orientation and coordinate handling.
+- ⏳ VTK resource lifecycle and cleanup.
+- ⏳ Headless and Windows rendering tests.
+
+**Architectural constraints:**
+
+- Domain data must not depend on VTK.
+- VTK actors, mappers and render windows are presentation objects.
+- Rendering adapters translate semantic Scene objects into renderable representations.
+- Rendering updates must not mutate clinical source data.
+- All VTK render-window and actor lifecycle operations remain on the GUI thread, according to ADR-0011.
+
+#### 4.5 Module Integration
+
+- 🚧 Implement dependency resolution in `InMemoryModuleLoader`.
+- 🚧 Resolve module entry points.
+- 🚧 Register Tools, Editors, Services and Flows.
+- 🚧 Populate `BUILTIN_MANIFESTS`.
+- 🚧 Share the application EventBus across ModuleContexts.
+- ⏳ Implement the first functional built-in module.
+
+#### 4.6 Tests
+
+- DICOM import tests using anonymized or synthetic datasets.
+- Physical geometry and coordinate conversion tests.
+- Slice ordering and spacing validation tests.
+- Intensity calibration tests.
+- NumPy/VTK interoperability and buffer-lifetime tests.
+- VTI export round-trip tests.
+- Scene lifecycle and persistence tests.
+- Headless VTK tests where supported.
+- Qt/VTK integration tests on reference Windows hardware.
+- Performance tests for import, Scene updates, GPU upload and rendering.
+
+**Status:** 🚧 In Progress. The existing import path and MPR implementation provide a starting point. The remaining work is to consolidate imaging data contracts, validation, rendering and end-to-end integration.
 
 ### Phase 5: Clinical Flows
 
-**Goal:** Implement the workflow engine and the shared navigation panel.
+**Goal:** Implement workflow execution and shared clinical navigation.
 
-- **Deliverables:**
-  - ⏳ `WorkflowEngine` (loads JSON, evaluates requirements, computes step states).
-  - ⏳ `steps_panel` (Workspace Overlay).
-  - ⏳ Flow state persistence.
-  - ✅ Flow Catalog (`FlowCatalog`, `FlowRepository`, `InMemoryFlowRepository`, `FilesystemFlowRepository`) — the loader exists and populates the `FlowList`.
-  - ⏳ Layout State Persistence (`layout_state.py`, `layout_io.py`, `overlay_state.py`) — per ADR-0010.
-  - ⏳ Real `ModuleRegistry`/`ModuleLoader` wire-up of `application/modules/` into `__main__`.
+**Deliverables:**
 
-- **Blockers:** Depends on Phase 4 (Scene is a requirement of most flows) and on the real module loader.
+- ⏳ `WorkflowEngine`.
+- ⏳ JSON flow loading and requirement evaluation.
+- ⏳ Step-state computation.
+- ⏳ `steps_panel` Workspace Overlay.
+- ⏳ Flow state persistence.
+- ⏳ Layout State Persistence according to ADR-0010.
+- ⏳ Real ModuleRegistry and ModuleLoader integration.
+- ✅ Flow Catalog and repositories.
 
-- **Tests:** State transition tests (pending, active, blocked, completed), requirement evaluation.
+**Tests:**
 
-- **Status:** ⏳ Planned (Flow Catalog portion ✅).
+- Step-state transitions: pending, active, blocked and completed.
+- Requirement evaluation.
+- Flow loading and serialization.
+- Flow state persistence.
+- Module activation through clinical flows.
+
+**Dependencies:** Phase 4 Scene integration and functional module loading.
+
+**Status:** ⏳ Planned.
 
 ### Phase 6: Clinical Pipeline
 
-**Goal:** Build the specific clinical tools required for the orthognathic workflow.
+**Goal:** Implement the clinical tools required for the initial orthognathic surgery workflow.
 
-This phase is divided into sub-phases to accurately measure scientific progress:
+This phase is divided into sub-phases to distinguish clinical functionality and scientific validation.
 
-- **Phase 6A — Tomography & Segmentation:** DICOM import, MPR, thresholding, mask painting.
-- **Phase 6B — Registration & Cephalometry:** Alignment, cephalometric landmark acquisition.
-- **Phase 6C — Osteotomy:** Le Fort I, BSSO, boolean operations.
-- **Phase 6D — Surgical Guides:** Parametric guide generation.
-- **Phase 6E — Integrated Validation:** End-to-end flow testing.
+#### Phase 6A — Tomography & Segmentation
 
-- **Tests:** Geometric validation (RMSE < 0.3 mm), topological validation (0 non-manifold edges).
+**Goal:** Deliver the clinical tomography workflow on top of Phase 4 imaging infrastructure.
 
-- **Status:** ⏳ Planned.
+**Deliverables:**
+
+- ⏳ Tomography Editor clinical workflow.
+- ⏳ Synchronized axial, coronal and sagittal navigation.
+- ⏳ Physical-coordinate crosshair and slice positioning.
+- ⏳ Configurable slice distance and number of displayed slices.
+- ⏳ Independent and synchronized slice navigation.
+- ⏳ Window/Level and intensity display controls.
+- ⏳ Intensity probing at physical coordinates.
+- ⏳ ROI tools, distinguishing display ROI from processing ROI.
+- ⏳ Threshold-based segmentation.
+- ⏳ Mask creation and editing.
+- ⏳ Segmentation persistence and Scene integration.
+- ⏳ Surface generation from segmentation masks.
+- ⏳ Clinical workflow integration.
+
+Curved and panoramic MPR are deferred to a later extension unless required by a validated clinical use case.
+
+#### Phase 6B — Registration & Cephalometry
+
+**Deliverables:**
+
+- ⏳ Image and surface registration.
+- ⏳ Reference-based alignment.
+- ⏳ Cephalometric template system.
+- ⏳ Automatic and AI-assisted landmark detection.
+- ⏳ Landmark refinement and verification.
+- ⏳ Cephalometric measurements and reports.
+- ⏳ Registration and landmark validation.
+
+Manual acquisition remains available for refinement and fallback, not as the primary automation strategy.
+
+#### Phase 6C — Osteotomy
+
+**Deliverables:**
+
+- ⏳ Le Fort I osteotomy.
+- ⏳ BSSO and relevant sagittal split variants.
+- ⏳ Genioplasty.
+- ⏳ Boolean operations and fragment separation.
+- ⏳ Fragment movement and transform management.
+- ⏳ Surgical plan persistence.
+
+#### Phase 6D — Surgical Guides
+
+**Deliverables:**
+
+- ⏳ Parametric guide generation.
+- ⏳ Guide-to-anatomy fit validation.
+- ⏳ Manufacturing constraints.
+- ⏳ Export for additive manufacturing.
+
+#### Phase 6E — Integrated Validation
+
+**Deliverables:**
+
+- ⏳ End-to-end orthognathic workflow.
+- ⏳ Data integrity and reproducibility tests.
+- ⏳ Geometric validation.
+- ⏳ Clinical workflow usability tests.
+
+**Tests:**
+
+- Geometric validation with defined reference datasets.
+- Registration error metrics.
+- Mesh topology checks, including non-manifold edges.
+- Segmentation reproducibility.
+- End-to-end workflow tests.
+
+**Status:** ⏳ Planned.
 
 ### Phase 7: Scientific Validation
 
-**Goal:** Execute the validation protocols defined in the project.
+**Goal:** Execute the scientific validation protocols defined in the doctoral research project.
 
-- **Deliverables:**
-  - Geometric validation reports (phantoms, ground-truth).
-  - Reproducibility studies (ICC > 0.85).
-  - Usability reports (SUS > 70).
-  - Documentation of the validation methodology.
+**Deliverables:**
 
-- **Tests:** Automated scripts generating validation datasets and metrics.
+- Geometric validation reports using phantoms and ground-truth datasets.
+- Reproducibility studies.
+- Inter- and intra-examiner reliability.
+- ICC and measurement error analysis.
+- Usability evaluation.
+- Performance evaluation on reference hardware.
+- Documentation of validation methodology.
 
-- **Status:** ⏳ Planned.
+**Tests and metrics:**
+
+- Metrics must be defined before evaluation.
+- Thresholds must be justified by the clinical task and relevant literature.
+- Validation datasets must be independent of development datasets.
+- Results must include uncertainty and limitations.
+
+**Status:** ⏳ Planned.
 
 ### Phase 8: Scientific Product (Release 1.0)
 
-**Goal:** Consolidate the platform as a stable, distributable scientific product.
+**Goal:** Consolidate the validated clinical core into a stable, distributable scientific product.
 
-- **Deliverables:**
-  - Windows 11 Installer.
-  - Autosave and crash recovery.
-  - PDF Report generation.
-  - Final user documentation and developer SDK documentation.
-  - Scientific publication and DOI registration.
-  - Recent Projects on the Home Page (§11 of `home_page.md`).
+**Deliverables:**
 
-- **Tests:** Full regression suite, performance profiling on reference hardware.
+- Windows installer.
+- Autosave and crash recovery.
+- PDF report generation.
+- Final user documentation.
+- Developer documentation.
+- Recent Projects on the Home Page.
+- Performance profiling and optimization.
+- Release packaging and versioning.
+- Scientific publication.
+- DOI registration and public release.
 
-- **Status:** ⏳ Planned.
+**Tests:**
+
+- Full regression suite.
+- Installation and upgrade tests.
+- Project recovery tests.
+- Performance profiling on reference hardware.
+- Release acceptance tests.
+
+**Status:** ⏳ Planned.
 
 ### Phase 9: Extensibility (Release 2.0)
 
-**Goal:** Open the platform for community contribution.
+**Goal:** Open the platform to external development and community contributions.
 
-- **Deliverables:**
-  - Module API and Plugin API.
-  - Plugin loader and sandbox.
-  - External plugin catalog.
-  - Module-owned persisted state and its migration contract (per `modules.md` v10 §15).
+**Deliverables:**
 
-- **Tests:** Plugin compatibility tests.
+- Stable Module API.
+- Plugin API.
+- Plugin loader and permission boundaries.
+- External plugin catalog.
+- Module-owned persisted state.
+- State migration contract.
+- Compatibility and versioning policies.
 
-- **Status:** ⏳ Planned.
+**Tests:**
+
+- Plugin compatibility tests.
+- Module lifecycle tests.
+- API stability tests.
+- Persistence migration tests.
+
+**Status:** ⏳ Planned.
 
 ### Phase 10: AI and Nodes (Release 3.0)
 
-**Goal:** Advanced automation and procedural workflows.
+**Goal:** Introduce advanced automation and procedural workflows.
 
-- **Deliverables:**
-  - Node System (non-destructive graph).
-  - AI Assistant (`AIAssistantEditor`).
-  - MCP Server integration.
+**Deliverables:**
 
-- **Tests:** AI command execution parity with human UI, graph evaluation tests.
+- Non-destructive Node System.
+- Graph evaluation and execution.
+- AI Assistant Editor.
+- AI-assisted clinical operations.
+- MCP Server integration.
+- Command parity between UI and automated execution.
 
-- **Status:** ⏳ Planned.
+**Tests:**
+
+- Graph evaluation tests.
+- Deterministic execution tests where applicable.
+- AI command execution parity with human UI.
+- Validation of automated outputs against clinical constraints.
+
+**Status:** ⏳ Planned.
 
 ---
 
 ## 7. Testing Strategy & Metrics
 
-Testing is a clinical requirement. Metrics must be contextualized to avoid false positives or hardware dependencies.
+Testing is a clinical requirement. Metrics must be reproducible and contextualized to avoid misleading results.
 
-### 7.1 Coverage Metrics
+### 7.1 Coverage
 
-- **Domain Layer:** High coverage of critical business rules, with 100% of invariants and relevant error cases tested.
-- **Application Layer:** Critical command paths and transaction rollbacks tested; contract tests for every Protocol (`ProjectRepository`, `CommandBus`, `TaskManager`, `TelemetrySink`, `ModuleRegistry`, `ModuleLoader`). Contract tests for `CommandBus`, `CommandStack`, `EventSubscription`/`EventPublisher`, `TaskManager`, `TelemetrySink`, `ModuleRegistry` and `ModuleLoader` are implemented against reference in-memory implementations.
-- **UI Layer:** 80% coverage of `ui/workspace/`.
+- **Domain:** Critical invariants and error cases must be tested.
+- **Application:** Command execution, transaction rollback, event publication and task lifecycle.
+- **Infrastructure:** DICOM parsing, geometry, calibration, persistence and interoperability.
+- **UI:** Widget behavior, Editor lifecycle and Workspace integration.
+- **End-to-End:** Complete clinical workflows using synthetic, anonymized or approved datasets.
 
-### 7.2 Performance Metrics (Reference Hardware)
-All performance metrics must be measured against a defined **Reference Dataset** and **Reference Hardware**.
+Coverage percentages are secondary to testing critical behavior and failure paths.
 
+### 7.2 Performance Metrics
 
-- **DICOM Import:** Load a reference dataset of 500 slices in < 10 seconds (including indexing and readiness for first visualization).
-- **Rendering:** 30+ FPS for a mesh of 1,000,000 polygons.
-  - *Metrics separated into:* Scene update time, GPU upload time, render time.
-- **Memory:** < 4 GB RAM during standard facial CT processing.
+All performance targets must be measured using a defined Reference Dataset and Reference Hardware.
 
-### 7.3 GPU vs. CPU
+Initial targets:
 
-- **Correction:** Semantic clinical data belongs to main memory (RAM) and the Domain `Scene`.
-- The GPU should only hold **renderable representations** (VTK actors, shaders).
-- Use caches and incremental transfer to reduce copies. Do not keep the entire clinical dataset on the GPU.
+- **DICOM Import:** 500-slice reference dataset in under 10 seconds, including indexing and readiness for first visualization.
+- **Surface Rendering:** 30+ FPS for a mesh of 1,000,000 polygons on reference hardware.
+- **Memory:** Target below 4 GB RAM during standard facial CT processing.
+
+Performance measurements must distinguish:
+
+- File reading and DICOM parsing.
+- Volume construction and geometry validation.
+- NumPy/VTK conversion.
+- GPU upload.
+- Scene update.
+- Rendering.
+
+Targets must be reviewed against actual datasets and hardware. They are not universal guarantees.
+
+### 7.3 CPU and GPU Responsibilities
+
+- Clinical data and semantic objects remain in main memory and the Domain Scene.
+- GPU memory stores renderable representations and rendering resources.
+- Avoid unnecessary copies and maintain explicit ownership of large buffers.
+- GPU acceleration is optional for core clinical workflows.
+- CPU-based fallback must remain available for essential operations.
 
 ### 7.4 Concurrency
 
-- **Correction:** `QTimer` is for UI scheduling, not asynchronous execution.
-- **TaskManager:** Application layer abstraction for tasks (ADR-0011). `NoOpTaskManager` is a reference synchronous implementation for tests; `QtTaskManager` is the production implementation and is pending.
-- **Execution:** Heavy CPU-bound tasks must use `QThreadPool`/`QtConcurrent` or `ProcessPool` (for GIL-independent execution), coordinated by the `TaskManager`.
-- **Telemetry:** Every long operation must emit `task.dispatch`, `task.complete`, `task.cancel`, or `task.failure` through the `TelemetrySink` with a correlation id (ADR-0012). `NoOpTelemetrySink` is the test sink; `LoggingTelemetrySink` is the production sink and is pending.
+- `TaskManager` is the only application mechanism for off-thread work, according to ADR-0011.
+- Long-running DICOM parsing, segmentation, registration and mesh processing must execute as Tasks.
+- GUI and VTK render-window operations remain on the GUI thread.
+- Cancellation is cooperative.
+- Progress, cancellation and errors must be propagated through TaskManager callbacks.
+- Do not use `QTimer` as a substitute for background execution.
+- Do not create unmanaged threads, event loops or call `QApplication.processEvents()`.
+
+### 7.5 Telemetry
+
+Long-running operations must emit the appropriate telemetry events through `TelemetrySink`, using correlation IDs according to ADR-0012.
+
+Telemetry must not contain protected health information or unnecessary patient-identifying metadata.
 
 ---
 
 ## 8. Release Criteria (Definition of Done)
 
-A phase is "Done" when:
+A phase is complete when:
 
-1. Code is implemented according to the architecture documents.
-2. Unit, Widget, and Integration tests are written and passing.
-3. Contract tests for every new Protocol exist (a reference in-memory implementation + the same suite for the concrete adapter).
-4. The CI pipeline is green.
-5. Documentation is updated (including ADRs if a new decision was made).
-6. **The feature is usable end-to-end by the UI (no orphaned backend code).**
-7. No `TODO` comments are left without a linked GitHub Issue.
-8. **No production `NoOp*` placeholders remain in the boot path for a service that the phase claims to deliver.**
-9. **Known debt that affects the phase is either fixed or recorded in §10 with a linked issue.**
+1. Code follows the accepted architecture and relevant ADRs.
+2. Unit, contract, integration and UI tests are passing as applicable.
+3. New Protocols have contract tests.
+4. CI is green.
+5. Documentation is updated.
+6. The feature is usable through its intended UI workflow.
+7. No unresolved `TODO` remains without a linked issue.
+8. No production `NoOp*` placeholder remains for a service the phase claims to deliver.
+9. Known debt affecting the phase is fixed or explicitly tracked with a linked issue.
+10. Data integrity, failure handling and recovery behavior are tested where relevant.
 
-### 8.1 The Deliverable (Release 1.0)
+### 8.1 Release 1.0 Scope
 
-The concludes with the delivery of the validated clinical core. It **does not** include Plugins, Nodes, AI/MCP, or multi-monitor support. These are explicitly deferred to Releases 2.0 and 3.0, demonstrating the platform's long-term vision and extensibility without compromising the thesis deadline.
+Release 1.0 delivers the validated clinical core defined by the doctoral research scope.
+
+It does not include:
+
+- External Plugins.
+- Node System.
+- AI/MCP platform integration.
+- Multi-monitor support as a required feature.
+
+These capabilities belong to Releases 2.0 and 3.0 and must not compromise the initial clinical delivery.
 
 ---
 
-## 9. Summary
+## 9. Implementation Summary
 
-The architectural foundation is in place, and the Application layer is now **implemented as contracts plus reference in-memory implementations**, with contract tests. The next milestone is not "implement the Application layer"; it is **to close the wiring** — replace boot placeholders with real services, propagate `EditorContext` to Editors, implement `CommandExecutor`, and fix the Phase 2 debt — before adding `Scene`, rendering, and clinical Editors.
+The foundation, core Domain, Workspace and project lifecycle are implemented sufficiently to support the next development stage.
 
-Phases 0, 1, 2 and 3 are functionally complete for their core, with documented debt. Phase 4 is in progress: the Application layer is done; `domain/scene/`, `infrastructure/rendering/`, `ui/editors/`, the real `ModuleLoader`, and the real boot wiring remain. Phase 5 (Clinical Flows) depends on Phase 4 and on the real module loader. Phases 6–10 are planned.
+Phase 4 is the active phase. Its existing DICOM import path, Scene integration and MPR implementation provide a functional starting point, but they do not yet constitute a complete medical imaging infrastructure.
 
-**Post Application layer:** The contracts for Commands, Tasks, Telemetry, Events and Flows are implemented and tested. The contracts for Scene, Persistence, Layout, Threading and Telemetry (behavioral) are in place. The next implementation steps are: real boot services, `EditorContext` propagation, `CommandExecutor`, `domain/scene/`, `infrastructure/rendering/`, and the first concrete Editors.
+The immediate priorities are:
+
+1. Complete transactional Command execution.
+2. Complete `EditorContext` propagation.
+3. Consolidate Scene lifecycle and persistence.
+4. Formalize `Volume` and `VolumeGeometry`.
+5. Strengthen DICOM geometry validation and provenance.
+6. Implement explicit NumPy/VTK interoperability and buffer ownership.
+7. Complete VTI export and round-trip validation.
+8. Complete volume rendering and `RenderingAdapter`.
+9. Complete the import UI.
+10. Implement real module loading and registration.
+
+The implementation sequence preserves the distinction between infrastructure and clinical functionality:
+
+- **Phase 4:** Data representation, import, validation, storage, geometry and visualization foundations.
+- **Phase 5:** Workflow execution and clinical navigation.
+- **Phase 6A:** Clinical tomography interaction and segmentation.
+- **Phase 6B–6E:** Registration, cephalometry, osteotomy, guides and integrated validation.
+
+This separation avoids placing clinical behavior inside infrastructure components and allows the imaging foundation to be tested independently.
 
 ---
 
 ## 10. Known Debt
 
-This section records debt that is known, accepted for now, and must be resolved (or explicitly deferred with a linked issue) before the phase that depends on it can be declared "done". Each item is a candidate for a GitHub Issue.
+This section records known issues that must be resolved or explicitly deferred before the affected phase can be declared complete.
 
-### 10.1 Phase 2 — Workspace lifecycle and geometry
+### 10.1 Phase 1 / Phase 4 — EditorContext
 
-- ✅ **`AreaWidget.refresh()` no longer invalidates Editor content.**
-- ✅ **`LayoutRenderer.compute_region_bounds()` now maps to Workspace coordinates.**
-- ✅ **`Workspace.clear()` now calls `Editor.dispose()` and `clear_cache()`.**
-- ✅ **`Workspace.load_spec()` is now atomic.**
-- ✅ **`TopOverlay` follows the splitter when moved manually.**
-- ✅ **`QTabBar` is centered via stylesheet.**
-- ✅ **Debug visual is clean** (no Log/Toggle buttons, editor_ids visible).
+- `SceneQuery` is not yet available as a field on `EditorContext`.
+- `EventSubscription` propagation remains pending.
+- Additional services must be introduced only when required by concrete Editor workflows.
 
-### 10.2 Phase 1 / Phase 4 — `EditorContext` propagation
+### 10.2 Phase 3 — Project Lifecycle and Persistence
 
-- ✅ **`LayoutBuilder` propagates `shared_context`.** ADR-0002 §2.3 defines `shared_context` as the extension point for shared services. The builder now propagates `task_manager`, `telemetry`, `correlation_id` and `command_dispatcher` by reference into each `EditorContext`.
-- ✅ **`EditorContext` fields `task_manager`, `telemetry`, `correlation_id` and `command_dispatcher` are populated.** The `Workspace` provides them via `shared_context`; the `LayoutBuilder` propagates them; the `Editor` consumes them.
-- **`EditorContext` has no `SceneQuery` or `EventSubscription`.** These are defined in ADR-0002 and `editors.md` §15 but are not yet fields on the dataclass. `SceneQuery` is the next prerequisite for the VTK/MPR Views.
+- Project deletion must coordinate files owned by Patient, Scene, Layout and other persistence components.
+- `FilesystemProjectRepository.delete()` must not silently leave orphaned project data.
+- `ProjectIndex` remains pending.
+- Filesystem repositories require stronger integration tests for permissions, atomic writes and path traversal.
 
-### 10.3 Phase 4 — Module system
+### 10.3 Phase 4 — Module System
 
-- **`InMemoryModuleLoader` is skeletal.** (unchanged)
-- **`BUILTIN_MANIFESTS` is empty.** (unchanged)
-- **`InMemoryModuleLoader` creates a new `EventBus` per `ModuleContext`.** (unchanged)
-- **No `CommandExecutor`.** (unchanged — this is the next priority, §5.1 item 4).
+- `InMemoryModuleLoader` requires dependency resolution.
+- Module entry points are not fully loaded and registered.
+- `BUILTIN_MANIFESTS` requires functional built-in module definitions.
+- `ModuleContext` must use the shared application EventBus.
+- `CommandExecutor` and `CommandDispatcher` integration remain prerequisites for real Editor operations.
 
-### 10.4 Phase 3 — Project deletion
+### 10.4 Phase 4 — Medical Imaging
 
-- **`FilesystemProjectRepository.delete()` removes only `project.json`.** Other files (`patient_record.json`, `assets/`, `scene.json`, `layout.json`, `backups/`) belong to other owners and are left orphaned. Deleting a project must coordinate with the owners of each file (ADR-0009 §2.1), or the repository must document that it only deletes its own file and that higher layers coordinate the rest. Today neither is documented in code.
+- The current DICOM loader requires a review against the Medical Imaging Infrastructure contracts.
+- The `Volume` and `VolumeGeometry` models must become the authoritative representation of imported image data.
+- Physical slice ordering and geometry validation must be explicit.
+- LPS-to-RAS conversion must be centralized at the infrastructure boundary.
+- Intensity calibration must distinguish HU from uncalibrated CBCT values.
+- NumPy/VTK buffer ownership and lifetime must be explicit.
+- Import validation and provenance reporting remain incomplete.
+- External Reference and Managed Copy storage modes require implementation and tests.
+- VTI export and round-trip validation remain pending.
+- Import UI remains pending.
 
-### 10.5 Phase 1 / Phase 4 — ADR-0003
+### 10.5 Phase 4 — Visualization
 
-- **ADR-0003 is `Proposed`, not `Accepted`.** The document `implementation.md` previously stated that ADRs 0001–0012 were all stable. They are not: ADR-0003 (widgets, overlays, icon actions, semantic colors) is still Proposed. Widget-library work and semantic-color work depend on it; it must be reviewed and accepted (or revised) before those deliverables start.
+- `Viewport3DView` still uses `vtkOutlineFilter` as a placeholder.
+- Volume rendering using `vtkSmartVolumeMapper` remains pending.
+- `RenderingAdapter` is not yet implemented.
+- Window/Level controls are not fully integrated across the visualization pipeline.
+- The MPR implementation currently uses `vtkResliceImageViewer`. Its suitability must be evaluated before deciding whether to retain or replace it.
+- VTK resource lifecycle and rendering-context stability require further testing.
 
-### 10.6 Cross-cutting — i18n and theme
+### 10.6 Phase 4 — Windows OpenGL and Qt Integration
 
-- **UI strings and colors are hardcoded.** `HomePage`, `ProjectTable`, `FlowList`, `StartButton`, `FlowRow` use Portuguese strings and hardcoded colors, contrary to the i18n documentation and ADR-0003 §2.4 (semantic colors via `ThemeService.color()`). `TranslationService` exists but is not wired into the UI; `ThemeService` does not yet expose semantic colors. This is not a Phase 4 blocker, but it must be resolved before Release 1.0 (§8.1).
+- `QVTKRenderWindowInteractor` may fail to obtain a valid OpenGL context in CI or server environments.
+- `wglMakeCurrent` errors must be reproduced and isolated.
+- Headless tests must distinguish failures in data processing from failures in rendering-context initialization.
+- Do not treat `vtkFixedPointVolumeRayCastMapper` or `QT_QPA_PLATFORM=offscreen` as universal solutions. Validate the selected strategy on supported environments.
 
-### 10.7 Documentation
+### 10.7 Cross-Cutting — Internationalization and Theme
 
-- **`docs/architecture/README.md` contains an accidental PowerShell command** instead of Markdown.
-- **`docs/architecture/domain/project/project.md` ends with an accidental Python file-write snippet.**
-- **Some documents still reference `EditorHost`**, which ADR-0001 removed.
-- **The main `README.md` is empty.**
-- **i18n test files are empty** (`tests/infrastructure/i18n/`).
+- UI strings and colors remain partially hardcoded.
+- `TranslationService` must be wired into the UI.
+- `ThemeService` must expose semantic colors according to ADR-0003.
+- Temporary translation-key helpers must be removed after proper localization integration.
+- ADR-0003 must be reviewed and accepted before dependent widget-library work is considered complete.
 
-### 10.8 New debt discovered during analysis (2026-10-29)
+### 10.8 Documentation and Testing
 
-- **UI Modules and Widgets are Stubs.** The directories `ui/widgets/` (except for empty subfolders), `ui/editors/overlays/`, and most of `modules/builtin/` contain only empty or placeholder files. They represent the *intent* to build these components but do not contain functional code.
-- **`TranslationService` not wired to UI.** The `TranslationService` and its catalogs exist, but the UI layer (e.g., `HomePage`, `FlowRow`) uses hardcoded strings. The i18n infrastructure is not actually in use.
-- **`ThemeService` lacks semantic colors.** The `ThemeService` resolves icon names but does not yet expose the semantic colors (`color("active")`, `color("disabled")`, etc.) required by ADR-0003. The UI uses hardcoded hex values.
-- **`Project deletion` not coordinated.** As noted in §10.4, deleting a project only removes `project.json`. The `ProjectManager` must coordinate with other persistence layers (Patient, Scene, Layout) to perform a full, atomic deletion.
-- **`Filesystem repositories` need integration tests.** The `FilesystemProjectRepository` and `FilesystemFlowRepository` have unit tests, but their integration with the real filesystem (permissions, atomic writes, directory traversal) needs more thorough testing.
-- **`HomePage` uses `_humanize_translation_key`.** `MainWindow` uses a temporary helper function `_humanize_translation_key` to make flow names readable. This is a placeholder for the `TranslationService` and should be removed once i18n is wired.
-- ✅ **`MPRView` is now backed by `vtkResliceImageViewer`.** (Passo 8b)   Axial, coronal, and sagittal orientations are supported. The View
-  receives a `vtkImageData` via `set_volume()` from the   `TomographyEditor`.
-- 🚧 **`Viewport3DView` uses `vtkOutlineFilter`.** (Passo 8b)   Volume rendering (`vtkSmartVolumeMapper` + presets) is planned for
-  Passo 8c. Window/level controls are planned for Passo 8d.
-- 
-### 10.9 Phase 0 / Phase 3 — Startup Performance Debt
+- `docs/architecture/README.md` requires cleanup of accidental shell commands.
+- `docs/architecture/domain/project/project.md` requires cleanup of accidental code snippets.
+- References to removed abstractions such as `EditorHost` must be reviewed.
+- The main `README.md` requires content.
+- i18n tests require implementation.
+- Filesystem repository integration tests require expansion.
 
-- **Eager import of `TomographyEditor` and `Workspace` in `__main__.py`.**
-  The `EditorRegistry` must use reference strings (see §5.1 item 0.5).
-- **Synchronous I/O in `MainWindow.__init__`.** `_populate_flow_list`
-  must be asynchronous.
-- **Synchronous I/O in `ProjectTable.__init__`.** `refresh` must be
-  asynchronous or use `ProjectIndex`.
-- **Missing rollback in `_on_project_open_requested`.** If the
-  `Workspace` fails, the project remains open in the `ProjectManager`.
-- **Missing `ProjectIndex`.** The HomePage scans the entire disk
-  on every launch.
+### 10.9 Startup Performance
 
-### 10.10 Phase 4 — Volume rendering and window/level
+- `__main__.py` must avoid unnecessary eager imports of Editors and Workspace components.
+- `MainWindow.__init__` must not perform blocking I/O.
+- Project and flow loading must not block initial window display.
+- Project opening must roll back correctly if Workspace creation fails.
+- `ProjectIndex` must avoid scanning the entire project directory on every startup.
 
-- **Volume rendering is not implemented.** `Viewport3DView` uses   `vtkOutlineFilter` (bounding box) as a placeholder. The real
-  rendering (`vtkSmartVolumeMapper` + presets) is Passo 8c.
-- **Window/level controls are not exposed.** `set_window_level()` in   `Viewport3DView` stores the values but does not apply them to the
-  transfer function; the MPR `set_window_level` is applied directly.
-  UI controls are Passo 8d.
-- **Preset editor and import/export are deferred.** The 4 built-in   presets (`bone`, `soft_tissue`, `skin`, `ct_angio`) are hardcoded
-  in `presets.py`. Custom presets, editor, and serialization are   Phase 8.
+---
 
+## 11. Change Management
 
-### 10.X VTK OpenGL on Windows
+This plan is a living document and must remain synchronized with the implementation.
 
-- **`QVTKRenderWindowInteractor` fails on Windows without a valid OpenGL context.** The `wglMakeCurrent` errors appear when a `MPRView` or `Viewport3DView` is created in a CI/servidor environment. The test passes (the volume is loaded), but the log is noisy.
-- **Solution:** use `vtkFixedPointVolumeRayCastMapper` (already done), or set `QT_QPA_PLATFORM=offscreen` in CI, or check OpenGL availability before creating the interactor.
-- **Affected:** `MPRView`, `Viewport3DView`.
+- Update status only after implementation and tests provide evidence.
+- Record architectural changes through ADRs.
+- Do not mark a phase complete because its interfaces or placeholder classes exist.
+- Do not duplicate existing implementations without a documented technical reason.
+- When a task reveals a dependency outside its current phase, update the plan rather than introducing an undocumented shortcut.
+- Keep deferred capabilities visible without allowing them to expand the scope of Release 1.0.
