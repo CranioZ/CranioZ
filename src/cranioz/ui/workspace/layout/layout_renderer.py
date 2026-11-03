@@ -24,6 +24,9 @@ Responsibilities:
 - For each Split, obtain or create a QSplitter with the correct
   orientation, and insert the rendered children.
 - Return the root widget.
+- Compute the geometric Bounds of each Region, using ``Area.visible``
+  (the runtime source of truth) to decide whether an Area should
+  contribute.
 
 Non-responsibilities:
 
@@ -95,7 +98,7 @@ class LayoutRenderer:
         self._split_widgets: dict[int, QSplitter] = {}
         self._area_widgets: dict[str, AreaWidget] = {}
 
-        # ----- Public API -----------------------------------------------
+    # ----- Public API -----------------------------------------------
 
     def render(self, tree: LayoutTree) -> QWidget:
         """Render the LayoutTree and return the root widget.
@@ -136,14 +139,26 @@ class LayoutRenderer:
     def compute_region_bounds(self, workspace: QWidget) -> dict[Placement, Bounds]:
         """Compute the geometric Bounds of each Region in Workspace coordinates.
 
-        `widget.geometry()` is relative to the widget's parent. In nested
-        QSplitter layouts, AreaWidgets may have different parents, so the
-        union of their geometries does NOT represent a Workspace-coordinate
-        Region. This method maps each AreaWidget's rect to Workspace
-        coordinates via `mapTo(workspace, ...)` before unioning.
+        ``widget.geometry()`` is relative to the widget's parent. In
+        nested QSplitter layouts, AreaWidgets may have different
+        parents, so the union of their geometries does NOT represent a
+        Workspace-coordinate Region. This method maps each AreaWidget's
+        rect to Workspace coordinates via ``mapTo(workspace, ...)``
+        before unioning.
+
+        Only Areas whose model says ``visible`` participate. The model
+        (``Area.visible``) is the runtime source of truth: it is set
+        by ``Workspace.set_area_visible`` and is independent of the
+        Qt visibility propagation, which can lag behind (for example,
+        a widget hidden inside a QSplitter may report ``isHidden()``
+        as False until the splitter re-lays out). Using the model
+        keeps the Region bounds aligned with what the Workspace
+        intends, not with what Qt currently reports.
         """
         grouped: dict[Placement, list[AreaWidget]] = {}
         for widget in self._area_widgets.values():
+            if not widget.area().visible:
+                continue
             placement = widget.area_placement()
             grouped.setdefault(placement, []).append(widget)
 
@@ -236,7 +251,6 @@ class LayoutRenderer:
             splitter = QSplitter(self._orientation_for(split.direction))
             splitter.setObjectName(f"split_{key}")
             splitter.setChildrenCollapsible(False)
-            # NOVO: conectar splitterMoved ao callback
             splitter.splitterMoved.connect(self._on_splitter_moved)
             self._split_widgets[key] = splitter
 

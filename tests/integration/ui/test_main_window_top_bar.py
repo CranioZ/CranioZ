@@ -4,13 +4,112 @@ from __future__ import annotations
 
 import pytest
 
+from cranioz.application.event_bus import EventBus
+from cranioz.application.project.in_memory_project_repository import (
+    InMemoryProjectRepository,
+)
+from cranioz.application.project.project_access_policy import (
+    AllowAllProjectAccessPolicy,
+)
+from cranioz.application.project.project_manager import ProjectManager
+from cranioz.domain.patient.value_objects.patient_id import PatientId
+from cranioz.domain.project.project_id import ProjectId
+from cranioz.ui.editors.editor_registry import EditorRegistry
 from cranioz.ui.main_window import MainWindow
+from cranioz.ui.theme.service import ThemeName, ThemeService
+from cranioz.ui.tools.registry.tool_registry import ToolRegistry
 from cranioz.ui.workspace.areas.placement import Placement
+from cranioz.ui.workspace.specs.area_spec import AreaSpec
+from cranioz.ui.workspace.specs.editor_layout_spec import (
+    EditorLayoutSpec,
+)
+from cranioz.ui.workspace.specs.module_ui_spec import ModuleUISpec
 from cranioz.ui.workspace.structure import (
     ExtrasSegment,
     HomeSegment,
     ModulesSegment,
 )
+from cranioz.ui.workspace.workspace import Workspace
+from cranioz.ui.workspace.workspace_spec import (
+    PLACEHOLDER_EDITOR_CLASS,
+    PLACEHOLDER_EDITOR_ID,
+)
+
+
+def _build_workspace_with_full_spec(qtbot) -> Workspace:
+    """Build a Workspace loaded with a four-Area spec.
+
+    Each Area hosts the placeholder Editor, so none is empty. The
+    Workspace is shown and given a real size so that the
+    ``compute_region_bounds`` call in the tests returns non-zero
+    geometry.
+    """
+    repository = InMemoryProjectRepository()
+    manager = ProjectManager(
+        repository=repository,
+        event_bus=EventBus(),
+        access_policy=AllowAllProjectAccessPolicy(),
+    )
+    project_id = ProjectId("p-test")
+    manager.create_project(
+        "test-actor",
+        project_id=project_id,
+        project_name="Test",
+        patient_id=PatientId("pat-test"),
+        patient_display_name="Test",
+        clinical_procedure="test",
+    )
+    context = manager.open_project("test-actor", project_id)
+
+    editor_registry = EditorRegistry()
+    editor_registry.register(PLACEHOLDER_EDITOR_ID, PLACEHOLDER_EDITOR_CLASS)
+
+    workspace = Workspace(
+        editor_registry=editor_registry,
+        tool_registry=ToolRegistry(),
+        theme_service=ThemeService(theme=ThemeName.DARK),
+        project_context=context,
+    )
+    qtbot.addWidget(workspace)
+    workspace.resize(800, 600)
+    workspace.show()
+    qtbot.wait(50)
+
+    spec = ModuleUISpec(
+        areas=(
+            AreaSpec(
+                area_id="area.left",
+                title="Left",
+                placement=Placement.LEFT,
+                editor_layout=EditorLayoutSpec.leaf(PLACEHOLDER_EDITOR_ID),
+            ),
+            AreaSpec(
+                area_id="area.central",
+                title="Central",
+                placement=Placement.CENTRAL,
+                editor_layout=EditorLayoutSpec.leaf(PLACEHOLDER_EDITOR_ID),
+            ),
+            AreaSpec(
+                area_id="area.right",
+                title="Right",
+                placement=Placement.RIGHT,
+                editor_layout=EditorLayoutSpec.leaf(PLACEHOLDER_EDITOR_ID),
+            ),
+            AreaSpec(
+                area_id="area.bottom",
+                title="Bottom",
+                placement=Placement.BOTTOM,
+                editor_layout=EditorLayoutSpec.leaf(PLACEHOLDER_EDITOR_ID),
+            ),
+        ),
+    )
+    workspace.load_spec(spec)
+    qtbot.wait(50)
+
+    return workspace
+
+
+# ----- Top Bar segments injection -----------------------------------
 
 
 @pytest.mark.qt
@@ -26,6 +125,9 @@ def test_top_bar_segments_are_injected(
     assert overlay.left_segment().findChild(HomeSegment) is not None
     assert overlay.center_segment().findChild(ModulesSegment) is not None
     assert overlay.right_segment().findChild(ExtrasSegment) is not None
+
+
+# ----- Area toggles from the Top Bar --------------------------------
 
 
 @pytest.mark.qt
@@ -72,3 +174,45 @@ def test_extras_toggle_bottom_and_right(
     assert state.is_visible(Placement.RIGHT) is False
     extras.toggle_area_right_requested.emit()
     assert state.is_visible(Placement.RIGHT) is True
+
+
+# ----- Hidden Areas are excluded from Region bounds -----------------
+
+
+@pytest.mark.qt
+@pytest.mark.integration
+def test_hidden_area_is_excluded_from_region_bounds(qtbot) -> None:
+    """Hiding an Area removes it from the Region bounds.
+
+    This is what the ``Area.visible`` filter in
+    ``LayoutRenderer.compute_region_bounds`` and in
+    ``Workspace._regions_from_bounds`` protects. Without them, the
+    TopOverlay would be positioned over a Region that includes the
+    hidden Area.
+    """
+    workspace = _build_workspace_with_full_spec(qtbot)
+
+    # All four Areas are visible initially.
+    bounds_before = workspace._layout_renderer.compute_region_bounds(workspace)  # noqa: SLF001
+    assert Placement.LEFT in bounds_before
+    assert Placement.CENTRAL in bounds_before
+    assert Placement.RIGHT in bounds_before
+    assert Placement.BOTTOM in bounds_before
+
+    # Hide the Left Area.
+    workspace.set_area_visible(Placement.LEFT, False)
+    qtbot.wait(50)
+
+    # The Left Region is gone from the bounds.
+    bounds_after = workspace._layout_renderer.compute_region_bounds(workspace)  # noqa: SLF001
+    assert Placement.LEFT not in bounds_after
+    assert Placement.CENTRAL in bounds_after
+    assert Placement.RIGHT in bounds_after
+    assert Placement.BOTTOM in bounds_after
+
+    # Show it again: the Left Region reappears.
+    workspace.set_area_visible(Placement.LEFT, True)
+    qtbot.wait(50)
+
+    bounds_restored = workspace._layout_renderer.compute_region_bounds(workspace)  # noqa: SLF001
+    assert Placement.LEFT in bounds_restored

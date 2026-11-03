@@ -80,6 +80,17 @@ class AreaWidget(QWidget):
     def area_placement(self) -> Placement:
         return self._area.placement
 
+    def area(self) -> Area:
+        """Return the Area this widget materializes.
+
+        Exposed for callers that need the model behind the widget
+        (e.g., the LayoutRenderer's ``compute_region_bounds`` filters
+        Areas by ``Area.visible``, which is the runtime source of
+        truth for whether an Area should contribute to the Region
+        geometry).
+        """
+        return self._area
+
     def refresh(self) -> None:
         # 1. Dispose the Editors' internal resources before rebuilding.
         #    This is critical for Editors that hold Qt widgets internally

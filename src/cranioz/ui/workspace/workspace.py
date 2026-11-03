@@ -12,6 +12,10 @@ Responsibilities:
 - Own the runtime visibility state of the toggleable Areas
   (WorkspaceLayoutState). The state is runtime-only and is not
   persisted (ADR-0010 is Phase 5).
+- Apply the visibility state to the rendered AreaWidgets and to the
+  Region computation used by the OverlayManager. A hidden Area does
+  not contribute to the Region bounds (see
+  ``LayoutRenderer.compute_region_bounds``).
 - Receive and forward the TaskManager, TelemetrySink, CommandDispatcher,
   SceneQuery, and EventSubscription to the Editors it hosts
   (ADR-0011, ADR-0012, ADR-0007, ADR-0013).
@@ -23,6 +27,10 @@ Non-responsibilities:
 - Top Bar content: populated by the MainWindow (ADR-0006).
 - Steps Panel: a second shared Overlay, added with the Flow system.
 - Module lifecycle: owned by the Application layer (modules.md v10 §11).
+- Deciding which Areas exist. The ModuleUISpec decides; the Workspace
+  materializes what the spec declares. An Area declared in the spec
+  hosts at least one Editor (the placeholder or a real one), so the
+  concept of an "empty Area" does not exist at this level.
 """
 
 from __future__ import annotations
@@ -156,6 +164,10 @@ class Workspace(QWidget):
         the build succeeds, the old composition is torn down and the
         new one is rendered and installed. If the build fails, the
         old composition remains intact.
+
+        The spec declares which Areas exist. Every Area declared in
+        the spec hosts at least one Editor (the placeholder or a real
+        one), so no Area is ever "empty" at this level.
         """
         # 1. Build the new composition (validates the spec).
         new_result = self._layout_builder.build(
@@ -254,6 +266,12 @@ class Workspace(QWidget):
         The Area model and the AreaWidget are kept in sync: the model
         reflects the intent, the widget is the presentation.
 
+        A hidden Area is excluded from the Region computation
+        (``LayoutRenderer.compute_region_bounds`` and
+        ``Workspace._regions_from_bounds``). This keeps the TopOverlay
+        positioned over the Central Region even after the user hides
+        a lateral Area.
+
         Raises:
             KeyError: if the Placement is not toggleable (CENTRAL).
         """
@@ -330,7 +348,7 @@ class Workspace(QWidget):
             return ()
         regions: list[Region] = []
         for placement, bounds in bounds_by_placement.items():
-            areas = tuple(a for a in manager.areas() if a.placement is placement)
+            areas = tuple(a for a in manager.areas() if a.placement is placement and a.visible)
             if not areas:
                 continue
             regions.append(
