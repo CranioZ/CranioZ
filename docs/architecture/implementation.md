@@ -3,7 +3,7 @@
 **Document type:** Roadmap and execution plan  
 **Status:** Living document  
 **Scope:** Phased implementation of the CranioZ platform, from foundation to release  
-**Last updated:** 2026-11-01
+**Last updated:** 2026-11-02
 
 ---
 
@@ -58,7 +58,7 @@ The implementation is divided into 11 phases. The sequence establishes the platf
 |---|---|---|---|
 | **Phase 0** | Foundation & Boot | ✅ Implemented | Startup performance improvements |
 | **Phase 1** | Contracts & Core Domain | ✅ Core implemented | Remaining context propagation |
-| **Phase 2** | Workspace Engine | ✅ Core implemented | Remaining integration and lifecycle issues |
+| **Phase 2** | Workspace Engine | ✅ Core implemented | Editor Layout Tree configurable (ADR-0013 §2.5, §2.6); IconManager and ThemeManager integration |
 | **Phase 3** | Project & Home Page | ✅ Core implemented | Project index, asynchronous loading, persistence peripherals |
 | **Phase 4** | Scene & Visualization | 🚧 In Progress | Imaging infrastructure, rendering, import UI, module integration |
 | **Phase 5** | Clinical Flows | ⏳ Planned | WorkflowEngine, layout persistence, module integration |
@@ -266,6 +266,15 @@ The following items are intentionally deferred:
 - ✅ Structural split rendering using `QSplitter`.
 - ✅ Editor lifecycle and Workspace cleanup improvements.
 - ✅ Atomic `Workspace.load_spec()` behavior.
+- ✅ Three-segment Top Bar: `HomeSegment`, `ModulesSegment`, `ExtrasSegment`.
+- ✅ Area toggles (Left, Right, Bottom) wired to `Workspace.set_area_visible()`.
+- ✅ Minimum `WorkspaceLayoutState` (runtime visibility only, not persisted).
+- ✅ `TopOverlay` three-segment content injection (`set_left_content`, `set_center_content`, `set_right_content`).
+- ✅ Splitter reflow after Area visibility changes (`LayoutRenderer.refresh_splitter_sizes`).
+- ✅ `Area.visible` as the runtime source of truth for the Region computation.
+- 🚧 Editor Layout Tree configurable per Area (ADR-0013 §7.3). The `AreaWidget` currently uses a fixed horizontal `QSplitter` for multiple Editors; it does not yet honor `Area.set_editor_layout(EditorLayoutSpec)`.
+- 🚧 Editor Stack for stacking multiple Editors in the same Leaf (ADR-0013 §2.5).
+- 🚧 `IconManager` and `ThemeService` semantic colors. The Top Bar uses Unicode glyphs as placeholders; `debug_colors=True` (pastel backgrounds by Placement) is the current visual aid during development.
 
 **Tests:**
 
@@ -274,8 +283,10 @@ The following items are intentionally deferred:
 - Editor lifecycle tests.
 - Workspace integration tests.
 - Geometry and overlay positioning tests.
+- Top Bar segments injection and toggle tests.
+- Region bounds exclusion for hidden Areas.
 
-**Status:** ✅ Core implemented. Remaining integration issues are tracked in §10.
+**Status:** ✅ Core implemented. The remaining items are tracked in §10.10 (resolved) and §10.11 (new: Editor Layout Tree configurable, IconManager, ThemeManager).
 
 ### Phase 3: Project & Home Page
 
@@ -330,9 +341,7 @@ This phase provides the **technical foundation** for imaging. It does not implem
 
 **Pending:**
 
-- 🚧 `CommandExecutor`.
-- 🚧 `CommandDispatcher` integration.
-- 🚧 Transactional command execution and post-commit event publication.
+- 🚧 `CommandDispatcher` integration into all Editors (currently propagated through `EditorContext` and `ToolContext` for the Editors that declare it).
 - 🚧 Production module loading and registration.
 
 #### 4.2 Scene and Domain Integration
@@ -392,7 +401,7 @@ This phase provides the **technical foundation** for imaging. It does not implem
 - ✅ NumPy `[z, y, x]` array convention.
 - ✅ Explicit NumPy/VTK conversion and buffer lifetime handling (`VtkImageAdapter`).
 - ✅ Avoid assuming zero-copy interoperability; the adapter documents the shared-buffer contract.
-- ✅ Keep clinical voxel data in main memory; GPU memory stores renderable representations only.`RenderingAdapter` observing Scene changes
+- ✅ Keep clinical voxel data in main memory; GPU memory stores renderable representations only.
 
 **Storage and export**
 
@@ -420,7 +429,7 @@ This phase provides the **technical foundation** for imaging. It does not implem
   - Chosen over `vtkResliceImageViewer` because the latter caused `wglMakeCurrent` failures on Windows drivers (see §10.6). The manual pipeline is the documented baseline.
 - ✅ Axial, coronal and sagittal orientations.
 - ✅ `Viewport3DView` volume rendering using `vtkSmartVolumeMapper`.
-- ✅ Volume rendering presets (Bone, Soft Tissue, Skin, CT Angio).
+- ✅ Volume rendering presets (Bone, Soft Tissue, Skin, CT Angio, CBCT).
 - ✅ `TomographyEditor` resolves imported volume data and provides it to Views.
 
 **Pending:**
@@ -835,7 +844,6 @@ This section records known issues that must be resolved or explicitly deferred b
 - The MPR pipeline (`vtkImageReslice` + `vtkImageMapToWindowLevelColors` + `vtkImageActor`) is the documented baseline. Windows OpenGL stability remains a known concern (§10.6), but the API choice itself is settled.
 - VTK resource lifecycle and rendering-context stability require further testing.
 - **DICOM visualization bug (paused):** After importing a DICOM series, the MPR views display uniform gray rectangles (or tilted polygons) instead of anatomical slices, and the 3D viewport shows only the outline (or a distorted/streaked volume). The data pipeline works (the `Volume` reaches the Views), but the rendering pipeline does not produce correct pixels. The root cause is likely in the application of the direction matrix (`SetDirectionMatrix` / `vtkImageReslice`) and the configuration of the MPR reslice axes and 3D transfer function. All correction attempts so far (W/L with percentiles, CBCT preset, dynamic transfer function, reorientation via `vtkImageReslice`, removal of `SetDirectionMatrix`) have not resolved the issue. The correction work is paused. A detailed record is available in `docs/known_issues/dicom_visualization_bug.md` (or equivalent). This must be resolved before Phase 4 can be considered complete.
-- **TopOverlay** geometry is correct but its three segments (left_segment, center_segment, right_segment) are not populated. MainWindow currently injects a single QWidget with two buttons into the left segment. This is Phase 2 integration work, tracked in §10.10.
 
 ### 10.6 Phase 4 — Windows OpenGL and Qt Integration
 
@@ -851,6 +859,8 @@ This section records known issues that must be resolved or explicitly deferred b
 - `ThemeService` must expose semantic colors according to ADR-0003.
 - Temporary translation-key helpers must be removed after proper localization integration.
 - ADR-0003 must be reviewed and accepted before dependent widget-library work is considered complete.
+- **IconManager:** The Top Bar segments use Unicode glyphs (`☰`, `⋮`, `⌂`, `▭`, `▯`) as placeholders. A dedicated `IconManager` (SVG loading, caching, theme-aware sizing) is not implemented. It is not on the critical path for Phase 4 and is not scheduled; introduce it when the first Editor requires themed icons, or when ADR-0003 is accepted.
+- **`debug_colors`:** The `AreaWidget` already paints a pastel background per `Placement` when `debug_colors=True`. The `MainWindow` does not expose this flag; enabling it requires editing `MainWindow._create_workspace`. Exposing it via environment variable or `ConfigurationLoader` is a small enhancement for development, not a deliverable.
 
 ### 10.8 Documentation and Testing
 
@@ -870,13 +880,23 @@ This section records known issues that must be resolved or explicitly deferred b
 - Project opening must roll back correctly if Workspace creation fails.
 - `ProjectIndex` must avoid scanning the entire project directory on every startup.
 
-10.10 — Phase 2 — Workspace Top Bar and Area Toggles:
+### 10.10 Phase 2 — Workspace Top Bar and Area Toggles (resolved)
 
-* TopOverlay lacks set_center_content() / set_right_content().
-* HomeSegment, ModulesSegment, ExtrasSegment are not implemented. ui/workspace/structure/ is empty; top_bar.py is unused and will remain so.
-* Area toggles (Left, Right, Bottom) are not wired to any visibility mechanism.
-* Minimum WorkspaceLayoutState (visibility only) will be introduced here as a foundation for ADR-0010, not as its implementation.
-* Empty Areas are still rendered with placeholders instead of being hidden.
+- ✅ `TopOverlay` has `set_left_content()`, `set_center_content()` and `set_right_content()`.
+- ✅ `HomeSegment`, `ModulesSegment`, `ExtrasSegment` are implemented in `ui/workspace/structure/`. `top_bar.py` remains intentionally empty.
+- ✅ Area toggles (Left, Right, Bottom) are wired to `Workspace.set_area_visible()`.
+- ✅ Minimum `WorkspaceLayoutState` (visibility only) is in place. It is intentionally runtime-only and is not persisted; ADR-0010 (Phase 5) will extend it.
+- ✅ `Area.visible` is the runtime source of truth for the Region computation. `LayoutRenderer.compute_region_bounds` and `Workspace._regions_from_bounds` filter by `Area.visible`, not by widget `isHidden()` (which can lag inside a `QSplitter`).
+- ✅ `LayoutRenderer.refresh_splitter_sizes()` redistributes the `QSplitter` sizes after a visibility change.
+- ✅ The default `WorkspaceSpec.DEFAULT` declares all four Areas, each hosting the placeholder Editor. Left, Right and Bottom start hidden (the prototype shows only the Central Area on first load); the Top Bar toggles bring them on.
+- ✅ Commits: `feat(ui): add set_center_content / set_right_content to TopOverlay`, `feat(ui): add HomeSegment, ModulesSegment, ExtrasSegment for TopOverlay`, `feat(ui): wire Top Bar segments and area toggles into Workspace`, `feat(ui): wire Top Bar toggles and hide lateral Areas by default`.
+
+### 10.11 Phase 2 — Editor Layout Tree, Editor Stack, IconManager, ThemeManager (new)
+
+- 🚧 **Editor Layout Tree configurable per Area (ADR-0013 §7.3):** The `AreaWidget` uses a fixed horizontal `QSplitter` for multiple Editors. It does not yet honor `Area.set_editor_layout(EditorLayoutSpec)`. This is Bloco 6.11 of the prototype plan.
+- 🚧 **Editor Stack (ADR-0013 §2.5):** Stacking multiple Editors in the same Leaf is not implemented. The preferred presentation (a small switcher) is not scheduled. The split tree alone is sufficient until the user actually needs to stack Editors.
+- 🚧 **IconManager:** See §10.7. The Top Bar uses Unicode glyphs as placeholders.
+- 🚧 **ThemeManager / semantic colors (ADR-0003):** ADR-0003 remains Proposed. Semantic colors (per Placement, per state) are not implemented. `debug_colors=True` is the current development aid.
 
 ---
 
