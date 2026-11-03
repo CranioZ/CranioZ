@@ -134,6 +134,43 @@ class LayoutRenderer:
         """Return the cached AreaWidget for the given area_id, if any."""
         return self._area_widgets.get(area_id)
 
+    def refresh_splitter_sizes(self) -> None:
+        """Redistribute the QSplitter sizes to account for hidden children.
+
+        When a child is hidden with ``setVisible(False)``, the
+        QSplitter keeps its previous sizes: the hidden child keeps its
+        pixel budget and the layout does not reflow. This method
+        recomputes the sizes so that visible children share the
+        available space equally.
+
+        Hidden children get size 0. The method iterates over every
+        cached splitter (the root splitter and any nested splitter),
+        so both the vertical ``Split(top, bottom)`` and the horizontal
+        ``Split(left, central, right)`` are recomputed.
+
+        Called by ``Workspace`` after toggling an Area's visibility.
+        """
+        for splitter in self._split_widgets.values():
+            count = splitter.count()
+            if count == 0:
+                continue
+
+            visible_indices: list[int] = []
+            for i in range(count):
+                widget = splitter.widget(i)
+                if widget is not None and not widget.isHidden():
+                    visible_indices.append(i)
+
+            if not visible_indices:
+                continue
+
+            n = len(visible_indices)
+            base = 1000 // n
+            new_sizes = [0] * count
+            for i in visible_indices:
+                new_sizes[i] = base
+            splitter.setSizes(new_sizes)
+
     # ----- Region geometry ------------------------------------------
 
     def compute_region_bounds(self, workspace: QWidget) -> dict[Placement, Bounds]:

@@ -16,6 +16,10 @@ Responsibilities:
   Region computation used by the OverlayManager. A hidden Area does
   not contribute to the Region bounds (see
   ``LayoutRenderer.compute_region_bounds``).
+- Hide Left, Right and Bottom after each ``load_spec``. The prototype
+  shows only the Central Area on first load; lateral Areas become
+  visible when the user toggles them from the Top Bar. This default
+  will be replaced by the WorkflowEngine in Phase 5.
 - Receive and forward the TaskManager, TelemetrySink, CommandDispatcher,
   SceneQuery, and EventSubscription to the Editors it hosts
   (ADR-0011, ADR-0012, ADR-0007, ADR-0013).
@@ -168,6 +172,10 @@ class Workspace(QWidget):
         The spec declares which Areas exist. Every Area declared in
         the spec hosts at least one Editor (the placeholder or a real
         one), so no Area is ever "empty" at this level.
+
+        After installation, Left, Right and Bottom are hidden (the
+        Central Area is always visible). See
+        ``_hide_lateral_areas_by_default`` for the rationale.
         """
         # 1. Build the new composition (validates the spec).
         new_result = self._layout_builder.build(
@@ -196,7 +204,10 @@ class Workspace(QWidget):
         # 5. Ensure the TopOverlay floats above.
         self._top_overlay.widget().raise_()
 
-        # 6. Position overlays after the layout is computed.
+        # 6. Hide Left, Right and Bottom (Central is always visible).
+        self._hide_lateral_areas_by_default()
+
+        # 7. Position overlays after the layout is computed.
         QTimer.singleShot(0, self._reposition_overlays)
 
     def clear(self) -> None:
@@ -260,8 +271,8 @@ class Workspace(QWidget):
         """Show or hide a toggleable Area.
 
         Updates the layout state, hides or shows the matching
-        AreaWidget, and repositions the overlays so the TopOverlay
-        follows the new Central Region bounds.
+        AreaWidget, redistributes the QSplitter sizes so the visible
+        Areas share the available space, and repositions the overlays.
 
         The Area model and the AreaWidget are kept in sync: the model
         reflects the intent, the widget is the presentation.
@@ -291,6 +302,7 @@ class Workspace(QWidget):
             if widget is not None:
                 widget.setVisible(visible)
 
+        self._layout_renderer.refresh_splitter_sizes()
         self._reposition_overlays()
 
     def reload_volume(self) -> None:
@@ -332,6 +344,45 @@ class Workspace(QWidget):
         QTimer.singleShot(0, self._reposition_overlays)
 
     # ----- Internals ------------------------------------------------
+
+    def _hide_lateral_areas_by_default(self) -> None:
+        """Hide Left, Right and Bottom after a load_spec().
+
+        The spec declares all four Areas, but the prototype shows
+        only the Central Area on first load. Lateral Areas become
+        visible when the user toggles them from the Top Bar (or when
+        a future WorkflowEngine declares a spec that starts with them
+        visible; that is Phase 5).
+
+        The Central Area is never hidden: it is the Workspace's
+        rendering surface, and the TopOverlay floats over it. Hiding
+        the Central Area would leave the Workspace with no surface
+        to render the TopOverlay against.
+
+        The layout state is updated alongside the widgets, so that
+        ``layout_state().is_visible(LEFT)`` returns ``False`` right
+        after ``load_spec`` returns. The state and the presentation
+        must always agree: the Top Bar toggles read the state, and
+        the user sees the widgets.
+
+        After hiding the widgets, the splitter sizes are recomputed
+        so the Central Area occupies the full width/height freed by
+        the hidden Areas.
+        """
+        if self._build_result is None:
+            return
+
+        for area in self._build_result.areas:
+            if area.placement is Placement.CENTRAL:
+                continue
+            self._layout_state.set_visible(area.placement, False)
+            area.hide()
+            widget = self._layout_renderer.cached_area_widget(area.area_id)
+            if widget is not None:
+                widget.setVisible(False)
+
+        self._layout_renderer.refresh_splitter_sizes()
+        self._reposition_overlays()
 
     def _reposition_overlays(self) -> None:
         bounds_by_placement = self._layout_renderer.compute_region_bounds(self)

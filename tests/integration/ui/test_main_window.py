@@ -41,6 +41,7 @@ from cranioz.ui.theme.service import ThemeName, ThemeService
 from cranioz.ui.tools.builtin.log_tool import LogTool
 from cranioz.ui.tools.builtin.toggle_tool import ToggleTool
 from cranioz.ui.tools.registry.tool_registry import ToolRegistry
+from cranioz.ui.workspace.areas.placement import Placement
 from cranioz.ui.workspace.structure import HomeSegment
 
 _ACTOR = "test"
@@ -178,7 +179,13 @@ def test_open_project_loads_default_spec(
     window: MainWindow,
     seeded_manager: ProjectManager,
 ) -> None:
-    """The Workspace is loaded with the default (placeholder) spec."""
+    """The Workspace is loaded with the default (placeholder) spec.
+
+    The default spec declares all four Areas (the prototype), each
+    hosting the placeholder Editor. Left, Right and Bottom start
+    hidden; the Central Area is always visible. The Top Bar toggles
+    bring the lateral Areas on.
+    """
     window.home().refresh()
 
     window.home().project_open_requested.emit(ProjectId("p-001"), "orthognathic")
@@ -186,7 +193,17 @@ def test_open_project_loads_default_spec(
     workspace = window.current_workspace()
     assert workspace is not None
     assert workspace.is_loaded() is True
-    assert [a.area_id for a in workspace.areas()] == ["area.central"]
+    assert {a.area_id for a in workspace.areas()} == {
+        "area.left",
+        "area.central",
+        "area.right",
+        "area.bottom",
+    }
+    for area in workspace.areas():
+        if area.placement is Placement.CENTRAL:
+            assert area.visible is True
+        else:
+            assert area.visible is False
 
 
 # ----- Close workspace (HomeSegment) --------------------------------

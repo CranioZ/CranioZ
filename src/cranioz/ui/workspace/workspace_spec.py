@@ -1,9 +1,11 @@
 """WorkspaceSpec — predefined ModuleUISpec values.
 
 Provides the spec used when a project is opened without an active
-Flow (Bloco 9 not implemented yet). The Workspace still materializes
-a minimal composition: a single Central Area with a placeholder
-Editor that explains that no flow is loaded.
+Flow (Bloco 9 not implemented yet). The Workspace materializes a
+minimal composition: the four Areas the prototype declares (Left,
+Central, Right, Bottom), each hosting the placeholder Editor. Left,
+Right and Bottom start hidden (see ``Workspace.load_spec``); the
+user toggles them from the Top Bar.
 
 When Bloco 9 delivers the Flow Catalog, the Workspace will receive
 the Flow's ModuleUISpec instead. WorkspaceSpec.DEFAULT is the
@@ -26,8 +28,8 @@ class _PlaceholderEditor(Editor):
     """A minimal Editor used only by WorkspaceSpec.DEFAULT.
 
     Renders a centered QLabel explaining that no flow is loaded.
-    It does not declare any Toolbar (it is a placeholder, not an
-    editor with tools) and it does not know what a Flow is.
+    It does not declare any Toolbar and it does not know what a Flow
+    is.
 
     The LayoutBuilder creates Editors by calling
     ``registry.create(editor_id, editor_id=..., title=...)``. This
@@ -65,16 +67,35 @@ class _PlaceholderEditor(Editor):
         return self._label
 
 
+PLACEHOLDER_EDITOR_ID = "editor.placeholder.no_flow"
+PLACEHOLDER_EDITOR_CLASS = _PlaceholderEditor
+
+
 DEFAULT: ModuleUISpec = ModuleUISpec(
     areas=(
         AreaSpec(
+            area_id="area.left",
+            title="Left",
+            placement=Placement.LEFT,
+            editor_layout=EditorLayoutSpec.leaf(PLACEHOLDER_EDITOR_ID),
+        ),
+        AreaSpec(
             area_id="area.central",
-            title="Tomography",
+            title="Central",
             placement=Placement.CENTRAL,
-            editor_layout=EditorLayoutSpec.leaf("editor.tomography"),
+            editor_layout=EditorLayoutSpec.leaf(PLACEHOLDER_EDITOR_ID),
+        ),
+        AreaSpec(
+            area_id="area.right",
+            title="Right",
+            placement=Placement.RIGHT,
+            editor_layout=EditorLayoutSpec.leaf(PLACEHOLDER_EDITOR_ID),
+        ),
+        AreaSpec(
+            area_id="area.bottom",
+            title="Bottom",
+            placement=Placement.BOTTOM,
+            editor_layout=EditorLayoutSpec.leaf(PLACEHOLDER_EDITOR_ID),
         ),
     ),
 )
-
-PLACEHOLDER_EDITOR_ID = "editor.placeholder.no_flow"
-PLACEHOLDER_EDITOR_CLASS = _PlaceholderEditor
