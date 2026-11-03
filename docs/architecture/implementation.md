@@ -60,7 +60,7 @@ The implementation is divided into 11 phases. The sequence establishes the platf
 | **Phase 1** | Contracts & Core Domain | ✅ Core implemented | Remaining context propagation |
 | **Phase 2** | Workspace Engine | ✅ Core implemented | Editor Layout Tree configurable (ADR-0013 §2.5, §2.6); IconManager and ThemeManager integration |
 | **Phase 3** | Project & Home Page | ✅ Core implemented | Project index, asynchronous loading, persistence peripherals |
-| **Phase 4** | Scene & Visualization | 🚧 In Progress | Imaging infrastructure, rendering, import UI, module integration |
+| **Phase 4** | Scene & Visualization | 🚧 In Progress | Imaging infrastructure, geometry infrastructure, rendering, import UI, module integration |
 | **Phase 5** | Clinical Flows | ⏳ Planned | WorkflowEngine, layout persistence, module integration |
 | **Phase 6** | Clinical Pipeline | ⏳ Planned | Tomography, segmentation, cephalometry, osteotomy and guides |
 | **Phase 7** | Scientific Validation | ⏳ Planned | Geometric, clinical and usability validation |
@@ -86,7 +86,7 @@ The implementation is divided into 11 phases. The sequence establishes the platf
 
 The foundation, core domain, workspace and project lifecycle are sufficiently established to support implementation of the imaging and visualization infrastructure.
 
-The immediate objective is to complete the integration between the existing Application layer, Scene, imaging infrastructure, rendering adapters and Editors.
+The immediate objective is to complete the integration between the existing Application layer, Scene, imaging infrastructure, geometry infrastructure, rendering adapters and Editors.
 
 ### 5.1 Immediate Priorities
 
@@ -136,7 +136,30 @@ Priority work:
 
 Do not rebuild existing DICOM import functionality without first reviewing the current implementation and identifying specific gaps.
 
-#### 5. Complete Visualization
+#### 5. Establish Geometry Infrastructure (initial subset)
+
+The application has no canonical geometry representation. The dedicated `Geometry Infrastructure` document defines a multi-phase implementation; the initial subset is required to validate the VTK rendering pipeline independently of the DICOM volume path.
+
+Priority work:
+
+- Establish the canonical triangular `Mesh` (`domain/geometry/`).
+- Establish the `CoordinateFrame` contract.
+- Implement structural validation (shape, dtype, indices, finite coordinates).
+- Implement STL import with explicit unit scale and coordinate frame (§4.5 of the Geometry Infrastructure document).
+- Implement `Mesh` → `vtkPolyData` conversion (`infrastructure/geometry/adapters/vtk/`).
+- Wire `Viewport3DView.set_mesh(mesh)` for pipeline validation.
+
+Deferred to later phases of the Geometry Infrastructure document:
+
+- Immutable `GeometryRevision` with parent references and provenance.
+- Content-hash-based array asset deduplication.
+- Persistent asset storage (ADR-0009).
+- `ValidationProfile` per operation.
+- `GeometryOperation` / `GeometryOperationResult` / TaskManager integration.
+- Booleans, welding, advanced processing.
+- Benchmarks (1M, 5M triangles).
+
+#### 6. Complete Visualization
 
 - Preserve the existing `MPRView` implementation (manual `vtkImageReslice` pipeline) as the current baseline.
 - Preserve the existing `Viewport3DView` volume rendering (`vtkSmartVolumeMapper` + presets) as the current baseline.
@@ -159,7 +182,7 @@ Do not rebuild existing DICOM import functionality without first reviewing the c
 
 The MPR pipeline choice (`vtkImageReslice` + `vtkImageMapToWindowLevelColors` + `vtkImageActor`) is settled and is the documented baseline.
 
-#### 6. Complete Module Loading
+#### 7. Complete Module Loading
 
 - Implement dependency resolution in `InMemoryModuleLoader`.
 - Resolve and import module `entry_point` declarations.
@@ -178,6 +201,7 @@ The remaining work is primarily implementation and integration:
 - Command execution and transaction handling.
 - Scene lifecycle and persistence.
 - Medical imaging data contracts and validation.
+- Geometry Infrastructure (initial subset for pipeline validation).
 - Rendering and VTK integration.
 - Import UI.
 - Real module loading and registration.
@@ -196,6 +220,7 @@ The following items are intentionally deferred:
 - **Custom volume-rendering presets and preset editor:** Phase 8.
 - **Curved and panoramic MPR:** Future clinical extension.
 - **Additional imaging formats:** Introduce only when supported by a concrete clinical requirement.
+- **Full Geometry Infrastructure:** Phases 3–4 of the dedicated document (application commands, revisions, persistence, validation profiles, booleans, benchmarks).
 
 ---
 
@@ -326,7 +351,7 @@ The following items are intentionally deferred:
 
 ### Phase 4: Scene & Visualization
 
-**Goal:** Establish the spatial Domain, medical imaging infrastructure and visualization layer required by clinical Editors.
+**Goal:** Establish the spatial Domain, medical imaging infrastructure, geometry infrastructure and visualization layer required by clinical Editors.
 
 This phase provides the **technical foundation** for imaging. It does not implement the complete clinical tomography and segmentation workflow, which belongs to Phase 6A.
 
@@ -421,7 +446,37 @@ This phase provides the **technical foundation** for imaging. It does not implem
 - ⏳ Validation report presentation.
 - ⏳ TaskManager progress, cancellation and error reporting.
 
-#### 4.4 Visualization Infrastructure
+#### 4.4 Geometry Infrastructure
+
+**Goal:** Provide the canonical representation, validation and persistence foundations for geometric data (triangular meshes).
+
+**Architecture:** See the `Geometry Infrastructure` document. Distributed across Domain, Application and Infrastructure layers. This sub-phase implements only the initial subset (Phase 1 + STL subset of Phase 2 of that document), to validate the VTK rendering pipeline independently of the DICOM volume path.
+
+**Implemented:**
+
+- ⏳ `domain/geometry/`: `Mesh`, `MeshAttribute`, `CoordinateFrame`, `ValidationResult`. Not yet implemented.
+- ⏳ `infrastructure/geometry/io/stl.py`: STL import with explicit unit scale and coordinate frame. Not yet implemented.
+- ⏳ `infrastructure/geometry/adapters/vtk/`: `Mesh` → `vtkPolyData` conversion. Not yet implemented.
+
+**Initial scope:**
+
+- Canonical triangular `Mesh` with explicit `CoordinateFrame`.
+- Structural validation (shape, dtype, indices, finite coordinates).
+- STL import with explicit unit scale and coordinate frame (no silent assumptions — §4.5 of the Geometry Infrastructure document).
+- `Mesh` → `vtkPolyData` conversion.
+- `Viewport3DView.set_mesh(mesh: Mesh)` to validate the VTK pipeline independently of the DICOM volume path.
+
+**Deferred to later phases of the Geometry Infrastructure document:**
+
+- Immutable `GeometryRevision` with parent references and provenance.
+- Content-hash-based array asset deduplication.
+- Persistent asset storage (ADR-0009).
+- `ValidationProfile` per operation.
+- `GeometryOperation` / `GeometryOperationResult` / TaskManager integration.
+- Booleans, welding, advanced processing.
+- Benchmarks (1M, 5M triangles).
+
+#### 4.5 Visualization Infrastructure
 
 **Implemented:**
 
@@ -448,7 +503,7 @@ This phase provides the **technical foundation** for imaging. It does not implem
 - Rendering updates must not mutate clinical source data.
 - All VTK render-window and actor lifecycle operations remain on the GUI thread, according to ADR-0011.
 
-#### 4.5 Module Integration
+#### 4.6 Module Integration
 
 - 🚧 Implement dependency resolution in `InMemoryModuleLoader`.
 - 🚧 Resolve module entry points.
@@ -457,20 +512,21 @@ This phase provides the **technical foundation** for imaging. It does not implem
 - 🚧 Share the application EventBus across ModuleContexts.
 - ⏳ Implement the first functional built-in module.
 
-#### 4.6 Tests
+#### 4.7 Tests
 
 - DICOM import tests using anonymized or synthetic datasets.
 - Physical geometry and coordinate conversion tests.
 - Slice ordering and spacing validation tests.
 - Intensity calibration tests.
 - NumPy/VTK interoperability and buffer-lifetime tests.
+- Geometry Infrastructure tests (Mesh invariants, STL round-trip, VTK conversion).
 - VTI export round-trip tests.
 - Scene lifecycle and persistence tests.
 - Headless VTK tests where supported.
 - Qt/VTK integration tests on reference Windows hardware.
 - Performance tests for import, Scene updates, GPU upload and rendering.
 
-**Status:** 🚧 In Progress. The existing import path and MPR implementation provide a starting point. The remaining work is to consolidate imaging data contracts, validation, rendering and end-to-end integration.
+**Status:** 🚧 In Progress. The existing import path and MPR implementation provide a starting point. The remaining work is to consolidate imaging and geometry data contracts, validation, rendering and end-to-end integration.
 
 ### Phase 5: Clinical Flows
 
@@ -782,10 +838,11 @@ The immediate priorities are:
 4. Formalize `Volume` and `VolumeGeometry`.
 5. Strengthen DICOM geometry validation and provenance.
 6. Implement explicit NumPy/VTK interoperability and buffer ownership.
-7. Complete VTI export and round-trip validation.
-8. Complete volume rendering and `RenderingAdapter`.
-9. Complete the import UI.
-10. Implement real module loading and registration.
+7. Establish the Geometry Infrastructure initial subset (Mesh + STL import + VTK adapter).
+8. Complete VTI export and round-trip validation.
+9. Complete volume rendering and `RenderingAdapter`.
+10. Complete the import UI.
+11. Implement real module loading and registration.
 
 The implementation sequence preserves the distinction between infrastructure and clinical functionality:
 
@@ -794,7 +851,7 @@ The implementation sequence preserves the distinction between infrastructure and
 - **Phase 6A:** Clinical tomography interaction and segmentation.
 - **Phase 6B–6E:** Registration, cephalometry, osteotomy, guides and integrated validation.
 
-This separation avoids placing clinical behavior inside infrastructure components and allows the imaging foundation to be tested independently.
+This separation avoids placing clinical behavior inside infrastructure components and allows the imaging and geometry foundations to be tested independently.
 
 ---
 
@@ -810,103 +867,4 @@ This section records known issues that must be resolved or explicitly deferred b
 
 ### 10.2 Phase 3 — Project Lifecycle and Persistence
 
-- Project deletion must coordinate files owned by Patient, Scene, Layout and other persistence components.
-- `FilesystemProjectRepository.delete()` must not silently leave orphaned project data.
-- `ProjectIndex` remains pending.
-- Filesystem repositories require stronger integration tests for permissions, atomic writes and path traversal.
-
-### 10.3 Phase 4 — Module System
-
-- `InMemoryModuleLoader` requires dependency resolution.
-- Module entry points are not fully loaded and registered.
-- `BUILTIN_MANIFESTS` requires functional built-in module definitions.
-- `ModuleContext` must use the shared application EventBus.
-- ✅ `CommandExecutor` and `CommandDispatcher` are implemented and wired (Sprint 1). The `EditorContext` and `ToolContext` propagate the `CommandDispatcher`.
-
-### 10.4 Phase 4 — Medical Imaging
-
-- ✅ The `Volume` and `VolumeGeometry` models are the authoritative representation of imported image data.
-- ✅ Physical slice ordering and geometry validation are explicit (`DicomSorter`, `DicomValidator`).
-- ✅ LPS-to-RAS conversion is centralized at the infrastructure boundary (`DicomSorter`).
-- ✅ Intensity calibration distinguishes HU from uncalibrated CBCT values (`DicomCalibrator`, `IntensityScale`).
-- ✅ NumPy/VTK buffer ownership and lifetime are explicit (`VtkImageAdapter`, `Volume` retention in Views).
-- ✅ Import validation and provenance reporting are implemented (`ImportReport`, `VolumeProvenance`).
-- ⏳ External Reference and Managed Copy storage modes require implementation and tests.
-- ⏳ VTI export and round-trip validation remain pending.
-- ⏳ Import UI (file/directory selection, series discovery, metadata preview, storage mode selection, validation report presentation) remains pending.
-- ⏳ Patient identity mismatch handling remains pending.
-
-### 10.5 Phase 4 — Visualization
-
-- `Viewport3DView` renders the volume via `vtkSmartVolumeMapper` and draws a `vtkOutlineFilter` bounding box as a complementary visual reference. The outline is not a placeholder.
-- `RenderingAdapter` is not yet implemented.
-- Window/Level controls are not fully integrated across the visualization pipeline.
-- The MPR pipeline (`vtkImageReslice` + `vtkImageMapToWindowLevelColors` + `vtkImageActor`) is the documented baseline. Windows OpenGL stability remains a known concern (§10.6), but the API choice itself is settled.
-- VTK resource lifecycle and rendering-context stability require further testing.
-- **DICOM visualization bug (paused):** After importing a DICOM series, the MPR views display uniform gray rectangles (or tilted polygons) instead of anatomical slices, and the 3D viewport shows only the outline (or a distorted/streaked volume). The data pipeline works (the `Volume` reaches the Views), but the rendering pipeline does not produce correct pixels. The root cause is likely in the application of the direction matrix (`SetDirectionMatrix` / `vtkImageReslice`) and the configuration of the MPR reslice axes and 3D transfer function. All correction attempts so far (W/L with percentiles, CBCT preset, dynamic transfer function, reorientation via `vtkImageReslice`, removal of `SetDirectionMatrix`) have not resolved the issue. The correction work is paused. A detailed record is available in `docs/known_issues/dicom_visualization_bug.md` (or equivalent). This must be resolved before Phase 4 can be considered complete.
-
-### 10.6 Phase 4 — Windows OpenGL and Qt Integration
-
-- `QVTKRenderWindowInteractor` may fail to obtain a valid OpenGL context in CI or server environments.
-- `wglMakeCurrent` errors must be reproduced and isolated.
-- Headless tests must distinguish failures in data processing from failures in rendering-context initialization.
-- Do not treat `vtkFixedPointVolumeRayCastMapper` or `QT_QPA_PLATFORM=offscreen` as universal solutions. Validate the selected strategy on supported environments.
-
-### 10.7 Cross-Cutting — Internationalization and Theme
-
-- UI strings and colors remain partially hardcoded.
-- `TranslationService` must be wired into the UI.
-- `ThemeService` must expose semantic colors according to ADR-0003.
-- Temporary translation-key helpers must be removed after proper localization integration.
-- ADR-0003 must be reviewed and accepted before dependent widget-library work is considered complete.
-- **IconManager:** The Top Bar segments use Unicode glyphs (`☰`, `⋮`, `⌂`, `▭`, `▯`) as placeholders. A dedicated `IconManager` (SVG loading, caching, theme-aware sizing) is not implemented. It is not on the critical path for Phase 4 and is not scheduled; introduce it when the first Editor requires themed icons, or when ADR-0003 is accepted.
-- **`debug_colors`:** The `AreaWidget` already paints a pastel background per `Placement` when `debug_colors=True`. The `MainWindow` does not expose this flag; enabling it requires editing `MainWindow._create_workspace`. Exposing it via environment variable or `ConfigurationLoader` is a small enhancement for development, not a deliverable.
-
-### 10.8 Documentation and Testing
-
-- `docs/architecture/README.md` requires cleanup of accidental shell commands.
-- `docs/architecture/domain/project/project.md` requires cleanup of accidental code snippets.
-- References to removed abstractions such as `EditorHost` must be reviewed.
-- The main `README.md` requires content.
-- i18n tests require implementation.
-- Filesystem repository integration tests require expansion.
-- `docs/known_issues/dicom_visualization_bug.md` (or equivalent) records the paused DICOM visualization bug, with diagnosis, attempts, and next steps.
-
-### 10.9 Startup Performance
-
-- `__main__.py` must avoid unnecessary eager imports of Editors and Workspace components.
-- `MainWindow.__init__` must not perform blocking I/O.
-- Project and flow loading must not block initial window display.
-- Project opening must roll back correctly if Workspace creation fails.
-- `ProjectIndex` must avoid scanning the entire project directory on every startup.
-
-### 10.10 Phase 2 — Workspace Top Bar and Area Toggles (resolved)
-
-- ✅ `TopOverlay` has `set_left_content()`, `set_center_content()` and `set_right_content()`.
-- ✅ `HomeSegment`, `ModulesSegment`, `ExtrasSegment` are implemented in `ui/workspace/structure/`. `top_bar.py` remains intentionally empty.
-- ✅ Area toggles (Left, Right, Bottom) are wired to `Workspace.set_area_visible()`.
-- ✅ Minimum `WorkspaceLayoutState` (visibility only) is in place. It is intentionally runtime-only and is not persisted; ADR-0010 (Phase 5) will extend it.
-- ✅ `Area.visible` is the runtime source of truth for the Region computation. `LayoutRenderer.compute_region_bounds` and `Workspace._regions_from_bounds` filter by `Area.visible`, not by widget `isHidden()` (which can lag inside a `QSplitter`).
-- ✅ `LayoutRenderer.refresh_splitter_sizes()` redistributes the `QSplitter` sizes after a visibility change.
-- ✅ The default `WorkspaceSpec.DEFAULT` declares all four Areas, each hosting the placeholder Editor. Left, Right and Bottom start hidden (the prototype shows only the Central Area on first load); the Top Bar toggles bring them on.
-- ✅ Commits: `feat(ui): add set_center_content / set_right_content to TopOverlay`, `feat(ui): add HomeSegment, ModulesSegment, ExtrasSegment for TopOverlay`, `feat(ui): wire Top Bar segments and area toggles into Workspace`, `feat(ui): wire Top Bar toggles and hide lateral Areas by default`.
-
-### 10.11 Phase 2 — Editor Layout Tree, Editor Stack, IconManager, ThemeManager (new)
-
-- 🚧 **Editor Layout Tree configurable per Area (ADR-0013 §7.3):** The `AreaWidget` uses a fixed horizontal `QSplitter` for multiple Editors. It does not yet honor `Area.set_editor_layout(EditorLayoutSpec)`. This is Bloco 6.11 of the prototype plan.
-- 🚧 **Editor Stack (ADR-0013 §2.5):** Stacking multiple Editors in the same Leaf is not implemented. The preferred presentation (a small switcher) is not scheduled. The split tree alone is sufficient until the user actually needs to stack Editors.
-- 🚧 **IconManager:** See §10.7. The Top Bar uses Unicode glyphs as placeholders.
-- 🚧 **ThemeManager / semantic colors (ADR-0003):** ADR-0003 remains Proposed. Semantic colors (per Placement, per state) are not implemented. `debug_colors=True` is the current development aid.
-
----
-
-## 11. Change Management
-
-This plan is a living document and must remain synchronized with the implementation.
-
-- Update status only after implementation and tests provide evidence.
-- Record architectural changes through ADRs.
-- Do not mark a phase complete because its interfaces or placeholder classes exist.
-- Do not duplicate existing implementations without a documented technical reason.
-- When a task reveals a dependency outside its current phase, update the plan rather than introducing an undocumented shortcut.
-- Keep deferred capabilities visible without allowing them to expand the scope of Release 1.0.
+- Project
