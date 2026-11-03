@@ -1,14 +1,18 @@
 """Viewport3DView — a 3D view of the Scene.
 
-For the Passo 8c, this renders the volume with
-``vtkSmartVolumeMapper`` + ``vtkVolume`` using one of the presets
-defined in ``presets.py`` (Bone, Soft Tissue, Skin, CT Angio).
+Two independent rendering paths share the same ``vtkRenderer``:
 
-A ``vtkOutlineFilter`` is rendered as a bounding box around the
-volume, so the user can see the extent of the data.
+- ``set_volume``: volume rendering via ``vtkSmartVolumeMapper``, with
+  presets (Bone, Soft Tissue, Skin, CT Angio, CBCT).
+- ``set_mesh``: polygonal rendering via ``mesh_to_polydata``, used to
+  validate the VTK pipeline independently of the DICOM volume path.
+
+The two can coexist: a volume and one or more meshes can be shown in
+the same viewport. ``set_volume`` and ``set_mesh`` are additive; each
+replaces only its own actor (the volume actor or the last mesh actor).
 
 The View does not know about the Scene. The Editor resolves the
-Volume and passes it via ``set_volume(...)``.
+``Volume`` (via ``set_volume``) or the ``Mesh`` (via ``set_mesh``).
 
 See ADR-0013 §2.3, scene.md §24, scene.md §27 (presentation state).
 """
@@ -33,7 +37,11 @@ from vtkmodules.vtkRenderingCore import (
 )
 from vtkmodules.vtkRenderingVolumeOpenGL2 import vtkSmartVolumeMapper
 
+from cranioz.domain.geometry.mesh import Mesh
 from cranioz.domain.imaging.volume import Volume
+from cranioz.infrastructure.geometry.adapters.vtk.polydata import (
+    mesh_to_polydata,
+)
 from cranioz.infrastructure.visualization.vtk_image_adapter import VtkImageAdapter
 from cranioz.ui.editors.view import View
 from cranioz.ui.editors.viewport_3d.presets import (
@@ -60,6 +68,7 @@ class Viewport3DView(View):
         self._volume_actor: vtkVolume | None = None
         self._volume_property: vtkVolumeProperty | None = None
         self._outline_actor: vtkActor | None = None
+        self._mesh_actor: vtkActor | None = None
         self._window: float = self._preset.default_window
         self._level: float = self._preset.default_level
         self._container: QWidget | None = None
@@ -67,6 +76,7 @@ class Viewport3DView(View):
         self._volume_set = False
         self._adapter = VtkImageAdapter()
         self._volume: Volume | None = None
+        self._mesh: Mesh | None = None
 
     # ----- Public API ---------------------------------------------------
 
@@ -83,7 +93,7 @@ class Viewport3DView(View):
         if volume is None:
             raise ValueError("Viewport3DView.set_volume requires a non-None Volume")
 
-        # --- Escolher preset com base no intensity_scale ---
+        # Choose preset based on intensity_scale.
         if volume.is_hu_calibrated:
             preset_name = _DEFAULT_PRESET
         else:
@@ -91,7 +101,6 @@ class Viewport3DView(View):
         self._preset = get_preset(preset_name)
         self._window = self._preset.default_window
         self._level = self._preset.default_level
-        # ---------------------------------------------------
 
         self._ensure_pipeline()
         self._ensure_interactor_in_layout()
@@ -127,6 +136,59 @@ class Viewport3DView(View):
         renderer.ResetCamera()
         self._render()
         self._volume_set = True
+
+    def set_mesh(self, mesh: Mesh) -> None:
+        """Render a canonical ``Mesh`` as a polygonal actor.
+
+        This is the second rendering path of the View. It bypasses the
+        ``Volume`` → ``vtkImageData`` pipeline (adapter, reslice,
+        transfer functions) and renders a plain ``vtkPolyData``. If
+        the mesh renders correctly, the renderer, camera and OpenGL
+        context are healthy, and any remaining volume-rendering issue
+        lives in the ``vtkImageData`` path.
+
+        The mesh is added on top of any existing volume (both can
+        coexist in the same scene). Calling ``set_mesh`` again replaces
+        the previous mesh; the volume is left untouched.
+
+        A strong reference to the ``Mesh`` is retained so the shared
+        NumPy buffer is not garbage-collected while VTK still points
+        to it.
+
+        Args:
+            mesh: the canonical mesh to render.
+
+        Raises:
+            ValueError: if ``mesh`` is None.
+        """
+        if mesh is None:
+            raise ValueError("Viewport3DView.set_mesh requires a non-None Mesh")
+
+        self._ensure_pipeline()
+        self._ensure_interactor_in_layout()
+
+        poly = mesh_to_polydata(mesh)
+
+        mapper = vtkPolyDataMapper()
+        mapper.SetInputData(poly)
+
+        actor = vtkActor()
+        actor.SetMapper(mapper)
+        actor.GetProperty().SetColor(0.85, 0.85, 0.85)
+        actor.GetProperty().SetEdgeVisibility(False)
+
+        renderer = self._renderer
+        if renderer is None:
+            raise RuntimeError("Viewport3DView pipeline was not initialized correctly")
+
+        if self._mesh_actor is not None:
+            renderer.RemoveActor(self._mesh_actor)
+        renderer.AddActor(actor)
+        self._mesh_actor = actor
+        self._mesh = mesh
+
+        renderer.ResetCamera()
+        self._render()
 
     def set_preset(self, name: str) -> None:
         """Change the volume rendering preset."""
@@ -166,6 +228,14 @@ class Viewport3DView(View):
         return self._volume_set
 
     @property
+    def has_mesh(self) -> bool:
+        return self._mesh_actor is not None
+
+    @property
+    def mesh(self) -> Mesh | None:
+        return self._mesh
+
+    @property
     def renderer(self) -> vtkRenderer | None:
         return self._renderer
 
@@ -178,9 +248,9 @@ class Viewport3DView(View):
     def content_widget(self) -> QWidget:
         """Return the container widget for this view.
 
-        The VTK interactor is NOT added to the container until
-        ``set_volume()`` is called. This avoids creating an OpenGL
-        context for a view that has no data.
+        The VTK interactor is NOT added to the container until a
+        ``set_volume`` or ``set_mesh`` call. This avoids creating an
+        OpenGL context for a view that has no data.
         """
         self._ensure_container()
         container = self._container
@@ -198,6 +268,7 @@ class Viewport3DView(View):
         self._outline_actor = None
         self._volume_actor = None
         self._volume_property = None
+        self._mesh_actor = None
 
         # 2. Finalize and destroy the interactor.
         if self._interactor is not None:
@@ -214,6 +285,7 @@ class Viewport3DView(View):
 
         self._vtk_image_data = None
         self._volume = None
+        self._mesh = None
         self._volume_set = False
 
     # ----- Internal helpers -------------------------------------------
@@ -263,12 +335,7 @@ class Viewport3DView(View):
         self._container = container
 
     def _ensure_interactor_in_layout(self) -> None:
-        """Add the interactor to the container's layout, once.
-
-        This is the fix for the bug where ``content_widget()`` was
-        called before ``set_volume()``: the container existed, but the
-        interactor was never added to its layout.
-        """
+        """Add the interactor to the container's layout, once."""
         container = self._container
         interactor = self._interactor
         if container is None or interactor is None:  # pragma: no cover - defensive
@@ -321,7 +388,6 @@ class Viewport3DView(View):
         # function to the actual data range.
         if self._volume is not None and not self._volume.is_hu_calibrated:
             data_min, data_max = self._volume.scalar_range
-            # Normalize the preset's opacity points to the data range.
             color = vtkColorTransferFunction()
             color.AddRGBPoint(data_min, 0.0, 0.0, 0.0)
             color.AddRGBPoint(data_max, 1.0, 1.0, 1.0)

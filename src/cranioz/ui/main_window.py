@@ -24,6 +24,9 @@ Responsibilities:
   ImportDicomSeriesCommand (which reads the series, assembles a
   Volume, registers it in the DomainObjectStore and the Scene), and
   reload the Workspace's volume.
+- Listen to the Top Bar's import_stl_debug_requested; load an STL
+  and render it in the first Viewport3DView. Temporary validation
+  tool; will be removed when the ImportMeshCommand lands.
 - Toggle the visibility of Area Left, Area Right and Area Bottom in
   response to the Top Bar signals. The Workspace owns the runtime
   state; the MainWindow only relays the intent.
@@ -186,6 +189,12 @@ class MainWindow(QMainWindow):
     # ----- HomePage signal wiring ------------------------------------
 
     def _connect_home_signals(self) -> None:
+        """Connect HomePage signals to their handlers.
+
+        The import actions belong to the Top Bar's HomeSegment, not to
+        the HomePage; they are wired in ``_wire_top_bar_segments`` when
+        the Workspace is created.
+        """
         home = self._home
         home.project_open_requested.connect(self._on_project_open_requested)
         home.new_project_requested.connect(self._on_new_project_requested)
@@ -313,6 +322,7 @@ class MainWindow(QMainWindow):
         home.open_project_requested.connect(self._on_manage_projects_requested)
         home.close_project_requested.connect(self._on_home_clicked)
         home.import_files_requested.connect(self._on_import_dicom_clicked)
+        home.import_stl_debug_requested.connect(self._on_import_stl_debug_clicked)
 
         # Modules zone
         modules.add_module_requested.connect(self._on_manage_flows_requested)
@@ -459,6 +469,66 @@ class MainWindow(QMainWindow):
 
         self._workspace.reload_volume()
         _logger.info("Imported DICOM series from %s as %s", path, object_id)
+
+    def _on_import_stl_debug_clicked(self) -> None:
+        """Load an STL and render it in the first Viewport3DView.
+
+        Temporary validation tool: it bypasses the (not yet
+        implemented) ImportMeshCommand and writes the Mesh directly
+        into the Viewport3DView. The item is marked TODO(phase-4) in
+        the HomeSegment and will be removed when the import dialog
+        and the ImportMeshCommand land.
+        """
+        # Local import: the geometry I/O pulls VTK, which must not be
+        # loaded during the boot critical path.
+        from cranioz.domain.geometry.coordinate_frame import (  # noqa: PLC0415
+            CoordinateFrame,
+        )
+        from cranioz.infrastructure.geometry.io.stl import (  # noqa: PLC0415
+            StlReadError,
+            read_stl,
+        )
+
+        workspace = self._workspace
+        if workspace is None:
+            return
+
+        viewport = workspace.find_viewport_3d()
+        if viewport is None:
+            QMessageBox.warning(
+                self,
+                "Falha ao importar STL",
+                "Nenhuma Viewport 3D na cena. Abra um projeto com o "
+                "TomographyEditor antes de importar malhas.",
+            )
+            return
+
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Selecionar arquivo STL",
+            "",
+            "STL (*.stl);;Todos os arquivos (*)",
+        )
+        if not path:
+            return
+
+        try:
+            mesh = read_stl(
+                path,
+                unit_scale=1.0,
+                coordinate_frame=CoordinateFrame.identity(),
+            )
+        except StlReadError as exc:
+            QMessageBox.critical(self, "Falha ao importar STL", str(exc))
+            return
+
+        viewport.set_mesh(mesh)
+        _logger.info(
+            "Loaded debug STL %s as Mesh(vertices=%d, faces=%d)",
+            path,
+            mesh.vertex_count,
+            mesh.face_count,
+        )
 
     def _ensure_dicom_import_handler(self) -> bool:
         """Ensure the DICOM import handler is registered in the CommandBus.

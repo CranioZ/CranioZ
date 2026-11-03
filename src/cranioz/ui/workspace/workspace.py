@@ -71,6 +71,7 @@ if TYPE_CHECKING:
     from cranioz.application.tasks.base import TaskManager
     from cranioz.application.telemetry.base import TelemetrySink
     from cranioz.domain.scene.domain_object_store import DomainObjectStore
+    from cranioz.ui.editors.viewport_3d.view import Viewport3DView
 
 _logger = logging.getLogger(__name__)
 
@@ -255,6 +256,29 @@ class Workspace(QWidget):
 
     def top_overlay(self) -> TopOverlay:
         return self._top_overlay
+
+    def find_viewport_3d(self) -> Viewport3DView | None:
+        """Return the first ``Viewport3DView`` hosted by an Editor.
+
+        Editors are not required to host a ``Viewport3DView``; the
+        editor that does (e.g. ``TomographyEditor``) exposes it via
+        ``views()``. This helper walks every Area, every Editor, and
+        every View, returning the first ``Viewport3DView`` found.
+
+        Returns ``None`` when no Editor hosts a ``Viewport3DView``
+        (e.g. the placeholder Editor).
+        """
+        if self._build_result is None:
+            return None
+
+        from cranioz.ui.editors.viewport_3d.view import Viewport3DView  # noqa: PLC0415
+
+        for area in self._build_result.areas:
+            for editor in area.editors():
+                for view in editor.views():
+                    if isinstance(view, Viewport3DView):
+                        return view
+        return None
 
     # ----- Area visibility ------------------------------------------
 

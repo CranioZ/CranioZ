@@ -3,10 +3,18 @@
 Three buttons, left to right:
 
 - ``☰`` (panel-with-sidebar glyph): toggle Area Left.
-- ``⋮`` (three dots): a ``QMenu`` with project actions
-  (Novo projeto, Abrir projeto, Fechar projeto, Importar arquivos).
+- ``⋮`` (three dots): a ``QMenu`` with project actions.
 - ``⌂`` (house glyph): close the current Workspace and return to
   the Home Page.
+
+The "Importar arquivos" item opens a submenu with the supported
+formats:
+
+- "DICOM (série)": the current DICOM import path.
+- "STL (debug)": a temporary tool to validate the VTK mesh rendering
+  pipeline. It will be removed when the import dialog and the
+  ``ImportMeshCommand`` are implemented (Phase 6A). Tracked with a
+  ``TODO(phase-4)`` in the code.
 
 The glyphs are textual placeholders. A future piece will replace them
 with ``ThemeService.icon_name(...)`` when the icon loader exists.
@@ -15,7 +23,7 @@ The segment is a pure presentation widget: it does not know the
 Workspace, the ProjectManager or the ProjectContext. Each user
 intention emits a signal; the MainWindow decides what to do.
 
-"Fechar projeto" and "Importar arquivos" are context-dependent: they
+"Fechar projeto" and the import actions are context-dependent: they
 only make sense while a project is open. ``set_project_open(bool)``
 toggles their enabled state. The segment does not know what a project
 is; it only reflects the boolean it is given.
@@ -40,6 +48,7 @@ class HomeSegment(QWidget):
     open_project_requested = Signal()
     close_project_requested = Signal()
     import_files_requested = Signal()
+    import_stl_debug_requested = Signal()
     close_workspace_requested = Signal()
 
     def __init__(self, parent: QWidget | None = None) -> None:
@@ -80,7 +89,7 @@ class HomeSegment(QWidget):
     def set_project_open(self, open: bool) -> None:
         """Reflect the project-open state on context-dependent actions.
 
-        "Fechar projeto" and "Importar arquivos" are only enabled when
+        "Fechar projeto" and the import actions are only enabled when
         a project is open. The segment does not inspect the application
         state; it trusts the boolean.
         """
@@ -116,8 +125,20 @@ class HomeSegment(QWidget):
         self._action_close_project = self._menu.addAction("Fechar projeto")
         self._action_close_project.triggered.connect(self.close_project_requested)
 
-        self._action_import_files = self._menu.addAction("Importar arquivos")
-        self._action_import_files.triggered.connect(self.import_files_requested)
+        # "Importar arquivos" is a submenu with one entry per format.
+        # The DICOM entry is the current production path; the STL entry
+        # is a temporary validation tool with an explicit TODO.
+        self._import_menu = self._menu.addMenu("Importar arquivos")
+        self._import_menu.setObjectName("workspace.top_bar.home_segment.menu.import")
+
+        self._action_import_dicom = self._import_menu.addAction("DICOM (série)")
+        self._action_import_dicom.triggered.connect(self.import_files_requested)
+
+        # TODO(phase-4): remove this entry when the import dialog and
+        # the ImportMeshCommand exist. It is a validation tool for the
+        # VTK mesh rendering pipeline, not a product feature.
+        self._action_import_stl = self._import_menu.addAction("STL (debug)")
+        self._action_import_stl.triggered.connect(self.import_stl_debug_requested)
 
     def _on_menu_button_clicked(self) -> None:
         # Anchor the menu below the button, not at the cursor.
@@ -127,4 +148,4 @@ class HomeSegment(QWidget):
 
     def _sync_context_actions(self) -> None:
         self._action_close_project.setEnabled(self._project_open)
-        self._action_import_files.setEnabled(self._project_open)
+        self._import_menu.setEnabled(self._project_open)

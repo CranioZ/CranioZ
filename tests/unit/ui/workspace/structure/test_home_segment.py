@@ -60,13 +60,23 @@ def test_menu_close_project_emits_signal(qtbot) -> None:
 
 
 @pytest.mark.qt
-def test_menu_import_files_emits_signal(qtbot) -> None:
+def test_menu_import_dicom_emits_signal(qtbot) -> None:
     segment = HomeSegment()
     qtbot.addWidget(segment)
     segment.set_project_open(True)
 
     with qtbot.waitSignal(segment.import_files_requested, timeout=1000):
-        segment._action_import_files.trigger()  # noqa: SLF001
+        segment._action_import_dicom.trigger()  # noqa: SLF001
+
+
+@pytest.mark.qt
+def test_menu_import_stl_debug_emits_signal(qtbot) -> None:
+    segment = HomeSegment()
+    qtbot.addWidget(segment)
+    segment.set_project_open(True)
+
+    with qtbot.waitSignal(segment.import_stl_debug_requested, timeout=1000):
+        segment._action_import_stl.trigger()  # noqa: SLF001
 
 
 @pytest.mark.qt
@@ -76,7 +86,7 @@ def test_context_actions_disabled_when_no_project(qtbot) -> None:
     segment.set_project_open(False)
 
     assert not segment._action_close_project.isEnabled()  # noqa: SLF001
-    assert not segment._action_import_files.isEnabled()  # noqa: SLF001
+    assert not segment._import_menu.isEnabled()  # noqa: SLF001
     assert segment._action_new_project.isEnabled()  # noqa: SLF001
     assert segment._action_open_project.isEnabled()  # noqa: SLF001
 
@@ -88,7 +98,7 @@ def test_context_actions_enabled_when_project_open(qtbot) -> None:
     segment.set_project_open(True)
 
     assert segment._action_close_project.isEnabled()  # noqa: SLF001
-    assert segment._action_import_files.isEnabled()  # noqa: SLF001
+    assert segment._import_menu.isEnabled()  # noqa: SLF001
 
 
 @pytest.mark.qt
