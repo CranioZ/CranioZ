@@ -16,7 +16,7 @@ name = "cranioz"
 version = "0.3.0"
 description = "Modular, open-source platform for virtual surgical planning in cranio-maxillofacial surgery"
 readme = "README.md"
-requires-python = ">=3.12,<3.14"
+requires-python = ">=3.12"
 license = { text = "AGPL-3.0-or-later" }
 
 authors = [

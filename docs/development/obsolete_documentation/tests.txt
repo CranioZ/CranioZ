@@ -1,0 +1,18 @@
+tests/
+├── conftest.py        # fixtures globais (qapp, tmp_project, synthetic_data)
+├── unit/
+│   ├── domain/
+│   ├── application/
+│   ├── infrastructure/
+│   ├── settings/
+│   └── ui/
+├── integration/
+│   ├── flows/
+│   ├── nodes/
+│   ├── plugins/
+│   └── mcp/
+└── data/
+    ├── README.md      # de onde vêm os dados (sintéticos, gerados, etc.)
+    ├── dicom/         # dados DICOM sintéticos
+    ├── meshes/        # STL/OBJ de fantomas
+    └── flows/         # JSON de fluxos de teste

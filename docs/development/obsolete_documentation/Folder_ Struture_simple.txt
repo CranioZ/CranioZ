@@ -1,0 +1,84 @@
+src/cranioz/
+│
+├── domain/
+│   ├── objects/
+│   ├── anatomy/
+│   ├── geometry/
+│   ├── imaging/
+│   ├── scene/
+│   ├── project/
+│   ├── flow/
+│   ├── nodes/
+│   ├── planning/
+│   ├── cephalometry/
+│   ├── parametric_facial_model/
+│   └── units/
+│
+├── application/
+│   ├── commands/
+│   ├── events/
+│   ├── flows/
+│   ├── nodes/
+│   ├── plugins/
+│   ├── mcp/
+│   └── services/
+│
+├── infrastructure/
+│   ├── imaging/
+│   ├── geometry/
+│   ├── rendering/
+│   ├── persistence/
+│   ├── reporting/
+│   ├── mcp/
+│   ├── i18n/
+│   ├── logging/
+│   └── paths/
+│
+├── settings/
+│   ├── domain/
+│   ├── application/
+│   ├── infrastructure/
+│   └── ui/
+│
+├── ui/
+│   ├── main_window.py
+│   ├── workspace/
+│   ├── editors/
+│   ├── panels/
+│   ├── tools/
+│   ├── toolbars/
+│   ├── widgets/
+│   ├── viewport/
+│   ├── flow/
+│   ├── nodes/
+│   ├── assistant/
+│   ├── theme/
+│   └── icons/
+│
+├── assets/
+│   ├── icons/
+│   ├── themes/
+│   ├── fonts/
+│   ├── translations/
+│   ├── logos/
+│   └── flows/
+│
+└── modules/
+    ├── module_base.py
+    ├── module_registry.py
+    ├── module_context.py
+    │
+    ├── patient/
+    │   └── patient_module.py
+    ├── tomography/
+    │   └── tomography_module.py
+    ├── segmentation/
+    │   └── segmentation_module.py
+    ├── registration/
+    │   └── registration_module.py
+    ├── cephalometry/
+    │   └── cephalometry_module.py
+    ├── osteotomy/
+    │   └── osteotomy_module.py
+    └── surgical_guide/
+        └── surgical_guide_module.py
