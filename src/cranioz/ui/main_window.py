@@ -52,6 +52,7 @@ Non-responsibilities (see main_window.md §9 and ADR-0006):
 from __future__ import annotations
 
 import logging
+import os
 import uuid
 from typing import TYPE_CHECKING
 
@@ -78,6 +79,10 @@ from cranioz.application.scene.handlers.scene_handlers import (
 from cranioz.domain.project.project_id import ProjectId
 from cranioz.infrastructure.scene.scene_query_adapter import SceneQueryAdapter
 from cranioz.ui.editors.editor_registry import EditorRegistry
+from cranioz.ui.editors.viewport_3d.mesh_debug_editor import (
+    MESH_DEBUG_EDITOR_ID,
+    MeshDebugEditor,
+)
 from cranioz.ui.home.home_page import HomePage
 from cranioz.ui.theme.service import ThemeService
 from cranioz.ui.tools.registry.tool_registry import ToolRegistry
@@ -88,6 +93,9 @@ from cranioz.ui.workspace.structure import (
     ModulesSegment,
 )
 from cranioz.ui.workspace.workspace import Workspace
+from cranioz.ui.workspace.workspace_spec import (
+    DEBUG_MESH as WORKSPACE_SPEC_DEBUG_MESH,
+)
 from cranioz.ui.workspace.workspace_spec import (
     DEFAULT as WORKSPACE_SPEC_DEFAULT,
 )
@@ -169,7 +177,14 @@ class MainWindow(QMainWindow):
         self._current_project_id: ProjectId | None = None
         self._workspace: Workspace | None = None
 
+        # Debug flag: when CRANIOZ_DEBUG_MESH=1, the workspace uses a
+        # MeshDebugEditor spec so that the STL debug import has a
+        # Viewport3DView to render into. Not used in production.
+        self._debug_mesh = os.environ.get("CRANIOZ_DEBUG_MESH") == "1"
+
         self._editor_registry.register(PLACEHOLDER_EDITOR_ID, PLACEHOLDER_EDITOR_CLASS)
+        if self._debug_mesh:
+            self._editor_registry.register(MESH_DEBUG_EDITOR_ID, MeshDebugEditor)
 
         self._home = HomePage(
             catalog=self._catalog,
@@ -297,7 +312,8 @@ class MainWindow(QMainWindow):
         workspace.top_overlay().set_center_content(modules_segment)
         workspace.top_overlay().set_right_content(extras_segment)
 
-        workspace.load_spec(WORKSPACE_SPEC_DEFAULT)
+        spec = WORKSPACE_SPEC_DEBUG_MESH if self._debug_mesh else WORKSPACE_SPEC_DEFAULT
+        workspace.load_spec(spec)
         return workspace
 
     def _wire_top_bar_segments(
@@ -498,8 +514,9 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(
                 self,
                 "Falha ao importar STL",
-                "Nenhuma Viewport 3D na cena. Abra um projeto com o "
-                "TomographyEditor antes de importar malhas.",
+                "Nenhuma Viewport 3D na cena. Rode a aplicação com "
+                "CRANIOZ_DEBUG_MESH=1 para habilitar o editor de debug "
+                "de malhas, ou abra um projeto com o TomographyEditor.",
             )
             return
 
@@ -507,7 +524,7 @@ class MainWindow(QMainWindow):
             self,
             "Selecionar arquivo STL",
             "",
-            "STL (*.stl);;Todos os arquivos (*)",
+            "STL (*.stl);;;Todos os arquivos (*)",
         )
         if not path:
             return

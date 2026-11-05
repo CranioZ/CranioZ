@@ -99,3 +99,22 @@ DEFAULT: ModuleUISpec = ModuleUISpec(
         ),
     ),
 )
+
+#: Debug-only spec: a single Central Area hosting the MeshDebugEditor.
+#:
+#: Used when ``CRANIOZ_DEBUG_MESH=1`` is set. It bypasses the default
+#: placeholder Editor so that ``Workspace.find_viewport_3d`` finds a
+#: ``Viewport3DView`` for STL validation. Not used in production.
+#:
+#: The MeshDebugEditor is registered in the EditorRegistry by the
+#: MainWindow when the environment variable is set.
+DEBUG_MESH: ModuleUISpec = ModuleUISpec(
+    areas=(
+        AreaSpec(
+            area_id="area.central",
+            title="Mesh Debug",
+            placement=Placement.CENTRAL,
+            editor_layout=EditorLayoutSpec.leaf("editor.mesh_debug"),
+        ),
+    ),
+)
