@@ -5,12 +5,13 @@ into a `vtkImageData`. It preserves:
 
 - Origin (RAS).
 - Spacing (mm).
+- Direction matrix (RAS).
 - Scalar data (NumPy → VTK).
 
-The direction matrix is NOT applied. The volume is assumed to be
-in the canonical axial orientation (X, Y, Z aligned with VTK axes).
-This is a pragmatic simplification for the first visualization
-iteration. Proper orientation handling will be added later.
+The direction matrix IS applied (via SetDirectionMatrix). This is
+required for correct MPR reslicing and volume rendering when the
+volume is not in the canonical axial orientation (e.g., after the
+LPS→RAS conversion, which flips X and Y).
 
 The adapter does NOT mutate the `Volume`. It does NOT free the
 NumPy buffer. The caller (the View) is responsible for keeping the
@@ -24,21 +25,32 @@ See Medical Imaging Infrastructure §8.1, §12.1.
 
 from __future__ import annotations
 
+import logging
+
 import numpy as np
 from vtkmodules.util.numpy_support import numpy_to_vtk
 from vtkmodules.vtkCommonCore import vtkDataArray
 from vtkmodules.vtkCommonDataModel import vtkImageData
+from vtkmodules.vtkCommonMath import vtkMatrix3x3
 
 from cranioz.domain.imaging.volume import IntensityScale, Volume
 
-# Mapping from NumPy dtype to VTK scalar type.
-_NUMPY_TO_VTK = {
-    np.dtype(np.int16): 3,  # VTK_SHORT
-    np.dtype(np.uint16): 4,  # VTK_UNSIGNED_SHORT
-    np.dtype(np.int32): 5,  # VTK_INT
-    np.dtype(np.uint32): 6,  # VTK_UNSIGNED_INT
-    np.dtype(np.float32): 10,  # VTK_FLOAT
-}
+_logger = logging.getLogger(__name__)
+
+# Supported NumPy dtypes. The VTK type is inferred from the NumPy
+# dtype by numpy_to_vtk; this table is only used for validation and
+# for logging. Do NOT pass an explicit array_type: the integer
+# constants are ambiguous (VTK_SHORT == 3 == VTK_UNSIGNED_CHAR), and
+# passing them has been observed to produce the wrong VTK type.
+_SUPPORTED_DTYPES = frozenset(
+    {
+        np.dtype(np.int16),
+        np.dtype(np.uint16),
+        np.dtype(np.int32),
+        np.dtype(np.uint32),
+        np.dtype(np.float32),
+    }
+)
 
 
 class VtkImageAdapterError(ValueError):
@@ -61,15 +73,17 @@ class VtkImageAdapter:
 
         Returns:
             A `vtkImageData` with the same voxel data, origin,
-            and spacing.
+            spacing, and direction.
 
         Raises:
             VtkImageAdapterError: if the Volume's dtype is unsupported,
                 or if the data shape does not match the geometry.
         """
         data = volume.data
-        if data.dtype not in _NUMPY_TO_VTK:
-            raise VtkImageAdapterError(f"unsupported numpy dtype for VTK conversion: {data.dtype}")
+        if data.dtype not in _SUPPORTED_DTYPES:
+            raise VtkImageAdapterError(
+                f"unsupported numpy dtype for VTK conversion: {data.dtype}"
+            )
 
         # Verify the data shape matches the geometry.
         if data.shape != volume.geometry.shape_zyx:
@@ -78,13 +92,25 @@ class VtkImageAdapter:
                 f"geometry.shape_zyx {volume.geometry.shape_zyx}"
             )
 
-        # Flatten in VTK's expected order (x fastest, then y, then z).
-        flat = data.ravel(order="F")
+        # VTK expects a contiguous buffer with x fastest, then y, then z.
+        # Volume.data is (nz, ny, nx), so transpose to (nx, ny, nz) and
+        # ravel in C order (row-major). The result is contiguous, which
+        # numpy_to_vtk(deep=0) requires to share the buffer.
+        flat = np.ascontiguousarray(data.transpose(2, 1, 0)).ravel(order="C")
 
+        _logger.debug(
+            "VtkImageAdapter: numpy dtype=%s, shape=%s, contiguous=%s",
+            flat.dtype,
+            flat.shape,
+            flat.flags["C_CONTIGUOUS"],
+        )
+
+        # Let numpy_to_vtk infer the VTK type from the NumPy dtype.
+        # Do NOT pass array_type: the integer constants are ambiguous
+        # and have caused the scalar array to be created as uint8.
         vtk_array: vtkDataArray = numpy_to_vtk(  # type: ignore[no-untyped-call]
             flat,
             deep=0,  # share the NumPy buffer (no copy)
-            array_type=_NUMPY_TO_VTK[data.dtype],
         )
         vtk_array.SetName("Scalars")
 
@@ -96,8 +122,19 @@ class VtkImageAdapter:
         image.SetOrigin(*volume.geometry.origin)
         image.GetPointData().SetScalars(vtk_array)
 
-        # NOT applying SetDirectionMatrix. The volume is assumed to be
-        # in the canonical axial orientation.
+        # Apply the direction matrix. Volume.geometry.direction is a
+        # 3x3 tuple-of-tuples; VTK expects a vtkMatrix3x3.
+        direction = volume.geometry.direction
+        matrix = vtkMatrix3x3()
+        for i in range(3):
+            for j in range(3):
+                matrix.SetElement(i, j, float(direction[i][j]))
+        image.SetDirectionMatrix(matrix)
+
+        _logger.debug(
+            "VtkImageAdapter: direction matrix applied: %s",
+            [[direction[i][j] for j in range(3)] for i in range(3)],
+        )
 
         return image
 
