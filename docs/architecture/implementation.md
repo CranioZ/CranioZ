@@ -3,7 +3,7 @@
 **Document type:** Roadmap and execution plan  
 **Status:** Living document  
 **Scope:** Phased implementation of the CranioZ platform, from foundation to release  
-**Last updated:** 2026-11-02
+**Last updated:** 2026-11-05
 
 ---
 
@@ -60,7 +60,7 @@ The implementation is divided into 11 phases. The sequence establishes the platf
 | **Phase 1** | Contracts & Core Domain | ✅ Core implemented | Remaining context propagation |
 | **Phase 2** | Workspace Engine | ✅ Core implemented | Editor Layout Tree configurable (ADR-0013 §2.5, §2.6); IconManager and ThemeManager integration |
 | **Phase 3** | Project & Home Page | ✅ Core implemented | Project index, asynchronous loading, persistence peripherals |
-| **Phase 4** | Scene & Visualization | 🚧 In Progress | Imaging infrastructure, geometry infrastructure, rendering, import UI, module integration |
+| **Phase 4** | Scene & Visualization | 🚧 In Progress | DICOM visualization bug, Scene persistence, import UI, module integration, RenderingAdapter |
 | **Phase 5** | Clinical Flows | ⏳ Planned | WorkflowEngine, layout persistence, module integration |
 | **Phase 6** | Clinical Pipeline | ⏳ Planned | Tomography, segmentation, cephalometry, osteotomy and guides |
 | **Phase 7** | Scientific Validation | ⏳ Planned | Geometric, clinical and usability validation |
@@ -138,18 +138,9 @@ Do not rebuild existing DICOM import functionality without first reviewing the c
 
 #### 5. Establish Geometry Infrastructure (initial subset)
 
-The application has no canonical geometry representation. The dedicated `Geometry Infrastructure` document defines a multi-phase implementation; the initial subset is required to validate the VTK rendering pipeline independently of the DICOM volume path.
+The initial subset of the `Geometry Infrastructure` document (Phase 1 + STL subset of Phase 2) is implemented and validated. It established the canonical `Mesh`, the STL import/export, the VTK adapter, and the `MeshDebugEditor` used to prove the VTK pipeline is healthy independently of the DICOM volume path.
 
-Priority work:
-
-- Establish the canonical triangular `Mesh` (`domain/geometry/`).
-- Establish the `CoordinateFrame` contract.
-- Implement structural validation (shape, dtype, indices, finite coordinates).
-- Implement STL import with explicit unit scale and coordinate frame (§4.5 of the Geometry Infrastructure document).
-- Implement `Mesh` → `vtkPolyData` conversion (`infrastructure/geometry/adapters/vtk/`).
-- Wire `Viewport3DView.set_mesh(mesh)` for pipeline validation.
-
-Deferred to later phases of the Geometry Infrastructure document:
+Remaining work is deferred to later phases of the Geometry Infrastructure document:
 
 - Immutable `GeometryRevision` with parent references and provenance.
 - Content-hash-based array asset deduplication.
@@ -169,7 +160,9 @@ Deferred to later phases of the Geometry Infrastructure document:
 - Validate physical orientation, spacing, origin and coordinate consistency.
 - Resolve Windows OpenGL and Qt rendering-context issues through reproducible tests.
 
-**DICOM visualization bug (paused):** The MPR and 3D views do not render the imported DICOM volume correctly. All correction attempts so far have not resolved the issue. The work is paused to avoid further trial-and-error. A systematic approach is planned (see §10.5 and the dedicated known-issues document). This must be resolved before Phase 4 can be considered complete.
+**VTK pipeline validation (confirmed):** The STL validation path (`read_stl` → `Mesh` → `mesh_to_polydata` → `Viewport3DView.set_mesh`) renders correctly. This isolates the DICOM visualization bug to the `vtkImageData` path (`VtkImageAdapter`, `vtkImageReslice`, transfer functions), not the renderer, camera, or OpenGL context.
+
+**DICOM visualization bug (paused):** The MPR and 3D views do not render the imported DICOM volume correctly. All correction attempts so far have not resolved the issue. The work is paused to avoid further trial-and-error. The scope is now narrowed: the bug lives in the `vtkImageData` path, not in the renderer. A systematic approach is planned (see §10.5 and the dedicated known-issues document). This must be resolved before Phase 4 can be considered complete.
 
 **Sprint 4.2 — Consume `Volume` in Views and Editors (in progress):**
 
@@ -201,8 +194,8 @@ The remaining work is primarily implementation and integration:
 - Command execution and transaction handling.
 - Scene lifecycle and persistence.
 - Medical imaging data contracts and validation.
-- Geometry Infrastructure (initial subset for pipeline validation).
-- Rendering and VTK integration.
+- DICOM visualization bug resolution.
+- Rendering and VTK integration (`RenderingAdapter`).
 - Import UI.
 - Real module loading and registration.
 - End-to-end Editor workflows.
@@ -311,7 +304,7 @@ The following items are intentionally deferred:
 - Top Bar segments injection and toggle tests.
 - Region bounds exclusion for hidden Areas.
 
-**Status:** ✅ Core implemented. The remaining items are tracked in §10.10 (resolved) and §10.11 (new: Editor Layout Tree configurable, IconManager, ThemeManager).
+**Status:** ✅ Core implemented. The remaining items are tracked in §10.9, §10.10, and §10.11.
 
 ### Phase 3: Project & Home Page
 
@@ -454,11 +447,14 @@ This phase provides the **technical foundation** for imaging. It does not implem
 
 **Implemented:**
 
-- ⏳ `domain/geometry/`: `Mesh`, `MeshAttribute`, `CoordinateFrame`, `ValidationResult`. Not yet implemented.
-- ⏳ `infrastructure/geometry/io/stl.py`: STL import with explicit unit scale and coordinate frame. Not yet implemented.
-- ⏳ `infrastructure/geometry/adapters/vtk/`: `Mesh` → `vtkPolyData` conversion. Not yet implemented.
+- ✅ `domain/geometry/`: `Mesh`, `CoordinateFrame`, `ValidationIssue`, `ValidationResult`, `ValidationSeverity`.
+- ✅ `infrastructure/geometry/io/stl.py`: STL import and export with explicit unit scale and coordinate frame.
+- ✅ `infrastructure/geometry/adapters/vtk/`: `Mesh` → `vtkPolyData` conversion.
+- ✅ `Viewport3DView.set_mesh(mesh: Mesh)` — VTK pipeline validated independently of the DICOM volume path (see `docs/known_issues/dicom_visualization_bug.md`).
+- ✅ `MeshDebugEditor` — minimal Editor hosting a single `Viewport3DView`, activated via `CRANIOZ_DEBUG_MESH=1`, used for manual STL validation.
+- ✅ `MeshAttribute` remains deferred (not required for the initial subset).
 
-**Initial scope:**
+**Initial scope (completed):**
 
 - Canonical triangular `Mesh` with explicit `CoordinateFrame`.
 - Structural validation (shape, dtype, indices, finite coordinates).
@@ -486,12 +482,14 @@ This phase provides the **technical foundation** for imaging. It does not implem
 - ✅ `Viewport3DView` volume rendering using `vtkSmartVolumeMapper`.
 - ✅ Volume rendering presets (Bone, Soft Tissue, Skin, CT Angio, CBCT).
 - ✅ `TomographyEditor` resolves imported volume data and provides it to Views.
+- ✅ STL validation path (`Mesh` → `vtkPolyData` → `Viewport3DView.set_mesh`) confirmed working. The VTK pipeline (renderer, camera, mapper, OpenGL context) is healthy.
 
 **Pending:**
 
 - ⏳ `RenderingAdapter` observing Scene changes and updating VTK representations.
 - ⏳ Window/Level controls and display-state integration across the pipeline (the MPR pipeline applies a fixed W/L; the 3D viewport W/L is deferred to Passo 8d).
 - ⏳ Consistent physical orientation and coordinate handling validated against reference datasets.
+- ⏳ Resolution of the DICOM visualization bug (see §10.5).
 - ⏳ VTK resource lifecycle and cleanup validated under repeated open/close.
 - ⏳ Headless and Windows rendering tests (see §10.6).
 
@@ -526,7 +524,7 @@ This phase provides the **technical foundation** for imaging. It does not implem
 - Qt/VTK integration tests on reference Windows hardware.
 - Performance tests for import, Scene updates, GPU upload and rendering.
 
-**Status:** 🚧 In Progress. The existing import path and MPR implementation provide a starting point. The remaining work is to consolidate imaging and geometry data contracts, validation, rendering and end-to-end integration.
+**Status:** 🚧 In Progress. The existing import path and MPR implementation provide a starting point. The Geometry Infrastructure initial subset is validated. The remaining work is to consolidate imaging data contracts, resolve the DICOM visualization bug, and complete the rendering and end-to-end integration.
 
 ### Phase 5: Clinical Flows
 
@@ -830,6 +828,8 @@ The foundation, core Domain, Workspace and project lifecycle are implemented suf
 
 Phase 4 is the active phase. Its existing DICOM import path, Scene integration and MPR implementation provide a functional starting point, but they do not yet constitute a complete medical imaging infrastructure.
 
+The Geometry Infrastructure initial subset (Mesh, STL import/export, VTK adapter, `MeshDebugEditor`) is implemented and validated, confirming that the VTK rendering pipeline is healthy. This isolates the DICOM visualization bug to the `vtkImageData` path, not the renderer.
+
 The immediate priorities are:
 
 1. Complete transactional Command execution.
@@ -838,33 +838,5 @@ The immediate priorities are:
 4. Formalize `Volume` and `VolumeGeometry`.
 5. Strengthen DICOM geometry validation and provenance.
 6. Implement explicit NumPy/VTK interoperability and buffer ownership.
-7. Establish the Geometry Infrastructure initial subset (Mesh + STL import + VTK adapter).
-8. Complete VTI export and round-trip validation.
-9. Complete volume rendering and `RenderingAdapter`.
-10. Complete the import UI.
-11. Implement real module loading and registration.
-
-The implementation sequence preserves the distinction between infrastructure and clinical functionality:
-
-- **Phase 4:** Data representation, import, validation, storage, geometry and visualization foundations.
-- **Phase 5:** Workflow execution and clinical navigation.
-- **Phase 6A:** Clinical tomography interaction and segmentation.
-- **Phase 6B–6E:** Registration, cephalometry, osteotomy, guides and integrated validation.
-
-This separation avoids placing clinical behavior inside infrastructure components and allows the imaging and geometry foundations to be tested independently.
-
----
-
-## 10. Known Debt
-
-This section records known issues that must be resolved or explicitly deferred before the affected phase can be declared complete.
-
-### 10.1 Phase 1 / Phase 4 — EditorContext
-
-- `SceneQuery` is not yet available as a field on `EditorContext`.
-- `EventSubscription` propagation remains pending.
-- Additional services must be introduced only when required by concrete Editor workflows.
-
-### 10.2 Phase 3 — Project Lifecycle and Persistence
-
-- Project
+7. ✅ Establish the Geometry Infrastructure initial subset (Mesh + STL import + VTK adapter) — completed and validated.
+8. Complete V
