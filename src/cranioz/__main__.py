@@ -3,7 +3,7 @@
 Boot sequence:
 1. Load configuration.
 2. Configure logging.
-3. Configure QSurfaceFormat (VTK needs depth/stencil).
+3. Configure QSurfaceFormat (VTK needs compatibility profile).
 4. Create the QApplication.
 5. Initialize application paths.
 6. Initialize shared services (EventBus, CommandBus, CommandStack,
@@ -33,17 +33,23 @@ from PySide6.QtWidgets import QApplication, QMessageBox
 # the global QSurfaceFormat and the AA_ShareOpenGLContexts attribute
 # exactly once, at application startup. If they are set after the
 # QApplication, they are silently ignored and QVTKRenderWindowInteractor
-# fails with "wglMakeCurrent failed" on some Intel drivers.
+# fails with a silent white widget (and, on some drivers, a
+# 0xC0000005 crash) on Windows.
+#
+# The Compatibility Profile (OpenGL 2.1) is mandatory for VTK 9 with
+# QVTKRenderWindowInteractor on Windows. The Core Profile (3.2), which
+# is PySide6's default, causes VTK to report success while producing
+# an empty render buffer. See the project's bug history for details.
 vtk.vtkObject.GlobalWarningDisplayOff()
-os.environ["VTK_DEFAULT_OPENGL_WINDOW"] = "vtkWin32OpenGLRenderWindow"
+os.environ.setdefault("VTK_DEFAULT_OPENGL_WINDOW", "vtkWin32OpenGLRenderWindow")
 
 QApplication.setAttribute(Qt.ApplicationAttribute.AA_ShareOpenGLContexts)
 
 _fmt = QSurfaceFormat()
 _fmt.setDepthBufferSize(24)
 _fmt.setStencilBufferSize(8)
-_fmt.setVersion(3, 2)
-_fmt.setProfile(QSurfaceFormat.OpenGLContextProfile.CoreProfile)
+_fmt.setVersion(2, 1)
+_fmt.setProfile(QSurfaceFormat.OpenGLContextProfile.CompatibilityProfile)
 QSurfaceFormat.setDefaultFormat(_fmt)
 
 # Imports from cranioz.* (safe: QSurfaceFormat is already applied).

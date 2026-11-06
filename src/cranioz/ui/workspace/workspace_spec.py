@@ -1,15 +1,11 @@
 """WorkspaceSpec — predefined ModuleUISpec values.
 
 Provides the spec used when a project is opened without an active
-Flow (Bloco 9 not implemented yet). The Workspace materializes a
-minimal composition: the four Areas the prototype declares (Left,
-Central, Right, Bottom), each hosting the placeholder Editor. Left,
-Right and Bottom start hidden (see ``Workspace.load_spec``); the
-user toggles them from the Top Bar.
-
-When Bloco 9 delivers the Flow Catalog, the Workspace will receive
-the Flow's ModuleUISpec instead. WorkspaceSpec.DEFAULT is the
-fallback for the current phase.
+Flow (Bloco 9 not implemented yet). The Central Area hosts the
+TomographyEditor (axial, coronal, sagittal, 3D Views). The lateral
+Areas are declared but hidden by default; the user toggles them
+from the Top Bar. When Bloco 9 delivers the Flow Catalog, the
+Workspace will receive the Flow's ModuleUISpec instead.
 """
 
 from __future__ import annotations
@@ -25,11 +21,12 @@ from cranioz.ui.workspace.specs.module_ui_spec import ModuleUISpec
 
 
 class _PlaceholderEditor(Editor):
-    """A minimal Editor used only by WorkspaceSpec.DEFAULT.
+    """A minimal Editor used only by WorkspaceSpec.DEFAULT for the
+    lateral and bottom Areas (Left, Right, Bottom).
 
-    Renders a centered QLabel explaining that no flow is loaded.
-    It does not declare any Toolbar and it does not know what a Flow
-    is.
+    Renders a centered QLabel explaining that the Area is a
+    placeholder until a Flow or a real Editor claims it. It does not
+    declare any Toolbar and it does not know what a Flow is.
 
     The LayoutBuilder creates Editors by calling
     ``registry.create(editor_id, editor_id=..., title=...)``. This
@@ -48,13 +45,13 @@ class _PlaceholderEditor(Editor):
         del editor_id, title, kwargs  # intentionally ignored
         super().__init__(
             editor_id="editor.placeholder.no_flow",
-            title="No flow loaded",
+            title="Placeholder",
         )
         self._label: QLabel | None = None
 
     def content_widget(self) -> QWidget:
         if self._label is None:
-            self._label = QLabel("No flow loaded — select a flow on the Home Page and click Start.")
+            self._label = QLabel("No editor loaded — select a module from the Top Bar.")
             self._label.setObjectName("workspace.placeholder.label")
             self._label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self._label.setStyleSheet(
@@ -81,9 +78,9 @@ DEFAULT: ModuleUISpec = ModuleUISpec(
         ),
         AreaSpec(
             area_id="area.central",
-            title="Central",
+            title="Tomography",
             placement=Placement.CENTRAL,
-            editor_layout=EditorLayoutSpec.leaf(PLACEHOLDER_EDITOR_ID),
+            editor_layout=EditorLayoutSpec.leaf("editor.tomography"),
         ),
         AreaSpec(
             area_id="area.right",
@@ -100,14 +97,7 @@ DEFAULT: ModuleUISpec = ModuleUISpec(
     ),
 )
 
-#: Debug-only spec: a single Central Area hosting the MeshDebugEditor.
-#:
-#: Used when ``CRANIOZ_DEBUG_MESH=1`` is set. It bypasses the default
-#: placeholder Editor so that ``Workspace.find_viewport_3d`` finds a
-#: ``Viewport3DView`` for STL validation. Not used in production.
-#:
-#: The MeshDebugEditor is registered in the EditorRegistry by the
-#: MainWindow when the environment variable is set.
+
 DEBUG_MESH: ModuleUISpec = ModuleUISpec(
     areas=(
         AreaSpec(

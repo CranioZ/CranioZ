@@ -21,6 +21,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QLayout, QVBoxLayout, QWidget
 from vtkmodules.qt.QVTKRenderWindowInteractor import (
     QVTKRenderWindowInteractor,
@@ -77,6 +78,7 @@ class Viewport3DView(View):
         self._adapter = VtkImageAdapter()
         self._volume: Volume | None = None
         self._mesh: Mesh | None = None
+        self._render_pending = False
 
     # ----- Public API ---------------------------------------------------
 
@@ -133,9 +135,103 @@ class Viewport3DView(View):
             renderer.RemoveActor(self._outline_actor)
         self._outline_actor = self._build_outline_actor()
 
-        renderer.ResetCamera()
-        self._render()
+        # Initialize the interactor before scheduling the render.
+        interactor = self._interactor
+        if interactor is not None:
+            interactor.Initialize()
+
         self._volume_set = True
+        self._schedule_initial_render()
+
+    def _schedule_initial_render(self) -> None:
+        """Schedule the first render, avoiding a double dispatch.
+
+        The render is deferred to the next event-loop iteration (and
+        again at 100 ms) so the QVTKRenderWindowInteractor has a real
+        OpenGL context by the time Render() is called. Without this,
+        calling Render() from set_volume (before show()) silently
+        does nothing, and the viewport stays empty.
+        """
+        if self._render_pending:
+            return
+        self._render_pending = True
+        QTimer.singleShot(0, self._initial_render)
+        QTimer.singleShot(100, self._initial_render)
+
+    def _initial_render(self) -> None:
+        """Configure the camera and render the first frame."""
+        renderer = self._renderer
+        interactor = self._interactor
+        if renderer is None or interactor is None:
+            self._render_pending = False
+            return
+
+        # If the widget has zero size, the OpenGL context is not ready
+        # yet. Retry later instead of rendering into an invalid window.
+        if interactor.width() <= 0 or interactor.height() <= 0:
+            QTimer.singleShot(50, self._initial_render)
+            return
+
+        self._render_pending = False
+
+        # Configure the camera explicitly instead of relying on
+        # ResetCamera(), which can leave the clipping range outside
+        # the volume's bounds and hide it.
+        self._configure_camera_for_volume()
+
+        render_window = interactor.GetRenderWindow()
+        if render_window is not None:
+            render_window.Render()
+
+    def _configure_camera_for_volume(self) -> None:
+        """Configure the camera to frame the current volume.
+
+        Uses the volume actor's bounds to compute position, focal
+        point, and parallel scale. Orthographic projection is used
+        because volume rendering in medical imaging does not benefit
+        from perspective distortion.
+        """
+        renderer = self._renderer
+        if renderer is None:
+            return
+
+        bounds = self._current_bounds()
+        if bounds is None:
+            return
+
+        cx = (bounds[0] + bounds[1]) / 2.0
+        cy = (bounds[2] + bounds[3]) / 2.0
+        cz = (bounds[4] + bounds[5]) / 2.0
+        width = bounds[1] - bounds[0]
+        height = bounds[3] - bounds[3]
+        depth = bounds[5] - bounds[4]
+
+        # Diagonal of the volume's bounding box, used to place the
+        # camera far enough to see the whole volume.
+        diagonal = (width**2 + height**2 + depth**2) ** 0.5
+        if diagonal <= 0:
+            return
+
+        camera = renderer.GetActiveCamera()
+        camera.SetPosition(cx, cy - diagonal * 1.5, cz + diagonal * 1.5)
+        camera.SetFocalPoint(cx, cy, cz)
+        camera.SetViewUp(0, 0, 1)
+        camera.SetClippingRange(diagonal * 0.1, diagonal * 5.0)
+        camera.SetParallelProjection(True)
+        camera.SetParallelScale(max(width, height) * 0.7)
+        renderer.ResetCameraClippingRange()
+
+    def _current_bounds(self) -> tuple[float, ...] | None:
+        """Return the bounds of the current volume or mesh actor.
+
+        Prefers the volume actor (the primary rendering path). Falls
+        back to the mesh actor if no volume is attached.
+        """
+        if self._volume_actor is not None and self._volume_set:
+            return self._volume_actor.GetBounds()
+        if self._mesh_actor is not None:
+            return self._mesh_actor.GetBounds()
+        return None
 
     def set_mesh(self, mesh: Mesh) -> None:
         """Render a canonical ``Mesh`` as a polygonal actor.
@@ -187,8 +283,11 @@ class Viewport3DView(View):
         self._mesh_actor = actor
         self._mesh = mesh
 
-        renderer.ResetCamera()
-        self._render()
+        interactor = self._interactor
+        if interactor is not None:
+            interactor.Initialize()
+
+        self._schedule_initial_render()
 
     def set_preset(self, name: str) -> None:
         """Change the volume rendering preset."""
@@ -198,7 +297,7 @@ class Viewport3DView(View):
         if self._volume_property is None or not self._volume_set:
             return
         self._apply_transfer_functions()
-        self._render()
+        self._schedule_initial_render()
 
     def set_window_level(self, window: float, level: float) -> None:
         """Adjust the volume window/level (Hounsfield Units)."""
@@ -209,7 +308,7 @@ class Viewport3DView(View):
         if self._volume_property is None or not self._volume_set:
             return
         self._apply_transfer_functions()
-        self._render()
+        self._schedule_initial_render()
 
     @property
     def preset(self) -> VolumePreset:
@@ -287,6 +386,7 @@ class Viewport3DView(View):
         self._volume = None
         self._mesh = None
         self._volume_set = False
+        self._render_pending = False
 
     # ----- Internal helpers -------------------------------------------
 
@@ -347,14 +447,6 @@ class Viewport3DView(View):
 
         if container_layout.indexOf(interactor) == -1:
             container_layout.addWidget(interactor)
-
-    def _render(self) -> None:
-        """Trigger a render on the VTK render window. No-op if not ready."""
-        interactor = self._interactor
-        if interactor is None:  # pragma: no cover - defensive
-            return
-        interactor.GetRenderWindow().Render()  # type: ignore[no-untyped-call]
-        interactor.Initialize()
 
     def _build_outline_actor(self) -> vtkActor:
         """Build a bounding-box outline for the current volume."""

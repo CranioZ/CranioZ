@@ -21,6 +21,7 @@ import sys
 from datetime import UTC, datetime
 
 import numpy as np
+from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication, QMainWindow
 
 from cranioz.domain.imaging.image_metadata import ImageMetadata
@@ -63,13 +64,29 @@ def main() -> int:
     app.setStyle("Fusion")
 
     view = MPRView(view_id="view.axial", view_type="axial")
-    view.set_volume(volume)
 
     window = QMainWindow()
     window.setWindowTitle("CranioZ - MPR Synthetic (Axial)")
     window.setCentralWidget(view.content_widget())
     window.resize(800, 800)
     window.show()
+
+    # Attach the volume AFTER the window is shown, so the
+    # QVTKRenderWindowInteractor already has a valid OpenGL context
+    # when MPRView._initial_render runs. This is the same ordering the
+    # production TomographyEditor uses (initialize → activate, after
+    # the Workspace is visible).
+    view.set_volume(volume)
+
+    # Belt-and-braces: force one explicit render after the event loop
+    # has processed show()/resize(). If this is what makes the image
+    # appear, the MPRView's own scheduling is still too early.
+    def _force_render() -> None:
+        interactor = view._interactor  # noqa: SLF001 - debug script
+        if interactor is not None:
+            interactor.GetRenderWindow().Render()
+
+    QTimer.singleShot(200, _force_render)
 
     return app.exec()
 

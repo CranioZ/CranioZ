@@ -79,9 +79,19 @@ dependencies = [
 
 [project.optional-dependencies]
 
-# GPU acceleration (Tier 2+) — opt-in only
+# GPU acceleration (Tier 2+) — opt-in only.
+# Requires a CUDA-capable GPU and a compatible Python/CuPy wheel.
+# Not part of `all`: `uv sync --all-extras` must not fail on
+# machines without CUDA (or on Python versions without a cupy wheel).
 cuda = [
     "cupy-cuda12x>=13.0,<14.0",
+]
+
+# Debug-only: used by scripts under scripts/debug/dicom/ to validate
+# the DICOM pipeline against SimpleITK. NOT a production dependency;
+# the production DICOM reader is cranioz.infrastructure.imaging.dicom.DicomSeriesReader.
+debug-itk = [
+    "SimpleITK>=2.3,<3.0",
 ]
 
 # Testing
@@ -113,26 +123,32 @@ docs = [
     "mkdocstrings[python]>=0.25,<1.0",
 ]
 
-# Everything (for local full setup)
+# Everything (for local full setup).
+# `cuda` and `debug-itk` are intentionally NOT included:
+#   - `cuda` requires a CUDA-capable GPU and a compatible cupy
+#     wheel; including it in `all` would make `uv sync --all-extras`
+#     fail on machines without CUDA (and on Python versions whose
+#     cupy wheels are not yet published).
+#   - `debug-itk` is heavy and only used by manual debug scripts.
+# Install them explicitly when needed:
+#   uv sync --extra cuda
+#   uv sync --extra debug-itk
 all = [
     "cranioz[dev]",
     "cranioz[docs]",
 ]
 
 # ------------------------------------------------------------
-# Scripts & entry points
+# Scripts
 # ------------------------------------------------------------
 [project.scripts]
 cranioz = "cranioz.__main__:main"
 
-[project.entry-points."cranioz.modules"]
-patient = "cranioz.modules.patient:PatientModule"
-tomography = "cranioz.modules.tomography:TomographyModule"
-segmentation = "cranioz.modules.segmentation:SegmentationModule"
-registration = "cranioz.modules.registration:RegistrationModule"
-cephalometry = "cranioz.modules.cephalometry:CephalometryModule"
-osteotomy = "cranioz.modules.osteotomy:OsteotomyModule"
-surgical_guide = "cranioz.modules.surgical_guide:SurgicalGuideModule"
+# NOTE: Built-in modules are resolved via BUILTIN_MANIFESTS in
+# cranioz.modules.builtin.manifest.py (see modules.md §3.2), not via
+# pyproject entry points. A [project.entry-points."cranioz.modules"]
+# section will be introduced together with the Plugin API in Phase 9
+# (see implementation.md §5.3).
 
 # ------------------------------------------------------------
 # URLs
@@ -180,6 +196,7 @@ exclude = [
     ".ruff_cache",
     ".pytest_cache",
     "tools",              # internal packaging tools, not part of the product
+    "scripts",            # development/debug scripts, not part of the product
 ]
 
 [tool.ruff.lint]
