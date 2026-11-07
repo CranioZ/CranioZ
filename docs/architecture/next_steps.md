@@ -1,185 +1,296 @@
 # Next Steps
 
-**Document type:** Action plan  
-**Status:** Active  
-**Scope:** Immediate next work items after the VTK pipeline validation  
-**Last updated:** 2026-11-05
+**Document type:** Action plan and handoff
+**Status:** Active
+**Scope:** Immediate next work items after the VTK pipeline validation and appearance architecture decisions
+**Last updated:** 2026-11-07
 
 ---
 
-## Context
+## 1. Context
 
-The VTK rendering pipeline was validated using the STL path (`read_stl` → `Mesh` → `mesh_to_polydata` → `Viewport3DView.set_mesh`). A mesh renders correctly in the `Viewport3DView` when the application is launched with `CRANIOZ_DEBUG_MESH=1`.
+The VTK rendering pipeline is validated end-to-end. The DICOM visualization bug was resolved on 2026-11-06. The voxel-ordering contract is documented and enforced by regression tests. The imaging pipeline uses `int16` (`VTK_SHORT`) as the production scalar type, with the direction matrix applied and confirmed.
 
-This confirms:
-- The renderer, camera, `vtkPolyDataMapper`, `vtkActor`, and OpenGL context are healthy.
-- The DICOM visualization bug is isolated to the `vtkImageData` path (`VtkImageAdapter`, `vtkImageReslice`, transfer functions).
-- The Geometry Infrastructure initial subset (Mesh, STL import/export, VTK adapter, `MeshDebugEditor`) is functional.
+The appearance architecture has been decided. `docs/architecture/appearance/` is the canonical specification. ADR-0014 registers the toolkit decision (Qt Widgets + QSS modular + Design Tokens in Python, not QML). The DICOM path, the 3D viewport, the MPR view, and the workspace layout are operational and covered by 1315 passing tests.
 
-The next steps are organized by priority. Item 1 is the only explicit blocker for declaring Phase 4 complete.
+The project is ready to close Phases 1, 2, and 3 formally before advancing deeper into Phase 4. This document defines the execution order and the acceptance criteria for each phase.
 
 ---
 
-## Priority 1 — Resolve the DICOM Visualization Bug
+## 2. What is already done
 
-**Status:** Open, paused, scope narrowed.  
-**Reference:** `docs/known_issues/dicom_visualization_bug.md` §7.  
-**Blocker for:** Phase 4 completion.
+### 2.1 Architecture and decisions
 
-### Why first
+- `docs/architecture/appearance/` contains the canonical appearance specification:
+  - `README.md`, `appearance-architecture.md`
+  - `themes-and-design-tokens.md` (7 categories, 47 tokens, `ThemeMode`, `ThemeName`, `ThemeService`, `ThemeCompiler`, translucency composition)
+  - `icons.md` (`IconProvider` Protocol, `UnicodeIconProvider` for Phase 2, `SvgIconProvider` for Phase 8, 60-icon catalog)
+  - `surfaces-and-overlays.md` (Solid, Translucent, Simulated Glass; real blur is not supported)
+  - `modal-focus-effect.md` (dimming + experimental blur, Phase 6)
+  - `widget-system.md`, `viewport-appearance.md`, `persistence-and-settings.md`, `accessibility-and-performance.md`, `implementation-roadmap.md`
+- ADR-0014 (Widget Toolkit Selection) is written in `docs/adr/0014-widget-toolkit-selection.md`.
+- ADR-0013 (UI Widgets and Editor Overlays) is accepted.
 
-It is the only explicit blocker. The scope is now precise: the bug lives in the `vtkImageData` path, not the renderer. Trial-and-error is avoided by following the systematic plan below.
+### 2.2 Code and tests
 
-### Systematic plan
+- 1315 tests passing.
+- `ruff` clean.
+- `mypy` clean.
+- `VtkImageAdapter` corrected (no transposition, `int16`, direction matrix).
+- `Viewport3DView` stabilized (`QTimer` cleanup on `dispose`).
+- `MPRView` renders correctly with the Volume direction matrix.
+- `MainWindow` registers built-in tools before creating the Workspace.
 
-1. **Reproduce with a synthetic volume.**
-   - Build a `Volume` with a synthetic shape (sphere or cube) and known geometry (identity direction, known spacing, known origin).
-   - Render it in both `MPRView` (axial, coronal, sagittal) and `Viewport3DView`.
-   - Observe whether the bug reproduces with a volume that has *no* DICOM-derived direction matrix.
-   - If the synthetic volume renders correctly, the bug is in the DICOM reader's geometry (direction matrix, LPS→RAS conversion, or slice ordering).
-   - If the synthetic volume fails, the bug is in the `VtkImageAdapter`, `vtkImageReslice` axes, or transfer functions.
+### 2.3 Implementation plan
 
-2. **Log the geometry.**
-   - In `VtkImageAdapter.to_vtk()`, log `volume.geometry.direction`, `origin`, `spacing`, `dimensions`, and the resulting `vtkImageData` parameters (`GetDirectionMatrix`, `GetExtent`, `GetOrigin`, `GetSpacing`).
-   - Compare with what `vtkImageReslice` and `vtkSmartVolumeMapper` expect.
-
-3. **Test the direction matrix hypotheses.**
-   - **Hypothesis A:** The direction matrix is non-identity (e.g., a 90° rotation) and `vtkImageReslice` uses fixed axes (identity), causing misalignment.
-     - Fix: either reorient the volume to identity in the adapter, or set reslice axes from the direction matrix.
-   - **Hypothesis B:** The `np.ravel(order='F')` in `VtkImageAdapter` produces the wrong scalar ordering for VTK.
-     - Fix: test with `order='C'` and `ascontiguousarray`.
-   - **Hypothesis C:** `SetDirectionMatrix` is being ignored or misinterpreted by VTK.
-     - Fix: test with and without `SetDirectionMatrix`, and with an explicit reorient via `vtkImageReslice` in the adapter.
-
-4. **Test with the legacy `DicomEngine` approach.**
-   - The legacy code (which worked) did not use a direction matrix and built the `vtkImageData` with `ravel(order='C')`.
-   - Replicate that approach in the current `VtkImageAdapter` as a control.
-
-5. **Document the resolution and add regression tests.**
-   - Once resolved, add a test with a synthetic `Volume` that verifies the `vtkImageData` produced by the adapter has the expected geometry.
-   - Add a visual regression test if feasible (headless VTK, no OpenGL context required for geometry checks).
+- `implementation_plan.md` is the current roadmap. It defines 11 phases.
+- Phase 4 is marked as the active phase, with the following items already complete: voxel ordering, `int16`, direction matrix, `Viewport3DView.set_volume(Volume)`, STL path validation, DICOM path validation.
 
 ---
 
-## Priority 2 — Complete the RenderingAdapter and Scene Persistence
+## 3. What is missing — by phase
 
-**Status:** Pending.  
-**Reference:** ADR-0008, ADR-0009, `scene.md` §26, §51.
+### 3.1 Phase 1 — Contracts, Core Domain & i18n
 
-### Work items
+**Goal:** close Phase 1 formally. Blockers: i18n contract and `EditorContext` propagation.
 
-1. **`RenderingAdapter`.**
-   - Observe Scene events (`ObjectAdded`, `ObjectRemoved`, `ObjectTransformed`).
-   - Update VTK actors and mappers accordingly.
-   - Ensure the adapter is the sole bridge between the Scene and VTK.
+#### 3.1.1 Internationalization (Sprint B)
 
-2. **Scene serialization.**
-   - Implement `scene_to_dict` / `scene_from_dict` per ADR-0009.
-   - Persist membership, hierarchy, transforms, and relationships.
-   - Validate round-trip with reference scenes.
+Deliverables:
 
-3. **Filesystem-backed Scene persistence.**
-   - `FilesystemSceneProvider` (or equivalent) loading from `scene.json`.
-   - Integration with the project open/close lifecycle.
+- `Locale` value object (`pt_BR`, `en_US`).
+- `TranslationService` Protocol with `tr(key, **params)`, `locale()`, `set_locale()`.
+- `TranslationCatalog` (JSON loader) and `TranslationCatalogRegistry`.
+- Concrete `TranslationService` implementation with `en_US` fallback.
+- `en_US` catalog covering all currently used keys (TopBar, HomePage, import errors, message boxes).
+- `pt_BR` catalog with minimum coverage.
+- Injection into `MainWindow`, `Workspace`, `HomePage`, `TomographyEditor`.
+- Removal of `MainWindow._humanize_translation_key`.
+- Contract test: every `name_key` in every `flow.json` resolves in `en_US`.
 
-4. **Complete integration.**
-   - Commands → Scene → imported objects.
-   - Ensure `ImportDicomSeriesCommand` registers the `Volume` in both `DomainObjectStore` and `Scene`.
+#### 3.1.2 `EditorContext` complete (Sprint C)
 
----
+Deliverables:
 
-## Priority 3 — Complete the Medical Imaging Infrastructure
+- Propagate `task_manager`, `telemetry`, `correlation_id`, `command_dispatcher`, `scene_query`, `event_subscription`, `translation_service`, `theme_service`, `icon_provider` through `EditorContext`.
+- `Workspace._create_editor` and `MainWindow._create_workspace` pass the complete set.
+- `TomographyEditor.initialize` and `MeshDebugEditor.initialize` accept the complete set.
+- Contract test: every Editor registered in `EditorRegistry` receives all required fields with non-null values.
 
-**Status:** Pending.  
-**Reference:** `medical-imaging-infrastructure.md`.
+#### 3.1.3 Phase 1 tests
 
-### Work items
+- i18n contract tests.
+- `EditorContext` propagation tests.
+- `test_no_hardcoded_strings_in_shell_widgets.py` (detects user-facing strings not routed through `TranslationService`).
 
-1. **Storage modes.**
-   - External Reference (project references source DICOM).
-   - Managed Copy (DICOM copied into the project).
-   - User confirmation before copying identifiable data.
-   - Project deletion never removes external source data.
-
-2. **VTI export.**
-   - `VtiWriter` as a derived representation.
-   - Round-trip validation (geometry, dimensions, spacing, origin, scalar values).
-   - Provenance link to the source volume.
-
-3. **Import UI.**
-   - File/directory selection.
-   - Series discovery and grouping.
-   - Metadata preview with minimized PHI exposure.
-   - Patient identity validation and explicit mismatch confirmation.
-   - Storage mode selection.
-   - Validation report presentation.
-   - TaskManager progress, cancellation, and error reporting.
-
-4. **Patient identity and PHI.**
-   - Compare DICOM identity fields with the project's patient record.
-   - Explicit confirmation on mismatch; record in provenance.
-   - No PHI in logs or telemetry.
+**Phase 1 is complete when:** i18n contract exists, `EditorContext` propagates all fields, contract tests pass, and CI is green.
 
 ---
 
-## Priority 4 — Complete Module Loading
+### 3.2 Phase 2 — Workspace Engine & Icons
 
-**Status:** Pending.  
-**Reference:** `modules.md` v10, ADR-0001, ADR-0002.
+**Goal:** close Phase 2 formally. Blockers: `AreaLayoutRenderer`, `EditorStack`, `ThemeService` + `ThemeCompiler`, `IconProvider` + `UnicodeIconProvider`.
 
-### Work items
+#### 3.2.1 `ThemeService` + `ThemeCompiler` + tokens (Sprint E)
 
-1. **Dependency resolution in `InMemoryModuleLoader`.**
-   - Topological sort, cycle detection, version constraints.
-2. **Resolve module `entry_point` declarations.**
-   - Import the entry point, instantiate the Module, validate the interface.
-3. **Register contributions.**
-   - Tools, Editors, Services, Flows.
-4. **Populate `BUILTIN_MANIFESTS`.**
-   - Each built-in module's manifest.
-5. **Share the application EventBus.**
-   - Ensure all `ModuleContext`s reference the same `EventBus` instance.
-6. **First functional built-in module.**
-   - Validate activation, deactivation, failure, and unload.
+Deliverables:
 
----
+- `ThemeMode`, `ThemeName` enums.
+- `ThemeTokens` and the 7 dataclasses (`ColorTokens`, `TypographyTokens`, `SpacingTokens`, `DimensionTokens`, `BorderTokens`, `EffectTokens`, `SurfaceTokens`).
+- `DARK` and `LIGHT` token values as specified in `themes-and-design-tokens.md`.
+- `ThemeService` with `mode()`, `set_mode()`, `theme()`, `tokens()`, `color()`, `dimension()`, `surface_color()`.
+- `ThemeCompiler` with `compile()` and `apply()`.
+- Surface composition (`base_color + opacity`).
+- QSS emission for styled widgets.
+- Boot integration: read `appearance.theme_mode` from `SettingsService` before constructing `MainWindow`; invalid values fall back to `DARK` with a `WARNING`.
+- Contract tests: `test_no_hardcoded_appearance.py`, `test_tokens_used.py`, `test_tokens_present.py`, `test_theme_completeness.py`, `test_contrast.py`.
 
-## Priority 5 — Close Phase 2 Pending Items (Parallel)
+#### 3.2.2 `IconProvider` + `UnicodeIconProvider` (Sprint F)
 
-**Status:** Pending.  
-**Reference:** ADR-0013 §2.5, §2.6, §10.9, §10.10, §10.11.
+Deliverables:
 
-These items are not blockers for Phase 4 but are tracked as known debt. They can be done in parallel or after Priority 1.
+- `IconState` enum.
+- `IconProvider` Protocol.
+- `UnicodeIconProvider` with the 60-icon catalog from `icons.md`.
+- Injection into `MainWindow`, `Workspace`, `EditorContext`.
+- Migration of hardcoded glyphs in `TopBar`, `HomeSegment`, `ModulesSegment`, `ExtrasSegment`, `HomePage`, `Toolbar`.
+- Contract tests: `test_icon_catalog.py`, `test_icon_fallback.py`, `test_icon_theme.py`, `test_icon_widget_contract.py`, `test_icon_accessibility.py`.
 
-### Work items
+#### 3.2.3 `AreaLayoutRenderer` (Sprint G)
 
-1. **Editor Layout Tree configurable per Area (ADR-0013 §7.3).**
-   - `AreaWidget` currently uses a fixed horizontal `QSplitter` for multiple Editors.
-   - Honor `Area.set_editor_layout(EditorLayoutSpec)`.
+Deliverables:
 
-2. **Editor Stack (ADR-0013 §2.5).**
-   - Small switcher in the Editor's corner for stacking multiple Editors in the same Leaf.
-   - Not a `QTabWidget`.
+- `AreaLayoutRenderer` that separates inter-Area from intra-Area layout.
+- `AreaWidget` delegates to `AreaLayoutRenderer`.
+- No visible behavior change for the single-Editor case.
+- Regression tests.
 
-3. **`IconManager` and `ThemeService` semantic colors.**
-   - Replace Unicode glyphs in the Top Bar.
-   - Implement `ThemeService.color("active")`, etc. (ADR-0003).
+#### 3.2.4 `EditorStack` (Sprint H)
 
----
+Deliverables:
 
-## Recommended Sequence
+- `EditorLayoutSpec.stack([...])`.
+- `EditorStack` widget (tabs per Leaf).
+- Single-Editor case remains unchanged.
+- Tests for tab switching, editor lifecycle, dispose.
 
-1. **Priority 1** — DICOM visualization bug (blocker).
-2. **Priority 2** — RenderingAdapter and Scene persistence (unblocks Editor workflows).
-3. **Priority 3** — Medical Imaging Infrastructure (unblocks the clinical tomography workflow in Phase 6A).
-4. **Priority 4** — Module loading (unblocks Phase 5 and Phase 6).
-5. **Priority 5** — Phase 2 pending items (polish, parallelizable).
+**Phase 2 is complete when:** `ThemeService`, `ThemeCompiler`, `IconProvider`, `UnicodeIconProvider`, `AreaLayoutRenderer`, and `EditorStack` are implemented, contract tests pass, all glyphs are migrated to `provider.icon(...)`, and CI is green.
 
 ---
 
-## Definition of Done for Priority 1
+### 3.3 Phase 3 — Project, Home Page & Professional Module
 
-- A synthetic `Volume` (sphere or cube) renders correctly in `MPRView` and `Viewport3DView`.
-- A real DICOM series renders correctly in `MPRView` and `Viewport3DView`.
-- The `VtkImageAdapter` geometry is verified against the `Volume.geometry` with a regression test.
-- The fix is documented in `docs/known_issues/dicom_visualization_bug.md`, marked as resolved, and linked from `implementation.md` §10.5.
+**Goal:** close Phase 3 formally. Blockers: `ProjectIndex`, coordinated deletion, async loading, Professional module.
+
+#### 3.3.1 `ProjectIndex` (Sprint I)
+
+Deliverables:
+
+- `ProjectIndex` interface (`add`, `remove`, `lookup`, `list`).
+- `InMemoryProjectIndex`.
+- `FilesystemProjectIndex`.
+- `ProjectCatalog` refactored to consume `ProjectIndex` (instead of scanning the filesystem directly on `list_projects()`).
+- Contract tests: add/remove/lookup/list round-trips, concurrent access, cache invalidation.
+
+#### 3.3.2 Coordinated deletion (Sprint J)
+
+Deliverables:
+
+- `ProjectManager.delete_project` coordinates `ProjectCatalog` → `ProjectIndex` → `FilesystemProjectRepository`.
+- Rollback when any step fails.
+- External source data (External Reference mode) is never removed by project deletion.
+- Contract tests.
+
+#### 3.3.3 Async loading (Sprint K)
+
+Deliverables:
+
+- `HomePage` loads projects and flows via `TaskManager`.
+- No blocking I/O in `MainWindow.__init__`.
+- `HomePage.refresh()` does not block the GUI thread.
+- Rollback if `Workspace` creation fails after project open.
+- Regression tests: existing project open/close tests continue to pass.
+
+#### 3.3.4 Professional module (Sprint L)
+
+Deliverables:
+
+- `ProfessionalEditor` registered in `EditorRegistry`.
+- `ModuleUISpec` for the Professional module.
+- Settings integration (`professional.*` keys in `SettingsService`).
+- Tests.
+
+**Phase 3 is complete when:** `ProjectIndex`, coordinated deletion, async loading, and the Professional module are implemented, contract tests pass, and CI is green.
+
+---
+
+### 3.4 Phase 4 — Scene & Visualization (deferred until Phases 1–3 close)
+
+Phase 4 remains the active implementation phase after Phases 1–3 close. It is not started in this handoff. See `implementation_plan.md` §4 and §5.1 for the complete scope.
+
+Key Phase 4 items that are **not** in scope for this handoff:
+
+- Unified Import Dialog (§4.3.4).
+- `RenderingAdapter`.
+- `ViewerLayoutManager`.
+- 2D and 3D tools.
+- Clinical transfer function presets.
+- Real module loading.
+- End-to-end Editor workflows.
+
+---
+
+## 4. Recommended execution sequence
+
+The order below respects the dependencies between Phases 1–3.
+
+| Sprint | Phase | Deliverable | Depends on |
+|---|---|---|---|
+| B | 1 | i18n contract and catalogs | — |
+| C | 1 | `EditorContext` propagation | B, E (for `theme_service`), F (for `icon_provider`) |
+| E | 2 | `ThemeService`, `ThemeCompiler`, tokens | — |
+| F | 2 | `IconProvider`, `UnicodeIconProvider`, glyph migration | E |
+| G | 2 | `AreaLayoutRenderer` | — |
+| H | 2 | `EditorStack` | G |
+| I | 3 | `ProjectIndex` | — |
+| J | 3 | Coordinated deletion | I |
+| K | 3 | Async loading | I, J |
+| L | 3 | Professional module | C, E, F |
+
+**Note on ordering:** Sprint C depends on Sprint E and Sprint F because `EditorContext` will carry `theme_service` and `icon_provider`. If you prefer to avoid that dependency, Sprint C can propagate only the services that exist at that time, and a follow-up PR adds `theme_service` and `icon_provider` to `EditorContext`. Either approach is valid; the first is cleaner.
+
+---
+
+## 5. Definition of Done for this handoff
+
+This handoff is complete when:
+
+1. `implementation_plan.md` is updated:
+   - Remove `ADR-0003` as a blocker.
+   - Reference `ADR-0014` and `docs/architecture/appearance/`.
+   - Reflect that `steps_panel` was removed (already done in §10.4).
+   - Mark Phase 1, 2, 3 with detailed status per sprint.
+2. `docs/adr/0014-widget-toolkit-selection.md` is committed.
+3. `docs/architecture/appearance/` is consolidated:
+   - `README.md`, `appearance-architecture.md`, `themes-and-design-tokens.md`, `icons.md`, `surfaces-and-overlays.md` are the canonical documents.
+   - Documents not yet written (`modal-focus-effect.md`, `widget-system.md`, `viewport-appearance.md`, `persistence-and-settings.md`, `accessibility-and-performance.md`, `implementation-roadmap.md`) are placeholders that reference the corresponding sections of `CranioZ_Appearance_System.md` as the source of truth until they are written.
+4. The next conversation starts with **Sprint B (i18n)**.
+
+---
+
+## 6. What is not in this handoff
+
+The following items are explicitly out of scope for this handoff and belong to Phase 4 or later:
+
+- Unified Import Dialog.
+- `RenderingAdapter`.
+- `ViewerLayoutManager`.
+- 2D and 3D tools.
+- Clinical transfer functions.
+- Real module loading.
+- End-to-end Editor workflows.
+- Full Geometry Infrastructure.
+- SQLite ProjectIndex (Phase 8).
+- Recent Projects (Phase 8).
+- `SvgIconProvider` and SVG assets (Phase 8).
+- Locale selector UI (Phase 8).
+- Complete `pt_BR`/`en_US` catalogs beyond current keys (Phase 8).
+- PDF report localization (Phase 8).
+- High-contrast theme (future).
+- Real background blur (not supported by design).
+
+---
+
+## 7. Known issues and their status
+
+| Issue | Status | Reference |
+|---|---|---|
+| DICOM visualization bug (voxel ordering) | ✅ Resolved 2026-11-06 | `implementation_plan.md` §10.5 |
+| ADR-0003 legacy | ✅ Superseded by ADR-0014 | `docs/adr/0014-widget-toolkit-selection.md` |
+| `steps_panel` overlay | ✅ Removed; replaced by `WorkflowBreadcrumb` (Phase 5) | `implementation_plan.md` §10.4 |
+| i18n contract | 🚧 Pending (Sprint B) | This document §3.1.1 |
+| `EditorContext` propagation | 🚧 Pending (Sprint C) | This document §3.1.2 |
+| `ThemeService` / `ThemeCompiler` | 🚧 Pending (Sprint E) | This document §3.2.1 |
+| `IconProvider` / `UnicodeIconProvider` | 🚧 Pending (Sprint F) | This document §3.2.2 |
+| `AreaLayoutRenderer` | 🚧 Pending (Sprint G) | This document §3.2.3 |
+| `EditorStack` | 🚧 Pending (Sprint H) | This document §3.2.4 |
+| `ProjectIndex` | 🚧 Pending (Sprint I) | This document §3.3.1 |
+| Coordinated deletion | 🚧 Pending (Sprint J) | This document §3.3.2 |
+| Async loading | 🚧 Pending (Sprint K) | This document §3.3.3 |
+| Professional module | 🚧 Pending (Sprint L) | This document §3.3.4 |
+| Real background blur | ⛔ Not supported by design | `themes-and-design-tokens.md` §6.3 |
+| Full Geometry Infrastructure | ⏳ Deferred | `implementation_plan.md` §5.3 |
+| SQLite ProjectIndex | ⏳ Deferred to Phase 8 | `implementation_plan.md` §5.3 |
+
+---
+
+## 8. Immediate next action
+
+Begin **Sprint B — i18n**. The sprint has four parts:
+
+1. Define `Locale`, `TranslationService`, `TranslationCatalog`, `TranslationCatalogRegistry`.
+2. Create `assets/i18n/en_US/*.json` and `assets/i18n/pt_BR/*.json` for existing keys.
+3. Inject `translation_service` into `MainWindow`, `Workspace`, `HomePage`, `TomographyEditor`. Replace `MainWindow._humanize_translation_key`.
+4. Add contract tests and CI checks.
+
+**Acceptance for Sprint B:** every user-facing string in the shell is resolved via `TranslationService`, all `flow.json` keys resolve in `en_US`, and the `pt_BR` catalog covers the same keys.

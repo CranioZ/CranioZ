@@ -25,7 +25,7 @@ Each document covers one responsibility within a shared architecture. **MUST**, 
 
 ---
 
-# 1. `README.md`
+# 1. `../../../README.md`
 
 ## 1.1 Purpose and Scope
 

@@ -148,7 +148,7 @@ cranioz = "cranioz.__main__:main"
 # cranioz.modules.builtin.manifest.py (see modules.md §3.2), not via
 # pyproject entry points. A [project.entry-points."cranioz.modules"]
 # section will be introduced together with the Plugin API in Phase 9
-# (see implementation.md §5.3).
+# (see implementation_plan.md §5.3).
 
 # ------------------------------------------------------------
 # URLs
