@@ -281,6 +281,13 @@ class MainWindow(QMainWindow):
             scene = self._scene_provider.get_scene()
             scene_query = SceneQueryAdapter(scene)
 
+        # Ensure the built-in tools required by the default editor
+        # specs are registered. The TomographyEditor declares toolbars
+        # that reference "tool.log" and "tool.toggle"; without them,
+        # AreaWidget._build_toolbars raises KeyError. Registration is
+        # idempotent: re-registering the same factory is a no-op.
+        self._ensure_builtin_tools()
+
         workspace = Workspace(
             editor_registry=self._editor_registry,
             tool_registry=self._tool_registry,
@@ -315,6 +322,28 @@ class MainWindow(QMainWindow):
         spec = WORKSPACE_SPEC_DEBUG_MESH if self._debug_mesh else WORKSPACE_SPEC_DEFAULT
         workspace.load_spec(spec)
         return workspace
+
+    def _ensure_builtin_tools(self) -> None:
+        """Register the built-in tools that the default editor specs require.
+
+        The TomographyEditor declares toolbars that reference
+        "tool.log" and "tool.toggle". Without them registered,
+        AreaWidget._build_toolbars raises KeyError when the Workspace
+        is created. Registration is idempotent: if a tool is already
+        registered, this method does not replace it.
+        """
+        # Local import to keep the boot path free of UI widget imports
+        # that are not needed until a project is opened.
+        from cranioz.ui.tools.builtin.log_tool import LogTool  # noqa: PLC0415
+        from cranioz.ui.tools.builtin.toggle_tool import ToggleTool  # noqa: PLC0415
+
+        builtin = (
+            ("tool.log", LogTool),
+            ("tool.toggle", ToggleTool),
+        )
+        for tool_id, factory in builtin:
+            if not self._tool_registry.contains(tool_id):
+                self._tool_registry.register(tool_id, factory)
 
     def _wire_top_bar_segments(
         self,

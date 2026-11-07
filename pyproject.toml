@@ -340,3 +340,8 @@ exclude_lines = [
     "raise NotImplementedError",
     "@abstractmethod",
 ]
+
+[dependency-groups]
+dev = [
+    "pyvista>=0.49.2",
+]

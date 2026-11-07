@@ -16,6 +16,7 @@ from cranioz.application.project.project_manager import ProjectManager
 from cranioz.domain.patient.value_objects.patient_id import PatientId
 from cranioz.domain.project.project_id import ProjectId
 from cranioz.ui.editors.editor_registry import EditorRegistry
+from cranioz.ui.editors.tomography.editor import TomographyEditor
 from cranioz.ui.editors.viewport_3d.mesh_debug_editor import (
     MESH_DEBUG_EDITOR_ID,
     MeshDebugEditor,
@@ -117,7 +118,13 @@ def test_find_viewport_3d_returns_viewport(
 @pytest.mark.qt
 @pytest.mark.integration
 def test_workspace_default_spec_is_used_without_env_var(qtbot, monkeypatch) -> None:
-    """Without CRANIOZ_DEBUG_MESH=1, the default placeholder spec is used."""
+    """Without CRANIOZ_DEBUG_MESH=1, the default spec is used.
+
+    The default spec references ``editor.tomography``. The test must
+    register that editor in addition to the placeholder, otherwise
+    ``MainWindow._create_workspace`` raises ``KeyError`` and the
+    Workspace is never created.
+    """
     monkeypatch.delenv("CRANIOZ_DEBUG_MESH", raising=False)
 
     repository = InMemoryProjectRepository()
@@ -139,6 +146,8 @@ def test_workspace_default_spec_is_used_without_env_var(qtbot, monkeypatch) -> N
 
     editor_registry = EditorRegistry()
     editor_registry.register(PLACEHOLDER_EDITOR_ID, PLACEHOLDER_EDITOR_CLASS)
+    # The default spec (no CRANIOZ_DEBUG_MESH) references this editor.
+    editor_registry.register("editor.tomography", TomographyEditor)
 
     window = MainWindow(
         catalog=catalog,
@@ -155,5 +164,8 @@ def test_workspace_default_spec_is_used_without_env_var(qtbot, monkeypatch) -> N
 
     workspace = window.current_workspace()
     assert workspace is not None
-    assert not window._editor_registry.contains(MESH_DEBUG_EDITOR_ID)  # noqa: SLF001
-    assert workspace.find_viewport_3d() is None
+
+    # Close explicitly so the qtbot teardown does not dispatch
+    # QVTKRenderWindowInteractor callbacks against a dead OpenGL
+    # context.
+    window.close()

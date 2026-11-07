@@ -80,7 +80,7 @@ def _show_scene(renderer: vtkRenderer, title: str) -> None:
     app.setStyle("Fusion")
 
     interactor = QVTKRenderWindowInteractor()
-    render_window = interactor.GetRenderWindow()
+    render_window = interactor.GetRenderWindow()  # type: ignore[no-untyped-call]
     render_window.AddRenderer(renderer)
     render_window.SetSize(800, 800)
 

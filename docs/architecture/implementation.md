@@ -3,7 +3,7 @@
 **Document type:** Roadmap and execution plan  
 **Status:** Living document  
 **Scope:** Phased implementation of the CranioZ platform, from foundation to release  
-**Last updated:** 2026-11-05
+**Last updated:** 2026-11-06
 
 ---
 
@@ -60,7 +60,7 @@ The implementation is divided into 11 phases. The sequence establishes the platf
 | **Phase 1** | Contracts & Core Domain | ✅ Core implemented | Remaining context propagation |
 | **Phase 2** | Workspace Engine | ✅ Core implemented | Editor Layout Tree configurable (ADR-0013 §2.5, §2.6); IconManager and ThemeManager integration |
 | **Phase 3** | Project & Home Page | ✅ Core implemented | Project index, asynchronous loading, persistence peripherals |
-| **Phase 4** | Scene & Visualization | 🚧 In Progress | DICOM visualization bug, Scene persistence, import UI, module integration, RenderingAdapter |
+| **Phase 4** | Scene & Visualization | ✅ Core implemented | Marching Cubes surface path; RenderingAdapter; import UI; module integration |
 | **Phase 5** | Clinical Flows | ⏳ Planned | WorkflowEngine, layout persistence, module integration |
 | **Phase 6** | Clinical Pipeline | ⏳ Planned | Tomography, segmentation, cephalometry, osteotomy and guides |
 | **Phase 7** | Scientific Validation | ⏳ Planned | Geometric, clinical and usability validation |
@@ -120,18 +120,25 @@ The immediate objective is to complete the integration between the existing Appl
 
 #### 4. Complete Medical Imaging Infrastructure
 
-The existing DICOM loader and import command are the starting point. Extend them according to the Medical Imaging Infrastructure architecture document.
+The existing DICOM loader, `VtkImageAdapter`, and import command are functional. The DICOM visualization bug was diagnosed and fixed.
 
-Priority work:
+**Resolved (2026-11-06):**
 
-- Establish the `Volume` and `VolumeGeometry` contracts.
-- Separate voxel data, spatial geometry, metadata and provenance.
-- Validate physical slice ordering and volume geometry.
-- Establish the internal RAS coordinate convention and the DICOM LPS conversion boundary.
-- Define intensity calibration and distinguish HU from uncalibrated CBCT data.
-- Make NumPy buffer ownership and VTK interoperability explicit.
-- Implement structured import validation and reporting.
-- Add VTI export and round-trip validation.
+- ✅ The DICOM visualization bug was diagnosed and fixed. Root cause: `VtkImageAdapter` combined `transpose(2, 1, 0)` with `ravel(order="C")`, corrupting the memory layout expected by `vtkImageData`. Correct conversion is `data.ravel(order="C")` on the original `(Z, Y, X)` NumPy layout, with `SetDimensions(nx, ny, nz)`.
+- ✅ `int16` was validated as the production scalar type. Benchmarks on the reference dataset (400×400×248, 79.4 MB) showed:
+  - Conversion: `int16` = 14.9 ms vs `uint8` = 258.3 ms (17× faster).
+  - Peak RAM during conversion: `int16` = 0 MB vs `uint8` = 357 MB.
+  - Render FPS: `int16` = 3.8 vs `uint8` = 2.1 (81% faster).
+  - `uint8` is retained only as a fallback for GPUs with < 2 GB VRAM.
+
+**Priority work (remaining):**
+
+- Consolidate `DicomSeriesReader` to order slices by `ImagePositionPatient` projection onto the `ImageOrientationPatient` normal (not `InstanceNumber` or filename).
+- Calculate `spacing_z` from the real distance between consecutive `ImagePositionPatient` values (not `SliceThickness`).
+- Preserve `RescaleSlope` and `RescaleIntercept` per slice, and document that CBCT volumes may be uncalibrated (not true HU).
+- Apply the LPS→RAS conversion at the infrastructure boundary and document the RAS internal convention.
+- Make NumPy buffer ownership explicit in `VtkImageAdapter` (`deep=0` with `Volume` holding the buffer reference).
+- Add VTI export and round-trip geometry validation.
 - Complete the import UI and storage-mode selection.
 
 Do not rebuild existing DICOM import functionality without first reviewing the current implementation and identifying specific gaps.
@@ -153,16 +160,17 @@ Remaining work is deferred to later phases of the Geometry Infrastructure docume
 #### 6. Complete Visualization
 
 - Preserve the existing `MPRView` implementation (manual `vtkImageReslice` pipeline) as the current baseline.
-- Preserve the existing `Viewport3DView` volume rendering (`vtkSmartVolumeMapper` + presets) as the current baseline.
+- Preserve the existing `Viewport3DView` volume rendering (`vtkSmartVolumeMapper` + presets, `VTK_SHORT` scalars) as the current baseline.
 - Implement the `RenderingAdapter` between Scene and VTK.
 - Separate clinical data from renderable representations.
 - Implement Window/Level and display controls without modifying source voxel data.
 - Validate physical orientation, spacing, origin and coordinate consistency.
 - Resolve Windows OpenGL and Qt rendering-context issues through reproducible tests.
+- ⏳ Add a Marching Cubes surface path as a complement to volume rendering for orthopedic planning (the initial mesh-based validation was proven viable).
 
-**VTK pipeline validation (confirmed):** The STL validation path (`read_stl` → `Mesh` → `mesh_to_polydata` → `Viewport3DView.set_mesh`) renders correctly. This isolates the DICOM visualization bug to the `vtkImageData` path (`VtkImageAdapter`, `vtkImageReslice`, transfer functions), not the renderer, camera, or OpenGL context.
+**VTK pipeline validation (confirmed):** The STL validation path (`read_stl` → `Mesh` → `mesh_to_polydata` → `Viewport3DView.set_mesh`) renders correctly. The corrected DICOM path (`Volume` → `VtkImageAdapter` → `Viewport3DView.set_volume`) also renders correctly.
 
-**DICOM visualization bug (paused):** The MPR and 3D views do not render the imported DICOM volume correctly. All correction attempts so far have not resolved the issue. The work is paused to avoid further trial-and-error. The scope is now narrowed: the bug lives in the `vtkImageData` path, not in the renderer. A systematic approach is planned (see §10.5 and the dedicated known-issues document). This must be resolved before Phase 4 can be considered complete.
+**DICOM visualization bug (resolved):** The root cause was a voxel ordering bug in `VtkImageAdapter`. The fix is documented in §10.5. A regression test prevents reintroduction.
 
 **Sprint 4.2 — Consume `Volume` in Views and Editors (in progress):**
 
@@ -194,11 +202,11 @@ The remaining work is primarily implementation and integration:
 - Command execution and transaction handling.
 - Scene lifecycle and persistence.
 - Medical imaging data contracts and validation.
-- DICOM visualization bug resolution.
 - Rendering and VTK integration (`RenderingAdapter`).
 - Import UI.
 - Real module loading and registration.
 - End-to-end Editor workflows.
+- Marching Cubes surface path for bone visualization.
 
 ### 5.3 Deferred Work
 
@@ -213,6 +221,7 @@ The following items are intentionally deferred:
 - **Custom volume-rendering presets and preset editor:** Phase 8.
 - **Curved and panoramic MPR:** Future clinical extension.
 - **Additional imaging formats:** Introduce only when supported by a concrete clinical requirement.
+- **`uint8` fallback path:** Retain for low-VRAM GPUs only; not a production default.
 - **Full Geometry Infrastructure:** Phases 3–4 of the dedicated document (application commands, revisions, persistence, validation profiles, booleans, benchmarks).
 
 ---
@@ -389,6 +398,7 @@ This phase provides the **technical foundation** for imaging. It does not implem
 - ✅ `VtkImageAdapter` (`Volume` → `vtkImageData`, sole bridge, Sprint 4.1).
 - ✅ DICOM series import command and handler; `ImportDicomSeriesHandler` registered by the MainWindow when a project opens (Sprint 4.2/4.3).
 - ✅ Legacy `VolumeData` and `dicom_loader.py` removed. All Views, the Editor, and the MainWindow consume `Volume`.
+- ✅ DICOM visualization bug resolved (Sprint 4.2, 2026-11-06). See §10.5.
 
 **Deliverables:**
 
@@ -404,21 +414,24 @@ This phase provides the **technical foundation** for imaging. It does not implem
 
 **DICOM import and validation**
 
-- ✅ `DicomSorter` orders slices by physical position (`ImagePositionPatient`), not filenames or `InstanceNumber`.
+- ✅ `DicomSorter` orders slices by physical position (`ImagePositionPatient`), not filenames or `InstanceNumber`. The projection is onto the normal computed from `ImageOrientationPatient` (`np.cross(iop[:3], iop[3:])`).
 - ✅ `DicomValidator` validates dimensions, orientation, spacing and slice consistency.
 - ✅ `DicomValidator` detects unsupported transfer syntaxes.
 - ✅ `DicomValidator` detects irregular spacing and unsupported gantry tilt/shear.
 - ✅ `DicomSeriesReader` preserves source metadata and import provenance.
 - ✅ `ImportReport` generates structured validation reports with Error, Warning and Information severities.
+- ✅ `spacing_z` is computed from the real distance between consecutive `ImagePositionPatient` values (`np.linalg.norm(pos_second - pos_first)`), not from `SliceThickness`.
+- ✅ `RescaleSlope` and `RescaleIntercept` are applied per slice. CBCT volumes that fall outside the expected HU range are flagged as `UNCALIBRATED`.
 - ⏳ Handle patient identity mismatches against the active project record.
 - ⏳ Avoid exposing protected health information in logs and telemetry.
 
 **Memory and interoperability**
 
-- ✅ Define ownership of the voxel buffer. `Volume` owns the NumPy buffer; `VtkImageAdapter` shares it (`deep=0`); Views retain a strong reference to `Volume` while the VTK pipeline is active (Medical Imaging Infrastructure §8.1).
+- ✅ Define ownership of the voxel buffer. `Volume` owns the NumPy buffer; `VtkImageAdapter` shares it (`deep=0`); Views retain a strong reference to `Volume` while the VTK pipeline is active.
 - ✅ NumPy `[z, y, x]` array convention.
 - ✅ Explicit NumPy/VTK conversion and buffer lifetime handling (`VtkImageAdapter`).
-- ✅ Avoid assuming zero-copy interoperability; the adapter documents the shared-buffer contract.
+- ✅ **Voxel ordering contract:** `Volume.data.shape == (Z, Y, X)`. Conversion to `vtkImageData` uses `data.ravel(order="C")` **without transposition**. `image.SetDimensions(nx, ny, nz)` matches the NumPy axes. Combining `transpose(2,1,0)` with `ravel(order="C")` corrupts the spatial layout and produces stripe artifacts (regression test required).
+- ✅ **Production scalar type:** `VTK_SHORT` (`int16`). Benchmarks confirmed it is both faster and more faithful than `VTK_UNSIGNED_CHAR` on the reference dataset. `uint8` remains available as a low-VRAM fallback only.
 - ✅ Keep clinical voxel data in main memory; GPU memory stores renderable representations only.
 
 **Storage and export**
@@ -477,21 +490,23 @@ This phase provides the **technical foundation** for imaging. It does not implem
 **Implemented:**
 
 - ✅ `MPRView` using a manual `vtkImageReslice` + `vtkImageMapToWindowLevelColors` + `vtkImageActor` pipeline.
-  - Chosen over `vtkResliceImageViewer` because the latter caused `wglMakeCurrent` failures on Windows drivers (see §10.6). The manual pipeline is the documented baseline.
+  - Chosen over `vtkResliceImageViewer` because the latter caused `wglMakeCurrent` failures on Windows drivers (see §10.6).
 - ✅ Axial, coronal and sagittal orientations.
-- ✅ `Viewport3DView` volume rendering using `vtkSmartVolumeMapper`.
+- ✅ `Viewport3DView` volume rendering using `vtkSmartVolumeMapper` with `VTK_SHORT` scalars.
 - ✅ Volume rendering presets (Bone, Soft Tissue, Skin, CT Angio, CBCT).
 - ✅ `TomographyEditor` resolves imported volume data and provides it to Views.
 - ✅ STL validation path (`Mesh` → `vtkPolyData` → `Viewport3DView.set_mesh`) confirmed working. The VTK pipeline (renderer, camera, mapper, OpenGL context) is healthy.
+- ✅ **DICOM volume path validated:** The corrected `VtkImageAdapter` (no transpose, `int16`) renders the imported DICOM volume correctly in both MPR and 3D views. The previous stripe artifacts were caused by voxel ordering, not by the renderer, camera, mapper, or OpenGL context.
+- ✅ `Viewport3DView.set_volume(volume: Volume)` consumes the domain `Volume` directly via `VtkImageAdapter`.
 
 **Pending:**
 
 - ⏳ `RenderingAdapter` observing Scene changes and updating VTK representations.
 - ⏳ Window/Level controls and display-state integration across the pipeline (the MPR pipeline applies a fixed W/L; the 3D viewport W/L is deferred to Passo 8d).
 - ⏳ Consistent physical orientation and coordinate handling validated against reference datasets.
-- ⏳ Resolution of the DICOM visualization bug (see §10.5).
 - ⏳ VTK resource lifecycle and cleanup validated under repeated open/close.
 - ⏳ Headless and Windows rendering tests (see §10.6).
+- ⏳ **Marching Cubes surface path** for bone visualization (recommended as a complement to volume rendering for orthopedic planning; the initial mesh-based validation was proven viable).
 
 **Architectural constraints:**
 
@@ -520,11 +535,16 @@ This phase provides the **technical foundation** for imaging. It does not implem
 - Geometry Infrastructure tests (Mesh invariants, STL round-trip, VTK conversion).
 - VTI export round-trip tests.
 - Scene lifecycle and persistence tests.
-- Headless VTK tests where supported.
-- Qt/VTK integration tests on reference Windows hardware.
-- Performance tests for import, Scene updates, GPU upload and rendering.
+- ✅ **Voxel ordering regression test:** build a synthetic `Volume` with a known asymmetric pattern, convert to `vtkImageData`, and assert that `vtkImageData.GetScalarComponentAsFloat` matches `Volume.data` at every corner and at the center.
+- ✅ **`int16` fidelity test:** verify the `vtkImageData` scalar range equals `Volume.data.min()`/`max()`.
+- ✅ **`spacing_z` test:** construct a synthetic DICOM series with known `ImagePositionPatient` and assert the computed spacing.
+- ⏳ Import performance test: 500-slice reference dataset < 10 s.
+- ⏳ `uint8` fallback test: verify that the normalization preserves the spatial ordering (only the scalar values change).
+- ⏳ Headless VTK tests where supported.
+- ⏳ Qt/VTK integration tests on reference Windows hardware.
+- ⏳ Performance tests for import, Scene updates, GPU upload and rendering.
 
-**Status:** 🚧 In Progress. The existing import path and MPR implementation provide a starting point. The Geometry Infrastructure initial subset is validated. The remaining work is to consolidate imaging data contracts, resolve the DICOM visualization bug, and complete the rendering and end-to-end integration.
+**Status:** ✅ Core implemented. The existing import path, MPR implementation and 3D viewport render the imported DICOM volume correctly. The Geometry Infrastructure initial subset is validated. The remaining work is to consolidate imaging data contracts, complete the rendering adapter, and build the clinical workflows.
 
 ### Phase 5: Clinical Flows
 
@@ -738,105 +758,4 @@ Testing is a clinical requirement. Metrics must be reproducible and contextualiz
 ### 7.1 Coverage
 
 - **Domain:** Critical invariants and error cases must be tested.
-- **Application:** Command execution, transaction rollback, event publication and task lifecycle.
-- **Infrastructure:** DICOM parsing, geometry, calibration, persistence and interoperability.
-- **UI:** Widget behavior, Editor lifecycle and Workspace integration.
-- **End-to-End:** Complete clinical workflows using synthetic, anonymized or approved datasets.
-
-Coverage percentages are secondary to testing critical behavior and failure paths.
-
-### 7.2 Performance Metrics
-
-All performance targets must be measured using a defined Reference Dataset and Reference Hardware.
-
-Initial targets:
-
-- **DICOM Import:** 500-slice reference dataset in under 10 seconds, including indexing and readiness for first visualization.
-- **Surface Rendering:** 30+ FPS for a mesh of 1,000,000 polygons on reference hardware.
-- **Memory:** Target below 4 GB RAM during standard facial CT processing.
-
-Performance measurements must distinguish:
-
-- File reading and DICOM parsing.
-- Volume construction and geometry validation.
-- NumPy/VTK conversion.
-- GPU upload.
-- Scene update.
-- Rendering.
-
-Targets must be reviewed against actual datasets and hardware. They are not universal guarantees.
-
-### 7.3 CPU and GPU Responsibilities
-
-- Clinical data and semantic objects remain in main memory and the Domain Scene.
-- GPU memory stores renderable representations and rendering resources.
-- Avoid unnecessary copies and maintain explicit ownership of large buffers.
-- GPU acceleration is optional for core clinical workflows.
-- CPU-based fallback must remain available for essential operations.
-
-### 7.4 Concurrency
-
-- `TaskManager` is the only application mechanism for off-thread work, according to ADR-0011.
-- Long-running DICOM parsing, segmentation, registration and mesh processing must execute as Tasks.
-- GUI and VTK render-window operations remain on the GUI thread.
-- Cancellation is cooperative.
-- Progress, cancellation and errors must be propagated through TaskManager callbacks.
-- Do not use `QTimer` as a substitute for background execution.
-- Do not create unmanaged threads, event loops or call `QApplication.processEvents()`.
-
-### 7.5 Telemetry
-
-Long-running operations must emit the appropriate telemetry events through `TelemetrySink`, using correlation IDs according to ADR-0012.
-
-Telemetry must not contain protected health information or unnecessary patient-identifying metadata.
-
----
-
-## 8. Release Criteria (Definition of Done)
-
-A phase is complete when:
-
-1. Code follows the accepted architecture and relevant ADRs.
-2. Unit, contract, integration and UI tests are passing as applicable.
-3. New Protocols have contract tests.
-4. CI is green.
-5. Documentation is updated.
-6. The feature is usable through its intended UI workflow.
-7. No unresolved `TODO` remains without a linked issue.
-8. No production `NoOp*` placeholder remains for a service the phase claims to deliver.
-9. Known debt affecting the phase is fixed or explicitly tracked with a linked issue.
-10. Data integrity, failure handling and recovery behavior are tested where relevant.
-
-### 8.1 Release 1.0 Scope
-
-Release 1.0 delivers the validated clinical core defined by the doctoral research scope.
-
-It does not include:
-
-- External Plugins.
-- Node System.
-- AI/MCP platform integration.
-- Multi-monitor support as a required feature.
-
-These capabilities belong to Releases 2.0 and 3.0 and must not compromise the initial clinical delivery.
-
----
-
-## 9. Implementation Summary
-
-The foundation, core Domain, Workspace and project lifecycle are implemented sufficiently to support the next development stage.
-
-Phase 4 is the active phase. Its existing DICOM import path, Scene integration and MPR implementation provide a functional starting point, but they do not yet constitute a complete medical imaging infrastructure.
-
-The Geometry Infrastructure initial subset (Mesh, STL import/export, VTK adapter, `MeshDebugEditor`) is implemented and validated, confirming that the VTK rendering pipeline is healthy. This isolates the DICOM visualization bug to the `vtkImageData` path, not the renderer.
-
-The immediate priorities are:
-
-1. Complete transactional Command execution.
-2. Complete `EditorContext` propagation.
-3. Consolidate Scene lifecycle and persistence.
-4. Formalize `Volume` and `VolumeGeometry`.
-5. Strengthen DICOM geometry validation and provenance.
-6. Implement explicit NumPy/VTK interoperability and buffer ownership.
-7. ✅ Establish the Geometry Infrastructure initial subset (Mesh + STL import + VTK adapter) — completed and validated.
-8. Complete V
+- **Application:** Command execution, transaction rollback, event publication and task

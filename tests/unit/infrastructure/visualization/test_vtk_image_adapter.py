@@ -115,5 +115,24 @@ def test_to_vtk_applies_direction_matrix() -> None:
 
 
 def test_is_hu_calibrated() -> None:
+    """HU calibration state belongs to the Volume, not to the adapter.
+
+    ``VtkImageAdapter`` is a pure bridge from ``Volume`` to
+    ``vtkImageData``. It must not carry or reinterpret clinical
+    state. This test asserts that the calibration flag lives on the
+    domain object and that the adapter does not expose a parallel
+    API for it (which would create two sources of truth).
+    """
     volume = _make_volume()
-    assert VtkImageAdapter.is_hu_calibrated(volume) is True
+
+    # The domain object exposes the calibration state.
+    assert volume.is_hu_calibrated is (
+        volume.intensity_scale is IntensityScale.HU
+    )
+
+    # The adapter must not expose ``is_hu_calibrated`` — that would
+    # be a second source of truth.
+    assert not hasattr(VtkImageAdapter, "is_hu_calibrated"), (
+        "VtkImageAdapter must not expose is_hu_calibrated. "
+        "Calibration state belongs to the Volume (domain)."
+    )

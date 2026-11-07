@@ -34,7 +34,7 @@ from __future__ import annotations
 import logging
 
 import numpy as np
-from PySide6.QtCore import QObject, Qt, Signal
+from PySide6.QtCore import QObject, Qt, Signal, SignalInstance
 from PySide6.QtGui import QImage, QPixmap
 from PySide6.QtWidgets import (
     QHBoxLayout,
@@ -75,9 +75,9 @@ class MPRView(View):
     """A 2D MPR view backed by NumPy + QImage (no VTK)."""
 
     def __init__(
-            self,
-            view_id: str = "view.mpr_axial",
-            view_type: str = "axial",
+        self,
+        view_id: str = "view.mpr_axial",
+        view_type: str = "axial",
     ) -> None:
         super().__init__(view_id=view_id, view_type=view_type)
         if view_type not in _ORIENTATION_BY_TYPE:
@@ -99,7 +99,7 @@ class MPRView(View):
         self._slice_label: QLabel | None = None
 
     @property
-    def slice_changed(self) -> Signal:
+    def slice_changed(self) -> SignalInstance:
         return self._signals.slice_changed
 
     def set_volume(self, volume: Volume) -> None:
@@ -276,9 +276,7 @@ class MPRView(View):
         slice_label = QLabel("0 / 0")
         slice_label.setObjectName(f"mpr.view.{self.view_id}.slice_label")
         slice_label.setMinimumWidth(60)
-        slice_label.setAlignment(
-            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
-        )
+        slice_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
 
         slider = QSlider(Qt.Orientation.Horizontal)
         slider.setObjectName(f"mpr.view.{self.view_id}.slider")

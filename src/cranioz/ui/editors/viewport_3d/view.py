@@ -19,8 +19,10 @@ See ADR-0013 §2.3, scene.md §24, scene.md §27 (presentation state).
 
 from __future__ import annotations
 
+import contextlib
 from typing import Any
 
+import numpy as np
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QLayout, QVBoxLayout, QWidget
 from vtkmodules.qt.QVTKRenderWindowInteractor import (
@@ -79,23 +81,15 @@ class Viewport3DView(View):
         self._volume: Volume | None = None
         self._mesh: Mesh | None = None
         self._render_pending = False
+        self._initial_render_timer: QTimer | None = None
 
     # ----- Public API ---------------------------------------------------
 
     def set_volume(self, volume: Volume) -> None:
-        """Attach a ``Volume`` and render it as a volume.
-
-        The ``Volume`` is converted to ``vtkImageData`` via
-        ``VtkImageAdapter`` (the sole bridge between the domain and
-        VTK, per Medical Imaging Infrastructure §3.2). A strong
-        reference to the ``Volume`` is retained so that the shared
-        NumPy buffer is not garbage-collected while VTK still points
-        to it (§8.1).
-        """
+        """Attach a ``Volume`` and render it as a volume."""
         if volume is None:
             raise ValueError("Viewport3DView.set_volume requires a non-None Volume")
 
-        # Choose preset based on intensity_scale.
         if volume.is_hu_calibrated:
             preset_name = _DEFAULT_PRESET
         else:
@@ -107,12 +101,7 @@ class Viewport3DView(View):
         self._ensure_pipeline()
         self._ensure_interactor_in_layout()
 
-        # Convert Volume -> vtkImageData via the sole bridge.
         vtk_image_data = self._adapter.to_vtk(volume)
-
-        # Retain a strong reference to the Volume so the shared
-        # NumPy buffer is not garbage-collected while VTK still
-        # points to it (§8.1).
         self._volume = volume
         self._vtk_image_data = vtk_image_data
 
@@ -130,67 +119,61 @@ class Viewport3DView(View):
         self._apply_transfer_functions()
         volume_actor.SetProperty(volume_property)
 
-        # Rebuild the outline for the new input.
         if self._outline_actor is not None:
             renderer.RemoveActor(self._outline_actor)
         self._outline_actor = self._build_outline_actor()
 
-        # Initialize the interactor before scheduling the render.
         interactor = self._interactor
         if interactor is not None:
-            interactor.Initialize()
+            with contextlib.suppress(RuntimeError):
+                interactor.Initialize()
 
         self._volume_set = True
         self._schedule_initial_render()
 
     def _schedule_initial_render(self) -> None:
-        """Schedule the first render, avoiding a double dispatch.
-
-        The render is deferred to the next event-loop iteration (and
-        again at 100 ms) so the QVTKRenderWindowInteractor has a real
-        OpenGL context by the time Render() is called. Without this,
-        calling Render() from set_volume (before show()) silently
-        does nothing, and the viewport stays empty.
-        """
+        """Schedule the first render, avoiding a double dispatch."""
         if self._render_pending:
             return
         self._render_pending = True
-        QTimer.singleShot(0, self._initial_render)
-        QTimer.singleShot(100, self._initial_render)
+
+        timer = self._initial_render_timer
+        if timer is None:
+            return
+        timer.start(0)
 
     def _initial_render(self) -> None:
         """Configure the camera and render the first frame."""
-        renderer = self._renderer
         interactor = self._interactor
-        if renderer is None or interactor is None:
+        renderer = self._renderer
+        if interactor is None or renderer is None:
             self._render_pending = False
             return
 
-        # If the widget has zero size, the OpenGL context is not ready
-        # yet. Retry later instead of rendering into an invalid window.
-        if interactor.width() <= 0 or interactor.height() <= 0:
-            QTimer.singleShot(50, self._initial_render)
+        try:
+            width_ok = interactor.width() > 0 and interactor.height() > 0
+        except RuntimeError:
+            self._render_pending = False
+            return
+
+        if not width_ok:
+            timer = self._initial_render_timer
+            if timer is not None:
+                timer.start(50)
             return
 
         self._render_pending = False
 
-        # Configure the camera explicitly instead of relying on
-        # ResetCamera(), which can leave the clipping range outside
-        # the volume's bounds and hide it.
-        self._configure_camera_for_volume()
-
-        render_window = interactor.GetRenderWindow()
-        if render_window is not None:
-            render_window.Render()
+        try:
+            self._configure_camera_for_volume()
+            render_window = interactor.GetRenderWindow()  # type: ignore[no-untyped-call]
+            if render_window is not None:
+                render_window.Render()
+        except RuntimeError:
+            return
 
     def _configure_camera_for_volume(self) -> None:
-        """Configure the camera to frame the current volume.
-
-        Uses the volume actor's bounds to compute position, focal
-        point, and parallel scale. Orthographic projection is used
-        because volume rendering in medical imaging does not benefit
-        from perspective distortion.
-        """
+        """Configure the camera to frame the current volume."""
         renderer = self._renderer
         if renderer is None:
             return
@@ -203,11 +186,9 @@ class Viewport3DView(View):
         cy = (bounds[2] + bounds[3]) / 2.0
         cz = (bounds[4] + bounds[5]) / 2.0
         width = bounds[1] - bounds[0]
-        height = bounds[3] - bounds[3]
+        height = bounds[3] - bounds[2]
         depth = bounds[5] - bounds[4]
 
-        # Diagonal of the volume's bounding box, used to place the
-        # camera far enough to see the whole volume.
         diagonal = (width**2 + height**2 + depth**2) ** 0.5
         if diagonal <= 0:
             return
@@ -222,41 +203,18 @@ class Viewport3DView(View):
         renderer.ResetCameraClippingRange()
 
     def _current_bounds(self) -> tuple[float, ...] | None:
-        """Return the bounds of the current volume or mesh actor.
-
-        Prefers the volume actor (the primary rendering path). Falls
-        back to the mesh actor if no volume is attached.
-        """
-        if self._volume_actor is not None and self._volume_set:
-            return self._volume_actor.GetBounds()
-        if self._mesh_actor is not None:
-            return self._mesh_actor.GetBounds()
+        """Return the bounds of the current volume or mesh actor."""
+        try:
+            if self._volume_actor is not None and self._volume_set:
+                return self._volume_actor.GetBounds()
+            if self._mesh_actor is not None:
+                return self._mesh_actor.GetBounds()
+        except RuntimeError:
+            return None
         return None
 
     def set_mesh(self, mesh: Mesh) -> None:
-        """Render a canonical ``Mesh`` as a polygonal actor.
-
-        This is the second rendering path of the View. It bypasses the
-        ``Volume`` → ``vtkImageData`` pipeline (adapter, reslice,
-        transfer functions) and renders a plain ``vtkPolyData``. If
-        the mesh renders correctly, the renderer, camera and OpenGL
-        context are healthy, and any remaining volume-rendering issue
-        lives in the ``vtkImageData`` path.
-
-        The mesh is added on top of any existing volume (both can
-        coexist in the same scene). Calling ``set_mesh`` again replaces
-        the previous mesh; the volume is left untouched.
-
-        A strong reference to the ``Mesh`` is retained so the shared
-        NumPy buffer is not garbage-collected while VTK still points
-        to it.
-
-        Args:
-            mesh: the canonical mesh to render.
-
-        Raises:
-            ValueError: if ``mesh`` is None.
-        """
+        """Render a canonical ``Mesh`` as a polygonal actor."""
         if mesh is None:
             raise ValueError("Viewport3DView.set_mesh requires a non-None Mesh")
 
@@ -285,7 +243,8 @@ class Viewport3DView(View):
 
         interactor = self._interactor
         if interactor is not None:
-            interactor.Initialize()
+            with contextlib.suppress(RuntimeError):
+                interactor.Initialize()
 
         self._schedule_initial_render()
 
@@ -345,12 +304,7 @@ class Viewport3DView(View):
     # ----- View API ----------------------------------------------------
 
     def content_widget(self) -> QWidget:
-        """Return the container widget for this view.
-
-        The VTK interactor is NOT added to the container until a
-        ``set_volume`` or ``set_mesh`` call. This avoids creating an
-        OpenGL context for a view that has no data.
-        """
+        """Return the container widget for this view."""
         self._ensure_container()
         container = self._container
         if container is None:  # pragma: no cover - defensive
@@ -359,7 +313,14 @@ class Viewport3DView(View):
 
     def dispose(self) -> None:
         """Release the VTK pipeline and the Qt widgets. Idempotent."""
-        # 1. Detach props from the renderer.
+        if self._initial_render_timer is not None:
+            self._initial_render_timer.stop()
+            with contextlib.suppress(RuntimeError, TypeError):
+                self._initial_render_timer.timeout.disconnect()
+            self._initial_render_timer.deleteLater()
+            self._initial_render_timer = None
+        self._render_pending = False
+
         if self._renderer is not None:
             self._renderer.RemoveAllViewProps()
             self._renderer = None
@@ -369,14 +330,13 @@ class Viewport3DView(View):
         self._volume_property = None
         self._mesh_actor = None
 
-        # 2. Finalize and destroy the interactor.
         if self._interactor is not None:
-            self._interactor.Finalize()  # type: ignore[no-untyped-call]
+            with contextlib.suppress(RuntimeError):
+                self._interactor.Finalize()  # type: ignore[no-untyped-call]
             self._interactor.setParent(None)
             self._interactor.deleteLater()
             self._interactor = None
 
-        # 3. Destroy the container.
         if self._container is not None:
             self._container.setParent(None)
             self._container.deleteLater()
@@ -386,18 +346,17 @@ class Viewport3DView(View):
         self._volume = None
         self._mesh = None
         self._volume_set = False
-        self._render_pending = False
 
     # ----- Internal helpers -------------------------------------------
 
     def _ensure_pipeline(self) -> None:
-        """Create the renderer, interactor, and volume on first use."""
+        """Create the renderer, interactor, volume, and render timer on first use."""
         if self._interactor is not None:
             return
 
         interactor = QVTKRenderWindowInteractor()  # type: ignore[no-untyped-call]
         renderer = vtkRenderer()
-        renderer.SetBackground(0.1, 0.1, 0.2)  # dark blue
+        renderer.SetBackground(0.1, 0.1, 0.2)
         interactor.GetRenderWindow().AddRenderer(renderer)  # type: ignore[no-untyped-call]
 
         volume_property = vtkVolumeProperty()
@@ -412,10 +371,17 @@ class Viewport3DView(View):
         volume_actor.SetProperty(volume_property)
         renderer.AddVolume(volume_actor)
 
+        # QTimer without a parent. The View is not a QObject, so it
+        # cannot be used as the parent. Cleanup is explicit in dispose().
+        timer = QTimer()
+        timer.setSingleShot(True)
+        timer.timeout.connect(self._initial_render)
+
         self._interactor = interactor
         self._renderer = renderer
         self._volume_property = volume_property
         self._volume_actor = volume_actor
+        self._initial_render_timer = timer
 
         self._ensure_container()
 
@@ -465,51 +431,38 @@ class Viewport3DView(View):
         return actor
 
     def _apply_transfer_functions(self) -> None:
-        """Apply the current preset and window/level to the volume property.
-
-        **Dynamic adaptation**: if the volume's scalar range is outside
-        the preset's expected range, the transfer function is scaled
-        to cover the actual range. This guarantees that the volume
-        is visible regardless of the preset.
-        """
+        """Apply the current preset and window/level to the volume property."""
         volume_property = self._volume_property
         if volume_property is None:  # pragma: no cover - defensive
             return
 
-        # If the volume is not calibrated (CBCT), adapt the transfer
-        # function to the actual data range.
-        if self._volume is not None and not self._volume.is_hu_calibrated:
-            data_min, data_max = self._volume.scalar_range
-            color = vtkColorTransferFunction()
-            color.AddRGBPoint(data_min, 0.0, 0.0, 0.0)
-            color.AddRGBPoint(data_max, 1.0, 1.0, 1.0)
-
-            opacity = vtkPiecewiseFunction()
-            opacity.AddPoint(data_min, 0.0)
-            opacity.AddPoint(data_max, 1.0)
-
-            volume_property.SetColor(color)
-            volume_property.SetScalarOpacity(opacity)
-            volume_property.SetScalarOpacityUnitDistance(1.0)
-            return
-
-        # For calibrated volumes, use the preset as-is.
         color = vtkColorTransferFunction()
-        for color_point in self._preset.color_points:
-            color.AddRGBPoint(
-                color_point.scalar,
-                color_point.r,
-                color_point.g,
-                color_point.b,
-            )
-
         opacity = vtkPiecewiseFunction()
-        for opacity_point in self._preset.opacity_points:
-            opacity.AddPoint(opacity_point.scalar, opacity_point.opacity)
+
+        if self._volume is not None and not self._volume.is_hu_calibrated:
+            p1, p99 = np.percentile(self._volume.data, [1, 99])
+
+            color.AddRGBPoint(p1, 0.0, 0.0, 0.0)
+            color.AddRGBPoint(p1 + (p99 - p1) * 0.3, 0.2, 0.2, 0.2)
+            color.AddRGBPoint(p1 + (p99 - p1) * 0.7, 0.8, 0.7, 0.6)
+            color.AddRGBPoint(p99, 1.0, 1.0, 1.0)
+
+            opacity.AddPoint(p1, 0.0)
+            opacity.AddPoint(p1 + (p99 - p1) * 0.2, 0.0)
+            opacity.AddPoint(p1 + (p99 - p1) * 0.5, 0.15)
+            opacity.AddPoint(p99, 0.9)
+        else:
+            for color_point in self._preset.color_points:
+                color.AddRGBPoint(
+                    color_point.scalar,
+                    color_point.r,
+                    color_point.g,
+                    color_point.b,
+                )
+
+            for opacity_point in self._preset.opacity_points:
+                opacity.AddPoint(opacity_point.scalar, opacity_point.opacity)
 
         volume_property.SetColor(color)
         volume_property.SetScalarOpacity(opacity)
         volume_property.SetScalarOpacityUnitDistance(1.0)
-
-        # Window/level for volume rendering is deferred to Passo 8d.
-        _ = self._window, self._level
