@@ -1,0 +1,31 @@
+{
+  "_metadata": { "module": "flows", "language": "en", "format_version": 1 },
+  "orthognathic": {
+    "name": { "message": "Orthognathic Surgery", "description": "Flow name:orthognathic." },
+    "steps": {
+      "organize_data": { "message": "Organize Data", "description": "Step: organize data." },
+      "osteotomy": { "message": "Osteotomy", "description": "Step: osteotomy." },
+      "guide": { "message": "Guide", "description": "Step: surgical guide." }
+    }
+  },
+  "orthognathic_advanced": {
+    "name": { "message": "Advanced Orthognathic Surgery", "description": "Flow name: advanced orthognathic." },
+    "steps": {
+      "patient": { "message": "Patient", "description": "Step: patient." },
+      "tomography": { "message": "Tomography", "description": "Step: tomography." },
+      "cephalometry": { "message": "Cephalometry", "description": "Step: cephalometry." },
+      "registration": { "message": "Registration", "description": "Step: registration." },
+      "osteotomy": { "message": "Osteotomy", "description": "Step: osteotomy." }
+    }
+  },
+  "facial_implants": {
+    "name": { "message": "Facial Implants", "description": "Flow name: facial implants." },
+    "steps": {
+      "patient": { "message": "Patient", "description": "Step: patient." },
+      "tomography": { "message": "Tomography", "description": "Step: tomography." },
+      "implants": { "message": "Facial Implants", "description": "Step: facial implants." },
+      "splint": { "message": "Splint", "description": "Step: splint." },
+      "split_mold": { "message": "Split Mold", "description": "Step: split mold." }
+    }
+  }
+}

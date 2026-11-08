@@ -1,0 +1,31 @@
+{
+  "_metadata": { "module": "flows", "language": "pt-BR", "format_version": 1 },
+  "orthognathic": {
+    "name": { "message": "Cirurgia Ortognática", "description": "Nome do fluxo: ortognática." },
+    "steps": {
+      "organize_data": { "message": "Organizar Dados", "description": "Etapa: organizar dados." },
+      "osteotomy": { "message": "Osteotomia", "description": "Etapa: osteotomia." },
+      "guide": { "message": "Guia", "description": "Etapa: guia cirúrgica." }
+    }
+  },
+  "orthognathic_advanced": {
+    "name": { "message": "Cirurgia Ortognática Avançada", "description": "Nome do fluxo: ortognática avançada." },
+    "steps": {
+      "patient": { "message": "Paciente", "description": "Etapa: paciente." },
+      "tomography": { "message": "Tomografia", "description": "Etapa: tomografia." },
+      "cephalometry": { "message": "Cefalometria", "description": "Etapa: cefalometria." },
+      "registration": { "message": "Registro", "description": "Etapa: registro." },
+      "osteotomy": { "message": "Osteotomia", "description": "Etapa: osteotomia." }
+    }
+  },
+  "facial_implants": {
+    "name": { "message": "Implantes Faciais", "description": "Nome do fluxo: implantes faciais." },
+    "steps": {
+      "patient": { "message": "Paciente", "description": "Etapa: paciente." },
+      "tomography": { "message": "Tomografia", "description": "Etapa: tomografia." },
+      "implants": { "message": "Implantes Faciais", "description": "Etapa: implantes faciais." },
+      "split_mold": { "message": "Molde Bipartido", "description": "Etapa: molde bipartido." },
+      "splint": { "message": "Contenção", "description": "Etapa: contenção." }
+    }
+  }
+}

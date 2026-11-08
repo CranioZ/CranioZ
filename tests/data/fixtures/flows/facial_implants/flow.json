@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "flow_id": "facial_implants",
+  "name_key": "flows.facial_implants.name",
+  "version": 1,
+  "steps": [
+    {
+      "step_id": "patient",
+      "name_key": "flows.facial_implants.steps.patient",
+      "module_id": "patient"
+    },
+    {
+      "step_id": "tomography",
+      "name_key": "flows.facial_implants.steps.tomography",
+      "module_id": "tomography"
+    },
+    {
+      "step_id": "implants",
+      "name_key": "flows.facial_implants.steps.implants",
+      "module_id": "facial_implants"
+    },
+    {
+      "step_id": "splint",
+      "name_key": "flows.facial_implants.steps.splint",
+      "module_id": "facial_implants"
+    },
+    {
+      "step_id": "split_mold",
+      "name_key": "flows.facial_implants.steps.split_mold",
+      "module_id": "facial_implants"
+    }
+  ]
+}

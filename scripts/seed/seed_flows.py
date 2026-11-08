@@ -49,10 +49,10 @@ def _build_flows() -> dict[str, dict]:
         _step("splint", "osteotomies", "facial_implants"),
     ]
     return {
-        "orthognathic_basic": {
+        "orthognathic": {
             "schema_version": 1,
-            "flow_id": "orthognathic_basic",
-            "name_key": "flows.orthognathic_basic.name",
+            "flow_id": "orthognathic",
+            "name_key": "flows.orthognathic.name",
             "version": 1,
             "steps": basic_steps,
         },

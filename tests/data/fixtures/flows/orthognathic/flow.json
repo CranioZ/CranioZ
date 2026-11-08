@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "flow_id": "orthognathic",
+  "name_key": "flows.orthognathic.name",
+  "version": 1,
+  "steps": [
+    {
+      "step_id": "organize_data",
+      "name_key": "flows.orthognathic.steps.organize_data",
+      "module_id": "patient"
+    },
+    {
+      "step_id": "osteotomy",
+      "name_key": "flows.orthognathic.steps.osteotomy",
+      "module_id": "osteotomies"
+    },
+    {
+      "step_id": "guide",
+      "name_key": "flows.orthognathic.steps.guide",
+      "module_id": "orthognathic_guide"
+    }
+  ]
+}

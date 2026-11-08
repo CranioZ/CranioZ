@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "flow_id": "orthognathic_advanced",
+  "name_key": "flows.orthognathic_advanced.name",
+  "version": 1,
+  "steps": [
+    {
+      "step_id": "patient",
+      "name_key": "flows.orthognathic_advanced.steps.patient",
+      "module_id": "patient"
+    },
+    {
+      "step_id": "tomography",
+      "name_key": "flows.orthognathic_advanced.steps.tomography",
+      "module_id": "tomography"
+    },
+    {
+      "step_id": "cephalometry",
+      "name_key": "flows.orthognathic_advanced.steps.cephalometry",
+      "module_id": "cephalometry"
+    },
+    {
+      "step_id": "registration",
+      "name_key": "flows.orthognathic_advanced.steps.registration",
+      "module_id": "registration"
+    },
+    {
+      "step_id": "osteotomy",
+      "name_key": "flows.orthognathic_advanced.steps.osteotomy",
+      "module_id": "osteotomies"
+    }
+  ]
+}
