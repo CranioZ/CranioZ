@@ -2,8 +2,8 @@
 
 **Document type:** Action plan and handoff
 **Status:** Active
-**Scope:** Immediate next work items after the VTK pipeline validation and appearance architecture decisions
-**Last updated:** 2026-11-07
+**Scope:** Immediate next work items after Sprint B closure
+**Last updated:** 2026-11-08
 
 ---
 
@@ -11,7 +11,9 @@
 
 The VTK rendering pipeline is validated end-to-end. The DICOM visualization bug was resolved on 2026-11-06. The voxel-ordering contract is documented and enforced by regression tests. The imaging pipeline uses `int16` (`VTK_SHORT`) as the production scalar type, with the direction matrix applied and confirmed.
 
-The appearance architecture has been decided. `docs/architecture/appearance/` is the canonical specification. ADR-0014 registers the toolkit decision (Qt Widgets + QSS modular + Design Tokens in Python, not QML). The DICOM path, the 3D viewport, the MPR view, and the workspace layout are operational and covered by 1315 passing tests.
+The appearance architecture has been decided. `docs/architecture/appearance/` is the canonical specification. ADR-0014 registers the toolkit decision (Qt Widgets + QSS modular + Design Tokens in Python, not QML). The DICOM path, the 3D viewport, the MPR view, and the workspace layout are operational and covered by **1340 passing tests**.
+
+Sprint B (i18n) is complete: the shell — `MainWindow`, the Home Page tree, the three Top Bar segments, and the Workspace placeholder editor — resolves user-facing strings through the `TranslationService`. `tests/architecture/test_no_hardcoded_strings_in_shell_widgets.py` guards against regressions.
 
 The project is ready to close Phases 1, 2, and 3 formally before advancing deeper into Phase 4. This document defines the execution order and the acceptance criteria for each phase.
 
@@ -28,23 +30,30 @@ The project is ready to close Phases 1, 2, and 3 formally before advancing deepe
   - `surfaces-and-overlays.md` (Solid, Translucent, Simulated Glass; real blur is not supported)
   - `modal-focus-effect.md` (dimming + experimental blur, Phase 6)
   - `widget-system.md`, `viewport-appearance.md`, `persistence-and-settings.md`, `accessibility-and-performance.md`, `implementation-roadmap.md`
-- ADR-0014 (Widget Toolkit Selection) is written in `docs/adr/0014-widget-toolkit-selection.md`.
-- ADR-0013 (UI Widgets and Editor Overlays) is accepted.
+- ADR-0014 (Widget Toolkit Selection) is written in `docs/adr/ADR-0014-widget-toolkit-selection.md`.
+- ADR-0013 (Editor Layout Tree, View Layout Tree, and Toolbar Placement) is accepted.
 
 ### 2.2 Code and tests
 
-- 1315 tests passing.
-- `ruff` clean.
-- `mypy` clean.
+- **1340 tests passing.**
+- `ruff check` clean; `ruff format --check` clean.
+- `mypy src` clean.
 - `VtkImageAdapter` corrected (no transposition, `int16`, direction matrix).
 - `Viewport3DView` stabilized (`QTimer` cleanup on `dispose`).
 - `MPRView` renders correctly with the Volume direction matrix.
 - `MainWindow` registers built-in tools before creating the Workspace.
+- **Sprint B (i18n) complete.** The shell resolves every user-facing string through the `TranslationService`:
+  - `MainWindow`, `HomePage`, `HomeTopBar`, `CommunitySidebar`, `ProjectTable`, `FlowList`, `FlowRow`, `StartButton`
+  - `HomeSegment`, `ModulesSegment`, `ExtrasSegment`
+  - `Workspace._PlaceholderEditor`
+  - `__main__.py` startup error dialog
+  - `tests/architecture/test_no_hardcoded_strings_in_shell_widgets.py` prevents regressions.
+- `test_modules_segment.py` was rewritten to test `ModulesSegment` (it previously contained a duplicate of `test_home_segment.py`).
 
 ### 2.3 Implementation plan
 
 - `implementation_plan.md` is the current roadmap. It defines 11 phases.
-- Phase 4 is marked as the active phase, with the following items already complete: voxel ordering, `int16`, direction matrix, `Viewport3DView.set_volume(Volume)`, STL path validation, DICOM path validation.
+- Phase 4 is marked as the next major implementation phase, with the following items already complete: voxel ordering, `int16`, direction matrix, `Viewport3DView.set_volume(Volume)`, STL path validation, DICOM path validation.
 
 ---
 
@@ -52,23 +61,24 @@ The project is ready to close Phases 1, 2, and 3 formally before advancing deepe
 
 ### 3.1 Phase 1 — Contracts, Core Domain & i18n
 
-**Goal:** close Phase 1 formally. Blockers: i18n contract and `EditorContext` propagation.
+**Goal:** close Phase 1 formally. Blocker: `EditorContext` propagation (Sprint C).
 
-#### 3.1.1 Internationalization (Sprint B)
+#### 3.1.1 Internationalization (Sprint B) — ✅ Complete
 
-Deliverables:
+Delivered:
 
 - `Locale` value object (`pt_BR`, `en_US`).
-- `TranslationService` Protocol with `tr(key, **params)`, `locale()`, `set_locale()`.
+- `TranslationService` Protocol (`tr`, `language`, `set_language`).
 - `TranslationCatalog` (JSON loader) and `TranslationCatalogRegistry`.
-- Concrete `TranslationService` implementation with `en_US` fallback.
-- `en_US` catalog covering all currently used keys (TopBar, HomePage, import errors, message boxes).
-- `pt_BR` catalog with minimum coverage.
-- Injection into `MainWindow`, `Workspace`, `HomePage`, `TomographyEditor`.
-- Removal of `MainWindow._humanize_translation_key`.
-- Contract test: every `name_key` in every `flow.json` resolves in `en_US`.
+- Concrete `CatalogTranslationService` with `en` fallback.
+- `en` and `pt-BR` catalogs covering all currently used keys.
+- Injection into `MainWindow`, `Workspace`, `HomePage`; leaf widgets use the singleton `tr(...)`.
+- `MainWindow._humanize_translation_key` removed.
+- Contract tests: every `name_key` in every `flow.json` resolves; `test_no_hardcoded_strings_in_shell_widgets.py` guards the shell.
 
-#### 3.1.2 `EditorContext` complete (Sprint C)
+#### 3.1.2 `EditorContext` complete (Sprint C) — 🚧 Pending
+
+**Depends on:** Sprint E (`theme_service`), Sprint F (`icon_provider`).
 
 Deliverables:
 
@@ -79,17 +89,17 @@ Deliverables:
 
 #### 3.1.3 Phase 1 tests
 
-- i18n contract tests.
-- `EditorContext` propagation tests.
-- `test_no_hardcoded_strings_in_shell_widgets.py` (detects user-facing strings not routed through `TranslationService`).
+- ✅ i18n contract tests.
+- ✅ `test_no_hardcoded_strings_in_shell_widgets.py`.
+- 🚧 `EditorContext` propagation tests (pending Sprint C).
 
-**Phase 1 is complete when:** i18n contract exists, `EditorContext` propagates all fields, contract tests pass, and CI is green.
+**Phase 1 is complete when:** `EditorContext` propagates all fields, contract tests pass, and CI is green.
 
 ---
 
 ### 3.2 Phase 2 — Workspace Engine & Icons
 
-**Goal:** close Phase 2 formally. Blockers: `AreaLayoutRenderer`, `EditorStack`, `ThemeService` + `ThemeCompiler`, `IconProvider` + `UnicodeIconProvider`.
+**Goal:** close Phase 2 formally. Blockers: `ThemeService` + `ThemeCompiler`, `IconProvider` + `UnicodeIconProvider`, `AreaLayoutRenderer`, `EditorStack`.
 
 #### 3.2.1 `ThemeService` + `ThemeCompiler` + tokens (Sprint E)
 
@@ -106,6 +116,8 @@ Deliverables:
 - Contract tests: `test_no_hardcoded_appearance.py`, `test_tokens_used.py`, `test_tokens_present.py`, `test_theme_completeness.py`, `test_contrast.py`.
 
 #### 3.2.2 `IconProvider` + `UnicodeIconProvider` (Sprint F)
+
+**Depends on:** Sprint E.
 
 Deliverables:
 
@@ -126,6 +138,8 @@ Deliverables:
 - Regression tests.
 
 #### 3.2.4 `EditorStack` (Sprint H)
+
+**Depends on:** Sprint G.
 
 Deliverables:
 
@@ -154,6 +168,8 @@ Deliverables:
 
 #### 3.3.2 Coordinated deletion (Sprint J)
 
+**Depends on:** Sprint I.
+
 Deliverables:
 
 - `ProjectManager.delete_project` coordinates `ProjectCatalog` → `ProjectIndex` → `FilesystemProjectRepository`.
@@ -162,6 +178,8 @@ Deliverables:
 - Contract tests.
 
 #### 3.3.3 Async loading (Sprint K)
+
+**Depends on:** Sprints I, J.
 
 Deliverables:
 
@@ -172,6 +190,8 @@ Deliverables:
 - Regression tests: existing project open/close tests continue to pass.
 
 #### 3.3.4 Professional module (Sprint L)
+
+**Depends on:** Sprints C, E, F.
 
 Deliverables:
 
@@ -204,18 +224,20 @@ Key Phase 4 items that are **not** in scope for this handoff:
 
 The order below respects the dependencies between Phases 1–3.
 
-| Sprint | Phase | Deliverable | Depends on |
-|---|---|---|---|
-| B | 1 | i18n contract and catalogs | — |
-| C | 1 | `EditorContext` propagation | B, E (for `theme_service`), F (for `icon_provider`) |
-| E | 2 | `ThemeService`, `ThemeCompiler`, tokens | — |
-| F | 2 | `IconProvider`, `UnicodeIconProvider`, glyph migration | E |
-| G | 2 | `AreaLayoutRenderer` | — |
-| H | 2 | `EditorStack` | G |
-| I | 3 | `ProjectIndex` | — |
-| J | 3 | Coordinated deletion | I |
-| K | 3 | Async loading | I, J |
-| L | 3 | Professional module | C, E, F |
+| Sprint | Phase | Deliverable | Status | Depends on |
+|---|---|---|---|---|
+| B | 1 | i18n contract and catalogs | ✅ Complete | — |
+| C | 1 | `EditorContext` propagation | 🚧 Pending | B, E (`theme_service`), F (`icon_provider`) |
+| E | 2 | `ThemeService`, `ThemeCompiler`, tokens | 🚧 Pending | — |
+| F | 2 | `IconProvider`, `UnicodeIconProvider`, glyph migration | 🚧 Pending | E |
+| G | 2 | `AreaLayoutRenderer` | 🚧 Pending | — |
+| H | 2 | `EditorStack` | 🚧 Pending | G |
+| I | 3 | `ProjectIndex` | 🚧 Pending | — |
+| J | 3 | Coordinated deletion | 🚧 Pending | I |
+| K | 3 | Async loading | 🚧 Pending | I, J |
+| L | 3 | Professional module | 🚧 Pending | C, E, F |
+
+**Next sprint:** Sprint E — `ThemeService` + `ThemeCompiler` + tokens. It unblocks Sprint F and Sprint C.
 
 **Note on ordering:** Sprint C depends on Sprint E and Sprint F because `EditorContext` will carry `theme_service` and `icon_provider`. If you prefer to avoid that dependency, Sprint C can propagate only the services that exist at that time, and a follow-up PR adds `theme_service` and `icon_provider` to `EditorContext`. Either approach is valid; the first is cleaner.
 
@@ -225,16 +247,12 @@ The order below respects the dependencies between Phases 1–3.
 
 This handoff is complete when:
 
-1. `implementation_plan.md` is updated:
-   - Remove `ADR-0003` as a blocker.
-   - Reference `ADR-0014` and `docs/architecture/appearance/`.
-   - Reflect that `steps_panel` was removed (already done in §10.4).
-   - Mark Phase 1, 2, 3 with detailed status per sprint.
-2. `docs/adr/0014-widget-toolkit-selection.md` is committed.
+1. `implementation_plan.md` reflects Sprint B closed and Sprint C pending, and lists `test_no_hardcoded_strings_in_shell_widgets.py` under the Phase 1 tests.
+2. `docs/adr/ADR-0014-widget-toolkit-selection.md` is committed.
 3. `docs/architecture/appearance/` is consolidated:
    - `README.md`, `appearance-architecture.md`, `themes-and-design-tokens.md`, `icons.md`, `surfaces-and-overlays.md` are the canonical documents.
    - Documents not yet written (`modal-focus-effect.md`, `widget-system.md`, `viewport-appearance.md`, `persistence-and-settings.md`, `accessibility-and-performance.md`, `implementation-roadmap.md`) are placeholders that reference the corresponding sections of `CranioZ_Appearance_System.md` as the source of truth until they are written.
-4. The next conversation starts with **Sprint B (i18n)**.
+4. The next conversation starts with **Sprint E (`ThemeService` + `ThemeCompiler` + tokens)**.
 
 ---
 
@@ -266,18 +284,22 @@ The following items are explicitly out of scope for this handoff and belong to P
 | Issue | Status | Reference |
 |---|---|---|
 | DICOM visualization bug (voxel ordering) | ✅ Resolved 2026-11-06 | `implementation_plan.md` §10.5 |
-| ADR-0003 legacy | ✅ Superseded by ADR-0014 | `docs/adr/0014-widget-toolkit-selection.md` |
+| ADR-0003 legacy | ✅ Superseded by ADR-0014 | `docs/adr/ADR-0014-widget-toolkit-selection.md` |
 | `steps_panel` overlay | ✅ Removed; replaced by `WorkflowBreadcrumb` (Phase 5) | `implementation_plan.md` §10.4 |
-| i18n contract | 🚧 Pending (Sprint B) | This document §3.1.1 |
-| `EditorContext` propagation | 🚧 Pending (Sprint C) | This document §3.1.2 |
-| `ThemeService` / `ThemeCompiler` | 🚧 Pending (Sprint E) | This document §3.2.1 |
-| `IconProvider` / `UnicodeIconProvider` | 🚧 Pending (Sprint F) | This document §3.2.2 |
-| `AreaLayoutRenderer` | 🚧 Pending (Sprint G) | This document §3.2.3 |
-| `EditorStack` | 🚧 Pending (Sprint H) | This document §3.2.4 |
-| `ProjectIndex` | 🚧 Pending (Sprint I) | This document §3.3.1 |
-| Coordinated deletion | 🚧 Pending (Sprint J) | This document §3.3.2 |
-| Async loading | 🚧 Pending (Sprint K) | This document §3.3.3 |
-| Professional module | 🚧 Pending (Sprint L) | This document §3.3.4 |
+| i18n contract (Sprint B) | ✅ Complete | This document §3.1.1 |
+| Shell hardcoded strings | ✅ Guarded by `test_no_hardcoded_strings_in_shell_widgets.py` | `tests/architecture/` |
+| `test_modules_segment.py` duplicate | ✅ Rewritten to test `ModulesSegment` | `tests/unit/ui/workspace/structure/` |
+| `EditorContext` propagation (Sprint C) | 🚧 Pending | This document §3.1.2 |
+| `ThemeService` / `ThemeCompiler` (Sprint E) | 🚧 Pending | This document §3.2.1 |
+| `IconProvider` / `UnicodeIconProvider` (Sprint F) | 🚧 Pending | This document §3.2.2 |
+| `AreaLayoutRenderer` (Sprint G) | 🚧 Pending | This document §3.2.3 |
+| `EditorStack` (Sprint H) | 🚧 Pending | This document §3.2.4 |
+| `ProjectIndex` (Sprint I) | 🚧 Pending | This document §3.3.1 |
+| Coordinated deletion (Sprint J) | 🚧 Pending | This document §3.3.2 |
+| Async loading (Sprint K) | 🚧 Pending | This document §3.3.3 |
+| Professional module (Sprint L) | 🚧 Pending | This document §3.3.4 |
+| `QImage.mirrored` deprecation | 🚧 Tracked, separate piece | `mpr_viewer/view.py:216` |
+| `vtkCellArray.GetData` deprecation | 🚧 Tracked, separate piece | `stl.py:135` |
 | Real background blur | ⛔ Not supported by design | `themes-and-design-tokens.md` §6.3 |
 | Full Geometry Infrastructure | ⏳ Deferred | `implementation_plan.md` §5.3 |
 | SQLite ProjectIndex | ⏳ Deferred to Phase 8 | `implementation_plan.md` §5.3 |
@@ -286,11 +308,11 @@ The following items are explicitly out of scope for this handoff and belong to P
 
 ## 8. Immediate next action
 
-Begin **Sprint B — i18n**. The sprint has four parts:
+Begin **Sprint E — `ThemeService` + `ThemeCompiler` + tokens**. The sprint has four parts:
 
-1. Define `Locale`, `TranslationService`, `TranslationCatalog`, `TranslationCatalogRegistry`.
-2. Create `assets/i18n/en_US/*.json` and `assets/i18n/pt_BR/*.json` for existing keys.
-3. Inject `translation_service` into `MainWindow`, `Workspace`, `HomePage`, `TomographyEditor`. Replace `MainWindow._humanize_translation_key`.
-4. Add contract tests and CI checks.
+1. Define `ThemeMode`, `ThemeName`, `ThemeTokens`, and the 7 token dataclasses with the 47 tokens from `themes-and-design-tokens.md`.
+2. Implement `ThemeService` (`mode()`, `set_mode()`, `theme()`, `tokens()`, `color()`, `dimension()`, `surface_color()`).
+3. Implement `ThemeCompiler` (`compile()`, `apply()`, surface composition, QSS emission).
+4. Add the five contract tests and the boot integration (read `appearance.theme_mode` from `SettingsService` before constructing `MainWindow`).
 
-**Acceptance for Sprint B:** every user-facing string in the shell is resolved via `TranslationService`, all `flow.json` keys resolve in `en_US`, and the `pt_BR` catalog covers the same keys.
+**Acceptance for Sprint E:** all 47 tokens present and consumed, `DARK` and `LIGHT` have identical token structures, contrast tests pass, boot integration handles invalid values by falling back to `DARK` with a `WARNING`, and CI is green.

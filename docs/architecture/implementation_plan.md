@@ -3,7 +3,7 @@
 **Document type:** Roadmap and execution plan
 **Status:** Living document
 **Scope:** Phased implementation of the CranioZ platform, from foundation to release
-**Last updated:** 2026-11-07
+**Last updated:** 2026-11-08
 
 ---
 
@@ -60,7 +60,7 @@ The implementation is divided into 11 phases. The sequence establishes the platf
 | Phase | Name | Status | Main Pending Work |
 |---|---|---|---|
 | **Phase 0** | Foundation & Boot | ✅ Implemented | Startup performance improvements |
-| **Phase 1** | Contracts, Core Domain & i18n | 🚧 In Progress | i18n contract, `EditorContext` propagation |
+| **Phase 1** | Contracts, Core Domain & i18n | 🚧 In Progress | `EditorContext` propagation (Sprint C) |
 | **Phase 2** | Workspace Engine & Icons | 🚧 In Progress | `ThemeService`, `ThemeCompiler`, `IconProvider`, `AreaLayoutRenderer`, `EditorStack` |
 | **Phase 3** | Project, Home Page & Professional Module | 🚧 In Progress | `ProjectIndex`, coordinated deletion, async loading, Professional module |
 | **Phase 4** | Scene & Visualization | ⏳ Planned | Import Dialog, RenderingAdapter, Viewer Layout Manager, 2D/3D Tools, LUTs |
@@ -77,7 +77,7 @@ The implementation is divided into 11 phases. The sequence establishes the platf
 - 🚧 **In Progress:** A contract, partial implementation, or reference implementation exists, but the deliverable is incomplete or not fully integrated.
 - ⏳ **Planned:** Not implemented or not yet started.
 
-**Contracts layer:** ADR-0001, ADR-0002, ADR-0004–0013 are Accepted. **ADR-0014 (Widget Toolkit Selection)** is Accepted: Qt Widgets + QSS modular + Design Tokens in Python, not QML. The appearance architecture is specified in `docs/architecture/appearance/`.
+**Contracts layer:** ADR-0001, ADR-0002, ADR-0004–0014 are Accepted. **ADR-0014 (Widget Toolkit Selection)** is Accepted: Qt Widgets + QSS modular + Design Tokens in Python, not QML. The appearance architecture is specified in `docs/architecture/appearance/`.
 
 **Application layer:** Commands, Tasks, Telemetry, Events and Flows have contracts and reference implementations with contract tests. This does not imply that all production services, module loading, or application workflows are complete.
 
@@ -93,18 +93,18 @@ Phase 4 remains the next major implementation phase. It begins only after Phases
 
 The sprint order below respects dependencies between Phases 1–3.
 
-| Sprint | Phase | Deliverable | Depends on |
-|---|---|---|---|
-| **B** | 1 | i18n contract and catalogs | — |
-| **C** | 1 | `EditorContext` propagation | B, E (for `theme_service`), F (for `icon_provider`) |
-| **E** | 2 | `ThemeService`, `ThemeCompiler`, tokens | — |
-| **F** | 2 | `IconProvider`, `UnicodeIconProvider`, glyph migration | E |
-| **G** | 2 | `AreaLayoutRenderer` | — |
-| **H** | 2 | `EditorStack` | G |
-| **I** | 3 | `ProjectIndex` | — |
-| **J** | 3 | Coordinated deletion | I |
-| **K** | 3 | Async loading | I, J |
-| **L** | 3 | Professional module | C, E, F |
+| Sprint | Phase | Deliverable | Status | Depends on |
+|---|---|---|---|---|
+| **B** | 1 | i18n contract and catalogs | ✅ Complete | — |
+| **C** | 1 | `EditorContext` propagation | 🚧 Pending | B, E (for `theme_service`), F (for `icon_provider`) |
+| **E** | 2 | `ThemeService`, `ThemeCompiler`, tokens | 🚧 Pending | — |
+| **F** | 2 | `IconProvider`, `UnicodeIconProvider`, glyph migration | 🚧 Pending | E |
+| **G** | 2 | `AreaLayoutRenderer` | 🚧 Pending | — |
+| **H** | 2 | `EditorStack` | 🚧 Pending | G |
+| **I** | 3 | `ProjectIndex` | 🚧 Pending | — |
+| **J** | 3 | Coordinated deletion | 🚧 Pending | I |
+| **K** | 3 | Async loading | 🚧 Pending | I, J |
+| **L** | 3 | Professional module | 🚧 Pending | C, E, F |
 
 **Note on ordering:** Sprint C depends on Sprints E and F because `EditorContext` will carry `theme_service` and `icon_provider`. Alternatively, Sprint C can propagate only services that exist at that time, with a follow-up PR adding `theme_service` and `icon_provider`. The first approach is cleaner and is the recommended one.
 
@@ -136,7 +136,7 @@ The sprint order below respects dependencies between Phases 1–3.
 
 ### Phase 1: Contracts, Core Domain & i18n
 
-**Goal:** Close Phase 1 formally. Blockers: i18n contract and `EditorContext` propagation.
+**Goal:** Close Phase 1 formally. Blocker: `EditorContext` propagation (Sprint C).
 
 **Deliverables:**
 
@@ -146,7 +146,7 @@ The sprint order below respects dependencies between Phases 1–3.
 - ✅ `ProjectRepository` and reference implementations.
 - ✅ `ProjectContext`, `ProjectAccessPolicy`, `ProjectCatalog`.
 - ✅ ADRs 0001, 0002, 0004–0014.
-- 🚧 **Sprint B (i18n):**
+- ✅ **Sprint B (i18n):**
   - `Locale` value object (`pt_BR`, `en_US`).
   - `TranslationService` Protocol (`tr`, `locale`, `set_locale`).
   - `TranslationCatalog` (JSON loader) + `TranslationCatalogRegistry`.
@@ -155,7 +155,9 @@ The sprint order below respects dependencies between Phases 1–3.
   - Injection into `MainWindow`, `Workspace`, `HomePage`, `TomographyEditor`.
   - Removal of `MainWindow._humanize_translation_key`.
   - Contract test: every `name_key` in every `flow.json` resolves in `en_US`.
+  - `tests/architecture/test_no_hardcoded_strings_in_shell_widgets.py`: shell widgets must route user-facing strings through `tr(...)`.
 - 🚧 **Sprint C (`EditorContext` propagation):**
+  - Depends on Sprints E (`theme_service`) and F (`icon_provider`).
   - Propagate `task_manager`, `telemetry`, `correlation_id`, `command_dispatcher`, `scene_query`, `event_subscription`, `translation_service`, `theme_service`, `icon_provider`.
   - `Workspace._create_editor` and `MainWindow._create_workspace` pass the complete set.
   - `TomographyEditor.initialize` and `MeshDebugEditor.initialize` accept the complete set.
@@ -167,11 +169,11 @@ The sprint order below respects dependencies between Phases 1–3.
 - Repository contract tests.
 - Project serialization round-trips.
 - Domain invariant and error-case tests.
-- i18n contract tests.
-- `EditorContext` propagation tests.
-- `test_no_hardcoded_strings_in_shell_widgets.py`.
+- ✅ i18n contract tests.
+- ✅ `test_no_hardcoded_strings_in_shell_widgets.py`.
+- 🚧 `EditorContext` propagation tests (pending Sprint C).
 
-**Status:** 🚧 In Progress. Blockers: Sprints B and C.
+**Status:** 🚧 In Progress. Blocker: Sprint C.
 
 ---
 
@@ -652,7 +654,9 @@ These capabilities belong to Releases 2.0 and 3.0.
 
 The foundation, core domain, workspace, project lifecycle, imaging pipeline, and DICOM visualization are implemented. The voxel-ordering bug that blocked Phase 4 was resolved on 2026-11-06. The appearance architecture is decided (ADR-0014, `docs/architecture/appearance/`).
 
-The immediate focus is closing Phases 1, 2, and 3 formally through Sprints B, C, E, F, G, H, I, J, K, L (see §5.1).
+Sprint B (i18n) is complete: the shell — `MainWindow`, the Home Page tree, the three Top Bar segments, and the Workspace placeholder editor — resolves user-facing strings through the `TranslationService`. The architecture guard `tests/architecture/test_no_hardcoded_strings_in_shell_widgets.py` prevents regressions.
+
+The immediate focus is closing Phases 1, 2, and 3 formally through Sprints C, E, F, G, H, I, J, K, L. Sprint B is closed; Sprint C is the remaining Phase 1 blocker.
 
 Phase 4 begins after Phases 1–3 are marked `✅ Implemented`. Its first deliverables are the Unified Import Dialog, the `RenderingAdapter`, the `ViewerLayoutManager`, the 2D/3D tools, and the clinical transfer function presets.
 
@@ -664,13 +668,14 @@ The geometry infrastructure initial subset is validated. Full geometry infrastru
 
 ### 10.1 ADR-0014 (Widget Toolkit Selection) — Accepted
 
-Qt Widgets + QSS modular + Design Tokens in Python (Opção 2). QML rejected as shell foundation. Appearance architecture lives in `docs/architecture/appearance/`. The legacy ADR-0003 is superseded.
+Qt Widgets + QSS modular + Design Tokens in Python. QML rejected as shell foundation. Appearance architecture lives in `docs/architecture/appearance/`. The legacy ADR-0003 is superseded.
 
-### 10.2 Internationalization — Pending (Sprint B)
+### 10.2 Internationalization — Shell migrated (Sprint B complete)
 
-- `Locale`, `TranslationService`, `TranslationCatalog`, `TranslationCatalogRegistry` must be defined.
-- `_humanize_translation_key` is temporary and must be replaced by `translation_service.tr`.
-- Every UI widget currently using hardcoded strings is technical debt tracked by Sprint B.
+- `TranslationService`, `TranslationCatalog`, `TranslationCatalogRegistry` are implemented and injected.
+- `MainWindow._humanize_translation_key` was removed; every shell widget resolves user-facing strings via `tr(...)`.
+- `tests/architecture/test_no_hardcoded_strings_in_shell_widgets.py` guards against regressions: it scans the AST of each shell file and fails if a user-facing literal is passed directly to a Qt widget constructor or setter without going through `tr(...)`. The whitelist documents every exception (glyphs, `objectName`, QSS selectors, composite file-dialog filters).
+- Pending: `EditorContext` propagation (Sprint C) and full `pt_BR` / `en_US` catalog coverage (Phase 8).
 
 ### 10.3 `IconProvider` — Contract defined in Sprint F; product in Phase 8
 
@@ -703,7 +708,7 @@ The `steps_panel` design remains archived in `docs/proposals/steps_panel.md` in 
 
 ### 10.6 Windows OpenGL / Qt context issues
 
-Documented for reproducibility. Not a blocker.
+Documented for reproducibility. Not a blocker. The `wglMakeCurrent failed ... code 6` messages emitted during pytest teardown are VTK reporting OpenGL context destruction after the test window is gone; they do not affect test outcomes.
 
 ### 10.7 Editor Layout Tree and Editor Stack — Sprint H
 
@@ -736,9 +741,9 @@ Frosted glass in CranioZ is **simulated glass** (translucency + gradient + borde
 ## 11. References
 
 - `docs/architecture/appearance/` — canonical appearance architecture.
-- `docs/adr/0013-ui-widgets-and-editor-overlays.md` — accepted.
-- `docs/adr/0014-widget-toolkit-selection.md` — accepted.
-- `docs/architecture/startup.md` — boot sequence.
-- `docs/architecture/configuration-and-settings.md` — settings scopes.
+- `docs/adr/ADR-0013_Editor_Layout_Tree_View_Layout_Tree_and_Toolbar_Placement.md` — accepted.
+- `docs/adr/ADR-0014-widget-toolkit-selection.md` — accepted.
+- `docs/architecture/application/startup.md` — boot sequence.
+- `docs/architecture/settings/configs_and_settings.md` — settings scopes.
 - `docs/known_issues/dicom_visualization_bug.md` — resolved 2026-11-06.
-- `next_steps
+- `docs/architecture/next_steps.md` — Sprint B / C guidance.
