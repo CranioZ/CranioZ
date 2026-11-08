@@ -9,6 +9,10 @@ Per ADR-0011 and ADR-0012, the context also carries the TaskManager
 measurements), plus a ``correlation_id`` that identifies the
 operation currently in progress.
 
+The context also carries the TranslationService, so that Editors and
+their Toolbars can resolve user-facing strings without importing the
+global i18n instance (Sprint B).
+
 The context is deliberately narrow. It is not a service locator:
 every field is a specific, named dependency.
 """
@@ -25,6 +29,7 @@ if TYPE_CHECKING:
     from cranioz.application.tasks.base import TaskManager
     from cranioz.application.telemetry.base import TelemetrySink
     from cranioz.domain.scene.domain_object_store import DomainObjectStore
+    from cranioz.infrastructure.i18n.translation_service import TranslationService
 
 
 @dataclass(frozen=True)
@@ -43,3 +48,4 @@ class EditorContext:
     scene_query: SceneQuery | None = None
     domain_object_store: DomainObjectStore | None = None
     event_subscription: EventSubscription | None = None
+    translation_service: TranslationService | None = None

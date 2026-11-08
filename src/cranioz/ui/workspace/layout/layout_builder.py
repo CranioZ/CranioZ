@@ -29,17 +29,15 @@ Contract (see ADR-0002):
 Extension point (ADR-0002 §2.3):
 
 - build() accepts an optional ``shared_context`` mapping. Its values
-  are intended to be propagated by reference into every EditorContext
-  created during the build.
+  are propagated by reference into every EditorContext created during
+  the build.
 
-  Today, the EditorContext dataclass has no fields to receive shared
-  services (SceneQuery, CommandDispatcher, EventSubscription). The
-  shared_context parameter is accepted and validated for type, but
-  its contents are not yet propagated. When the first shared service
-  is implemented, EditorContext will gain the corresponding typed
-  fields and this builder will propagate them by reference. The
-  parameter exists now to keep the builder interface stable across
-  that evolution.
+  The accepted keys are: ``task_manager``, ``telemetry``,
+  ``correlation_id``, ``command_dispatcher``, ``scene_query``,
+  ``domain_object_store``, ``event_subscription``, and
+  ``translation_service``. The builder does not interpret the contents;
+  it only propagates them. The caller (typically the Workspace) is
+  responsible for passing a coherent set.
 """
 
 from __future__ import annotations

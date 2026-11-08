@@ -6,6 +6,7 @@ import dataclasses
 
 import pytest
 
+from cranioz.infrastructure.i18n.translation_service import IdentityTranslationService
 from cranioz.ui.editors.editor_context import EditorContext
 
 
@@ -22,8 +23,9 @@ def test_editor_context_holds_extras() -> None:
 
 def test_editor_context_is_frozen() -> None:
     ctx = EditorContext(editor_id="editor.a")
+    attr = "editor_id"
     with pytest.raises(dataclasses.FrozenInstanceError):
-        ctx.editor_id = "editor.b"  # type: ignore[misc]
+        setattr(ctx, attr, "editor.b")
 
 
 def test_two_editor_contexts_with_same_data_are_equal() -> None:
@@ -37,3 +39,9 @@ def test_default_extras_are_not_shared_between_instances() -> None:
     b = EditorContext(editor_id="editor.b")
     # dicts created via default_factory are independent
     assert a.extras is not b.extras
+
+
+def test_editor_context_holds_translation_service() -> None:
+    service = IdentityTranslationService()
+    ctx = EditorContext(editor_id="editor.a", translation_service=service)
+    assert ctx.translation_service is service

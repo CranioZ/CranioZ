@@ -21,8 +21,8 @@ Responsibilities:
   visible when the user toggles them from the Top Bar. This default
   will be replaced by the WorkflowEngine in Phase 5.
 - Receive and forward the TaskManager, TelemetrySink, CommandDispatcher,
-  SceneQuery, and EventSubscription to the Editors it hosts
-  (ADR-0011, ADR-0012, ADR-0007, ADR-0013).
+  SceneQuery, EventSubscription, and TranslationService to the Editors
+  it hosts (ADR-0011, ADR-0012, ADR-0007, ADR-0013, Sprint B).
 
 Non-responsibilities:
 
@@ -71,6 +71,7 @@ if TYPE_CHECKING:
     from cranioz.application.tasks.base import TaskManager
     from cranioz.application.telemetry.base import TelemetrySink
     from cranioz.domain.scene.domain_object_store import DomainObjectStore
+    from cranioz.infrastructure.i18n.translation_service import TranslationService
     from cranioz.ui.editors.viewport_3d.view import Viewport3DView
 
 _logger = logging.getLogger(__name__)
@@ -96,6 +97,7 @@ class Workspace(QWidget):
         scene_query: SceneQuery | None = None,
         domain_object_store: DomainObjectStore | None = None,
         event_subscription: EventSubscription | None = None,
+        translation_service: TranslationService | None = None,
         debug_colors: bool = False,
         parent: QWidget | None = None,
     ) -> None:
@@ -105,6 +107,7 @@ class Workspace(QWidget):
         self._scene_query = scene_query
         self._event_subscription = event_subscription
         self._domain_object_store = domain_object_store
+        self._translation_service = translation_service
 
         if project_context is None:
             raise WorkspaceError(
@@ -188,6 +191,7 @@ class Workspace(QWidget):
                 "scene_query": self._scene_query,
                 "domain_object_store": self._domain_object_store,
                 "event_subscription": self._event_subscription,
+                "translation_service": self._translation_service,
             },
         )
 

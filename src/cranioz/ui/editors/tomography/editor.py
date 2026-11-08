@@ -78,6 +78,12 @@ class TomographyEditor(Editor):
     def activate(self) -> None:
         self._try_apply_volume()
 
+    def _tr(self, key: str, source: str) -> str:
+        ctx = self._context
+        if ctx is None or ctx.translation_service is None:
+            return source
+        return ctx.translation_service.tr(key, source)
+
     # ----- Views (ADR-0013) -----------------------------------------
 
     def views(self) -> tuple[View, ...]:
@@ -122,7 +128,7 @@ class TomographyEditor(Editor):
         return [
             ToolbarSpec(
                 toolbar_id="toolbar.tomography.left",
-                title="Image Tools",
+                title=self._tr("tomography.toolbar.image_tools", "Image Tools"),
                 orientation=ToolbarOrientation.VERTICAL,
                 position=ToolbarPosition.LEFT,
                 tool_ids=("tool.log",),
@@ -130,7 +136,7 @@ class TomographyEditor(Editor):
             ),
             ToolbarSpec(
                 toolbar_id="toolbar.tomography.right",
-                title="Visibility",
+                title=self._tr("tomography.toolbar.visibility", "Visibility"),
                 orientation=ToolbarOrientation.VERTICAL,
                 position=ToolbarPosition.RIGHT,
                 tool_ids=("tool.toggle",),

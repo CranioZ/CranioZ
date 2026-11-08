@@ -52,6 +52,7 @@ import re
 
 import pytest
 
+from cranioz.infrastructure.i18n.translation_service import IdentityTranslationService
 from cranioz.ui.editors.builtin.test_editor import DummyEditor
 from cranioz.ui.editors.editor_registry import EditorRegistry
 from cranioz.ui.workspace.areas.area import AreaError
@@ -653,3 +654,14 @@ def test_area_rejects_duplicate_editor_id_in_same_build(
 
     with pytest.raises(AreaError, match="already hosted"):
         builder.build(spec)
+
+
+def test_build_propagates_translation_service(builder: LayoutBuilder) -> None:
+    spec = _spec(
+        _area("area.central", Placement.CENTRAL, _leaf("editor.patient")),
+    )
+    service = IdentityTranslationService()
+    result = builder.build(spec, shared_context={"translation_service": service})
+    editor = result.editors("area.central")[0]
+    context = editor._context  # type: ignore[attr-defined]
+    assert context.translation_service is service

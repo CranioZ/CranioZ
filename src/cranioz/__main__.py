@@ -81,6 +81,16 @@ from cranioz.infrastructure.app.app_path_resolver import (  # noqa: E402
 from cranioz.infrastructure.flows.filesystem_flow_repository import (  # noqa: E402
     FilesystemFlowRepository,
 )
+from cranioz.infrastructure.i18n.catalog_loader import CatalogLoader  # noqa: E402
+from cranioz.infrastructure.i18n.catalog_registry import (  # noqa: E402
+    TranslationCatalogRegistry,
+)
+from cranioz.infrastructure.i18n.instance import (  # noqa: E402
+    configure as configure_translation,
+)
+from cranioz.infrastructure.i18n.translation_service import (  # noqa: E402
+    CatalogTranslationService,
+)
 from cranioz.infrastructure.project.filesystem_project_repository import (  # noqa: E402
     FilesystemProjectRepository,
 )
@@ -223,11 +233,21 @@ def _build_flow_catalog(app_paths: AppPathResolver) -> FlowCatalog:
     return flow_catalog
 
 
+def _build_translation_service(config: Config) -> CatalogTranslationService:
+    translations_root = Path(__file__).parent / "translations"
+    loader = CatalogLoader(translations_root)
+    registry = TranslationCatalogRegistry(loader)
+    service = CatalogTranslationService(registry, language=config.app.language)
+    configure_translation(service)
+    return service
+
+
 # ----- Main ----------------------------------------------------------
 
 
 def main() -> int:
     config = ConfigurationLoader().load()
+    translation_service = _build_translation_service(config)
     _configure_logging(config)
     _logger.info("CranioZ %s starting", __version__)
 
@@ -300,6 +320,7 @@ def main() -> int:
         command_bus=command_bus,
         scene_provider=scene_provider,
         domain_object_store=domain_object_store,
+        translation_service=translation_service,
     )
     window.show()
 

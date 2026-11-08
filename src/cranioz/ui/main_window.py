@@ -77,6 +77,7 @@ from cranioz.application.scene.handlers.scene_handlers import (
     ImportDicomSeriesHandler,
 )
 from cranioz.domain.project.project_id import ProjectId
+from cranioz.infrastructure.i18n.translation_service import TranslationService
 from cranioz.infrastructure.scene.scene_query_adapter import SceneQueryAdapter
 from cranioz.ui.editors.editor_registry import EditorRegistry
 from cranioz.ui.editors.viewport_3d.mesh_debug_editor import (
@@ -115,29 +116,6 @@ if TYPE_CHECKING:
 _logger = logging.getLogger(__name__)
 
 
-def _humanize_translation_key(key: str) -> str:
-    """Fallback translator: turns a translation key into a readable label.
-
-    This is a temporary bridge until the TranslationService is wired.
-    When i18n is active, replace this with ``translation_service.tr``.
-
-    Examples:
-        "flows.orthognathic_basic.name"             -> "Orthognathic Basic"
-        "flows.orthognathic_basic.steps.patient"    -> "Patient"
-        "flows.orthognathic_basic.steps.organize_data" -> "Organize Data"
-
-    The function is deliberately simple: it splits on "." and humanizes
-    the last non-structural segment. It does not attempt to translate;
-    it only makes the key readable.
-    """
-    structural = {"flows", "steps", "name"}
-    parts = [p for p in key.split(".") if p and p not in structural]
-    if not parts:
-        return key
-    last = parts[-1]
-    return last.replace("_", " ").title()
-
-
 class MainWindow(QMainWindow):
     """Application shell: hosts HomePage and Workspace."""
 
@@ -150,6 +128,7 @@ class MainWindow(QMainWindow):
         editor_registry: EditorRegistry,
         tool_registry: ToolRegistry,
         theme_service: ThemeService,
+        translation_service: TranslationService | None = None,
         task_manager: TaskManager | None = None,
         telemetry: TelemetrySink | None = None,
         command_dispatcher: CommandDispatcher | None = None,
@@ -166,6 +145,7 @@ class MainWindow(QMainWindow):
         self._editor_registry = editor_registry
         self._tool_registry = tool_registry
         self._theme_service = theme_service
+        self._translation_service = translation_service
         self._task_manager = task_manager
         self._telemetry = telemetry
         self._command_dispatcher = command_dispatcher
@@ -189,7 +169,7 @@ class MainWindow(QMainWindow):
         self._home = HomePage(
             catalog=self._catalog,
             parent=self,
-            flow_list_translate=_humanize_translation_key,
+            translation_service=self._translation_service,
         )
         self._stack = QStackedWidget(self)
         self._stack.addWidget(self._home)
@@ -298,6 +278,7 @@ class MainWindow(QMainWindow):
             command_dispatcher=self._command_dispatcher,
             scene_query=scene_query,
             domain_object_store=self._domain_object_store,
+            translation_service=self._translation_service,
         )
 
         # TopOverlay: three segments, one per zone.

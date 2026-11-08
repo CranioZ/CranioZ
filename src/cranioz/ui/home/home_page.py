@@ -46,8 +46,6 @@ StartButton state:
 
 from __future__ import annotations
 
-from collections.abc import Callable
-
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QHBoxLayout,
@@ -57,6 +55,7 @@ from PySide6.QtWidgets import (
 
 from cranioz.application.project.project_catalog import ProjectCatalog
 from cranioz.domain.project.project_id import ProjectId
+from cranioz.infrastructure.i18n.translation_service import TranslationService
 from cranioz.ui.home.widgets.community_sidebar import CommunitySidebar
 from cranioz.ui.home.widgets.flow_list import FlowList
 from cranioz.ui.home.widgets.home_bottom_bar import HomeBottomBar
@@ -101,10 +100,11 @@ class HomePage(QWidget):
         catalog: ProjectCatalog,
         parent: QWidget | None = None,
         *,
-        flow_list_translate: Callable[[str], str] | None = None,
+        translation_service: TranslationService | None = None,
     ) -> None:
         super().__init__(parent)
         self._catalog = catalog
+        self._translation = translation_service
         self._selected_project_id: ProjectId | None = None
         self._selected_flow_id: str | None = None
 
@@ -113,7 +113,7 @@ class HomePage(QWidget):
         self._top_bar = HomeTopBar(self)
         self._sidebar = CommunitySidebar(self)
         self._project_table = ProjectTable(catalog, self)
-        self._flow_list = FlowList(translate=flow_list_translate, parent=self)
+        self._flow_list = FlowList(translate=self._translate_flow, parent=self)
         self._start_button = StartButton()
         self._bottom_bar = HomeBottomBar(self._start_button, self)
 
@@ -163,6 +163,11 @@ class HomePage(QWidget):
 
     def selected_flow_id(self) -> str | None:
         return self._selected_flow_id
+
+    def _translate_flow(self, key: str) -> str:
+        if self._translation is None:
+            return key
+        return self._translation.tr(key, key)
 
     # ----- Internals ------------------------------------------------
 
