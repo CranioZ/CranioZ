@@ -39,6 +39,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from cranioz.infrastructure.i18n import tr
+
 
 class HomeSegment(QWidget):
     """Left zone of the Workspace Top Bar."""
@@ -60,18 +62,24 @@ class HomeSegment(QWidget):
         layout.setSpacing(4)
 
         self._toggle_left_button = self._make_button(
-            "☰", "workspace.top_bar.home_segment.toggle_left", "Toggle Area Left"
+            "☰",
+            "workspace.top_bar.home_segment.toggle_left",
+            tr("workspace.top_bar.toggle_area_left", "Toggle Area Left"),
         )
         self._toggle_left_button.clicked.connect(self.toggle_area_left_requested)
 
         self._menu_button = self._make_button(
-            "⋮", "workspace.top_bar.home_segment.menu", "Project actions"
+            "⋮",
+            "workspace.top_bar.home_segment.menu",
+            tr("workspace.top_bar.project_actions", "Project actions"),
         )
         self._build_menu()
         self._menu_button.clicked.connect(self._on_menu_button_clicked)
 
         self._close_workspace_button = self._make_button(
-            "⌂", "workspace.top_bar.home_segment.close_workspace", "Close workspace"
+            "⌂",
+            "workspace.top_bar.home_segment.close_workspace",
+            tr("workspace.top_bar.home", "Home"),
         )
         self._close_workspace_button.clicked.connect(self.close_workspace_requested)
 
@@ -114,30 +122,42 @@ class HomeSegment(QWidget):
         self._menu = QMenu(self)
         self._menu.setObjectName("workspace.top_bar.home_segment.menu.popup")
 
-        self._action_new_project = self._menu.addAction("Novo projeto")
+        self._action_new_project = self._menu.addAction(
+            tr("workspace.top_bar.menu.new_project", "New project")
+        )
         self._action_new_project.triggered.connect(self.new_project_requested)
 
-        self._action_open_project = self._menu.addAction("Abrir projeto")
+        self._action_open_project = self._menu.addAction(
+            tr("workspace.top_bar.menu.open_project", "Open project")
+        )
         self._action_open_project.triggered.connect(self.open_project_requested)
 
         self._menu.addSeparator()
 
-        self._action_close_project = self._menu.addAction("Fechar projeto")
+        self._action_close_project = self._menu.addAction(
+            tr("workspace.top_bar.menu.close_project", "Close project")
+        )
         self._action_close_project.triggered.connect(self.close_project_requested)
 
         # "Importar arquivos" is a submenu with one entry per format.
         # The DICOM entry is the current production path; the STL entry
         # is a temporary validation tool with an explicit TODO.
-        self._import_menu = self._menu.addMenu("Importar arquivos")
+        self._import_menu = self._menu.addMenu(
+            tr("workspace.top_bar.menu.import_files", "Import files")
+        )
         self._import_menu.setObjectName("workspace.top_bar.home_segment.menu.import")
 
-        self._action_import_dicom = self._import_menu.addAction("DICOM (série)")
+        self._action_import_dicom = self._import_menu.addAction(
+            tr("workspace.top_bar.menu.import_dicom", "DICOM (series)")
+        )
         self._action_import_dicom.triggered.connect(self.import_files_requested)
 
         # TODO(phase-4): remove this entry when the import dialog and
         # the ImportMeshCommand exist. It is a validation tool for the
         # VTK mesh rendering pipeline, not a product feature.
-        self._action_import_stl = self._import_menu.addAction("STL (debug)")
+        self._action_import_stl = self._import_menu.addAction(
+            tr("workspace.top_bar.menu.import_stl_debug", "STL (debug)")
+        )
         self._action_import_stl.triggered.connect(self.import_stl_debug_requested)
 
     def _on_menu_button_clicked(self) -> None:

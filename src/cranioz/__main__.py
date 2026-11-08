@@ -269,8 +269,15 @@ def main() -> int:
         _logger.exception("cannot initialize application paths")
         QMessageBox.critical(
             None,
-            "CranioZ cannot start",
-            f"The application paths could not be initialized:\n\n{exc}",
+            translation_service.tr(
+                "core.errors.startup_failed.title",
+                "CranioZ cannot start",
+            ),
+            translation_service.tr(
+                "core.errors.startup_failed.paths",
+                "The application paths could not be initialized:\n\n{detail}",
+                detail=exc,
+            ),
         )
         return 1
     _logger.info("Projects root: %s", app_paths.projects_root)

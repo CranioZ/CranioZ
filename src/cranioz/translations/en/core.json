@@ -18,6 +18,10 @@
     "project_access_denied": { "message": "Access denied to this project.", "description": "Displayed when the user is not authorized to open a project." },
     "project_in_use": { "message": "This project is already open. Close it first.", "description": "Displayed when trying to delete an open project." },
     "project_corrupted": { "message": "The project data is corrupted.", "description": "Displayed when the project files cannot be parsed." },
-    "project_incompatible_schema": { "message": "This project was created with an incompatible version of CranioZ.", "description": "Displayed when the schema version is newer than supported." }
+    "project_incompatible_schema": { "message": "This project was created with an incompatible version of CranioZ.", "description": "Displayed when the schema version is newer than supported." },
+    "startup_failed": {
+      "title": { "message": "CranioZ cannot start", "description": "Title of the fatal startup error dialog." },
+      "paths": { "message": "The application paths could not be initialized:\n\n{detail}", "description": "Body of the fatal startup error when paths fail to initialize." }
+    }
   }
 }

@@ -4,6 +4,7 @@
     "home": { "message": "Home", "description": "Rótulo do segmento Home." },
     "modules": { "message": "Módulos", "description": "Rótulo do segmento Módulos." },
     "extras": { "message": "Extras", "description": "Rótulo do segmento Extras." },
+    "project_actions": { "message": "Ações do projeto", "description": "Tooltip do botão de menu de ações do projeto." },
     "toggle_area_left": { "message": "Alternar Área Esquerda", "description": "Tooltip para alternar a Área Esquerda." },
     "toggle_area_right": { "message": "Alternar Área Direita", "description": "Tooltip para alternar a Área Direita." },
     "toggle_area_bottom": { "message": "Alternar Área Inferior", "description": "Tooltip para alternar a Área Inferior." },
@@ -25,13 +26,30 @@
     }
   },
   "placeholder": {
-    "no_flow": { "message": "Nenhum editor carregado — selecione um módulo na Barra Superior.", "description": "Placeholder exibido nas Áreas quando nenhum Fluxo está ativo." }
+    "no_flow": { "message": "Nenhum editor carregado — selecione um módulo na Barra Superior.", "description": "Placeholder exibido nas Áreas quando nenhum Fluxo está ativo." },
+    "new_project": { "message": "Novo projeto", "description": "Placeholder: novo projeto." },
+    "manage_projects": { "message": "Gerir projetos", "description": "Placeholder: gerir projetos." },
+    "manage_flows": { "message": "Gerir fluxos", "description": "Placeholder: gerir fluxos." },
+    "settings": { "message": "Configurações", "description": "Placeholder: configurações." },
+    "help": { "message": "Ajuda", "description": "Placeholder: ajuda." },
+    "community": { "message": "Comunidade", "description": "Placeholder: comunidade." },
+    "library": { "message": "Biblioteca de objetos", "description": "Placeholder: biblioteca de objetos." },
+    "news": { "message": "Novidades", "description": "Placeholder: novidades." },
+    "feedback": { "message": "Sugerir melhorias", "description": "Placeholder: sugestões." },
+    "contribute": { "message": "Contribuir", "description": "Placeholder: contribuir." },
+    "available_after_piece": { "message": "Disponível após {piece}.", "description": "Exibido para placeholders de funcionalidades futuras." }
   },
   "dialog": {
     "cannot_open_project": { "message": "Não foi possível abrir o projeto", "description": "Título do diálogo de erro ao abrir projeto." },
     "dicom_import_failed": { "message": "Falha ao importar DICOM", "description": "Título do diálogo de erro na importação DICOM." },
     "stl_import_failed": { "message": "Falha ao importar STL", "description": "Título do diálogo de erro na importação STL." },
     "select_dicom_folder": { "message": "Selecionar pasta com DICOM", "description": "Título do seletor de pasta para DICOM." },
-    "select_stl_file": { "message": "Selecionar arquivo STL", "description": "Título do seletor de arquivo para STL." }
+    "select_stl_file": { "message": "Selecionar arquivo STL", "description": "Título do seletor de arquivo para STL." },
+    "stl_filter": { "message": "STL (*.stl);;;Todos os arquivos (*)", "description": "Filtro do diálogo de arquivo para importação STL." },
+    "command_dispatcher_unavailable": { "message": "O despachante de comandos não está disponível.", "description": "Exibido quando o despachante de comandos está ausente." },
+    "scene_provider_unavailable": { "message": "O provedor de Scene não está disponível.", "description": "Exibido quando o provedor de Scene está ausente." },
+    "scene_unavailable": { "message": "O Scene ou o DomainObjectStore não está disponível. Abra um projeto antes de importar DICOM.", "description": "Exibido quando Scene ou DomainObjectStore estão ausentes." },
+    "no_viewport_3d": { "message": "Nenhuma Viewport 3D na cena. Rode a aplicação com CRANIOZ_DEBUG_MESH=1 para habilitar o editor de debug de malhas, ou abra um projeto com o TomographyEditor.", "description": "Exibido quando não há Viewport 3D para importação de STL." },
+    "unexpected_error": { "message": "Erro inesperado: {detail}", "description": "Exibido quando ocorre uma exceção inesperada." }
   }
 }

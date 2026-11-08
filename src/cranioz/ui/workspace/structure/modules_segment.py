@@ -23,6 +23,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from cranioz.infrastructure.i18n import tr
+
 
 class ModulesSegment(QWidget):
     """Center zone of the Workspace Top Bar."""
@@ -42,7 +44,7 @@ class ModulesSegment(QWidget):
         self._add_button.setObjectName("workspace.top_bar.modules_segment.add")
         self._add_button.setFlat(True)
         self._add_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        self._add_button.setToolTip("Adicionar módulo")
+        self._add_button.setToolTip(tr("workspace.top_bar.add_module", "Add module"))
         self._add_button.setFixedWidth(28)
         self._add_button.clicked.connect(self.add_module_requested)
         self._layout.addWidget(self._add_button)

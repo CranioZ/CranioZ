@@ -21,6 +21,8 @@ from __future__ import annotations
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QPushButton, QWidget
 
+from cranioz.infrastructure.i18n import tr
+
 # Colors are inline for the first piece. When the ThemeService gains
 # semantic colors (ADR-0003 §2.4: color("primary"), color("disabled")),
 # replace these with service lookups.
@@ -39,6 +41,7 @@ class StartButton(QPushButton):
         self.setObjectName("home_page_start_button")
         self.setFixedSize(56, 56)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setAccessibleName(tr("homepage.start_button.label", "Start"))
         self.setEnabled(False)
         self._apply_style(enabled=False)
         self.clicked.connect(self.start_requested)

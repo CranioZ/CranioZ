@@ -18,6 +18,10 @@
     "project_access_denied": { "message": "Acesso negado a este projeto.", "description": "Exibido quando o usuário não tem autorização para abrir o projeto." },
     "project_in_use": { "message": "Este projeto já está aberto. Feche-o primeiro.", "description": "Exibido ao tentar excluir um projeto aberto." },
     "project_corrupted": { "message": "Os dados do projeto estão corrompidos.", "description": "Exibido quando os arquivos do projeto não podem ser lidos." },
-    "project_incompatible_schema": { "message": "Este projeto foi criado com uma versão incompatível do CranioZ.", "description": "Exibido quando a versão do schema é mais recente do que a suportada." }
+    "project_incompatible_schema": { "message": "Este projeto foi criado com uma versão incompatível do CranioZ.", "description": "Exibido quando a versão do schema é mais recente do que a suportada." },
+    "startup_failed": {
+      "title": { "message": "CranioZ não pôde iniciar", "description": "Título do diálogo fatal de erro na inicialização." },
+      "paths": { "message": "Não foi possível inicializar os caminhos da aplicação:\n\n{detail}", "description": "Corpo do erro fatal de inicialização quando os caminhos falham." }
+    }
   }
 }

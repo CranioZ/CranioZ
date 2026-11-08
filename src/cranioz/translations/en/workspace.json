@@ -4,6 +4,7 @@
     "home": { "message": "Home", "description": "Top bar segment label: Home." },
     "modules": { "message": "Modules", "description": "Top bar segment label: Modules." },
     "extras": { "message": "Extras", "description": "Top bar segment label: Extras." },
+    "project_actions": { "message": "Project actions", "description": "Tooltip for the project actions menu button." },
     "toggle_area_left": { "message": "Toggle Area Left", "description": "Tooltip for the Left Area toggle." },
     "toggle_area_right": { "message": "Toggle Area Right", "description": "Tooltip for the Right Area toggle." },
     "toggle_area_bottom": { "message": "Toggle Area Bottom", "description": "Tooltip for the Bottom Area toggle." },
@@ -25,13 +26,30 @@
     }
   },
   "placeholder": {
-    "no_flow": { "message": "No editor loaded — select a module from the Top Bar.", "description": "Placeholder shown in Areas when no Flow is active." }
+    "no_flow": { "message": "No editor loaded — select a module from the Top Bar.", "description": "Placeholder shown in Areas when no Flow is active." },
+    "new_project": { "message": "New project", "description": "Placeholder: new project." },
+    "manage_projects": { "message": "Manage projects", "description": "Placeholder: manage projects." },
+    "manage_flows": { "message": "Manage flows", "description": "Placeholder: manage flows." },
+    "settings": { "message": "Settings", "description": "Placeholder: settings." },
+    "help": { "message": "Help", "description": "Placeholder: help." },
+    "community": { "message": "Community", "description": "Placeholder: community." },
+    "library": { "message": "Object library", "description": "Placeholder: object library." },
+    "news": { "message": "News", "description": "Placeholder: news." },
+    "feedback": { "message": "Suggest improvements", "description": "Placeholder: feedback." },
+    "contribute": { "message": "Contribute", "description": "Placeholder: contribute." },
+    "available_after_piece": { "message": "Available after {piece}.", "description": "Shown for placeholders of future features." }
   },
   "dialog": {
     "cannot_open_project": { "message": "Cannot open project", "description": "Title of the error dialog when a project fails to open." },
     "dicom_import_failed": { "message": "Failed to import DICOM", "description": "Title of the error dialog when DICOM import fails." },
     "stl_import_failed": { "message": "Failed to import STL", "description": "Title of the error dialog when STL import fails." },
     "select_dicom_folder": { "message": "Select folder with DICOM", "description": "Title of the folder picker for DICOM import." },
-    "select_stl_file": { "message": "Select STL file", "description": "Title of the file picker for STL import." }
+    "select_stl_file": { "message": "Select STL file", "description": "Title of the file picker for STL import." },
+    "stl_filter": { "message": "STL (*.stl);;;All files (*)", "description": "File dialog filter for STL import." },
+    "command_dispatcher_unavailable": { "message": "The command dispatcher is not available.", "description": "Shown when the command dispatcher is missing." },
+    "scene_provider_unavailable": { "message": "The Scene provider is not available.", "description": "Shown when the Scene provider is missing." },
+    "scene_unavailable": { "message": "The Scene or the DomainObjectStore is not available. Open a project before importing DICOM.", "description": "Shown when Scene or DomainObjectStore is missing." },
+    "no_viewport_3d": { "message": "No 3D viewport in the scene. Run the application with CRANIOZ_DEBUG_MESH=1 to enable the mesh debug editor, or open a project with the TomographyEditor.", "description": "Shown when no 3D viewport is available for STL import." },
+    "unexpected_error": { "message": "Unexpected error: {detail}", "description": "Shown when an unexpected exception occurs." }
   }
 }

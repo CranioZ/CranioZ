@@ -13,7 +13,9 @@ from __future__ import annotations
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QLabel, QWidget
 
+from cranioz.infrastructure.i18n import tr
 from cranioz.ui.editors.base_editor import Editor
+from cranioz.ui.editors.editor_context import EditorContext
 from cranioz.ui.workspace.areas.placement import Placement
 from cranioz.ui.workspace.specs.area_spec import AreaSpec
 from cranioz.ui.workspace.specs.editor_layout_spec import EditorLayoutSpec
@@ -48,10 +50,25 @@ class _PlaceholderEditor(Editor):
             title="Placeholder",
         )
         self._label: QLabel | None = None
+        self._context: EditorContext | None = None
+
+    def initialize(self, context: EditorContext) -> None:
+        self._context = context
+
+    def _tr(self, key: str, source: str) -> str:
+        ctx = self._context
+        if ctx is not None and ctx.translation_service is not None:
+            return ctx.translation_service.tr(key, source)
+        return tr(key, source)
 
     def content_widget(self) -> QWidget:
         if self._label is None:
-            self._label = QLabel("No editor loaded — select a module from the Top Bar.")
+            self._label = QLabel(
+                self._tr(
+                    "workspace.placeholder.no_flow",
+                    "No editor loaded — select a module from the Top Bar.",
+                )
+            )
             self._label.setObjectName("workspace.placeholder.label")
             self._label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self._label.setStyleSheet(

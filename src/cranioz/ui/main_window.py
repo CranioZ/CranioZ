@@ -36,8 +36,8 @@ Responsibilities:
   SceneProvider, DomainObjectStore) to the Workspace (ADR-0011,
   ADR-0012).
 - Populate the HomePage's FlowList from the FlowCatalog (A5).
-- Translate flow labels for the HomePage via a temporary humanizer
-  until the TranslationService is wired.
+- Inject the TranslationService into the HomePage so that the
+  FlowList can resolve flow labels via the active catalog.
 
 Non-responsibilities (see main_window.md §9 and ADR-0006):
 
@@ -178,7 +178,7 @@ class MainWindow(QMainWindow):
         self._connect_home_signals()
         self._populate_flow_list()
 
-        self.setWindowTitle("CranioZ")
+        self.setWindowTitle(self._tr("core.app.name", "CranioZ"))
         self.resize(1000, 650)
 
     # ----- HomePage signal wiring ------------------------------------
@@ -236,7 +236,11 @@ class MainWindow(QMainWindow):
                 workflow_config={},
             )
         except ProjectError as exc:
-            QMessageBox.critical(self, "Cannot open project", str(exc))
+            QMessageBox.critical(
+                self,
+                self._tr("workspace.dialog.cannot_open_project", "Cannot open project"),
+                str(exc),
+            )
             return
 
         workspace = self._create_workspace(context)
@@ -445,8 +449,11 @@ class MainWindow(QMainWindow):
         if self._command_dispatcher is None:
             QMessageBox.critical(
                 self,
-                "Falha ao importar DICOM",
-                "O despachante de comandos não está disponível.",
+                self._tr("workspace.dialog.dicom_import_failed", "Failed to import DICOM"),
+                self._tr(
+                    "workspace.dialog.command_dispatcher_unavailable",
+                    "The command dispatcher is not available.",
+                ),
             )
             return
 
@@ -455,7 +462,7 @@ class MainWindow(QMainWindow):
 
         path = QFileDialog.getExistingDirectory(
             self,
-            "Selecionar pasta com DICOM",
+            self._tr("workspace.dialog.select_dicom_folder", "Select folder with DICOM"),
             "",
             QFileDialog.Option.ShowDirsOnly,
         )
@@ -466,8 +473,11 @@ class MainWindow(QMainWindow):
         if scene is None:
             QMessageBox.critical(
                 self,
-                "Falha ao importar DICOM",
-                "O provedor de Scene não está disponível.",
+                self._tr("workspace.dialog.dicom_import_failed", "Failed to import DICOM"),
+                self._tr(
+                    "workspace.dialog.scene_provider_unavailable",
+                    "The Scene provider is not available.",
+                ),
             )
             return
 
@@ -483,13 +493,21 @@ class MainWindow(QMainWindow):
         except Exception as exc:
             if isinstance(exc, CommandDispatchError):
                 _logger.exception("DICOM import failed for %s", path)
-                QMessageBox.critical(self, "Falha ao importar DICOM", str(exc))
+                QMessageBox.critical(
+                    self,
+                    self._tr("workspace.dialog.dicom_import_failed", "Failed to import DICOM"),
+                    str(exc),
+                )
             else:
                 _logger.exception("unexpected error importing DICOM from %s", path)
                 QMessageBox.critical(
                     self,
-                    "Falha ao importar DICOM",
-                    f"Erro inesperado: {exc}",
+                    self._tr("workspace.dialog.dicom_import_failed", "Failed to import DICOM"),
+                    self._tr(
+                        "workspace.dialog.unexpected_error",
+                        "Unexpected error: {detail}",
+                        detail=exc,
+                    ),
                 )
             return
 
@@ -523,18 +541,21 @@ class MainWindow(QMainWindow):
         if viewport is None:
             QMessageBox.warning(
                 self,
-                "Falha ao importar STL",
-                "Nenhuma Viewport 3D na cena. Rode a aplicação com "
-                "CRANIOZ_DEBUG_MESH=1 para habilitar o editor de debug "
-                "de malhas, ou abra um projeto com o TomographyEditor.",
+                self._tr("workspace.dialog.stl_import_failed", "Failed to import STL"),
+                self._tr(
+                    "workspace.dialog.no_viewport_3d",
+                    "No 3D viewport in the scene. Run the application with "
+                    "CRANIOZ_DEBUG_MESH=1 to enable the mesh debug editor, "
+                    "or open a project with the TomographyEditor.",
+                ),
             )
             return
 
         path, _ = QFileDialog.getOpenFileName(
             self,
-            "Selecionar arquivo STL",
+            self._tr("workspace.dialog.select_stl_file", "Select STL file"),
             "",
-            "STL (*.stl);;;Todos os arquivos (*)",
+            self._tr("workspace.dialog.stl_filter", "STL (*.stl);;;All files (*)"),
         )
         if not path:
             return
@@ -546,7 +567,11 @@ class MainWindow(QMainWindow):
                 coordinate_frame=CoordinateFrame.identity(),
             )
         except StlReadError as exc:
-            QMessageBox.critical(self, "Falha ao importar STL", str(exc))
+            QMessageBox.critical(
+                self,
+                self._tr("workspace.dialog.stl_import_failed", "Failed to import STL"),
+                str(exc),
+            )
             return
 
         viewport.set_mesh(mesh)
@@ -572,9 +597,12 @@ class MainWindow(QMainWindow):
         if self._scene_provider is None or self._domain_object_store is None:
             QMessageBox.critical(
                 self,
-                "Falha ao importar DICOM",
-                "O Scene ou o DomainObjectStore não está disponível. "
-                "Abra um projeto antes de importar DICOM.",
+                self._tr("workspace.dialog.dicom_import_failed", "Failed to import DICOM"),
+                self._tr(
+                    "workspace.dialog.scene_unavailable",
+                    "The Scene or the DomainObjectStore is not available. "
+                    "Open a project before importing DICOM.",
+                ),
             )
             return False
 
@@ -588,38 +616,97 @@ class MainWindow(QMainWindow):
     # ----- HomePage action handlers (placeholders) -------------------
 
     def _on_new_project_requested(self) -> None:
-        QMessageBox.information(self, "New project", "Available after Bloco 8 (Patient Module).")
+        self._show_future_feature(
+            "workspace.placeholder.new_project",
+            "New project",
+            "Bloco 8 (Patient Module)",
+        )
 
     def _on_manage_projects_requested(self) -> None:
-        QMessageBox.information(
-            self,
+        self._show_future_feature(
+            "workspace.placeholder.manage_projects",
             "Manage projects",
-            "Available after Bloco 8 (Patient Module).",
+            "Bloco 8 (Patient Module)",
         )
 
     def _on_manage_flows_requested(self) -> None:
-        QMessageBox.information(self, "Manage flows", "Available after Bloco 9 (Flow Catalog).")
+        self._show_future_feature(
+            "workspace.placeholder.manage_flows",
+            "Manage flows",
+            "Bloco 9 (Flow Catalog)",
+        )
 
     def _on_settings_requested(self) -> None:
-        QMessageBox.information(self, "Settings", "Available after piece 7.6d (Settings).")
+        self._show_future_feature(
+            "workspace.placeholder.settings",
+            "Settings",
+            "piece 7.6d (Settings)",
+        )
 
     def _on_help_requested(self) -> None:
-        QMessageBox.information(self, "Help", "Available after piece 7.6d (Documentation).")
+        self._show_future_feature(
+            "workspace.placeholder.help",
+            "Help",
+            "piece 7.6d (Documentation)",
+        )
 
     def _on_community_requested(self) -> None:
-        QMessageBox.information(self, "Community", "Available in a future piece.")
+        self._show_future_feature(
+            "workspace.placeholder.community",
+            "Community",
+            "a future piece",
+        )
 
     def _on_library_requested(self) -> None:
-        QMessageBox.information(self, "Object library", "Available in a future piece.")
+        self._show_future_feature(
+            "workspace.placeholder.library",
+            "Object library",
+            "a future piece",
+        )
 
     def _on_news_requested(self) -> None:
-        QMessageBox.information(self, "News", "Available in a future piece.")
+        self._show_future_feature(
+            "workspace.placeholder.news",
+            "News",
+            "a future piece",
+        )
 
     def _on_feedback_requested(self) -> None:
-        QMessageBox.information(self, "Suggest improvements", "Available in a future piece.")
+        self._show_future_feature(
+            "workspace.placeholder.feedback",
+            "Suggest improvements",
+            "a future piece",
+        )
 
     def _on_contribute_requested(self) -> None:
-        QMessageBox.information(self, "Contribute", "Available in a future piece.")
+        self._show_future_feature(
+            "workspace.placeholder.contribute",
+            "Contribute",
+            "a future piece",
+        )
+
+    # ----- i18n ------------------------------------------------------
+
+    def _tr(self, key: str, source: str, **params: object) -> str:
+        if self._translation_service is None:
+            return source
+        return self._translation_service.tr(key, source, **params)
+
+    def _show_future_feature(
+        self,
+        title_key: str,
+        title_source: str,
+        piece: str,
+    ) -> None:
+        QMessageBox.information(
+            self,
+            self._tr(title_key, title_source),
+            self._tr(
+                "workspace.placeholder.available_after_piece",
+                "Available after {piece}.",
+                piece=piece,
+            ),
+        )
 
     # ----- Convenience for tests -------------------------------------
 

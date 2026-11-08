@@ -20,6 +20,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from cranioz.infrastructure.i18n import tr
+
 
 class HomeTopBar(QWidget):
     """Top bar of the Home Page."""
@@ -39,9 +41,10 @@ class HomeTopBar(QWidget):
         self._menu_button.setObjectName("home_page.top_bar.menu")
         self._menu_button.setFlat(True)
         self._menu_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._menu_button.setToolTip(tr("homepage.top_bar.menu", "Menu"))
         self._menu_button.clicked.connect(self.toggle_sidebar_requested)
 
-        self._title = QLabel("CranioZ")
+        self._title = QLabel(tr("core.app.name", "CranioZ"))
         self._title.setObjectName("home_page.top_bar.title")
         title_font = self._title.font()
         title_font.setPointSize(14)
@@ -53,6 +56,7 @@ class HomeTopBar(QWidget):
         self._help_button.setFlat(True)
         self._help_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self._help_button.setFixedWidth(32)
+        self._help_button.setToolTip(tr("homepage.top_bar.help", "Help"))
         self._help_button.clicked.connect(self.help_requested)
 
         self._settings_button = QPushButton("⚙")
@@ -60,6 +64,7 @@ class HomeTopBar(QWidget):
         self._settings_button.setFlat(True)
         self._settings_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self._settings_button.setFixedWidth(32)
+        self._settings_button.setToolTip(tr("homepage.top_bar.settings", "Settings"))
         self._settings_button.clicked.connect(self.settings_requested)
 
         layout = QHBoxLayout(self)

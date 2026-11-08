@@ -23,6 +23,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from cranioz.infrastructure.i18n import tr
+
 
 class CommunitySidebar(QWidget):
     """Left vertical panel with community-related actions."""
@@ -33,12 +35,12 @@ class CommunitySidebar(QWidget):
     feedback_requested = Signal()
     contribute_requested = Signal()
 
-    _ITEMS: tuple[tuple[str, str], ...] = (
-        ("Comunidade", "community"),
-        ("Biblioteca de objetos", "library"),
-        ("Novidades", "news"),
-        ("Sugerir melhorias", "feedback"),
-        ("Contribuir", "contribute"),
+    _ITEMS: tuple[tuple[str, str, str], ...] = (
+        ("homepage.community_sidebar.community", "Community", "community"),
+        ("homepage.community_sidebar.library", "Object library", "library"),
+        ("homepage.community_sidebar.news", "News", "news"),
+        ("homepage.community_sidebar.feedback", "Suggest improvements", "feedback"),
+        ("homepage.community_sidebar.contribute", "Contribute", "contribute"),
     )
 
     def __init__(self, parent: QWidget | None = None) -> None:
@@ -59,14 +61,14 @@ class CommunitySidebar(QWidget):
         layout.setSpacing(2)
 
         self._buttons: dict[str, QPushButton] = {}
-        for label, key in self._ITEMS:
-            button = QPushButton(label)
-            button.setObjectName(f"home_page.community_sidebar.{key}")
+        for key, source, item_key in self._ITEMS:
+            button = QPushButton(tr(key, source))
+            button.setObjectName(f"home_page.community_sidebar.{item_key}")
             button.setFlat(True)
             button.setCursor(Qt.CursorShape.PointingHandCursor)
             button.setStyleSheet("text-align: left; padding: 6px 8px;")
             layout.addWidget(button)
-            self._buttons[key] = button
+            self._buttons[item_key] = button
 
         self._buttons["community"].clicked.connect(self.community_requested)
         self._buttons["library"].clicked.connect(self.library_requested)

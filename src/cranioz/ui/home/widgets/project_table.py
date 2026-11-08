@@ -51,8 +51,24 @@ from PySide6.QtWidgets import (
 from cranioz.application.project.project_catalog import ProjectCatalog
 from cranioz.domain.project.project_id import ProjectId
 from cranioz.domain.project.project_summary import ProjectSummary
+from cranioz.infrastructure.i18n import tr
 
-_COLUMNS = ("Nome", "ID", "Sexo", "Idade", "Criação do projeto", "Última modificação")
+
+def _columns() -> tuple[str, ...]:
+    """Build the column labels for the current locale.
+
+    A function, not a module-level constant: the labels depend on
+    the active language and must be resolved when the widget is
+    constructed, after the TranslationService has been configured.
+    """
+    return (
+        tr("homepage.project_list.columns.name", "Name"),
+        tr("homepage.project_list.columns.id", "ID"),
+        tr("homepage.project_list.columns.sex", "Sex"),
+        tr("homepage.project_list.columns.age", "Age"),
+        tr("homepage.project_list.columns.created_at", "Project creation"),
+        tr("homepage.project_list.columns.updated_at", "Last modification"),
+    )
 
 
 class ProjectTable(QWidget):
@@ -72,24 +88,31 @@ class ProjectTable(QWidget):
         self.setObjectName("home_page.project_table")
 
         # ----- Header -----
-        title = QLabel("Lista de projetos")
+        title = QLabel(tr("homepage.project_list.title", "Project list"))
         title.setObjectName("home_page.project_table.title")
         title_font = title.font()
         title_font.setPointSize(12)
         title_font.setBold(True)
         title.setFont(title_font)
 
-        self._new_button = QPushButton("Novo projeto")
+        self._new_button = QPushButton(tr("homepage.project_list.new_project", "New project"))
         self._new_button.setObjectName("home_page.project_table.new")
         self._new_button.clicked.connect(self.new_project_requested)
 
-        self._manage_button = QPushButton("Gerir projetos")
+        self._manage_button = QPushButton(
+            tr("homepage.project_list.manage_projects", "Manage projects")
+        )
         self._manage_button.setObjectName("home_page.project_table.manage")
         self._manage_button.clicked.connect(self.manage_projects_requested)
 
         self._search_edit = QLineEdit()
         self._search_edit.setObjectName("home_page.project_table.search")
-        self._search_edit.setPlaceholderText("Buscar por nome do projeto ou do paciente")
+        self._search_edit.setPlaceholderText(
+            tr(
+                "homepage.project_list.search_placeholder",
+                "Search by project or patient name",
+            )
+        )
         self._search_edit.setMinimumWidth(320)
         self._search_edit.setMaximumWidth(420)
         self._search_edit.textChanged.connect(self.refresh)
@@ -102,9 +125,10 @@ class ProjectTable(QWidget):
         header.addWidget(self._search_edit)
 
         # ----- Table -----
-        self._table = QTableWidget(0, len(_COLUMNS))
+        columns = _columns()
+        self._table = QTableWidget(0, len(columns))
         self._table.setObjectName("home_page.project_table.table")
-        self._table.setHorizontalHeaderLabels(_COLUMNS)
+        self._table.setHorizontalHeaderLabels(columns)
         self._table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self._table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self._table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
@@ -112,9 +136,9 @@ class ProjectTable(QWidget):
 
         header_view = self._table.horizontalHeader()
         header_view.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
-        for column in range(1, len(_COLUMNS) - 1):
+        for column in range(1, len(columns) - 1):
             header_view.setSectionResizeMode(column, QHeaderView.ResizeMode.ResizeToContents)
-        header_view.setSectionResizeMode(len(_COLUMNS) - 1, QHeaderView.ResizeMode.Stretch)
+        header_view.setSectionResizeMode(len(columns) - 1, QHeaderView.ResizeMode.Stretch)
         header_view.setMinimumSectionSize(80)
 
         self._table.itemSelectionChanged.connect(self._on_selection_changed)

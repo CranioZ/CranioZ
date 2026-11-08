@@ -312,6 +312,7 @@ markers = [
     "slow: slow tests (>1s)",
     "gpu: requires GPU",
     "qt: requires Qt (uses pytest-qt)",
+    "architecture: architecture guard tests",
 ]
 
 # ------------------------------------------------------------

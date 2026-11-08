@@ -29,6 +29,7 @@ from PySide6.QtWidgets import (
 )
 
 from cranioz.application.flows.definition import FlowDefinition
+from cranioz.infrastructure.i18n import tr
 from cranioz.ui.home.widgets.flow_row import FlowRow
 
 
@@ -50,14 +51,14 @@ class FlowList(QWidget):
         self._selected_flow_id: str | None = None
         self._rows: dict[str, FlowRow] = {}
 
-        title = QLabel("Fluxos clínicos")
+        title = QLabel(tr("homepage.flow_list.title", "Clinical flows"))
         title.setObjectName("home_page.flow_list.title")
         title_font = title.font()
         title_font.setPointSize(12)
         title_font.setBold(True)
         title.setFont(title_font)
 
-        self._manage_button = QPushButton("Gerir Fluxos")
+        self._manage_button = QPushButton(tr("homepage.flow_list.manage_flows", "Manage Flows"))
         self._manage_button.setObjectName("home_page.flow_list.manage")
         self._manage_button.clicked.connect(self.manage_flows_requested)
 
@@ -74,7 +75,7 @@ class FlowList(QWidget):
         self._content_layout.setContentsMargins(8, 8, 8, 8)
         self._content_layout.setSpacing(6)
 
-        self._placeholder = QLabel("Nenhum fluxo disponível")
+        self._placeholder = QLabel(tr("homepage.flow_list.empty", "No flows available"))
         self._placeholder.setObjectName("home_page.flow_list.placeholder")
         self._placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._content_layout.addWidget(self._placeholder)

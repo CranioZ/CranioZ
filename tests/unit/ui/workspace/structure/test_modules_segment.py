@@ -1,113 +1,148 @@
-"""Tests for HomeSegment (Phase 2, Section 10.10)."""
+"""Tests for ModulesSegment (Phase 2, §10.10)."""
 
 from __future__ import annotations
 
 import pytest
 
-from cranioz.ui.workspace.structure.home_segment import HomeSegment
+from cranioz.ui.workspace.structure.modules_segment import ModulesSegment
 
 
 @pytest.mark.qt
-def test_toggle_area_left_button_emits_signal(qtbot) -> None:
-    segment = HomeSegment()
+def test_starts_empty(qtbot) -> None:
+    segment = ModulesSegment()
     qtbot.addWidget(segment)
 
-    with qtbot.waitSignal(segment.toggle_area_left_requested, timeout=1000):
-        segment.findChild(
-            type(segment._toggle_left_button),  # noqa: SLF001
-            "workspace.top_bar.home_segment.toggle_left",
-        ).click()
+    assert segment.module_ids() == ()
+    assert segment.selected_module_id() is None
 
 
 @pytest.mark.qt
-def test_close_workspace_button_emits_signal(qtbot) -> None:
-    segment = HomeSegment()
+def test_add_button_emits_signal(qtbot) -> None:
+    segment = ModulesSegment()
     qtbot.addWidget(segment)
 
-    with qtbot.waitSignal(segment.close_workspace_requested, timeout=1000):
-        segment.findChild(
-            type(segment._close_workspace_button),  # noqa: SLF001
-            "workspace.top_bar.home_segment.close_workspace",
-        ).click()
+    with qtbot.waitSignal(segment.add_module_requested, timeout=1000):
+        segment._add_button.click()  # noqa: SLF001
 
 
 @pytest.mark.qt
-def test_menu_new_project_emits_signal(qtbot) -> None:
-    segment = HomeSegment()
+def test_set_modules_populates(qtbot) -> None:
+    segment = ModulesSegment()
     qtbot.addWidget(segment)
 
-    with qtbot.waitSignal(segment.new_project_requested, timeout=1000):
-        segment._action_new_project.trigger()  # noqa: SLF001
+    segment.set_modules((("tomography", "Tomography"), ("osteotomy", "Osteotomy")))
+
+    assert segment.module_ids() == ("tomography", "osteotomy")
 
 
 @pytest.mark.qt
-def test_menu_open_project_emits_signal(qtbot) -> None:
-    segment = HomeSegment()
+def test_set_modules_replaces_existing(qtbot) -> None:
+    segment = ModulesSegment()
     qtbot.addWidget(segment)
 
-    with qtbot.waitSignal(segment.open_project_requested, timeout=1000):
-        segment._action_open_project.trigger()  # noqa: SLF001
+    segment.set_modules((("a", "A"), ("b", "B")))
+    segment.set_modules((("c", "C"),))
+
+    assert segment.module_ids() == ("c",)
 
 
 @pytest.mark.qt
-def test_menu_close_project_emits_signal(qtbot) -> None:
-    segment = HomeSegment()
+def test_clicking_module_emits_signal(qtbot) -> None:
+    segment = ModulesSegment()
     qtbot.addWidget(segment)
-    segment.set_project_open(True)
+    segment.set_modules((("tomography", "Tomography"),))
 
-    with qtbot.waitSignal(segment.close_project_requested, timeout=1000):
-        segment._action_close_project.trigger()  # noqa: SLF001
+    with qtbot.waitSignal(segment.module_selected, timeout=1000) as blocker:
+        segment._module_buttons["tomography"].click()  # noqa: SLF001
+
+    assert blocker.args[0] == "tomography"
+    assert segment.selected_module_id() == "tomography"
 
 
 @pytest.mark.qt
-def test_menu_import_dicom_emits_signal(qtbot) -> None:
-    segment = HomeSegment()
+def test_clicking_selected_module_deselects(qtbot) -> None:
+    segment = ModulesSegment()
     qtbot.addWidget(segment)
-    segment.set_project_open(True)
+    segment.set_modules((("tomography", "Tomography"),))
 
-    with qtbot.waitSignal(segment.import_files_requested, timeout=1000):
-        segment._action_import_dicom.trigger()  # noqa: SLF001
+    # First click: select.
+    segment._module_buttons["tomography"].click()  # noqa: SLF001
+    assert segment.selected_module_id() == "tomography"
+
+    # Second click: deselect.
+    segment._module_buttons["tomography"].click()  # noqa: SLF001
+    assert segment.selected_module_id() is None
 
 
 @pytest.mark.qt
-def test_menu_import_stl_debug_emits_signal(qtbot) -> None:
-    segment = HomeSegment()
+def test_set_selected_marks_button(qtbot) -> None:
+    segment = ModulesSegment()
     qtbot.addWidget(segment)
-    segment.set_project_open(True)
+    segment.set_modules((("a", "A"), ("b", "B")))
 
-    with qtbot.waitSignal(segment.import_stl_debug_requested, timeout=1000):
-        segment._action_import_stl.trigger()  # noqa: SLF001
+    segment.set_selected("b")
+
+    assert segment.selected_module_id() == "b"
+    assert segment._module_buttons["b"].isChecked() is True  # noqa: SLF001
+    assert segment._module_buttons["a"].isChecked() is False  # noqa: SLF001
 
 
 @pytest.mark.qt
-def test_context_actions_disabled_when_no_project(qtbot) -> None:
-    segment = HomeSegment()
+def test_set_selected_none_clears(qtbot) -> None:
+    segment = ModulesSegment()
     qtbot.addWidget(segment)
-    segment.set_project_open(False)
+    segment.set_modules((("a", "A"),))
+    segment.set_selected("a")
 
-    assert not segment._action_close_project.isEnabled()  # noqa: SLF001
-    assert not segment._import_menu.isEnabled()  # noqa: SLF001
-    assert segment._action_new_project.isEnabled()  # noqa: SLF001
-    assert segment._action_open_project.isEnabled()  # noqa: SLF001
+    segment.set_selected(None)
+
+    assert segment.selected_module_id() is None
+    assert segment._module_buttons["a"].isChecked() is False  # noqa: SLF001
 
 
 @pytest.mark.qt
-def test_context_actions_enabled_when_project_open(qtbot) -> None:
-    segment = HomeSegment()
+def test_set_selected_unknown_raises(qtbot) -> None:
+    segment = ModulesSegment()
     qtbot.addWidget(segment)
-    segment.set_project_open(True)
+    segment.set_modules((("a", "A"),))
 
-    assert segment._action_close_project.isEnabled()  # noqa: SLF001
-    assert segment._import_menu.isEnabled()  # noqa: SLF001
+    with pytest.raises(KeyError, match="unknown module_id"):
+        segment.set_selected("unknown")
 
 
 @pytest.mark.qt
-def test_project_open_state_round_trips(qtbot) -> None:
-    segment = HomeSegment()
+def test_set_modules_preserves_selection_when_present(qtbot) -> None:
+    segment = ModulesSegment()
     qtbot.addWidget(segment)
+    segment.set_modules((("a", "A"), ("b", "B")))
+    segment.set_selected("b")
 
-    assert segment.is_project_open() is False
-    segment.set_project_open(True)
-    assert segment.is_project_open() is True
-    segment.set_project_open(False)
-    assert segment.is_project_open() is False
+    segment.set_modules((("a", "A"), ("b", "B"), ("c", "C")))
+
+    assert segment.selected_module_id() == "b"
+
+
+@pytest.mark.qt
+def test_set_modules_clears_selection_when_absent(qtbot) -> None:
+    segment = ModulesSegment()
+    qtbot.addWidget(segment)
+    segment.set_modules((("a", "A"), ("b", "B")))
+    segment.set_selected("b")
+
+    segment.set_modules((("a", "A"),))
+
+    assert segment.selected_module_id() is None
+
+
+@pytest.mark.qt
+def test_only_one_module_selected_at_a_time(qtbot) -> None:
+    segment = ModulesSegment()
+    qtbot.addWidget(segment)
+    segment.set_modules((("a", "A"), ("b", "B")))
+
+    segment.set_selected("a")
+    segment.set_selected("b")
+
+    assert segment.selected_module_id() == "b"
+    assert segment._module_buttons["a"].isChecked() is False  # noqa: SLF001
+    assert segment._module_buttons["b"].isChecked() is True  # noqa: SLF001

@@ -26,6 +26,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from cranioz.infrastructure.i18n import tr
+
 
 class ExtrasSegment(QWidget):
     """Right zone of the Workspace Top Bar."""
@@ -47,18 +49,24 @@ class ExtrasSegment(QWidget):
         layout.setSpacing(4)
 
         self._menu_button = self._make_button(
-            "⋮", "workspace.top_bar.extras_segment.menu", "Extras"
+            "⋮",
+            "workspace.top_bar.extras_segment.menu",
+            tr("workspace.top_bar.extras", "Extras"),
         )
         self._build_menu()
         self._menu_button.clicked.connect(self._on_menu_button_clicked)
 
         self._toggle_bottom_button = self._make_button(
-            "▭", "workspace.top_bar.extras_segment.toggle_bottom", "Toggle Area Bottom"
+            "▭",
+            "workspace.top_bar.extras_segment.toggle_bottom",
+            tr("workspace.top_bar.toggle_area_bottom", "Toggle Area Bottom"),
         )
         self._toggle_bottom_button.clicked.connect(self.toggle_area_bottom_requested)
 
         self._toggle_right_button = self._make_button(
-            "▯", "workspace.top_bar.extras_segment.toggle_right", "Toggle Area Right"
+            "▯",
+            "workspace.top_bar.extras_segment.toggle_right",
+            tr("workspace.top_bar.toggle_area_right", "Toggle Area Right"),
         )
         self._toggle_right_button.clicked.connect(self.toggle_area_right_requested)
 
@@ -81,13 +89,23 @@ class ExtrasSegment(QWidget):
         self._menu = QMenu(self)
         self._menu.setObjectName("workspace.top_bar.extras_segment.menu.popup")
 
-        self._menu.addAction("Configurações").triggered.connect(self.settings_requested)
-        self._menu.addAction("Temas").triggered.connect(self.themes_requested)
+        self._menu.addAction(
+            tr("workspace.top_bar.extras_menu.settings", "Settings")
+        ).triggered.connect(self.settings_requested)
+        self._menu.addAction(
+            tr("workspace.top_bar.extras_menu.themes", "Themes")
+        ).triggered.connect(self.themes_requested)
         self._menu.addSeparator()
-        self._menu.addAction("Ajuda").triggered.connect(self.help_requested)
-        self._menu.addAction("Atualizações").triggered.connect(self.updates_requested)
+        self._menu.addAction(tr("workspace.top_bar.extras_menu.help", "Help")).triggered.connect(
+            self.help_requested
+        )
+        self._menu.addAction(
+            tr("workspace.top_bar.extras_menu.updates", "Updates")
+        ).triggered.connect(self.updates_requested)
         self._menu.addSeparator()
-        self._menu.addAction("Sobre").triggered.connect(self.about_requested)
+        self._menu.addAction(tr("workspace.top_bar.extras_menu.about", "About")).triggered.connect(
+            self.about_requested
+        )
 
     def _on_menu_button_clicked(self) -> None:
         bottom_left = self._menu_button.rect().bottomLeft()
