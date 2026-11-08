@@ -1,0 +1,38 @@
+{
+  "_metadata": { "module": "homepage", "language": "en", "format_version": 1 },
+  "title": { "message": "CranioZ", "description": "Home page title." },
+  "project_list": {
+    "title": { "message": "Project list", "description": "Title of the project table section." },
+    "new_project": { "message": "New project", "description": "Button to create a new project." },
+    "manage_projects": { "message": "Manage projects", "description": "Button to open the project management page." },
+    "search_placeholder": { "message": "Search by project or patient name", "description": "Placeholder for the project search field." },
+    "columns": {
+      "name": { "message": "Name", "description": "Project table column: name." },
+      "id": { "message": "ID", "description": "Project table column: id." },
+      "sex": { "message": "Sex", "description": "Project table column: sex." },
+      "age": { "message": "Age", "description": "Project table column: age." },
+      "created_at": { "message": "Project creation", "description": "Project table column: creation date." },
+      "updated_at": { "message": "Last modification", "description": "Project table column: last modification date." }
+    }
+  },
+  "flow_list": {
+    "title": { "message": "Clinical flows", "description": "Title of the flow list section." },
+    "manage_flows": { "message": "Manage Flows", "description": "Button to open the flow management page." },
+    "empty": { "message": "No flows available", "description": "Placeholder when no flow is loaded." }
+  },
+  "community_sidebar": {
+    "community": { "message": "Community", "description": "Community sidebar: community link." },
+    "library": { "message": "Object library", "description": "Community sidebar: object library link." },
+    "news": { "message": "News", "description": "Community sidebar: news link." },
+    "feedback": { "message": "Suggest improvements", "description": "Community sidebar: feedback link." },
+    "contribute": { "message": "Contribute", "description": "Community sidebar: contribute link." }
+  },
+  "top_bar": {
+    "menu": { "message": "Menu", "description": "Top bar: menu button tooltip." },
+    "help": { "message": "Help", "description": "Top bar: help button tooltip." },
+    "settings": { "message": "Settings", "description": "Top bar: settings button tooltip." }
+  },
+  "start_button": {
+    "label": { "message": "Start", "description": "Start button accessible name." }
+  }
+}

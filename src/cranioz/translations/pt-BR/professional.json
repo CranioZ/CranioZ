@@ -1,0 +1,42 @@
+{
+  "_metadata": { "module": "professional", "language": "pt-BR", "format_version": 1 },
+  "tabs": {
+    "professional": { "message": "Profissional", "description": "Aba do módulo Profissional: perfil." },
+    "document_templates": { "message": "Modelos de documentos", "description": "Aba do módulo Profissional: modelos." },
+    "budgets": { "message": "Orçamentos", "description": "Aba do módulo Profissional: orçamentos." },
+    "schedule": { "message": "Agenda", "description": "Aba do módulo Profissional: agenda." },
+    "procedures": { "message": "Procedimentos", "description": "Aba do módulo Profissional: procedimentos." },
+    "config": { "message": "Config", "description": "Aba do módulo Profissional: configuração." }
+  },
+  "profile": {
+    "salutation": { "message": "Saudação", "description": "Campo: saudação." },
+    "full_name": { "message": "Nome do cirurgião", "description": "Campo: nome do cirurgião." },
+    "registration": { "message": "Inscrição profissional", "description": "Campo: inscrição profissional." },
+    "address": { "message": "Endereço", "description": "Campo: endereço." },
+    "city": { "message": "Cidade", "description": "Campo: cidade." },
+    "state": { "message": "Estado", "description": "Campo: estado." },
+    "country": { "message": "País", "description": "Campo: país." },
+    "clinic_logo": { "message": "Logo da clínica", "description": "Campo: logo da clínica." },
+    "digital_signature": { "message": "Assinatura digital do cirurgião", "description": "Campo: assinatura digital." },
+    "date_format": { "message": "Formato da data", "description": "Campo: formato da data." },
+    "signature_preview": { "message": "Previsão da assinatura do cirurgião", "description": "Rótulo: prévia da assinatura." },
+    "cancel": { "message": "Cancelar", "description": "Botão: cancelar." },
+    "save": { "message": "Salvar", "description": "Botão: salvar." }
+  },
+  "procedures": {
+    "new_procedure": { "message": "Criar novo procedimento", "description": "Botão: criar novo procedimento." },
+    "new_specialty": { "message": "Criar nova especialidade", "description": "Botão: criar nova especialidade." },
+    "new_category": { "message": "Criar nova categoria", "description": "Botão: criar nova categoria." },
+    "delete_procedure": { "message": "Excluir procedimento", "description": "Botão: excluir procedimento." }
+  },
+  "document_templates": {
+    "orientations": { "message": "Orientações", "description": "Categoria: orientações." },
+    "contracts": { "message": "Contratos", "description": "Categoria: contratos." },
+    "consent_terms": { "message": "Termo de consentimento", "description": "Categoria: termo de consentimento." },
+    "prescriptions": { "message": "Prescrições", "description": "Categoria: prescrições." },
+    "new_template": { "message": "Criar novo modelo", "description": "Botão: criar novo modelo." },
+    "import_document": { "message": "Importar doc", "description": "Botão: importar documento." },
+    "delete_template": { "message": "Excluir modelo", "description": "Botão: excluir modelo." },
+    "new_category": { "message": "Criar nova categoria", "description": "Botão: criar nova categoria." }
+  }
+}

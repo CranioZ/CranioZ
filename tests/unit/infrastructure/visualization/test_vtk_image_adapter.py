@@ -126,9 +126,7 @@ def test_is_hu_calibrated() -> None:
     volume = _make_volume()
 
     # The domain object exposes the calibration state.
-    assert volume.is_hu_calibrated is (
-        volume.intensity_scale is IntensityScale.HU
-    )
+    assert volume.is_hu_calibrated is (volume.intensity_scale is IntensityScale.HU)
 
     # The adapter must not expose ``is_hu_calibrated`` — that would
     # be a second source of truth.

@@ -1,0 +1,18 @@
+{
+  "_metadata": { "module": "bottom_panels", "language": "en", "format_version": 1 },
+  "panels": {
+    "console": { "message": "Console", "description": "Bottom panel: console." },
+    "history": { "message": "History", "description": "Bottom panel: history." },
+    "animation": { "message": "Animation", "description": "Bottom panel: animation." },
+    "ai_assistant": { "message": "AI Assistant", "description": "Bottom panel: AI assistant." },
+    "nodes": { "message": "Nodes", "description": "Bottom panel: nodes." },
+    "monitor": { "message": "Monitor", "description": "Bottom panel: monitor." }
+  },
+  "animation": {
+    "play": { "message": "Play", "description": "Animation control: play." },
+    "pause": { "message": "Pause", "description": "Animation control: pause." },
+    "forward": { "message": "Forward", "description": "Animation control: forward." },
+    "backward": { "message": "Backward", "description": "Animation control: backward." },
+    "timeline": { "message": "Timeline", "description": "Animation control: timeline." }
+  }
+}

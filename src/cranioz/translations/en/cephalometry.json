@@ -1,0 +1,36 @@
+{
+  "_metadata": { "module": "cephalometry", "language": "en", "format_version": 1 },
+  "tools": {
+    "cursor": { "message": "Cursor / point selection", "description": "Tool: cursor." },
+    "add_cephalometric_point": { "message": "Add cephalometric point", "description": "Tool: add cephalometric point." },
+    "add_secondary_point": { "message": "Add secondary point", "description": "Tool: add secondary point." },
+    "convert_point": { "message": "Convert cephalometric point to secondary and vice versa", "description": "Tool: convert point." },
+    "remove_point": { "message": "Remove point", "description": "Tool: remove point." },
+    "connect_points": { "message": "Connect points", "description": "Tool: connect points." },
+    "create_plane": { "message": "Create plane", "description": "Tool: create plane." },
+    "create_region": { "message": "Create region", "description": "Tool: create region." }
+  },
+  "strategy": {
+    "title": { "message": "Strategy", "description": "Section title: strategy." },
+    "manual": { "message": "Manual", "description": "Strategy option: manual." }
+  },
+  "capture": {
+    "title": { "message": "Point capture", "description": "Section title: point capture." },
+    "current_point": { "message": "Current point", "description": "Label: current point." },
+    "view_suggestion": { "message": "View suggestion", "description": "Label: view suggestion." },
+    "previous": { "message": "Previous", "description": "Button: previous point." },
+    "next": { "message": "Next", "description": "Button: next point." }
+  },
+  "point_list": {
+    "title": { "message": "Point list", "description": "Section title: point list." },
+    "ok": { "message": "OK", "description": "Point status: OK." }
+  },
+  "analysis": {
+    "title": { "message": "Cephalometric Analysis", "description": "Section title: analysis." },
+    "angular_measurements": { "message": "Angular measurements", "description": "Section: angular measurements." },
+    "facial_heights": { "message": "Facial heights", "description": "Section: facial heights." },
+    "dentoalveolar_measurements": { "message": "Dentoalveolar measurements", "description": "Section: dentoalveolar measurements." },
+    "occlusal_plane_measurements": { "message": "Occlusal plane measurements", "description": "Section: occlusal plane measurements." },
+    "esthetic_measurements": { "message": "Esthetic measurements", "description": "Section: esthetic measurements." }
+  }
+}

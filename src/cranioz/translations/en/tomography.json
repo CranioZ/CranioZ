@@ -1,0 +1,46 @@
+{
+  "_metadata": { "module": "tomography", "language": "en", "format_version": 1 },
+  "tools": {
+    "select": { "message": "Select", "description": "Tool: select objects." },
+    "window_level": { "message": "Brightness/Contrast", "description": "Tool: window/level." },
+    "pan": { "message": "Pan", "description": "Tool: pan the image." },
+    "zoom": { "message": "Zoom", "description": "Tool: zoom." },
+    "hu_probe": { "message": "HU probe", "description": "Tool: probe Hounsfield value." },
+    "volume_transform": { "message": "Volume translation/rotation", "description": "Tool: translate/rotate the volume." },
+    "roi": { "message": "ROI", "description": "Tool: region of interest." },
+    "draw_nerve": { "message": "Draw nerve", "description": "Tool: draw nerve." },
+    "annotations": { "message": "Annotations", "description": "Tool: annotations." },
+    "measure_distance": { "message": "Measure distances", "description": "Tool: measure distance." },
+    "measure_angle": { "message": "Measure angles", "description": "Tool: measure angle." },
+    "maximize_view": { "message": "Maximize view", "description": "Tool: maximize the current view." },
+    "grid_layout": { "message": "Viewer grid", "description": "Tool: change the viewer grid." },
+    "background_color": { "message": "Viewer background color", "description": "Tool: change the viewport background color." },
+    "ruler": { "message": "Show/hide ruler", "description": "Tool: show/hide the ruler." },
+    "flip_lr": { "message": "Flip left/right", "description": "Tool: flip the slices horizontally." },
+    "animation": { "message": "Slice animation", "description": "Tool: play the slices as an animation." },
+    "screenshot": { "message": "Screenshot", "description": "Tool: take a screenshot of the viewport." },
+    "lut": { "message": "Color Lookup Tables", "description": "Tool: select a LUT." },
+    "invert_lut": { "message": "Invert LUT", "description": "Tool: invert the LUT." },
+    "cut_volume": { "message": "Cut part of the 3D volume", "description": "Tool: cut part of the 3D volume." },
+    "paint_volume": { "message": "Paint the 3D volume", "description": "Tool: paint the 3D volume." },
+    "presets": { "message": "Presets", "description": "Tool: select a rendering preset." },
+    "orthographic_perspective": { "message": "Orthographic/Perspective", "description": "Tool: toggle between orthographic and perspective." },
+    "lock_rotation_h": { "message": "Lock horizontal rotation", "description": "Tool: lock horizontal rotation." },
+    "lock_rotation_v": { "message": "Lock vertical rotation", "description": "Tool: lock vertical rotation." }
+  },
+  "toolbar": {
+    "image_tools": { "message": "Image Tools", "description": "Left toolbar title." },
+    "visibility": { "message": "Visibility", "description": "Right toolbar title." }
+  },
+  "volume_preset": {
+    "bone": { "message": "Bone", "description": "Volume rendering preset: bone." },
+    "soft_tissue": { "message": "Soft tissue", "description": "Volume rendering preset: soft tissue." },
+    "skin": { "message": "Skin", "description": "Volume rendering preset: skin." },
+    "ct_angio": { "message": "CT Angio", "description": "Volume rendering preset: CT angio." },
+    "cbct": { "message": "CBCT (Raw)", "description": "Volume rendering preset: CBCT raw." }
+  },
+  "errors": {
+    "import_failed": { "message": "DICOM import failed: {reason}", "description": "Error message when DICOM import fails." },
+    "vtk_unavailable": { "message": "VTK is not available; the views will remain empty.", "description": "Warning when VTK is not available." }
+  }
+}

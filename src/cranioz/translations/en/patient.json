@@ -1,0 +1,44 @@
+{
+  "_metadata": { "module": "patient", "language": "en", "format_version": 1 },
+  "tabs": {
+    "personal_data": { "message": "Personal data", "description": "Patient module tab: personal data." },
+    "clinical_data": { "message": "Clinical data", "description": "Patient module tab: clinical data." },
+    "dicom_files": { "message": "DICOM file list", "description": "Patient module tab: DICOM files." },
+    "mesh_files": { "message": "3D mesh file list", "description": "Patient module tab: 3D mesh files." },
+    "clinical_photos": { "message": "Clinical photographs", "description": "Patient module tab: photographs." },
+    "dentition": { "message": "Patient dentition", "description": "Patient module tab: odontogram." },
+    "documents": { "message": "Document history", "description": "Patient module tab: documents." },
+    "project": { "message": "Project", "description": "Patient module tab: project." },
+    "module_settings": { "message": "Module settings", "description": "Patient module tab: settings." }
+  },
+  "personal_data": {
+    "id": { "message": "ID", "description": "Field: patient id." },
+    "full_name": { "message": "Full name", "description": "Field: full name." },
+    "sex": { "message": "Sex", "description": "Field: sex." },
+    "birth_date": { "message": "Date of birth", "description": "Field: birth date." },
+    "race": { "message": "Race/Color", "description": "Field: race/color." },
+    "father": { "message": "Father", "description": "Field: father's name." },
+    "mother": { "message": "Mother", "description": "Field: mother's name." },
+    "document": { "message": "Document", "description": "Field: document number." },
+    "document_type": { "message": "Document type", "description": "Field: document type." },
+    "phone": { "message": "Phone", "description": "Field: phone number." },
+    "email": { "message": "E-mail", "description": "Field: email." },
+    "nationality": { "message": "Nationality", "description": "Field: nationality." },
+    "load_photo": { "message": "Load photo", "description": "Button: load patient photo." }
+  },
+  "clinical_data": {
+    "chief_complaint": { "message": "Chief complaint", "description": "Field: chief complaint." },
+    "present_illness_history": { "message": "History of present illness", "description": "Field: present illness history." },
+    "comorbidities": { "message": "Comorbidities", "description": "Section: comorbidities." },
+    "medications": { "message": "Medications", "description": "Section: medications." },
+    "allergies": { "message": "Allergies", "description": "Section: allergies." },
+    "family_history": { "message": "Family history", "description": "Section: family history." },
+    "pregnancy_contraception": { "message": "Pregnancy and contraception", "description": "Section: women's health." },
+    "habits": { "message": "Habits and addictions", "description": "Section: habits." }
+  },
+  "actions": {
+    "export_csv": { "message": "Export .csv", "description": "Button: export to CSV." },
+    "print": { "message": "Print", "description": "Button: print." },
+    "save": { "message": "Save", "description": "Button: save." }
+  }
+}

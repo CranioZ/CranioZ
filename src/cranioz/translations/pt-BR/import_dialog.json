@@ -1,0 +1,28 @@
+{
+  "_metadata": { "module": "import_dialog", "language": "pt-BR", "format_version": 1 },
+  "title": { "message": "Importar", "description": "Título do diálogo." },
+  "categories": {
+    "volume": { "message": "Volume", "description": "Categoria: volume." },
+    "radiographs": { "message": "Radiografias", "description": "Categoria: radiografias." },
+    "scans": { "message": "Escaneamentos", "description": "Categoria: escaneamentos." },
+    "photographs": { "message": "Fotografias", "description": "Categoria: fotografias." },
+    "meshes": { "message": "Malhas 3D", "description": "Categoria: malhas 3D." },
+    "dental_implants": { "message": "Implantes dentários", "description": "Categoria: implantes dentários." },
+    "facial_implants": { "message": "Implantes faciais", "description": "Categoria: implantes faciais." }
+  },
+  "sources": {
+    "project": { "message": "Do projeto", "description": "Fonte: do projeto." },
+    "file": { "message": "Do arquivo", "description": "Fonte: do arquivo." },
+    "sample_data": { "message": "Sample Data", "description": "Fonte: dados de exemplo." }
+  },
+  "actions": {
+    "cancel": { "message": "Cancelar", "description": "Botão: cancelar." },
+    "import": { "message": "Importar", "description": "Botão: importar." },
+    "add_object": { "message": "Adicionar objeto", "description": "Botão: adicionar objeto." },
+    "filter": { "message": "Filtro", "description": "Botão: filtro." },
+    "preview": { "message": "Preview", "description": "Rótulo: prévia." }
+  },
+  "current_items": {
+    "title": { "message": "Volumes atuais do projeto:", "description": "Rótulo: itens atuais do projeto." }
+  }
+}

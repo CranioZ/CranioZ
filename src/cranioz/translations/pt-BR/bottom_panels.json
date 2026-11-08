@@ -1,0 +1,18 @@
+{
+  "_metadata": { "module": "bottom_panels", "language": "pt-BR", "format_version": 1 },
+  "panels": {
+    "console": { "message": "Console", "description": "Painel inferior: console." },
+    "history": { "message": "Histórico", "description": "Painel inferior: histórico." },
+    "animation": { "message": "Animação", "description": "Painel inferior: animação." },
+    "ai_assistant": { "message": "Assistente por IA", "description": "Painel inferior: assistente de IA." },
+    "nodes": { "message": "Nodes", "description": "Painel inferior: nodes." },
+    "monitor": { "message": "Monitor", "description": "Painel inferior: monitor." }
+  },
+  "animation": {
+    "play": { "message": "Reproduzir", "description": "Controle de animação: reproduzir." },
+    "pause": { "message": "Pausar", "description": "Controle de animação: pausar." },
+    "forward": { "message": "Avançar", "description": "Controle de animação: avançar." },
+    "backward": { "message": "Retroceder", "description": "Controle de animação: retroceder." },
+    "timeline": { "message": "Linha do tempo", "description": "Controle de animação: linha do tempo." }
+  }
+}

@@ -219,29 +219,29 @@ typography.weight.semibold
 ### 5.3 Spacing (5 tokens)
 
 ```python
-spacing.xs       # 4 logical px
-spacing.sm       # 8 logical px
-spacing.md       # 16 logical px
-spacing.lg       # 24 logical px
-spacing.xl       # 32 logical px
+spacing.xs  # 4 logical px
+spacing.sm  # 8 logical px
+spacing.md  # 16 logical px
+spacing.lg  # 24 logical px
+spacing.xl  # 32 logical px
 ```
 
 ### 5.4 Dimensions (2 tokens)
 
 ```python
-dimension.control_height    # 28 logical px
-dimension.icon_size         # 20 logical px
+dimension.control_height  # 28 logical px
+dimension.icon_size  # 20 logical px
 ```
 
 ### 5.5 Borders (5 tokens)
 
 ```python
-border.width.default        # 1 logical px
-border.width.focus          # 2 logical px
+border.width.default  # 1 logical px
+border.width.focus  # 2 logical px
 
-radius.control              # 4 logical px
-radius.panel                # 6 logical px
-radius.dialog               # 8 logical px
+radius.control  # 4 logical px
+radius.panel  # 6 logical px
+radius.dialog  # 8 logical px
 ```
 
 ### 5.6 Effects (5 tokens)
@@ -264,9 +264,9 @@ Qt stylesheets do not expose a native `box-shadow` equivalent. When elevation ef
 ### 5.7 Surfaces (3 tokens)
 
 ```python
-surface.opacity.toolbar          # 0.92
-surface.opacity.popover          # 0.96
-surface.opacity.modal_backdrop   # 0.60 in DARK / 0.40 in LIGHT
+surface.opacity.toolbar  # 0.92
+surface.opacity.popover  # 0.96
+surface.opacity.modal_backdrop  # 0.60 in DARK / 0.40 in LIGHT
 ```
 
 **Total: 47 tokens.**
@@ -798,29 +798,21 @@ It coordinates theme resolution, token access, persistence through `SettingsServ
 class ThemeService(QObject):
     theme_changed = Signal(ThemeName)
 
-    def __init__(self, mode: ThemeMode) -> None:
-        ...
+    def __init__(self, mode: ThemeMode) -> None: ...
 
-    def mode(self) -> ThemeMode:
-        ...
+    def mode(self) -> ThemeMode: ...
 
-    def set_mode(self, mode: ThemeMode) -> None:
-        ...
+    def set_mode(self, mode: ThemeMode) -> None: ...
 
-    def theme(self) -> ThemeName:
-        ...
+    def theme(self) -> ThemeName: ...
 
-    def tokens(self) -> ThemeTokens:
-        ...
+    def tokens(self) -> ThemeTokens: ...
 
-    def color(self, path: str) -> str:
-        ...
+    def color(self, path: str) -> str: ...
 
-    def dimension(self, path: str) -> int:
-        ...
+    def dimension(self, path: str) -> int: ...
 
-    def surface_color(self, role: str) -> str:
-        ...
+    def surface_color(self, role: str) -> str: ...
 ```
 
 `theme()` MUST always return a concrete theme.

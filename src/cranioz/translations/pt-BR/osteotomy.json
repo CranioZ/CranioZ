@@ -1,0 +1,31 @@
+{
+  "_metadata": { "module": "osteotomy", "language": "pt-BR", "format_version": 1 },
+  "tools": {
+    "select": { "message": "Selecionar objetos", "description": "Ferramenta: selecionar objetos." },
+    "move": { "message": "Mover objetos", "description": "Ferramenta: mover objetos." },
+    "rotate": { "message": "Girar objetos", "description": "Ferramenta: girar objetos." },
+    "align_midline": { "message": "Alinhar segmento na linha média", "description": "Ferramenta: alinhar segmento na linha média." },
+    "manipulate_complex": { "message": "Manipular Complexo Maxilomandibular", "description": "Ferramenta: manipular o complexo maxilomandibular." }
+  },
+  "view": {
+    "single": { "message": "Apenas um modelo", "description": "Vista: um modelo." },
+    "front_right": { "message": "Modelo na vista frontal e direita", "description": "Vista: frontal e direita." },
+    "front_left": { "message": "Modelo na vista frontal e esquerda", "description": "Vista: frontal e esquerda." },
+    "background_color": { "message": "Cor do fundo do editor", "description": "Ferramenta: alterar a cor de fundo do editor." },
+    "ruler": { "message": "Régua", "description": "Ferramenta: exibir/ocultar régua." },
+    "collision": { "message": "Permitir/Proibir colisão", "description": "Ferramenta: alternar detecção de colisão." },
+    "thickness_map": { "message": "Mapa de espessura", "description": "Ferramenta: alternar o mapa de espessura." },
+    "lock_rotation_h": { "message": "Bloquear giro horizontal", "description": "Ferramenta: bloquear giro horizontal." },
+    "lock_rotation_v": { "message": "Bloquear giro vertical", "description": "Ferramenta: bloquear giro vertical." }
+  },
+  "animation": {
+    "pre_op": { "message": "Pré-op", "description": "Botão: exibir estado pré-operatório." },
+    "post_op": { "message": "Pós-op", "description": "Botão: exibir estado pós-operatório." }
+  },
+  "patterns": {
+    "title": { "message": "Padrões de osteotomia", "description": "Título da seção: padrões de osteotomia." },
+    "upper_third": { "message": "Terço superior", "description": "Grupo: terço superior." },
+    "maxilla": { "message": "Maxila", "description": "Grupo: maxila." },
+    "mandible": { "message": "Mandíbula", "description": "Grupo: mandíbula." }
+  }
+}

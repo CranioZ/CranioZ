@@ -1,0 +1,37 @@
+{
+  "_metadata": { "module": "workspace", "language": "pt-BR", "format_version": 1 },
+  "top_bar": {
+    "home": { "message": "Home", "description": "Rótulo do segmento Home." },
+    "modules": { "message": "Módulos", "description": "Rótulo do segmento Módulos." },
+    "extras": { "message": "Extras", "description": "Rótulo do segmento Extras." },
+    "toggle_area_left": { "message": "Alternar Área Esquerda", "description": "Tooltip para alternar a Área Esquerda." },
+    "toggle_area_right": { "message": "Alternar Área Direita", "description": "Tooltip para alternar a Área Direita." },
+    "toggle_area_bottom": { "message": "Alternar Área Inferior", "description": "Tooltip para alternar a Área Inferior." },
+    "add_module": { "message": "Adicionar módulo", "description": "Tooltip do botão '+' em Módulos." },
+    "menu": {
+      "new_project": { "message": "Novo projeto", "description": "Menu Home: novo projeto." },
+      "open_project": { "message": "Abrir projeto", "description": "Menu Home: abrir projeto." },
+      "close_project": { "message": "Fechar projeto", "description": "Menu Home: fechar projeto." },
+      "import_files": { "message": "Importar arquivos", "description": "Menu Home: submenu de importação." },
+      "import_dicom": { "message": "DICOM (série)", "description": "Menu Home: importar DICOM." },
+      "import_stl_debug": { "message": "STL (debug)", "description": "Menu Home: importar STL (debug)." }
+    },
+    "extras_menu": {
+      "settings": { "message": "Configurações", "description": "Menu Extras: configurações." },
+      "themes": { "message": "Temas", "description": "Menu Extras: temas." },
+      "help": { "message": "Ajuda", "description": "Menu Extras: ajuda." },
+      "updates": { "message": "Atualizações", "description": "Menu Extras: atualizações." },
+      "about": { "message": "Sobre", "description": "Menu Extras: sobre." }
+    }
+  },
+  "placeholder": {
+    "no_flow": { "message": "Nenhum editor carregado — selecione um módulo na Barra Superior.", "description": "Placeholder exibido nas Áreas quando nenhum Fluxo está ativo." }
+  },
+  "dialog": {
+    "cannot_open_project": { "message": "Não foi possível abrir o projeto", "description": "Título do diálogo de erro ao abrir projeto." },
+    "dicom_import_failed": { "message": "Falha ao importar DICOM", "description": "Título do diálogo de erro na importação DICOM." },
+    "stl_import_failed": { "message": "Falha ao importar STL", "description": "Título do diálogo de erro na importação STL." },
+    "select_dicom_folder": { "message": "Selecionar pasta com DICOM", "description": "Título do seletor de pasta para DICOM." },
+    "select_stl_file": { "message": "Selecionar arquivo STL", "description": "Título do seletor de arquivo para STL." }
+  }
+}

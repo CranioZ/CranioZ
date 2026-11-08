@@ -1,0 +1,44 @@
+{
+  "_metadata": { "module": "patient", "language": "pt-BR", "format_version": 1 },
+  "tabs": {
+    "personal_data": { "message": "Dados pessoais", "description": "Aba do módulo Paciente: dados pessoais." },
+    "clinical_data": { "message": "Dados clínicos", "description": "Aba do módulo Paciente: dados clínicos." },
+    "dicom_files": { "message": "Lista de arquivos DICOM", "description": "Aba do módulo Paciente: arquivos DICOM." },
+    "mesh_files": { "message": "Lista de arquivos em formato de malhas 3D", "description": "Aba do módulo Paciente: malhas 3D." },
+    "clinical_photos": { "message": "Fotografias clínicas", "description": "Aba do módulo Paciente: fotografias." },
+    "dentition": { "message": "Dentição do paciente", "description": "Aba do módulo Paciente: odontograma." },
+    "documents": { "message": "Histórico de documentos", "description": "Aba do módulo Paciente: documentos." },
+    "project": { "message": "Projeto", "description": "Aba do módulo Paciente: projeto." },
+    "module_settings": { "message": "Configurações do módulo", "description": "Aba do módulo Paciente: configurações." }
+  },
+  "personal_data": {
+    "id": { "message": "ID", "description": "Campo: id do paciente." },
+    "full_name": { "message": "Nome completo", "description": "Campo: nome completo." },
+    "sex": { "message": "Sexo", "description": "Campo: sexo." },
+    "birth_date": { "message": "Data de nascimento", "description": "Campo: data de nascimento." },
+    "race": { "message": "Cor/Raça", "description": "Campo: cor/raça." },
+    "father": { "message": "Pai", "description": "Campo: nome do pai." },
+    "mother": { "message": "Mãe", "description": "Campo: nome da mãe." },
+    "document": { "message": "Documento", "description": "Campo: número do documento." },
+    "document_type": { "message": "Tipo de documento", "description": "Campo: tipo de documento." },
+    "phone": { "message": "Telefone", "description": "Campo: telefone." },
+    "email": { "message": "E-mail", "description": "Campo: e-mail." },
+    "nationality": { "message": "Nacionalidade", "description": "Campo: nacionalidade." },
+    "load_photo": { "message": "Carregar foto", "description": "Botão: carregar foto do paciente." }
+  },
+  "clinical_data": {
+    "chief_complaint": { "message": "Queixa principal", "description": "Campo: queixa principal." },
+    "present_illness_history": { "message": "História da doença atual", "description": "Campo: história da doença atual." },
+    "comorbidities": { "message": "Comorbidades", "description": "Seção: comorbidades." },
+    "medications": { "message": "Medicamentos", "description": "Seção: medicamentos." },
+    "allergies": { "message": "Alergias", "description": "Seção: alergias." },
+    "family_history": { "message": "Antecedentes familiares", "description": "Seção: antecedentes familiares." },
+    "pregnancy_contraception": { "message": "Gravidez e anticoncepcional", "description": "Seção: saúde da mulher." },
+    "habits": { "message": "Hábitos e vícios", "description": "Seção: hábitos." }
+  },
+  "actions": {
+    "export_csv": { "message": "Exportar .csv", "description": "Botão: exportar para CSV." },
+    "print": { "message": "Imprimir", "description": "Botão: imprimir." },
+    "save": { "message": "Salvar", "description": "Botão: salvar." }
+  }
+}

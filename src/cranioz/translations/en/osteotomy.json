@@ -1,0 +1,31 @@
+{
+  "_metadata": { "module": "osteotomy", "language": "en", "format_version": 1 },
+  "tools": {
+    "select": { "message": "Select objects", "description": "Tool: select objects." },
+    "move": { "message": "Move objects", "description": "Tool: move objects." },
+    "rotate": { "message": "Rotate objects", "description": "Tool: rotate objects." },
+    "align_midline": { "message": "Align segment to midline", "description": "Tool: align segment to midline." },
+    "manipulate_complex": { "message": "Manipulate maxillomandibular complex", "description": "Tool: manipulate the maxillomandibular complex." }
+  },
+  "view": {
+    "single": { "message": "Single model view", "description": "View: single model." },
+    "front_right": { "message": "Front and right view", "description": "View: front and right." },
+    "front_left": { "message": "Front and left view", "description": "View: front and left." },
+    "background_color": { "message": "Editor background color", "description": "Tool: change the editor background color." },
+    "ruler": { "message": "Ruler", "description": "Tool: show/hide ruler." },
+    "collision": { "message": "Allow/Disallow collision", "description": "Tool: toggle collision detection." },
+    "thickness_map": { "message": "Color map thickness", "description": "Tool: toggle the thickness color map." },
+    "lock_rotation_h": { "message": "Lock horizontal rotation", "description": "Tool: lock horizontal rotation." },
+    "lock_rotation_v": { "message": "Lock vertical rotation", "description": "Tool: lock vertical rotation." }
+  },
+  "animation": {
+    "pre_op": { "message": "Pre-op", "description": "Button: show pre-operative state." },
+    "post_op": { "message": "Post-op", "description": "Button: show post-operative state." }
+  },
+  "patterns": {
+    "title": { "message": "Osteotomy patterns", "description": "Section title: osteotomy patterns." },
+    "upper_third": { "message": "Upper third", "description": "Group: upper third." },
+    "maxilla": { "message": "Maxilla", "description": "Group: maxilla." },
+    "mandible": { "message": "Mandible", "description": "Group: mandible." }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "_metadata": { "module": "core", "language": "pt-BR", "format_version": 1 },
+  "app": {
+    "name": { "message": "CranioZ", "description": "Nome da aplicação." }
+  },
+  "common": {
+    "ok": { "message": "OK", "description": "Botão genérico de confirmação." },
+    "cancel": { "message": "Cancelar", "description": "Botão genérico de cancelamento." },
+    "close": { "message": "Fechar", "description": "Botão genérico de fechamento." },
+    "save": { "message": "Salvar", "description": "Botão genérico de salvar." },
+    "delete": { "message": "Excluir", "description": "Botão genérico de exclusão." },
+    "apply": { "message": "Aplicar", "description": "Botão genérico de aplicar." },
+    "import": { "message": "Importar", "description": "Botão genérico de importação." },
+    "export": { "message": "Exportar", "description": "Botão genérico de exportação." }
+  },
+  "errors": {
+    "project_not_found": { "message": "Projeto não encontrado.", "description": "Exibido quando um projeto não pode ser localizado." },
+    "project_access_denied": { "message": "Acesso negado a este projeto.", "description": "Exibido quando o usuário não tem autorização para abrir o projeto." },
+    "project_in_use": { "message": "Este projeto já está aberto. Feche-o primeiro.", "description": "Exibido ao tentar excluir um projeto aberto." },
+    "project_corrupted": { "message": "Os dados do projeto estão corrompidos.", "description": "Exibido quando os arquivos do projeto não podem ser lidos." },
+    "project_incompatible_schema": { "message": "Este projeto foi criado com uma versão incompatível do CranioZ.", "description": "Exibido quando a versão do schema é mais recente do que a suportada." }
+  }
+}

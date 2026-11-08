@@ -1,0 +1,46 @@
+{
+  "_metadata": { "module": "tomography", "language": "pt-BR", "format_version": 1 },
+  "tools": {
+    "select": { "message": "Selecionar", "description": "Ferramenta: selecionar objetos." },
+    "window_level": { "message": "Brilho/Contraste", "description": "Ferramenta: window/level." },
+    "pan": { "message": "Puxar/Reposicionar", "description": "Ferramenta: mover a imagem." },
+    "zoom": { "message": "Zoom", "description": "Ferramenta: zoom." },
+    "hu_probe": { "message": "Sonda HU", "description": "Ferramenta: sondar valor Hounsfield." },
+    "volume_transform": { "message": "Translação/Rotação do volume", "description": "Ferramenta: transladar/rotacionar o volume." },
+    "roi": { "message": "ROI", "description": "Ferramenta: região de interesse." },
+    "draw_nerve": { "message": "Desenhar nervo", "description": "Ferramenta: desenhar nervo." },
+    "annotations": { "message": "Anotações", "description": "Ferramenta: anotações." },
+    "measure_distance": { "message": "Medir distâncias", "description": "Ferramenta: medir distância." },
+    "measure_angle": { "message": "Medir ângulos", "description": "Ferramenta: medir ângulo." },
+    "maximize_view": { "message": "Maximizar a vista", "description": "Ferramenta: maximizar a vista atual." },
+    "grid_layout": { "message": "Grade de visores", "description": "Ferramenta: alterar a grade de visores." },
+    "background_color": { "message": "Cor do fundo do visor", "description": "Ferramenta: alterar a cor de fundo do visor." },
+    "ruler": { "message": "Exibir/Ocultar régua", "description": "Ferramenta: exibir/ocultar a régua." },
+    "flip_lr": { "message": "Inverter lateralmente", "description": "Ferramenta: inverter os cortes horizontalmente." },
+    "animation": { "message": "Animação dos cortes", "description": "Ferramenta: reproduzir os cortes como animação." },
+    "screenshot": { "message": "Print do visor", "description": "Ferramenta: capturar o visor." },
+    "lut": { "message": "Color Lookup Tables", "description": "Ferramenta: selecionar uma LUT." },
+    "invert_lut": { "message": "Inverter LUT", "description": "Ferramenta: inverter a LUT." },
+    "cut_volume": { "message": "Remover parte do volume 3D", "description": "Ferramenta: remover parte do volume 3D." },
+    "paint_volume": { "message": "Pintar o volume 3D", "description": "Ferramenta: pintar o volume 3D." },
+    "presets": { "message": "Presets", "description": "Ferramenta: selecionar um preset de renderização." },
+    "orthographic_perspective": { "message": "Ortogonal/Perspectiva", "description": "Ferramenta: alternar entre ortogonal e perspectiva." },
+    "lock_rotation_h": { "message": "Bloquear giro horizontal", "description": "Ferramenta: bloquear giro horizontal." },
+    "lock_rotation_v": { "message": "Bloquear giro vertical", "description": "Ferramenta: bloquear giro vertical." }
+  },
+  "toolbar": {
+    "image_tools": { "message": "Ferramentas de imagem", "description": "Título da barra de ferramentas esquerda." },
+    "visibility": { "message": "Visibilidade", "description": "Título da barra de ferramentas direita." }
+  },
+  "volume_preset": {
+    "bone": { "message": "Osso", "description": "Preset de renderização: osso." },
+    "soft_tissue": { "message": "Tecido mole", "description": "Preset de renderização: tecido mole." },
+    "skin": { "message": "Pele", "description": "Preset de renderização: pele." },
+    "ct_angio": { "message": "Angio TC", "description": "Preset de renderização: angio TC." },
+    "cbct": { "message": "CBCT (Bruto)", "description": "Preset de renderização: CBCT bruto." }
+  },
+  "errors": {
+    "import_failed": { "message": "Falha ao importar DICOM: {reason}", "description": "Mensagem de erro na importação DICOM." },
+    "vtk_unavailable": { "message": "VTK não está disponível; as visualizações permanecerão vazias.", "description": "Aviso quando VTK não está disponível." }
+  }
+}

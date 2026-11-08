@@ -1,0 +1,42 @@
+{
+  "_metadata": { "module": "professional", "language": "en", "format_version": 1 },
+  "tabs": {
+    "professional": { "message": "Professional", "description": "Professional module tab: profile." },
+    "document_templates": { "message": "Document templates", "description": "Professional module tab: templates." },
+    "budgets": { "message": "Budgets", "description": "Professional module tab: budgets." },
+    "schedule": { "message": "Schedule", "description": "Professional module tab: schedule." },
+    "procedures": { "message": "Procedures", "description": "Professional module tab: procedures." },
+    "config": { "message": "Config", "description": "Professional module tab: configuration." }
+  },
+  "profile": {
+    "salutation": { "message": "Salutation", "description": "Field: salutation." },
+    "full_name": { "message": "Surgeon's name", "description": "Field: surgeon's full name." },
+    "registration": { "message": "Professional registration", "description": "Field: professional registration." },
+    "address": { "message": "Address", "description": "Field: address." },
+    "city": { "message": "City", "description": "Field: city." },
+    "state": { "message": "State", "description": "Field: state." },
+    "country": { "message": "Country", "description": "Field: country." },
+    "clinic_logo": { "message": "Clinic logo", "description": "Field: clinic logo." },
+    "digital_signature": { "message": "Surgeon's digital signature", "description": "Field: digital signature." },
+    "date_format": { "message": "Date format", "description": "Field: date format." },
+    "signature_preview": { "message": "Surgeon's signature preview", "description": "Label: signature preview." },
+    "cancel": { "message": "Cancel", "description": "Button: cancel." },
+    "save": { "message": "Save", "description": "Button: save." }
+  },
+  "procedures": {
+    "new_procedure": { "message": "Create new procedure", "description": "Button: create new procedure." },
+    "new_specialty": { "message": "Create new specialty", "description": "Button: create new specialty." },
+    "new_category": { "message": "Create new category", "description": "Button: create new category." },
+    "delete_procedure": { "message": "Delete procedure", "description": "Button: delete procedure." }
+  },
+  "document_templates": {
+    "orientations": { "message": "Orientations", "description": "Category: orientations." },
+    "contracts": { "message": "Contracts", "description": "Category: contracts." },
+    "consent_terms": { "message": "Consent terms", "description": "Category: consent terms." },
+    "prescriptions": { "message": "Prescriptions", "description": "Category: prescriptions." },
+    "new_template": { "message": "Create new template", "description": "Button: create new template." },
+    "import_document": { "message": "Import document", "description": "Button: import document." },
+    "delete_template": { "message": "Delete template", "description": "Button: delete template." },
+    "new_category": { "message": "Create new category", "description": "Button: create new category." }
+  }
+}

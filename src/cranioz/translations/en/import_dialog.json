@@ -1,0 +1,28 @@
+{
+  "_metadata": { "module": "import_dialog", "language": "en", "format_version": 1 },
+  "title": { "message": "Import", "description": "Dialog title." },
+  "categories": {
+    "volume": { "message": "Volume", "description": "Import category: volume." },
+    "radiographs": { "message": "Radiographs", "description": "Import category: radiographs." },
+    "scans": { "message": "Scans", "description": "Import category: scans." },
+    "photographs": { "message": "Photographs", "description": "Import category: photographs." },
+    "meshes": { "message": "3D meshes", "description": "Import category: 3D meshes." },
+    "dental_implants": { "message": "Dental implants", "description": "Import category: dental implants." },
+    "facial_implants": { "message": "Facial implants", "description": "Import category: facial implants." }
+  },
+  "sources": {
+    "project": { "message": "From project", "description": "Import source: from project." },
+    "file": { "message": "From file", "description": "Import source: from file." },
+    "sample_data": { "message": "Sample Data", "description": "Import source: sample data." }
+  },
+  "actions": {
+    "cancel": { "message": "Cancel", "description": "Button: cancel." },
+    "import": { "message": "Import", "description": "Button: import." },
+    "add_object": { "message": "Add object", "description": "Button: add object." },
+    "filter": { "message": "Filter", "description": "Button: filter." },
+    "preview": { "message": "Preview", "description": "Label: preview." }
+  },
+  "current_items": {
+    "title": { "message": "Current items in the project:", "description": "Label: current items in the project." }
+  }
+}

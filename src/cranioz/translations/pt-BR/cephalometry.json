@@ -1,0 +1,36 @@
+{
+  "_metadata": { "module": "cephalometry", "language": "pt-BR", "format_version": 1 },
+  "tools": {
+    "cursor": { "message": "Cursor / Seleção de ponto", "description": "Ferramenta: cursor." },
+    "add_cephalometric_point": { "message": "Adicionar ponto cefalométrico", "description": "Ferramenta: adicionar ponto cefalométrico." },
+    "add_secondary_point": { "message": "Adicionar ponto secundário", "description": "Ferramenta: adicionar ponto secundário." },
+    "convert_point": { "message": "Converter ponto cefalométrico em secundário e vice-versa", "description": "Ferramenta: converter ponto." },
+    "remove_point": { "message": "Remover ponto", "description": "Ferramenta: remover ponto." },
+    "connect_points": { "message": "Conectar pontos", "description": "Ferramenta: conectar pontos." },
+    "create_plane": { "message": "Criar plano", "description": "Ferramenta: criar plano." },
+    "create_region": { "message": "Criar região", "description": "Ferramenta: criar região." }
+  },
+  "strategy": {
+    "title": { "message": "Estratégia", "description": "Título da seção: estratégia." },
+    "manual": { "message": "Manual", "description": "Opção de estratégia: manual." }
+  },
+  "capture": {
+    "title": { "message": "Captura do ponto", "description": "Título da seção: captura do ponto." },
+    "current_point": { "message": "Ponto atual", "description": "Rótulo: ponto atual." },
+    "view_suggestion": { "message": "Sugestão de vista", "description": "Rótulo: sugestão de vista." },
+    "previous": { "message": "Anterior", "description": "Botão: ponto anterior." },
+    "next": { "message": "Próximo", "description": "Botão: próximo ponto." }
+  },
+  "point_list": {
+    "title": { "message": "Lista dos pontos", "description": "Título da seção: lista de pontos." },
+    "ok": { "message": "OK", "description": "Status do ponto: OK." }
+  },
+  "analysis": {
+    "title": { "message": "Análise Cefalométrica", "description": "Título da seção: análise." },
+    "angular_measurements": { "message": "Medidas angulares", "description": "Seção: medidas angulares." },
+    "facial_heights": { "message": "Alturas faciais", "description": "Seção: alturas faciais." },
+    "dentoalveolar_measurements": { "message": "Medidas dentoalveolares", "description": "Seção: medidas dentoalveolares." },
+    "occlusal_plane_measurements": { "message": "Medidas do plano oclusal", "description": "Seção: medidas do plano oclusal." },
+    "esthetic_measurements": { "message": "Medidas estéticas", "description": "Seção: medidas estéticas." }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "_metadata": { "module": "homepage", "language": "pt-BR", "format_version": 1 },
+  "title": { "message": "CranioZ", "description": "Título da página inicial." },
+  "project_list": {
+    "title": { "message": "Lista de projetos", "description": "Título da seção de projetos." },
+    "new_project": { "message": "Novo projeto", "description": "Botão para criar novo projeto." },
+    "manage_projects": { "message": "Gerir projetos", "description": "Botão para abrir a página de gestão de projetos." },
+    "search_placeholder": { "message": "Buscar por nome do projeto ou do paciente", "description": "Placeholder do campo de busca." },
+    "columns": {
+      "name": { "message": "Nome", "description": "Coluna: nome." },
+      "id": { "message": "ID", "description": "Coluna: id." },
+      "sex": { "message": "Sexo", "description": "Coluna: sexo." },
+      "age": { "message": "Idade", "description": "Coluna: idade." },
+      "created_at": { "message": "Criação do projeto", "description": "Coluna: data de criação." },
+      "updated_at": { "message": "Última modificação", "description": "Coluna: data da última modificação." }
+    }
+  },
+  "flow_list": {
+    "title": { "message": "Fluxos clínicos", "description": "Título da seção de fluxos." },
+    "manage_flows": { "message": "Gerir Fluxos", "description": "Botão para abrir a página de gestão de fluxos." },
+    "empty": { "message": "Nenhum fluxo disponível", "description": "Placeholder quando não há fluxo carregado." }
+  },
+  "community_sidebar": {
+    "community": { "message": "Comunidade", "description": "Barra lateral: link da comunidade." },
+    "library": { "message": "Biblioteca de objetos", "description": "Barra lateral: link da biblioteca." },
+    "news": { "message": "Novidades", "description": "Barra lateral: link de novidades." },
+    "feedback": { "message": "Sugerir melhorias", "description": "Barra lateral: link de sugestões." },
+    "contribute": { "message": "Contribuir", "description": "Barra lateral: link de contribuição." }
+  },
+  "top_bar": {
+    "menu": { "message": "Menu", "description": "Barra superior: tooltip do botão de menu." },
+    "help": { "message": "Ajuda", "description": "Barra superior: tooltip do botão de ajuda." },
+    "settings": { "message": "Configurações", "description": "Barra superior: tooltip do botão de configurações." }
+  },
+  "start_button": {
+    "label": { "message": "Começar", "description": "Nome acessível do botão de começar." }
+  }
+}
