@@ -135,8 +135,8 @@ def test_tokens_returns_light_tokens() -> None:
 
 def test_color_returns_expected_value() -> None:
     service = _make()
-    assert service.color("background_application") == "#1E1E1E"
-    assert service.color("text.primary".replace(".", "_")) == "#E8E8E8"
+    assert service.color("background_application") == "#1C1C1E"
+    assert service.color("text_primary") == "#E5E5E7"
 
 
 def test_color_unknown_path_raises() -> None:
@@ -159,8 +159,8 @@ def test_dimension_unknown_path_raises() -> None:
 
 def test_surface_color_toolbar_is_composed() -> None:
     service = _make()
-    # Dark toolbar = background_panel #252526 at 0.92 opacity.
-    assert service.surface_color("toolbar") == "rgba(37,37,38,0.9200)"
+    # Dark toolbar = background_panel #242426 at 0.92 opacity.
+    assert service.surface_color("toolbar") == "rgba(36,36,38,0.9200)"
 
 
 def test_surface_color_unknown_role_raises() -> None:

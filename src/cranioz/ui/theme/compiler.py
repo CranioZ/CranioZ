@@ -157,14 +157,22 @@ class ThemeCompiler:
 def _build_qss(tokens: ThemeTokens) -> str:
     """Build the global QSS string.
 
-    Phase 2 covers the base surface and the standard controls. Component
-    styles are added as the widget library is implemented.
+    Covers the shell: base surfaces, standard controls, table + header,
+    scrollbars, buttons (default and primary/secondary classes), labels
+    with roles, cards, and the StartButton / FlowRow classes used by the
+    Home Page.
     """
     c = tokens.colors
     t = tokens.typography
     d = tokens.dimensions
     b = tokens.borders
+    s = tokens.spacing
+
+    # StartButton is a 56x56 circle; the radius is half the size.
+    start_button_radius = 28
+
     return f"""
+/* ----- Base ------------------------------------------------------ */
 QWidget {{
     background-color: {c.background_application};
     color: {c.text_primary};
@@ -182,60 +190,324 @@ QFrame#Panel, QWidget#Panel {{
     border-radius: {b.radius_panel}px;
 }}
 
+/* ----- Cards ----------------------------------------------------- */
+QFrame[class="card"] {{
+    background-color: {c.background_panel};
+    border: {b.width_default}px solid {c.border_default};
+    border-radius: {b.radius_panel}px;
+    padding: {s.md}px;
+}}
+
+QFrame[class="card_elevated"] {{
+    background-color: {c.background_elevated};
+    border: {b.width_default}px solid {c.border_default};
+    border-radius: {b.radius_panel}px;
+    padding: {s.md}px;
+}}
+
+/* ----- Toolbars -------------------------------------------------- */
 QToolBar {{
     background-color: {c.background_panel};
     border: none;
     border-bottom: {b.width_default}px solid {c.border_default};
+    spacing: {s.sm}px;
+    padding: {s.xs}px {s.sm}px;
 }}
 
+QToolBar QToolButton {{
+    background: transparent;
+    border: none;
+    border-radius: {b.radius_control}px;
+    padding: {s.xs}px;
+}}
+
+QToolBar QToolButton:hover {{
+    background-color: {c.background_elevated};
+}}
+
+QToolBar QToolButton:pressed {{
+    background-color: {c.interactive_pressed};
+}}
+
+/* ----- Buttons --------------------------------------------------- */
 QPushButton, QToolButton {{
     background-color: {c.interactive_default};
     color: {c.text_inverse};
-    border: {b.width_default}px solid {c.border_default};
+    border: {b.width_default}px solid {c.interactive_default};
     border-radius: {b.radius_control}px;
     min-height: {d.control_height}px;
-    padding: 0 8px;
+    padding: 0 {s.sm}px;
+    font-weight: {t.weight_medium};
 }}
 
 QPushButton:hover, QToolButton:hover {{
     background-color: {c.interactive_hover};
+    border-color: {c.interactive_hover};
 }}
 
 QPushButton:pressed, QToolButton:pressed {{
     background-color: {c.interactive_pressed};
+    border-color: {c.interactive_pressed};
 }}
 
 QPushButton:disabled, QToolButton:disabled {{
-    background-color: {c.background_panel};
+    background-color: {c.background_elevated};
     color: {c.text_disabled};
+    border-color: {c.border_default};
 }}
 
+/* Secondary buttons: outlined, neutral surface. */
+QPushButton[class="secondary"], QToolButton[class="secondary"] {{
+    background-color: {c.background_elevated};
+    color: {c.text_primary};
+    border: {b.width_default}px solid {c.border_default};
+}}
+
+QPushButton[class="secondary"]:hover, QToolButton[class="secondary"]:hover {{
+    background-color: {c.background_panel};
+    border-color: {c.interactive_hover};
+}}
+
+/* ----- StartButton (floating circular action) ------------------- */
+QPushButton#home_page_start_button {{
+    background-color: {c.feedback_success};
+    color: {c.text_inverse};
+    border: 2px solid {c.interactive_hover};
+    border-radius: {start_button_radius}px;
+    font-size: 22px;
+    font-weight: {t.weight_semibold};
+    padding: 0;
+}}
+
+QPushButton#home_page_start_button:hover {{
+    background-color: {c.feedback_success};
+    border-color: {c.interactive_default};
+}}
+
+QPushButton#home_page_start_button:pressed {{
+    background-color: {c.interactive_pressed};
+}}
+
+QPushButton#home_page_start_button:disabled {{
+    background-color: {c.text_disabled};
+    color: {c.background_application};
+    border: 2px solid {c.border_default};
+}}
+
+/* ----- Inputs ---------------------------------------------------- */
 QLineEdit, QTextEdit, QPlainTextEdit, QComboBox {{
     background-color: {c.background_input};
     color: {c.text_primary};
     border: {b.width_default}px solid {c.border_default};
     border-radius: {b.radius_control}px;
     min-height: {d.control_height}px;
-    padding: 0 6px;
+    padding: 0 {s.sm}px;
+    selection-background-color: {c.interactive_selected};
+    selection-color: {c.text_inverse};
 }}
 
 QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus, QComboBox:focus {{
     border: {b.width_focus}px solid {c.border_focus};
 }}
 
+QLineEdit::placeholder, QPlainTextEdit::placeholder {{
+    color: {c.text_secondary};
+}}
+
+QComboBox::drop-down {{
+    border: none;
+    width: {d.control_height}px;
+}}
+
+QComboBox QAbstractItemView {{
+    background-color: {c.background_elevated};
+    color: {c.text_primary};
+    border: {b.width_default}px solid {c.border_default};
+    selection-background-color: {c.interactive_selected};
+    selection-color: {c.text_inverse};
+}}
+
+/* ----- Labels ---------------------------------------------------- */
 QLabel {{
     color: {c.text_primary};
     background: transparent;
 }}
 
-QLabel[role="secondary"] {{
+QLabel[role="title"] {{
+    font-size: {t.size_label}pt;
+    font-weight: {t.weight_semibold};
+    color: {c.text_primary};
+}}
+
+QLabel[role="subtitle"] {{
+    font-size: {t.size_body}pt;
     color: {c.text_secondary};
 }}
 
+QLabel[role="caption"] {{
+    font-size: {t.size_caption}pt;
+    color: {c.text_secondary};
+}}
+
+QLabel[class="arrow"] {{
+    color: {c.text_secondary};
+    padding: 0 2px;
+}}
+
+/* ----- Tables ---------------------------------------------------- */
+QTableWidget, QTableView {{
+    background-color: {c.background_panel};
+    alternate-background-color: {c.background_application};
+    color: {c.text_primary};
+    border: {b.width_default}px solid {c.border_default};
+    border-radius: {b.radius_panel}px;
+    gridline-color: {c.border_subtle};
+    selection-background-color: {c.interactive_selected};
+    selection-color: {c.text_inverse};
+}}
+
+QTableWidget::item, QTableView::item {{
+    padding: {s.xs}px {s.sm}px;
+    border: none;
+}}
+
+QTableWidget::item:selected, QTableView::item:selected {{
+    background-color: {c.interactive_selected};
+    color: {c.text_inverse};
+}}
+
+QHeaderView {{
+    background-color: {c.background_elevated};
+    border: none;
+}}
+
+QHeaderView::section {{
+    background-color: {c.background_elevated};
+    color: {c.text_secondary};
+    border: none;
+    border-bottom: {b.width_default}px solid {c.border_default};
+    border-right: {b.width_default}px solid {c.border_subtle};
+    padding: {s.xs}px {s.sm}px;
+    font-weight: {t.weight_medium};
+}}
+
+QHeaderView::section:last {{
+    border-right: none;
+}}
+
+QTableCornerButton::section {{
+    background-color: {c.background_elevated};
+    border: none;
+    border-bottom: {b.width_default}px solid {c.border_default};
+}}
+
+/* ----- Scrollbars ------------------------------------------------ */
+QScrollBar:vertical {{
+    background-color: {c.background_panel};
+    width: 12px;
+    margin: 0;
+    border: none;
+}}
+
+QScrollBar::handle:vertical {{
+    background-color: {c.border_default};
+    min-height: 24px;
+    border-radius: 6px;
+    margin: 2px;
+}}
+
+QScrollBar::handle:vertical:hover {{
+    background-color: {c.text_secondary};
+}}
+
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
+    height: 0;
+    background: none;
+    border: none;
+}}
+
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
+    background: none;
+}}
+
+QScrollBar:horizontal {{
+    background-color: {c.background_panel};
+    height: 12px;
+    margin: 0;
+    border: none;
+}}
+
+QScrollBar::handle:horizontal {{
+    background-color: {c.border_default};
+    min-width: 24px;
+    border-radius: 6px;
+    margin: 2px;
+}}
+
+QScrollBar::handle:horizontal:hover {{
+    background-color: {c.text_secondary};
+}}
+
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
+    width: 0;
+    background: none;
+    border: none;
+}}
+
+QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{
+    background: none;
+}}
+
+/* ----- FlowRow (Home Page flow list) ----------------------------- */
+QFrame#home_page_flow_list_flow {{
+    background-color: {c.background_elevated};
+    border: {b.width_default}px solid {c.border_default};
+    border-radius: {b.radius_control}px;
+}}
+
+QFrame#home_page_flow_list_flow:hover {{
+    border-color: {c.interactive_hover};
+}}
+
+QFrame#home_page_flow_list_flow[checked="true"] {{
+    background-color: {c.background_panel};
+    border: {b.width_focus}px solid {c.border_focus};
+}}
+
+QFrame#home_page_flow_list_flow[checked="false"] {{
+    background-color: {c.background_elevated};
+    border: {b.width_default}px solid {c.border_default};
+}}
+
+QLabel#home_page_flow_list_step {{
+    background-color: {c.background_input};
+    color: {c.text_primary};
+    border: {b.width_default}px solid {c.border_subtle};
+    border-radius: {b.radius_control}px;
+    padding: 4px 8px;
+}}
+
+QFrame#home_page_flow_list_separator {{
+    color: {c.border_default};
+}}
+
+/* ----- Misc ------------------------------------------------------ */
 QToolTip {{
     background-color: {c.background_elevated};
     color: {c.text_primary};
     border: {b.width_default}px solid {c.border_default};
-    padding: 4px;
+    border-radius: {b.radius_control}px;
+    padding: {s.xs}px {s.sm}px;
+}}
+
+QMenu {{
+    background-color: {c.background_elevated};
+    color: {c.text_primary};
+    border: {b.width_default}px solid {c.border_default};
+}}
+
+QMenu::item:selected {{
+    background-color: {c.interactive_selected};
+    color: {c.text_inverse};
 }}
 """.strip()

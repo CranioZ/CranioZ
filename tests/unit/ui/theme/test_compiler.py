@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 from PySide6.QtWidgets import QApplication
 
+from cranioz.ui.theme import compiler as compiler_module
 from cranioz.ui.theme.compiler import (
     CompiledStyles,
     ThemeCompiler,
@@ -19,6 +20,18 @@ from cranioz.ui.theme.tokens import (
 )
 
 # ----- _hex_to_rgb ---------------------------------------------------
+
+
+class _FakeQApplication(QApplication):
+    """QApplication subclass whose instance() always returns None.
+
+    Only the static method is consulted by ThemeCompiler.apply(); the
+    class is never instantiated.
+    """
+
+    @staticmethod
+    def instance() -> None:
+        return None
 
 
 def test_hex_to_rgb_black() -> None:
@@ -92,10 +105,10 @@ def test_compile_is_deterministic() -> None:
 
 
 def test_toolbar_surface_uses_background_panel_dark() -> None:
-    """Dark toolbar = #252526 at 0.92."""
+    """Dark toolbar = #242426 at 0.92."""
     compiler = ThemeCompiler()
     styles = compiler.compile(DARK_TOKENS)
-    assert styles.surface_color("toolbar") == "rgba(37,37,38,0.9200)"
+    assert styles.surface_color("toolbar") == "rgba(36,36,38,0.9200)"
 
 
 def test_toolbar_surface_uses_background_panel_light() -> None:
@@ -106,10 +119,10 @@ def test_toolbar_surface_uses_background_panel_light() -> None:
 
 
 def test_popover_surface_uses_background_elevated_dark() -> None:
-    """Dark popover = #2D2D30 at 0.96."""
+    """Dark popover = #2C2C2E at 0.96."""
     compiler = ThemeCompiler()
     styles = compiler.compile(DARK_TOKENS)
-    assert styles.surface_color("popover") == "rgba(45,45,48,0.9600)"
+    assert styles.surface_color("popover") == "rgba(44,44,46,0.9600)"
 
 
 def test_modal_backdrop_uses_different_opacity_per_theme() -> None:
@@ -214,8 +227,11 @@ def test_apply_without_qapplication_logs_warning(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """When no QApplication exists, apply() logs a warning and returns."""
-    # Force QApplication.instance() to return None for this test only.
-    monkeypatch.setattr(QApplication, "instance", classmethod(lambda cls: None))
+    monkeypatch.setattr(
+        compiler_module,
+        "QApplication",
+        _FakeQApplication,
+    )
 
     compiler = ThemeCompiler()
     styles = compiler.compile(DARK_TOKENS)

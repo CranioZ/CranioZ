@@ -9,6 +9,14 @@ The button does not know about project_id or flow_id. It only emits
 `start_requested()` when clicked. The HomePage owns the state and
 emits the full `project_open_requested(project_id, flow_id)` signal.
 
+Styling is owned by the global QSS emitted by ``ThemeCompiler``. The
+button only toggles its ``state`` property (``enabled`` / ``disabled``)
+and repolishes itself; it never calls ``setStyleSheet``.
+
+Sprint F will replace the ``→`` glyph with ``IconProvider.icon(...)``.
+When that happens, the state color migrates to ``IconState``; the
+``state`` property and the QSS rule remain the same.
+
 The objectName uses underscores, not dots. Qt Style Sheets treat "."
 as a class separator; a QSS selector ``#home_page.start_button``
 would not match an objectName of ``"home_page.start_button"``. The
@@ -23,13 +31,6 @@ from PySide6.QtWidgets import QPushButton, QWidget
 
 from cranioz.infrastructure.i18n import tr
 
-# Colors are inline for the first piece. When the ThemeService gains
-# semantic colors (ADR-0003 §2.4: color("primary"), color("disabled")),
-# replace these with service lookups.
-_GREY = "#9e9e9e"
-_GREEN = "#2ecc71"
-_WHITE = "#ffffff"
-
 
 class StartButton(QPushButton):
     """Floating circular button for starting a planning session."""
@@ -43,28 +44,24 @@ class StartButton(QPushButton):
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setAccessibleName(tr("homepage.start_button.label", "Start"))
         self.setEnabled(False)
-        self._apply_style(enabled=False)
+        self.setText("→")  # Sprint F: replaced by IconProvider.icon(...)
+        self.setProperty("state", "disabled")
+        self._repolish()
         self.clicked.connect(self.start_requested)
 
     def set_ready(self, ready: bool) -> None:
         """Enable (green) or disable (grey) the button."""
         self.setEnabled(ready)
-        self._apply_style(enabled=ready)
+        self.setProperty("state", "enabled" if ready else "disabled")
+        self._repolish()
 
     def is_ready(self) -> bool:
         """Return True if the button is currently enabled."""
         return self.isEnabled()
 
-    def _apply_style(self, *, enabled: bool) -> None:
-        color = _GREEN if enabled else _GREY
-        self.setStyleSheet(
-            f"QPushButton#home_page_start_button {{"
-            f"  background-color: {color};"
-            f"  color: {_WHITE};"
-            f"  border: 2px solid {'#27ae60' if enabled else '#7f8c8d'};"
-            f"  border-radius: 28px;"
-            f"  font-size: 22px;"
-            f"  font-weight: bold;"
-            f"}}"
-        )
-        self.setText("→")
+    def _repolish(self) -> None:
+        """Re-evaluate the stylesheet after a dynamic property changed."""
+        style = self.style()
+        if style is not None:
+            style.unpolish(self)
+            style.polish(self)

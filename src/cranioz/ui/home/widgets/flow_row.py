@@ -12,6 +12,11 @@ and the list handles mutual exclusion.
 
 The row does not know about the ``FlowList`` or the ``HomePage``. It
 emits a signal; the caller decides what to do.
+
+Styling is owned by the global QSS emitted by ``ThemeCompiler``. The
+row only toggles its ``checked`` property and repolishes itself; it
+never calls ``setStyleSheet``. The arrows between steps are ``QLabel``
+with ``class="arrow"``; Sprint F will replace them with icons.
 """
 
 from __future__ import annotations
@@ -44,9 +49,8 @@ class FlowRow(QFrame):
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
-        self.setObjectName(f"home_page.flow_list.flow.{flow.flow_id}")
-        self.setFrameShape(QFrame.Shape.StyledPanel)
-        self.setFrameShadow(QFrame.Shadow.Raised)
+        self.setObjectName("home_page_flow_list_flow")
+        self.setFrameShape(QFrame.Shape.NoFrame)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setSizePolicy(
             QSizePolicy.Policy.Expanding,
@@ -62,11 +66,8 @@ class FlowRow(QFrame):
         layout.setSpacing(6)
 
         name = QLabel(self._translate(flow.name_key))
-        name.setObjectName(f"home_page.flow_list.flow.{flow.flow_id}.name")
-        name_font = name.font()
-        name_font.setBold(True)
-        name_font.setPointSize(11)
-        name.setFont(name_font)
+        name.setObjectName("home_page_flow_list_name")
+        name.setProperty("role", "title")
         layout.addWidget(name)
 
         # Separator between name and steps.
@@ -76,15 +77,16 @@ class FlowRow(QFrame):
         for i, step in enumerate(flow.steps):
             if i > 0:
                 arrow = QLabel("→")
+                arrow.setProperty("class", "arrow")
                 arrow.setAlignment(Qt.AlignmentFlag.AlignCenter)
-                arrow.setStyleSheet("color: #888; padding: 0 2px;")
                 layout.addWidget(arrow)
             step_widget = _make_step_widget(self._translate(step.name_key))
             layout.addWidget(step_widget)
 
         layout.addStretch(1)
 
-        self._apply_style(checked=False)
+        self.setProperty("checked", "false")
+        self._repolish()
 
     # ----- Public API -----------------------------------------------
 
@@ -99,7 +101,8 @@ class FlowRow(QFrame):
         if self._checked == checked:
             return
         self._checked = checked
-        self._apply_style(checked=checked)
+        self.setProperty("checked", "true" if checked else "false")
+        self._repolish()
 
     # ----- Qt events -----------------------------------------------
 
@@ -115,16 +118,12 @@ class FlowRow(QFrame):
 
     # ----- Internals -----------------------------------------------
 
-    def _apply_style(self, *, checked: bool) -> None:
-        background = "#dff0d8" if checked else "#3a3a3a"
-        border = "#27ae60" if checked else "#555"
-        self.setStyleSheet(
-            f"QFrame#{self.objectName()} {{"
-            f"  background-color: {background};"
-            f"  border: 1px solid {border};"
-            f"  border-radius: 4px;"
-            f"}}"
-        )
+    def _repolish(self) -> None:
+        """Re-evaluate the stylesheet after the dynamic property changed."""
+        style = self.style()
+        if style is not None:
+            style.unpolish(self)
+            style.polish(self)
 
 
 # ----- Internals ----------------------------------------------------
@@ -133,24 +132,15 @@ class FlowRow(QFrame):
 def _make_step_widget(label: str) -> QWidget:
     """A small bordered label representing one step."""
     widget = QLabel(label)
-    widget.setObjectName("home_page.flow_list.step")
+    widget.setObjectName("home_page_flow_list_step")
     widget.setAlignment(Qt.AlignmentFlag.AlignCenter)
-    widget.setStyleSheet(
-        "QLabel#home_page_flow_list_step {"
-        "  padding: 4px 8px;"
-        "  border: 1px solid #888;"
-        "  border-radius: 3px;"
-        "  background-color: #4a4a4a;"
-        "  color: #ddd;"
-        "}"
-    )
     return widget
 
 
 def _make_separator() -> QFrame:
     """A vertical line between the flow name and the steps."""
     sep = QFrame()
+    sep.setObjectName("home_page_flow_list_separator")
     sep.setFrameShape(QFrame.Shape.VLine)
     sep.setFrameShadow(QFrame.Shadow.Sunken)
-    sep.setStyleSheet("color: #666;")
     return sep

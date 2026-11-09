@@ -48,8 +48,6 @@ _ALLOWED_FILES: frozenset[str] = frozenset(
 #: a regression that requires a TODO in the sprint backlog.
 _KNOWN_DEBT_FILES: frozenset[str] = frozenset(
     {
-        "src/cranioz/ui/home/widgets/flow_row.py",
-        "src/cranioz/ui/home/widgets/start_button.py",
         "src/cranioz/ui/workspace/areas/area_widget.py",
         "src/cranioz/ui/workspace/workspace.py",
         "src/cranioz/ui/workspace/workspace_spec.py",
@@ -57,12 +55,11 @@ _KNOWN_DEBT_FILES: frozenset[str] = frozenset(
     }
 )
 
-#: Frozen literal counts per debt file, observed on 2026-11-08 when the
-#: baseline was created. These are upper bounds: a debt file may not
-#: grow beyond them. Reduce the number when migrating a literal.
+#: Exact literal counts per debt file, observed on 2026-11-09.
+#: These are exact counts, not upper bounds: a debt file may not gain
+#: new literals, and migrating a literal requires reducing its budget.
+#: The test fails if the count drifts in either direction.
 _DEBT_MAX_LITERALS: dict[str, int] = {
-    "src/cranioz/ui/home/widgets/flow_row.py": 9,  # not 8
-    "src/cranioz/ui/home/widgets/start_button.py": 5,
     "src/cranioz/ui/workspace/areas/area_widget.py": 5,
     "src/cranioz/ui/workspace/workspace.py": 3,
     "src/cranioz/ui/workspace/workspace_spec.py": 1,
@@ -131,13 +128,12 @@ def test_debt_max_matches_debt_files() -> None:
 
 @pytest.mark.parametrize("debt_file", sorted(_KNOWN_DEBT_FILES))
 def test_debt_file_has_no_new_hardcoded_colors(debt_file: str) -> None:
-    """A debt file may not gain *new* hardcoded literals.
+    """A debt file may not gain new hardcoded literals.
 
-    The baseline is the number of color and opacity literals observed
-    when the file was added to _KNOWN_DEBT_FILES. This test does not
-    assert an exact snapshot; it asserts that the file has not grown
-    beyond the debt it was added for. Reduce the number when migrating
-    a literal to a token.
+    The budget is an exact count, not an upper bound: adding a literal
+    requires updating the budget in the same PR (a conscious decision
+    that the reviewer sees), and migrating a literal requires reducing
+    it.
     """
     path = Path(debt_file)
     text = path.read_text(encoding="utf-8")
@@ -145,9 +141,11 @@ def test_debt_file_has_no_new_hardcoded_colors(debt_file: str) -> None:
     opacity_count = len(_OPACITY_LITERAL_RE.findall(text))
     total = color_count + opacity_count
     budget = _DEBT_MAX_LITERALS[debt_file]
-    assert total <= budget, (
-        f"{debt_file} has grown beyond its frozen debt: "
-        f"expected <= {budget} literals, found {total} "
-        f"({color_count} colors, {opacity_count} opacities). "
-        f"Migrate a literal to a token, or justify the addition in the PR."
+    assert total == budget, (
+        f"{debt_file} has {total} hardcoded literals "
+        f"({color_count} colors, {opacity_count} opacities), "
+        f"but the frozen budget is {budget}. "
+        f"If you removed literals, reduce the budget. "
+        f"If you added literals, justify the addition in the PR "
+        f"and increase the budget."
     )
