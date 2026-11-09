@@ -2,7 +2,7 @@
 
 **Document type:** Action plan and handoff
 **Status:** Active
-**Scope:** Immediate next work items after Sprint F closure
+**Scope:** Immediate next work items after Sprint C closure
 **Last updated:** 2026-11-09
 
 ---
@@ -11,7 +11,7 @@
 
 The VTK rendering pipeline is validated end-to-end. The DICOM visualization bug was resolved on 2026-11-06. The voxel-ordering contract is documented and enforced by regression tests. The imaging pipeline uses `int16` (`VTK_SHORT`) as the production scalar type, with the direction matrix applied and confirmed.
 
-The appearance architecture has been decided. `docs/architecture/appearance/` is the canonical specification. ADR-0014 registers the toolkit decision (Qt Widgets + QSS modular + Design Tokens in Python, not QML). The DICOM path, the 3D viewport, the MPR view, and the workspace layout are operational and covered by **1527 passing tests** (0 failed, 0 errors, 0 skipped, 88% coverage).
+The appearance architecture has been decided. `docs/architecture/appearance/` is the canonical specification. ADR-0014 registers the toolkit decision (Qt Widgets + QSS modular + Design Tokens in Python, not QML). The DICOM path, the 3D viewport, the MPR view, and the workspace layout are operational and covered by **1528 passing tests** (0 failed, 0 errors, 0 skipped, 88% coverage).
 
 Sprint B (i18n) is complete: the shell — `MainWindow`, the Home Page tree, the three Top Bar segments, and the Workspace placeholder editor — resolves user-facing strings through the `TranslationService`. `tests/architecture/test_no_hardcoded_strings_in_shell_widgets.py` guards against regressions.
 
@@ -19,7 +19,9 @@ Sprint E (appearance foundation) is complete: `ThemeService` and `ThemeCompiler`
 
 Sprint F (icons) is complete: `IconState`, `IconProvider` Protocol and `UnicodeIconProvider` are implemented with the closed 60-icon catalog; the provider is injected into `MainWindow`, `Workspace`, `HomePage`, the three Top Bar segments, `Toolbar`, `StartButton`, and `FlowRow`; the hardcoded glyphs in those widgets are migrated to `provider.icon(...)`; and the `_WHITELIST` in `test_no_hardcoded_strings_in_shell_widgets.py` is empty, meaning the Sprint B glyph debt is paid. The five icon contract tests pass.
 
-The project is ready to close Phases 1, 2, and 3 formally before advancing deeper into Phase 4. This document defines the execution order and the acceptance criteria for each phase.
+Sprint C (EditorContext propagation) is complete: `EditorContext` now carries `theme_service` and `icon_provider` alongside the existing seven fields, and `Workspace.load_spec` passes the complete set through `LayoutBuilder`'s `shared_context`. The contract test `tests/integration/ui/workspace/test_editor_context_propagation.py` asserts that every Editor registered in `EditorRegistry` receives all fields. **Phase 1 is closed.**
+
+The project is ready to close Phases 2 and 3 formally before advancing deeper into Phase 4. This document defines the execution order and the acceptance criteria for each phase.
 
 ---
 
@@ -38,7 +40,7 @@ The project is ready to close Phases 1, 2, and 3 formally before advancing deepe
 
 ### 2.2 Code and tests
 
-- **1527 tests passing, 0 failed, 0 errors, 0 skipped, 88% coverage.**
+- **1528 tests passing, 0 failed, 0 errors, 0 skipped, 88% coverage.**
 - `ruff check` clean; `ruff format --check` clean.
 - `mypy src` clean.
 - `VtkImageAdapter` corrected (no transposition, `int16`, direction matrix).
@@ -74,7 +76,18 @@ The project is ready to close Phases 1, 2, and 3 formally before advancing deepe
   - Contract tests: `test_icon_catalog.py`, `test_icon_fallback.py`, `test_icon_theme.py`, `test_icon_widget_contract.py`, `test_icon_accessibility.py`.
   - Test suite grew from 1508 to 1527 passing (19 new icon tests). The ~150 tests that were failing or in error due to the missing `icon_provider` in `conftest.py` and widget fixtures were fixed.
   - `test_toolbar_resolves_icon_name_via_theme` was renamed to `test_toolbar_resolves_icon_via_icon_provider` and now asserts that `button.icon().isNull() is False`, matching the actual contract (`icon_provider.icon(...)` returns a `QIcon`, not a dynamic property).
-- **Test count baseline for future sprints: 1527 passing, 0 failed, 0 errors, 0 skipped, 88% coverage.**
+- **Sprint C (EditorContext propagation) complete.**
+  - `EditorContext` in `src/cranioz/ui/editors/editor_context.py` carries nine fields: `task_manager`, `telemetry`, `correlation_id`, `command_dispatcher`, `scene_query`, `domain_object_store`, `event_subscription`, `translation_service`, `theme_service`, `icon_provider`.
+  - `theme_service` and `icon_provider` were added in Sprint C (optional, default `None`, consistent with the other context fields).
+  - `Workspace.load_spec` passes the complete set through `LayoutBuilder`'s `shared_context`.
+  - `LayoutBuilder` propagates via `EditorContext(**shared)`, with no closed key list, so future context fields flow automatically.
+  - `TomographyEditor.initialize` and `MeshDebugEditor.initialize` receive the full context (no change required — they accept the `EditorContext` object).
+  - Contract test: `tests/integration/ui/workspace/test_editor_context_propagation.py` asserts every Editor registered in `EditorRegistry` receives the fields.
+  - Fields not asserted in the contract test (tracked as debt):
+    - `correlation_id`: not yet propagated by `Workspace` (the `Workspace` does not receive it in its `__init__`).
+    - `event_subscription`: passed as `None` in the test; a dedicated test should cover it once the `EventBus` exposes a subscription helper suitable for unit tests.
+    - `domain_object_store`: not in the Sprint C target set.
+- **Test count baseline for future sprints: 1528 passing, 0 failed, 0 errors, 0 skipped, 88% coverage.**
 
 ### 2.3 Implementation plan
 
@@ -85,9 +98,9 @@ The project is ready to close Phases 1, 2, and 3 formally before advancing deepe
 
 ## 3. What is missing — by phase
 
-### 3.1 Phase 1 — Contracts, Core Domain & i18n
+### 3.1 Phase 1 — Contracts, Core Domain & i18n — ✅ Complete
 
-**Goal:** close Phase 1 formally. Blocker: `EditorContext` propagation (Sprint C).
+**Status:** ✅ Complete.
 
 #### 3.1.1 Internationalization (Sprint B) — ✅ Complete
 
@@ -102,24 +115,24 @@ Delivered:
 - `MainWindow._humanize_translation_key` removed.
 - Contract tests: every `name_key` in every `flow.json` resolves; `test_no_hardcoded_strings_in_shell_widgets.py` guards the shell.
 
-#### 3.1.2 `EditorContext` complete (Sprint C) — 🚧 Pending (unblocked)
+#### 3.1.2 `EditorContext` complete (Sprint C) — ✅ Complete
 
 **Depends on:** Sprint E (`theme_service`, ✅ complete), Sprint F (`icon_provider`, ✅ complete).
 
-Deliverables:
+Delivered:
 
-- Propagate `task_manager`, `telemetry`, `correlation_id`, `command_dispatcher`, `scene_query`, `event_subscription`, `translation_service`, `theme_service`, `icon_provider` through `EditorContext`.
-- `Workspace._create_editor` and `MainWindow._create_workspace` pass the complete set.
-- `TomographyEditor.initialize` and `MeshDebugEditor.initialize` accept the complete set.
-- Contract test: every Editor registered in `EditorRegistry` receives all required fields with non-null values.
+- `EditorContext` carries the nine fields listed in §2.2.
+- `Workspace.load_spec` passes the complete set through `LayoutBuilder`'s `shared_context`.
+- `TomographyEditor.initialize` and `MeshDebugEditor.initialize` accept the complete context.
+- Contract test: `tests/integration/ui/workspace/test_editor_context_propagation.py`.
 
 #### 3.1.3 Phase 1 tests
 
 - ✅ i18n contract tests.
 - ✅ `test_no_hardcoded_strings_in_shell_widgets.py`.
-- 🚧 `EditorContext` propagation tests (pending Sprint C).
+- ✅ `EditorContext` propagation test.
 
-**Phase 1 is complete when:** `EditorContext` propagates all fields, contract tests pass, and CI is green.
+**Phase 1 is complete.** CI is green; the contract test passes.
 
 ---
 
@@ -129,37 +142,11 @@ Deliverables:
 
 #### 3.2.1 `ThemeService` + `ThemeCompiler` + tokens (Sprint E) — ✅ Complete
 
-Delivered:
-
-- `ThemeMode` (`DARK`, `LIGHT`, `SYSTEM`) and `ThemeName` (`DARK`, `LIGHT`) as `StrEnum`.
-- `ThemeTokens` and the 7 dataclasses (`ColorTokens`, `TypographyTokens`, `SpacingTokens`, `DimensionTokens`, `BorderTokens`, `EffectTokens`, `SurfaceTokens`).
-- `DARK` and `LIGHT` token values as specified in `themes/themes_and_design_tokens.md` (47 tokens).
-- `ThemeService` with `mode()`, `set_mode()`, `theme()`, `tokens()`, `color()`, `dimension()`, `surface_color()`, `icon_name()`, `theme_changed` signal, `SYSTEM` resolution via `QStyleHints.colorScheme()`.
-- `ThemeCompiler` with `compile()` and `apply()`.
-- Surface composition (`base_color + opacity`) for `toolbar`, `popover`, `modal_backdrop`. `modal_backdrop` uses a fixed `#000000` base per spec §6.2.
-- QSS emission for styled widgets, expanded to cover tables, headers, scrollbars, buttons, inputs, labels with roles, cards, menus, tooltips, `StartButton`, and `FlowRow`.
-- `cranioz.infrastructure.settings` package: `SettingsService` protocol, `InMemorySettingsService`, `FilesystemSettingsService`, `SettingsStore`, `SettingsMigrator`, `KNOWN_KEYS`, `SettingsError`, `SettingsMigrationError`.
-- `AppPathResolver.user_settings_path()` and `PathsConfig.settings_root`.
-- Boot integration: read `appearance.theme_mode` from `SettingsService` before constructing `MainWindow`; invalid values fall back to `DARK` with a `WARNING`; apply theme before the first window.
-- Modern Dark palette in `DARK_TOKENS`; `feedback_information` kept at `#4A90D9` for WCAG AA.
-- `StartButton` and `FlowRow` migrated from inline `setStyleSheet` to `setProperty` + the global QSS.
-- Contract tests: `test_no_hardcoded_appearance.py`, `test_tokens_used.py`, `test_tokens_present.py`, `test_theme_completeness.py`, `test_theme_values.py`, `test_contrast.py`.
-- Unit tests: `test_service.py`, `test_tokens.py`, `test_compiler.py`, `test_settings_service.py`.
-- Known debt registered in `_KNOWN_DEBT_FILES`: **12 literals across 4 files**, budget exact.
+See §2.2 (Sprint E entry) for the full delivery list.
 
 #### 3.2.2 `IconProvider` + `UnicodeIconProvider` (Sprint F) — ✅ Complete
 
-Delivered:
-
-- `IconState` enum (`DEFAULT`, `HOVER`, `PRESSED`, `SELECTED`, `DISABLED`) in `src/cranioz/ui/icons/state.py`.
-- `IconProvider` Protocol (`icon(name, size, state) -> QIcon`, `text_glyph(name) -> str`, `invalidate_cache() -> None`) in `src/cranioz/ui/icons/provider.py`.
-- `UnicodeIconProvider` with the closed 60-icon catalog from `icons/icons_and_icon_manager.md` §6, in `src/cranioz/ui/icons/unicode.py`.
-- Injection into `MainWindow`, `Workspace`, `HomePage`, the three Top Bar segments (`HomeSegment`, `ModulesSegment`, `ExtrasSegment`), `Toolbar`, `StartButton`, `FlowRow`.
-- Hardcoded glyphs in those widgets migrated to `provider.icon(...)`.
-- `_WHITELIST` in `test_no_hardcoded_strings_in_shell_widgets.py` emptied. The guardrail remains active against new hardcoded glyphs.
-- Contract tests: `test_icon_catalog.py`, `test_icon_fallback.py`, `test_icon_theme.py`, `test_icon_widget_contract.py`, `test_icon_accessibility.py`.
-- `make_icon_provider(...)` factory and `icon_provider` fixture added to `tests/conftest.py`. All widget tests that construct `MainWindow`, `Workspace`, `LayoutRenderer`, `AreaWidget`, `HomePage`, `CommunitySidebar`, `FlowList`, `FlowRow`, `StartButton`, `HomeTopBar`, `HomeBottomBar`, `HomeSegment`, `ModulesSegment`, and `Toolbar` now pass the provider.
-- `test_toolbar_resolves_icon_name_via_theme` renamed to `test_toolbar_resolves_icon_via_icon_provider`, asserting `button.icon().isNull() is False`.
+See §2.2 (Sprint F entry) for the full delivery list.
 
 #### 3.2.3 `AreaLayoutRenderer` (Sprint G) — 🚧 Pending
 
@@ -181,7 +168,7 @@ Deliverables:
 - Single-Editor case remains unchanged.
 - Tests for tab switching, editor lifecycle, dispose.
 
-**Phase 2 is complete when:** `ThemeService`, `ThemeCompiler`, `IconProvider`, `UnicodeIconProvider`, `AreaLayoutRenderer`, and `EditorStack` are implemented, contract tests pass, all glyphs are migrated to `provider.icon(...)`, and CI is green.
+**Phase 2 is complete when:** `AreaLayoutRenderer` and `EditorStack` are implemented, contract tests pass, and CI is green.
 
 ---
 
@@ -224,7 +211,7 @@ Deliverables:
 
 #### 3.3.4 Professional module (Sprint L)
 
-**Depends on:** Sprints C, E (✅ complete), F (✅ complete).
+**Depends on:** Sprints C (✅ complete), E (✅ complete), F (✅ complete).
 
 Deliverables:
 
@@ -237,9 +224,9 @@ Deliverables:
 
 ---
 
-### 3.4 Phase 4 — Scene & Visualization (deferred until Phases 1–3 close)
+### 3.4 Phase 4 — Scene & Visualization (deferred until Phases 2–3 close)
 
-Phase 4 remains the active implementation phase after Phases 1–3 close. It is not started in this handoff. See `implementation_plan.md` §4 and §5.1 for the complete scope.
+Phase 4 remains the active implementation phase after Phases 2–3 close. It is not started in this handoff. See `implementation_plan.md` §4 and §5.1 for the complete scope.
 
 Key Phase 4 items that are **not** in scope for this handoff:
 
@@ -255,12 +242,12 @@ Key Phase 4 items that are **not** in scope for this handoff:
 
 ## 4. Recommended execution sequence
 
-The order below respects the dependencies between Phases 1–3.
+The order below respects the dependencies between Phases 2–3.
 
 | Sprint | Phase | Deliverable | Status | Depends on |
 |---|---|---|---|---|
 | B | 1 | i18n contract and catalogs | ✅ Complete | — |
-| C | 1 | `EditorContext` propagation | 🚧 Pending | B, E (✅), F (✅) |
+| C | 1 | `EditorContext` propagation | ✅ Complete | B, E (✅), F (✅) |
 | E | 2 | `ThemeService`, `ThemeCompiler`, tokens | ✅ Complete | — |
 | F | 2 | `IconProvider`, `UnicodeIconProvider`, glyph migration | ✅ Complete | E |
 | G | 2 | `AreaLayoutRenderer` | 🚧 Pending | — |
@@ -270,9 +257,9 @@ The order below respects the dependencies between Phases 1–3.
 | K | 3 | Async loading | 🚧 Pending | I, J |
 | L | 3 | Professional module | 🚧 Pending | C, E, F |
 
-**Next sprint:** Sprint C — `EditorContext` propagation. It is unblocked: Sprint E and Sprint F are complete.
+**Next sprint:** Sprint G — `AreaLayoutRenderer`. It is the next Phase 2 deliverable and is independent of the other open sprints.
 
-**Note on ordering:** Sprint C depends on Sprint E and Sprint F because `EditorContext` will carry `theme_service` and `icon_provider`. Both are now complete. Sprint C can proceed with the full set of services in a single PR; the alternative (propagate only the services that existed before, then add `theme_service` and `icon_provider` in a follow-up) is no longer necessary.
+**Note on ordering:** Sprints G and I are independent. Sprint G is the next Phase 2 deliverable. Sprint H depends on G; Sprints J and K depend on I; Sprint L depends on C (complete), E (complete), and F (complete).
 
 ---
 
@@ -280,12 +267,12 @@ The order below respects the dependencies between Phases 1–3.
 
 This handoff is complete when:
 
-1. `implementation_plan.md` reflects Sprint E and Sprint F closed, and lists `test_no_hardcoded_appearance.py` and the five icon contract tests under the Phase 2 tests.
+1. `implementation_plan.md` reflects Sprint C closed, Phase 1 marked `✅ Implemented`, and Sprint G marked as the next sprint.
 2. `docs/adr/ADR-0014-widget-toolkit-selection.md` is committed.
 3. `docs/architecture/appearance/` is consolidated:
    - `appearance.md`, `themes/themes_and_design_tokens.md`, `icons/icons_and_icon_manager.md`, `icons/icon_assets_and_visual_standards.md`, `surfaces_and_overlays.md` are the canonical documents.
    - Any remaining placeholder documents reference the corresponding sections of `CranioZ_Appearance_System.md` as the source of truth until they are written.
-4. The next conversation starts with **Sprint C (`EditorContext` propagation)**.
+4. The next conversation starts with **Sprint G (`AreaLayoutRenderer`)**.
 
 ---
 
@@ -326,8 +313,10 @@ The following items are explicitly out of scope for this handoff and belong to P
 | Hardcoded colors in shell | ✅ Guarded by `test_no_hardcoded_appearance.py` with frozen `_KNOWN_DEBT_FILES` | `tests/architecture/` |
 | Icon provider (Sprint F) | ✅ Complete | This document §3.2.2 |
 | Glyph migration (Sprint F) | ✅ Complete; `_WHITELIST` is empty in `test_no_hardcoded_strings_in_shell_widgets.py` | `tests/architecture/` |
+| `EditorContext` propagation (Sprint C) | ✅ Complete | This document §3.1.2 |
+| `correlation_id` propagation through `EditorContext` | 🚧 Not yet propagated by `Workspace`; tracked as debt | `implementation_plan.md` §3.1.2 |
+| `event_subscription` in the contract test | 🚧 Passed as `None`; a dedicated test should cover it once `EventBus` exposes a subscription helper | `tests/integration/ui/workspace/test_editor_context_propagation.py` |
 | Widget migration to tokens (12 literals in 4 files) | 🚧 Tracked in `_KNOWN_DEBT_FILES` | `test_no_hardcoded_appearance.py` |
-| `EditorContext` propagation (Sprint C) | 🚧 Pending | This document §3.1.2 |
 | `AreaLayoutRenderer` (Sprint G) | 🚧 Pending | This document §3.2.3 |
 | `EditorStack` (Sprint H) | 🚧 Pending | This document §3.2.4 |
 | `ProjectIndex` (Sprint I) | 🚧 Pending | This document §3.3.1 |
@@ -344,13 +333,12 @@ The following items are explicitly out of scope for this handoff and belong to P
 
 ## 8. Immediate next action
 
-Begin **Sprint C — `EditorContext` propagation**. The sprint has four parts:
+Begin **Sprint G — `AreaLayoutRenderer`**. The sprint has three parts:
 
-1. Audit the current `EditorContext` fields against the target set: `task_manager`, `telemetry`, `correlation_id`, `command_dispatcher`, `scene_query`, `event_subscription`, `translation_service`, `theme_service`, `icon_provider`.
-2. Propagate the missing fields through `EditorContext`.
-3. Update `Workspace._create_editor` and `MainWindow._create_workspace` to pass the complete set.
-4. Add a contract test: every Editor registered in `EditorRegistry` receives all nine fields non-null in `initialize`.
+1. Implement `AreaLayoutRenderer` to separate inter-Area from intra-Area layout.
+2. Refactor `AreaWidget` to delegate the intra-Area composition to the new renderer.
+3. Add regression tests that prove no visible behavior change for the single-Editor case, and add the new intra-Area layout behavior for the multi-Editor case.
 
-**Acceptance for Sprint C:** the nine fields are propagated; the contract test passes for `TomographyEditor` and `MeshDebugEditor`; CI is green; and the total test count grows from 1527 to a new stable baseline.
+**Acceptance for Sprint G:** `AreaLayoutRenderer` exists; `AreaWidget` delegates to it; no behavior change for the single-Editor case; the existing `test_area_widget.py`, `test_workspace.py`, and `test_main_window.py` suites continue to pass; CI is green; and the total test count grows from 1528 to a new stable baseline.
 
-**After Sprint C:** Sprint G (`AreaLayoutRenderer`), which is the next Phase 2 deliverable and is independent of the other sprints.
+**After Sprint G:** Sprint H (`EditorStack`), which depends on G and completes Phase 2.

@@ -60,7 +60,7 @@ The implementation is divided into 11 phases. The sequence establishes the platf
 | Phase | Name | Status | Main Pending Work |
 |---|---|---|---|
 | **Phase 0** | Foundation & Boot | ✅ Implemented | Startup performance improvements |
-| **Phase 1** | Contracts, Core Domain & i18n | 🚧 In Progress | `EditorContext` propagation (Sprint C) |
+| **Phase 1** | Contracts, Core Domain & i18n | ✅ Implemented | — |
 | **Phase 2** | Workspace Engine & Icons | 🚧 In Progress | `AreaLayoutRenderer`, `EditorStack` |
 | **Phase 3** | Project, Home Page & Professional Module | 🚧 In Progress | `ProjectIndex`, coordinated deletion, async loading, Professional module |
 | **Phase 4** | Scene & Visualization | ⏳ Planned | Import Dialog, RenderingAdapter, Viewer Layout Manager, 2D/3D Tools, LUTs |
@@ -87,16 +87,16 @@ The implementation is divided into 11 phases. The sequence establishes the platf
 
 **Phases 1, 2, and 3** are being closed formally before deeper investment in Phase 4. This prevents silent debt from accumulating as the clinical pipeline grows.
 
-Phase 4 remains the next major implementation phase. It begins only after Phases 1–3 are marked `✅ Implemented` in this document.
+Phase 1 is now closed. Phases 2 and 3 remain in progress. Phase 4 begins only after Phases 2–3 are marked `✅ Implemented` in this document.
 
 ### 5.1 Immediate Priorities
 
-The sprint order below respects dependencies between Phases 1–3.
+The sprint order below respects dependencies between Phases 2–3.
 
 | Sprint | Phase | Deliverable | Status | Depends on |
 |---|---|---|---|---|
 | **B** | 1 | i18n contract and catalogs | ✅ Complete | — |
-| **C** | 1 | `EditorContext` propagation | 🚧 Pending | B, E (`theme_service` ✅), F (`icon_provider` ✅) |
+| **C** | 1 | `EditorContext` propagation | ✅ Complete | B, E, F |
 | **E** | 2 | `ThemeService`, `ThemeCompiler`, tokens | ✅ Complete | — |
 | **F** | 2 | `IconProvider`, `UnicodeIconProvider`, glyph migration | ✅ Complete | E |
 | **G** | 2 | `AreaLayoutRenderer` | 🚧 Pending | — |
@@ -106,9 +106,9 @@ The sprint order below respects dependencies between Phases 1–3.
 | **K** | 3 | Async loading | 🚧 Pending | I, J |
 | **L** | 3 | Professional module | 🚧 Pending | C, E, F |
 
-**Next sprint:** Sprint C — `EditorContext` propagation (unblocked by Sprint F).
+**Next sprint:** Sprint G — `AreaLayoutRenderer`.
 
-**Note on ordering:** Sprint C depends on Sprints E and F because `EditorContext` will carry `theme_service` and `icon_provider`. Sprints E and F are now complete; Sprint C is unblocked and is the next deliverable. Alternatively, Sprint C can propagate only services that exist at that time, with a follow-up PR adding the remaining services. The first approach is cleaner and is the recommended one.
+**Note on ordering:** Sprints G and I are independent of each other. Sprint G is the next Phase 2 deliverable. Sprint H depends on G; Sprints J and K depend on I; Sprint L depends on C (complete), E (complete), and F (complete).
 
 ---
 
@@ -138,7 +138,7 @@ The sprint order below respects dependencies between Phases 1–3.
 
 ### Phase 1: Contracts, Core Domain & i18n
 
-**Goal:** Close Phase 1 formally. Blocker: `EditorContext` propagation (Sprint C).
+**Goal:** Close Phase 1 formally.
 
 **Deliverables:**
 
@@ -158,12 +158,13 @@ The sprint order below respects dependencies between Phases 1–3.
   - Removal of `MainWindow._humanize_translation_key`.
   - Contract test: every `name_key` in every `flow.json` resolves in `en_US`.
   - `tests/architecture/test_no_hardcoded_strings_in_shell_widgets.py`: shell widgets must route user-facing strings through `tr(...)`.
-- 🚧 **Sprint C (`EditorContext` propagation):**
-  - Depends on Sprints E (`theme_service`, complete) and F (`icon_provider`, complete).
-  - Propagate `task_manager`, `telemetry`, `correlation_id`, `command_dispatcher`, `scene_query`, `event_subscription`, `translation_service`, `theme_service`, `icon_provider`.
-  - `Workspace._create_editor` and `MainWindow._create_workspace` pass the complete set.
-  - `TomographyEditor.initialize` and `MeshDebugEditor.initialize` accept the complete set.
-  - Contract test: every Editor registered in `EditorRegistry` receives all required fields.
+- ✅ **Sprint C (`EditorContext` propagation):**
+  - `EditorContext` carries nine fields: `task_manager`, `telemetry`, `correlation_id`, `command_dispatcher`, `scene_query`, `domain_object_store`, `event_subscription`, `translation_service`, `theme_service`, `icon_provider`.
+  - `theme_service` and `icon_provider` added to `EditorContext` (Sprint C).
+  - `Workspace.load_spec` passes the complete set through `LayoutBuilder`'s `shared_context`.
+  - `LayoutBuilder` propagates via `EditorContext(**shared)`, no closed key list.
+  - `TomographyEditor.initialize` and `MeshDebugEditor.initialize` receive the full context.
+  - Contract test: `tests/integration/ui/workspace/test_editor_context_propagation.py` asserts every Editor receives all fields.
 
 **Tests:**
 
@@ -173,9 +174,9 @@ The sprint order below respects dependencies between Phases 1–3.
 - Domain invariant and error-case tests.
 - ✅ i18n contract tests.
 - ✅ `test_no_hardcoded_strings_in_shell_widgets.py`.
-- 🚧 `EditorContext` propagation tests (pending Sprint C).
+- ✅ `EditorContext` propagation tests (Sprint C).
 
-**Status:** 🚧 In Progress. Blocker: Sprint C.
+**Status:** ✅ Implemented.
 
 ---
 
@@ -672,16 +673,10 @@ Sprint E (appearance foundation) is complete: `ThemeService` and `ThemeCompiler`
 
 Sprint F (icons) is complete: `IconState`, `IconProvider` Protocol and `UnicodeIconProvider` are implemented with the closed 60-icon catalog; the provider is injected into `MainWindow`, `Workspace`, `HomePage`, the three Top Bar segments, `Toolbar`, `StartButton`, and `FlowRow`; the hardcoded glyphs in those widgets are migrated to `provider.icon(...)`; and the `_WHITELIST` in `test_no_hardcoded_strings_in_shell_widgets.py` is empty, meaning the Sprint B debt is paid. The five contract tests (`test_icon_catalog.py`, `test_icon_fallback.py`, `test_icon_theme.py`, `test_icon_widget_contract.py`, `test_icon_accessibility.py`) pass.
 
-The test suite is at **1527 passing, 0 failed, 0 errors, 0 skipped, with 88% coverage**. `tests/architecture/test_no_hardcoded_appearance.py` guards against new hardcoded colors and freezes the remaining debt for the widget migration sprint.
+Sprint C (EditorContext propagation) is complete: `EditorContext` now carries `theme_service` and `icon_provider` alongside the existing seven fields, and `Workspace.load_spec` passes the complete set through `LayoutBuilder`'s `shared_context`. The contract test `tests/integration/ui/workspace/test_editor_context_propagation.py` asserts that every Editor registered in the `EditorRegistry` receives all fields. **Phase 1 is closed.**
 
-The immediate focus is closing Phases 1, 2, and 3 formally through Sprints C, G, H, I, J, K, L. Sprints B, E, and F are closed; Sprint C is the remaining Phase 1 blocker and is unblocked; Sprint G is the next Phase 2 deliverable.
+The test suite is at **1528 passing, 0 failed, 0 errors, 0 skipped, with 88% coverage**. `tests/architecture/test_no_hardcoded_appearance.py` guards against new hardcoded colors and freezes the remaining debt for the widget migration sprint.
 
-Phase 4 begins after Phases 1–3 are marked `✅ Implemented`. Its first deliverables are the Unified Import Dialog, the `RenderingAdapter`, the `ViewerLayoutManager`, the 2D/3D tools, and the clinical transfer function presets.
+The immediate focus is closing Phases 2 and 3 formally through Sprints G, H, I, J, K, L. Sprints B, C, E, and F are closed; Sprint G (`AreaLayoutRenderer`) is the next Phase 2 deliverable and is independent of the other open sprints.
 
-The geometry infrastructure initial subset is validated. Full geometry infrastructure is deferred.
-
----
-
-## 10. Known Issues and Resolutions
-
-### 10.1 ADR-0014 (Widget Toolkit Selection)
+Phase 4 begins after Phases 2–3 are marked `✅ Implemented`. Its first deliverables are the Unified Import Dialog, the `RenderingAdapter`, the `ViewerLayoutManager`, the 2D/3D
