@@ -62,6 +62,7 @@ from cranioz.ui.home.widgets.home_bottom_bar import HomeBottomBar
 from cranioz.ui.home.widgets.home_top_bar import HomeTopBar
 from cranioz.ui.home.widgets.project_table import ProjectTable
 from cranioz.ui.home.widgets.start_button import StartButton
+from cranioz.ui.icons.provider import IconProvider
 
 
 class HomePage(QWidget):
@@ -98,23 +99,29 @@ class HomePage(QWidget):
     def __init__(
         self,
         catalog: ProjectCatalog,
-        parent: QWidget | None = None,
         *,
+        icon_provider: IconProvider,
+        parent: QWidget | None = None,
         translation_service: TranslationService | None = None,
     ) -> None:
         super().__init__(parent)
         self._catalog = catalog
         self._translation = translation_service
+        self._icon_provider = icon_provider
         self._selected_project_id: ProjectId | None = None
         self._selected_flow_id: str | None = None
 
         self.setObjectName("home_page")
 
-        self._top_bar = HomeTopBar(self)
-        self._sidebar = CommunitySidebar(self)
+        self._top_bar = HomeTopBar(self._icon_provider, self)
+        self._sidebar = CommunitySidebar(self._icon_provider, self)
         self._project_table = ProjectTable(catalog, self)
-        self._flow_list = FlowList(translate=self._translate_flow, parent=self)
-        self._start_button = StartButton()
+        self._flow_list = FlowList(
+            translate=self._translate_flow,
+            icon_provider=self._icon_provider,
+            parent=self,
+        )
+        self._start_button = StartButton(self._icon_provider)
         self._bottom_bar = HomeBottomBar(self._start_button, self)
 
         # ----- Right column: proportional heights 8 / 42 / 42 / 8 ----

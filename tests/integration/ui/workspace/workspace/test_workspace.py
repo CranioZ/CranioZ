@@ -52,7 +52,7 @@ from datetime import UTC, datetime
 import pytest
 from PySide6.QtWidgets import QWidget
 from pytestqt.qtbot import QtBot
-from tests.conftest import make_theme_service
+from tests.conftest import make_icon_provider, make_theme_service
 
 from cranioz.application.project.project_context import ProjectContext
 from cranioz.application.scene.scene_query import InMemorySceneQuery
@@ -169,10 +169,12 @@ def workspace(
     theme_service: ThemeService,
     project_context: ProjectContext,
 ) -> Workspace:
+    icon_provider = make_icon_provider(theme_service)
     ws = Workspace(
         editor_registry=editor_registry,
         tool_registry=tool_registry,
         theme_service=theme_service,
+        icon_provider=icon_provider,
         project_context=project_context,
     )
     qtbot.addWidget(ws)
@@ -480,10 +482,12 @@ def test_workspace_propagates_scene_query_to_editor(
 ) -> None:
     """The Editor receives the SceneQuery via its EditorContext."""
     scene_query = InMemorySceneQuery()
+    icon_provider = make_icon_provider(theme_service)
     workspace = Workspace(
         editor_registry=editor_registry,
         tool_registry=tool_registry,
         theme_service=theme_service,
+        icon_provider=icon_provider,
         project_context=project_context,
         scene_query=scene_query,
     )

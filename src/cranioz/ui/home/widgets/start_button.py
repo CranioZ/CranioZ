@@ -13,9 +13,9 @@ Styling is owned by the global QSS emitted by ``ThemeCompiler``. The
 button only toggles its ``state`` property (``enabled`` / ``disabled``)
 and repolishes itself; it never calls ``setStyleSheet``.
 
-Sprint F will replace the ``→`` glyph with ``IconProvider.icon(...)``.
-When that happens, the state color migrates to ``IconState``; the
-``state`` property and the QSS rule remain the same.
+The icon is resolved via ``IconProvider``. The state color is handled
+by the QSS rule keyed on the ``state`` property; the icon itself uses
+``IconState.DEFAULT`` because the QSS provides the visual state.
 
 The objectName uses underscores, not dots. Qt Style Sheets treat "."
 as a class separator; a QSS selector ``#home_page.start_button``
@@ -30,6 +30,7 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QPushButton, QWidget
 
 from cranioz.infrastructure.i18n import tr
+from cranioz.ui.icons.provider import IconProvider
 
 
 class StartButton(QPushButton):
@@ -37,14 +38,18 @@ class StartButton(QPushButton):
 
     start_requested = Signal()
 
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        icon_provider: IconProvider,
+        parent: QWidget | None = None,
+    ) -> None:
         super().__init__(parent)
         self.setObjectName("home_page_start_button")
         self.setFixedSize(56, 56)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setAccessibleName(tr("homepage.start_button.label", "Start"))
         self.setEnabled(False)
-        self.setText("→")  # Sprint F: replaced by IconProvider.icon(...)
+        self.setIcon(icon_provider.icon("start"))
         self.setProperty("state", "disabled")
         self._repolish()
         self.clicked.connect(self.start_requested)

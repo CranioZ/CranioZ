@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
+import pytest
 from pytestqt.qtbot import QtBot
+from tests.conftest import make_icon_provider, make_theme_service
 
 from cranioz.application.flows.definition import (
     FlowDefinition,
     FlowStep,
 )
 from cranioz.ui.home.widgets.flow_list import FlowList
+from cranioz.ui.icons.provider import IconProvider
+from cranioz.ui.theme.tokens import ThemeMode
 
 
 def _flow(flow_id: str, steps: int = 2) -> FlowDefinition:
@@ -27,31 +31,32 @@ def _flow(flow_id: str, steps: int = 2) -> FlowDefinition:
     )
 
 
-def test_starts_empty(qtbot: QtBot) -> None:
-    flow_list = FlowList()
-    qtbot.addWidget(flow_list)
+@pytest.fixture
+def flow_list(qtbot: QtBot) -> FlowList:
+    """A FlowList with a dark-theme IconProvider."""
+    theme_service = make_theme_service(ThemeMode.DARK)
+    icon_provider: IconProvider = make_icon_provider(theme_service)
+    widget = FlowList(icon_provider=icon_provider)
+    qtbot.addWidget(widget)
+    return widget
+
+
+def test_starts_empty(flow_list: FlowList) -> None:
     assert flow_list.flow_count() == 0
     assert flow_list.selected_flow_id() is None
 
 
-def test_manage_button_emits_signal(qtbot: QtBot) -> None:
-    flow_list = FlowList()
-    qtbot.addWidget(flow_list)
-
+def test_manage_button_emits_signal(qtbot: QtBot, flow_list: FlowList) -> None:
     with qtbot.waitSignal(flow_list.manage_flows_requested, timeout=1000):
         flow_list._manage_button.click()
 
 
-def test_set_flows_populates(qtbot: QtBot) -> None:
-    flow_list = FlowList()
-    qtbot.addWidget(flow_list)
+def test_set_flows_populates(flow_list: FlowList) -> None:
     flow_list.set_flows((_flow("a"), _flow("b")))
     assert flow_list.flow_count() == 2
 
 
-def test_selecting_flow_emits_signal(qtbot: QtBot) -> None:
-    flow_list = FlowList()
-    qtbot.addWidget(flow_list)
+def test_selecting_flow_emits_signal(qtbot: QtBot, flow_list: FlowList) -> None:
     flow_list.set_flows((_flow("a"),))
 
     with qtbot.waitSignal(flow_list.flow_selected, timeout=1000) as blocker:
@@ -61,9 +66,7 @@ def test_selecting_flow_emits_signal(qtbot: QtBot) -> None:
     assert flow_list.selected_flow_id() == "a"
 
 
-def test_deselecting_flow_emits_none(qtbot: QtBot) -> None:
-    flow_list = FlowList()
-    qtbot.addWidget(flow_list)
+def test_deselecting_flow_emits_none(qtbot: QtBot, flow_list: FlowList) -> None:
     flow_list.set_flows((_flow("a"),))
     flow_list._on_row_selected("a")
 
@@ -74,9 +77,7 @@ def test_deselecting_flow_emits_none(qtbot: QtBot) -> None:
     assert flow_list.selected_flow_id() is None
 
 
-def test_set_flows_clears_selection(qtbot: QtBot) -> None:
-    flow_list = FlowList()
-    qtbot.addWidget(flow_list)
+def test_set_flows_clears_selection(flow_list: FlowList) -> None:
     flow_list.set_flows((_flow("a"),))
     flow_list._on_row_selected("a")
     assert flow_list.selected_flow_id() == "a"
@@ -86,11 +87,9 @@ def test_set_flows_clears_selection(qtbot: QtBot) -> None:
 
 
 def test_selecting_a_second_flow_deselects_the_first(
-    qtbot: QtBot,
+    flow_list: FlowList,
 ) -> None:
     """Only one flow is selected at a time."""
-    flow_list = FlowList()
-    qtbot.addWidget(flow_list)
     flow_list.set_flows((_flow("a"), _flow("b")))
 
     flow_list._on_row_selected("a")
@@ -103,11 +102,8 @@ def test_selecting_a_second_flow_deselects_the_first(
     assert flow_list.selected_flow_id() == "b"
 
 
-def test_set_flows_sorts_by_flow_id(qtbot: QtBot) -> None:
+def test_set_flows_sorts_by_flow_id(flow_list: FlowList) -> None:
     """Rendered order is by flow_id, independent of input order."""
-    flow_list = FlowList()
-    qtbot.addWidget(flow_list)
-
     # Input order: c, a, b. Rendered order must be a, b, c.
     flow_list.set_flows((_flow("c"), _flow("a"), _flow("b")))
 

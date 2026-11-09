@@ -119,6 +119,9 @@ from cranioz.modules.registry.module_registry import (  # noqa: E402
 from cranioz.ui.editors.editor_registry import EditorRegistry  # noqa: E402
 from cranioz.ui.editors.tomography.editor import TomographyEditor  # noqa: E402
 
+# --- Icons ---
+from cranioz.ui.icons import UnicodeIconProvider  # noqa: E402
+
 # --- User Interface: Main Window ---
 from cranioz.ui.main_window import MainWindow  # noqa: E402
 from cranioz.ui.theme import ThemeMode, ThemeService  # noqa: E402
@@ -343,6 +346,7 @@ def main() -> int:
     editor_registry, tool_registry = _build_ui_registries()
     theme_service = _build_theme_service(config, settings)
     theme_service.compiler().apply(theme_service.compiled())
+    icon_provider = UnicodeIconProvider(theme_service)
     _logger.debug("ThemeService initialized and applied: %r", theme_service)
     actor = _resolve_actor()
 
@@ -357,6 +361,7 @@ def main() -> int:
         editor_registry=editor_registry,
         tool_registry=tool_registry,
         theme_service=theme_service,
+        icon_provider=icon_provider,
         task_manager=task_manager,
         telemetry=telemetry,
         flow_catalog=flow_catalog,

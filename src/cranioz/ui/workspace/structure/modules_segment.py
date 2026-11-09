@@ -24,6 +24,7 @@ from PySide6.QtWidgets import (
 )
 
 from cranioz.infrastructure.i18n import tr
+from cranioz.ui.icons.provider import IconProvider
 
 
 class ModulesSegment(QWidget):
@@ -32,19 +33,26 @@ class ModulesSegment(QWidget):
     module_selected = Signal(str)
     add_module_requested = Signal()
 
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        icon_provider: IconProvider,
+        parent: QWidget | None = None,
+    ) -> None:
         super().__init__(parent)
+        self._icon_provider = icon_provider
         self.setObjectName("workspace.top_bar.modules_segment")
 
         self._layout = QHBoxLayout(self)
         self._layout.setContentsMargins(0, 0, 0, 0)
         self._layout.setSpacing(4)
 
-        self._add_button = QPushButton("+", self)
+        self._add_button = QPushButton(self)
         self._add_button.setObjectName("workspace.top_bar.modules_segment.add")
         self._add_button.setFlat(True)
         self._add_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._add_button.setIcon(self._icon_provider.icon("new"))
         self._add_button.setToolTip(tr("workspace.top_bar.add_module", "Add module"))
+        self._add_button.setAccessibleName(tr("workspace.top_bar.add_module", "Add module"))
         self._add_button.setFixedWidth(28)
         self._add_button.clicked.connect(self.add_module_requested)
         self._layout.addWidget(self._add_button)

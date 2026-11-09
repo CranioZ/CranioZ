@@ -12,8 +12,7 @@ know the application; the MainWindow connects the signals to its
 existing handlers (or placeholders, until the corresponding phases
 deliver real implementations).
 
-The glyphs are textual placeholders. A future piece will replace them
-with ``ThemeService.icon_name(...)`` when the icon loader exists.
+The glyphs are resolved via ``IconProvider``.
 """
 
 from __future__ import annotations
@@ -27,6 +26,7 @@ from PySide6.QtWidgets import (
 )
 
 from cranioz.infrastructure.i18n import tr
+from cranioz.ui.icons.provider import IconProvider
 
 
 class ExtrasSegment(QWidget):
@@ -40,8 +40,13 @@ class ExtrasSegment(QWidget):
     toggle_area_bottom_requested = Signal()
     toggle_area_right_requested = Signal()
 
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        icon_provider: IconProvider,
+        parent: QWidget | None = None,
+    ) -> None:
         super().__init__(parent)
+        self._icon_provider = icon_provider
         self.setObjectName("workspace.top_bar.extras_segment")
 
         layout = QHBoxLayout(self)
@@ -49,24 +54,24 @@ class ExtrasSegment(QWidget):
         layout.setSpacing(4)
 
         self._menu_button = self._make_button(
-            "⋮",
-            "workspace.top_bar.extras_segment.menu",
-            tr("workspace.top_bar.extras", "Extras"),
+            icon_name="menu",
+            object_name="workspace.top_bar.extras_segment.menu",
+            tooltip=tr("workspace.top_bar.extras", "Extras"),
         )
         self._build_menu()
         self._menu_button.clicked.connect(self._on_menu_button_clicked)
 
         self._toggle_bottom_button = self._make_button(
-            "▭",
-            "workspace.top_bar.extras_segment.toggle_bottom",
-            tr("workspace.top_bar.toggle_area_bottom", "Toggle Area Bottom"),
+            icon_name="toggle_bottom",
+            object_name="workspace.top_bar.extras_segment.toggle_bottom",
+            tooltip=tr("workspace.top_bar.toggle_area_bottom", "Toggle Area Bottom"),
         )
         self._toggle_bottom_button.clicked.connect(self.toggle_area_bottom_requested)
 
         self._toggle_right_button = self._make_button(
-            "▯",
-            "workspace.top_bar.extras_segment.toggle_right",
-            tr("workspace.top_bar.toggle_area_right", "Toggle Area Right"),
+            icon_name="toggle_right",
+            object_name="workspace.top_bar.extras_segment.toggle_right",
+            tooltip=tr("workspace.top_bar.toggle_area_right", "Toggle Area Right"),
         )
         self._toggle_right_button.clicked.connect(self.toggle_area_right_requested)
 
@@ -76,12 +81,19 @@ class ExtrasSegment(QWidget):
 
     # ----- Internals ------------------------------------------------
 
-    def _make_button(self, glyph: str, object_name: str, tooltip: str) -> QPushButton:
-        button = QPushButton(glyph, self)
+    def _make_button(
+        self,
+        icon_name: str,
+        object_name: str,
+        tooltip: str,
+    ) -> QPushButton:
+        button = QPushButton(self)
         button.setObjectName(object_name)
         button.setFlat(True)
         button.setCursor(Qt.CursorShape.PointingHandCursor)
+        button.setIcon(self._icon_provider.icon(icon_name))
         button.setToolTip(tooltip)
+        button.setAccessibleName(tooltip)
         button.setFixedWidth(28)
         return button
 

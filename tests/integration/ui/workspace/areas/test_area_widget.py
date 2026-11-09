@@ -18,9 +18,10 @@ from __future__ import annotations
 
 import pytest
 from PySide6.QtWidgets import QLabel, QSplitter, QTabWidget, QWidget
-from tests.conftest import make_theme_service
+from tests.conftest import make_icon_provider, make_theme_service
 
 from cranioz.ui.editors.builtin.test_editor import DummyEditor
+from cranioz.ui.icons.provider import IconProvider
 from cranioz.ui.theme.service import ThemeService
 from cranioz.ui.theme.tokens import ThemeMode
 from cranioz.ui.toolbars.base import Toolbar
@@ -80,14 +81,23 @@ def theme_service() -> ThemeService:
     return make_theme_service(ThemeMode.DARK)
 
 
+@pytest.fixture
+def icon_provider(theme_service: ThemeService) -> IconProvider:
+    """IconProvider bound to the same ThemeService the widgets use."""
+    return make_icon_provider(theme_service)
+
+
 # ----- Empty Area ---------------------------------------------------
 
 
 def test_area_widget_creates_placeholder_when_empty(
-    qtbot, tool_registry: ToolRegistry, theme_service: ThemeService
+    qtbot,
+    tool_registry: ToolRegistry,
+    theme_service: ThemeService,
+    icon_provider: IconProvider,
 ) -> None:
     area = _area()
-    widget = AreaWidget(area, tool_registry, theme_service)
+    widget = AreaWidget(area, tool_registry, theme_service, icon_provider=icon_provider)
     qtbot.addWidget(widget)
 
     labels = widget.findChildren(QLabel)
@@ -96,10 +106,13 @@ def test_area_widget_creates_placeholder_when_empty(
 
 
 def test_area_widget_placeholder_includes_area_title(
-    qtbot, tool_registry: ToolRegistry, theme_service: ThemeService
+    qtbot,
+    tool_registry: ToolRegistry,
+    theme_service: ThemeService,
+    icon_provider: IconProvider,
 ) -> None:
     area = _area(title="Central")
-    widget = AreaWidget(area, tool_registry, theme_service)
+    widget = AreaWidget(area, tool_registry, theme_service, icon_provider=icon_provider)
     qtbot.addWidget(widget)
 
     labels = widget.findChildren(QLabel)
@@ -108,10 +121,13 @@ def test_area_widget_placeholder_includes_area_title(
 
 
 def test_area_widget_empty_has_no_splitter(
-    qtbot, tool_registry: ToolRegistry, theme_service: ThemeService
+    qtbot,
+    tool_registry: ToolRegistry,
+    theme_service: ThemeService,
+    icon_provider: IconProvider,
 ) -> None:
     area = _area()
-    widget = AreaWidget(area, tool_registry, theme_service)
+    widget = AreaWidget(area, tool_registry, theme_service, icon_provider=icon_provider)
     qtbot.addWidget(widget)
 
     assert widget.findChild(QSplitter) is None
@@ -121,12 +137,15 @@ def test_area_widget_empty_has_no_splitter(
 
 
 def test_area_widget_no_splitter_with_one_editor(
-    qtbot, tool_registry: ToolRegistry, theme_service: ThemeService
+    qtbot,
+    tool_registry: ToolRegistry,
+    theme_service: ThemeService,
+    icon_provider: IconProvider,
 ) -> None:
     area = _area()
     _add_editor(area, "editor.patient")
 
-    widget = AreaWidget(area, tool_registry, theme_service)
+    widget = AreaWidget(area, tool_registry, theme_service, icon_provider=icon_provider)
     qtbot.addWidget(widget)
 
     # A single Editor is rendered directly (no QSplitter).
@@ -134,12 +153,15 @@ def test_area_widget_no_splitter_with_one_editor(
 
 
 def test_area_widget_renders_content_widget_of_single_editor(
-    qtbot, tool_registry: ToolRegistry, theme_service: ThemeService
+    qtbot,
+    tool_registry: ToolRegistry,
+    theme_service: ThemeService,
+    icon_provider: IconProvider,
 ) -> None:
     area = _area()
     editor = _add_editor(area, "editor.patient")
 
-    widget = AreaWidget(area, tool_registry, theme_service)
+    widget = AreaWidget(area, tool_registry, theme_service, icon_provider=icon_provider)
     qtbot.addWidget(widget)
 
     content = editor.content_widget()
@@ -148,12 +170,15 @@ def test_area_widget_renders_content_widget_of_single_editor(
 
 
 def test_area_widget_renders_toolbars_of_single_editor(
-    qtbot, tool_registry: ToolRegistry, theme_service: ThemeService
+    qtbot,
+    tool_registry: ToolRegistry,
+    theme_service: ThemeService,
+    icon_provider: IconProvider,
 ) -> None:
     area = _area()
     _add_editor(area, "editor.patient")
 
-    widget = AreaWidget(area, tool_registry, theme_service)
+    widget = AreaWidget(area, tool_registry, theme_service, icon_provider=icon_provider)
     qtbot.addWidget(widget)
 
     toolbars = widget.findChildren(Toolbar)
@@ -162,13 +187,16 @@ def test_area_widget_renders_toolbars_of_single_editor(
 
 
 def test_area_widget_toolbar_is_inside_editor_container(
-    qtbot, tool_registry: ToolRegistry, theme_service: ThemeService
+    qtbot,
+    tool_registry: ToolRegistry,
+    theme_service: ThemeService,
+    icon_provider: IconProvider,
 ) -> None:
     """Per ADR-0002, the Toolbar is inside the Editor, not beside it."""
     area = _area()
     editor = _add_editor(area, "editor.a")
 
-    widget = AreaWidget(area, tool_registry, theme_service)
+    widget = AreaWidget(area, tool_registry, theme_service, icon_provider=icon_provider)
     qtbot.addWidget(widget)
 
     container = widget.findChild(
@@ -186,14 +214,17 @@ def test_area_widget_toolbar_is_inside_editor_container(
 
 
 def test_area_widget_uses_qsplitter_for_multiple_editors(
-    qtbot, tool_registry: ToolRegistry, theme_service: ThemeService
+    qtbot,
+    tool_registry: ToolRegistry,
+    theme_service: ThemeService,
+    icon_provider: IconProvider,
 ) -> None:
     """Multiple Editors are rendered in a QSplitter, not QTabWidget (ADR-0013)."""
     area = _area()
     _add_editor(area, "editor.a", title="Alpha")
     _add_editor(area, "editor.b", title="Beta")
 
-    widget = AreaWidget(area, tool_registry, theme_service)
+    widget = AreaWidget(area, tool_registry, theme_service, icon_provider=icon_provider)
     qtbot.addWidget(widget)
 
     splitter = widget.findChild(QSplitter)
@@ -202,7 +233,10 @@ def test_area_widget_uses_qsplitter_for_multiple_editors(
 
 
 def test_area_widget_no_tabwidget_with_multiple_editors(
-    qtbot, tool_registry: ToolRegistry, theme_service: ThemeService
+    qtbot,
+    tool_registry: ToolRegistry,
+    theme_service: ThemeService,
+    icon_provider: IconProvider,
 ) -> None:
     """Tabs are removed; the split tree is the organization (ADR-0013)."""
 
@@ -210,20 +244,23 @@ def test_area_widget_no_tabwidget_with_multiple_editors(
     _add_editor(area, "editor.a")
     _add_editor(area, "editor.b")
 
-    widget = AreaWidget(area, tool_registry, theme_service)
+    widget = AreaWidget(area, tool_registry, theme_service, icon_provider=icon_provider)
     qtbot.addWidget(widget)
 
     assert widget.findChild(QTabWidget) is None
 
 
 def test_area_widget_multiple_editors_content_present(
-    qtbot, tool_registry: ToolRegistry, theme_service: ThemeService
+    qtbot,
+    tool_registry: ToolRegistry,
+    theme_service: ThemeService,
+    icon_provider: IconProvider,
 ) -> None:
     area = _area()
     editor_a = _add_editor(area, "editor.a")
     editor_b = _add_editor(area, "editor.b")
 
-    widget = AreaWidget(area, tool_registry, theme_service)
+    widget = AreaWidget(area, tool_registry, theme_service, icon_provider=icon_provider)
     qtbot.addWidget(widget)
 
     assert widget.isAncestorOf(editor_a.content_widget())
@@ -234,10 +271,13 @@ def test_area_widget_multiple_editors_content_present(
 
 
 def test_area_widget_exposes_area_id(
-    qtbot, tool_registry: ToolRegistry, theme_service: ThemeService
+    qtbot,
+    tool_registry: ToolRegistry,
+    theme_service: ThemeService,
+    icon_provider: IconProvider,
 ) -> None:
     area = _area(area_id="area.left", title="Left", placement=Placement.LEFT)
-    widget = AreaWidget(area, tool_registry, theme_service)
+    widget = AreaWidget(area, tool_registry, theme_service, icon_provider=icon_provider)
     qtbot.addWidget(widget)
 
     assert widget.area_id == "area.left"
@@ -247,11 +287,14 @@ def test_area_widget_exposes_area_id(
 
 
 def test_area_widget_refresh_rebuilds_from_area(
-    qtbot, tool_registry: ToolRegistry, theme_service: ThemeService
+    qtbot,
+    tool_registry: ToolRegistry,
+    theme_service: ThemeService,
+    icon_provider: IconProvider,
 ) -> None:
     """refresh() reflects changes to the Area model."""
     area = _area()
-    widget = AreaWidget(area, tool_registry, theme_service)
+    widget = AreaWidget(area, tool_registry, theme_service, icon_provider=icon_provider)
     qtbot.addWidget(widget)
 
     labels_before = widget.findChildren(QLabel)
@@ -271,13 +314,16 @@ def test_area_widget_refresh_rebuilds_from_area(
 
 
 def test_area_widget_refresh_idempotent(
-    qtbot, tool_registry: ToolRegistry, theme_service: ThemeService
+    qtbot,
+    tool_registry: ToolRegistry,
+    theme_service: ThemeService,
+    icon_provider: IconProvider,
 ) -> None:
     """Calling refresh() twice with no model change produces the same structure."""
     area = _area()
     _add_editor(area, "editor.patient")
 
-    widget = AreaWidget(area, tool_registry, theme_service)
+    widget = AreaWidget(area, tool_registry, theme_service, icon_provider=icon_provider)
     qtbot.addWidget(widget)
 
     toolbars_before = widget.findChildren(Toolbar)

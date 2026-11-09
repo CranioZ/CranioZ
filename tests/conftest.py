@@ -67,6 +67,10 @@ from cranioz.ui.editors.builtin.test_editor import DummyEditor
 from cranioz.ui.editors.editor_registry import EditorRegistry
 from cranioz.ui.editors.tomography.editor import TomographyEditor
 
+# --- User Interface: Icons ---
+from cranioz.ui.icons.provider import IconProvider
+from cranioz.ui.icons.unicode import UnicodeIconProvider
+
 # --- User Interface: Main Window ---
 from cranioz.ui.main_window import MainWindow
 
@@ -111,6 +115,21 @@ def make_theme_service(
         settings=InMemorySettingsService(),
         default_mode=mode,
     )
+
+
+def make_icon_provider(
+    theme_service: ThemeService | None = None,
+) -> IconProvider:
+    """Build a UnicodeIconProvider bound to a ThemeService.
+
+    If ``theme_service`` is None, a fresh dark-theme service is
+    created. Tests that assert on theme-driven icon colors should pass
+    the same ``theme_service`` instance the widget under test uses, so
+    that ``theme_changed`` propagates consistently.
+    """
+    if theme_service is None:
+        theme_service = make_theme_service(ThemeMode.DARK)
+    return UnicodeIconProvider(theme_service=theme_service)
 
 
 # =====================================================================
@@ -180,6 +199,20 @@ def _finalize_vtk_interactors() -> None:
 def theme_service() -> ThemeService:
     """Default ThemeService (dark theme)."""
     return make_theme_service(ThemeMode.DARK)
+
+
+# ----- Icons ---------------------------------------------------------
+
+
+@pytest.fixture
+def icon_provider(theme_service: ThemeService) -> IconProvider:
+    """Default UnicodeIconProvider bound to the ``theme_service`` fixture.
+
+    Widgets under test that need a single, stable ThemeService/IconProvider
+    pair should request both fixtures, so that theme changes propagate
+    consistently between them.
+    """
+    return make_icon_provider(theme_service)
 
 
 # ----- Tools and Registry --------------------------------------------
@@ -284,13 +317,17 @@ def main_window_with_open_project(qtbot: QtBot) -> MainWindow:
         transaction_manager=InMemoryTransactionManager(),
     )
 
+    theme_service = make_theme_service(ThemeMode.DARK)
+    icon_provider = make_icon_provider(theme_service)
+
     window = MainWindow(
         catalog=catalog,
         manager=manager,
         actor="test-actor",
         editor_registry=editor_registry,
         tool_registry=tool_registry,
-        theme_service=make_theme_service(ThemeMode.DARK),
+        theme_service=theme_service,
+        icon_provider=icon_provider,
         command_dispatcher=command_dispatcher,
         command_bus=command_bus,
         scene_provider=scene_provider,

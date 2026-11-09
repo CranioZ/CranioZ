@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pytestqt.qtbot import QtBot
+from tests.conftest import make_icon_provider, make_theme_service
 
 from cranioz.application.event_bus import EventBus
 from cranioz.application.flows.definition import (
@@ -20,6 +21,7 @@ from cranioz.application.project.project_manager import ProjectManager
 from cranioz.domain.patient.value_objects.patient_id import PatientId
 from cranioz.domain.project.project_id import ProjectId
 from cranioz.ui.home.home_page import HomePage
+from cranioz.ui.theme.tokens import ThemeMode
 
 
 def _make_page() -> tuple[HomePage, ProjectCatalog, ProjectManager]:
@@ -30,7 +32,9 @@ def _make_page() -> tuple[HomePage, ProjectCatalog, ProjectManager]:
         event_bus=EventBus(),
         access_policy=AllowAllProjectAccessPolicy(),
     )
-    page = HomePage(catalog=catalog)
+    theme_service = make_theme_service(ThemeMode.DARK)
+    icon_provider = make_icon_provider(theme_service)
+    page = HomePage(catalog=catalog, icon_provider=icon_provider)
     return page, catalog, manager
 
 

@@ -3,43 +3,44 @@
 from __future__ import annotations
 
 import pytest
+from tests.conftest import make_icon_provider, make_theme_service
 
+from cranioz.ui.icons.provider import IconProvider
+from cranioz.ui.theme.tokens import ThemeMode
 from cranioz.ui.workspace.structure.modules_segment import ModulesSegment
 
 
-@pytest.mark.qt
-def test_starts_empty(qtbot) -> None:
-    segment = ModulesSegment()
-    qtbot.addWidget(segment)
+@pytest.fixture
+def segment(qtbot) -> ModulesSegment:
+    """A ModulesSegment with a dark-theme IconProvider, registered with qtbot."""
+    theme_service = make_theme_service(ThemeMode.DARK)
+    icon_provider: IconProvider = make_icon_provider(theme_service)
+    widget = ModulesSegment(icon_provider)
+    qtbot.addWidget(widget)
+    return widget
 
+
+@pytest.mark.qt
+def test_starts_empty(segment: ModulesSegment) -> None:
     assert segment.module_ids() == ()
     assert segment.selected_module_id() is None
 
 
 @pytest.mark.qt
-def test_add_button_emits_signal(qtbot) -> None:
-    segment = ModulesSegment()
-    qtbot.addWidget(segment)
-
+def test_add_button_emits_signal(qtbot, segment: ModulesSegment) -> None:
     with qtbot.waitSignal(segment.add_module_requested, timeout=1000):
         segment._add_button.click()  # noqa: SLF001
 
 
 @pytest.mark.qt
-def test_set_modules_populates(qtbot) -> None:
-    segment = ModulesSegment()
-    qtbot.addWidget(segment)
-
+def test_set_modules_populates(segment: ModulesSegment) -> None:
     segment.set_modules((("tomography", "Tomography"), ("osteotomy", "Osteotomy")))
 
     assert segment.module_ids() == ("tomography", "osteotomy")
 
 
 @pytest.mark.qt
-def test_set_modules_replaces_existing(qtbot) -> None:
-    segment = ModulesSegment()
-    qtbot.addWidget(segment)
-
+def test_set_modules_replaces_existing(segment: ModulesSegment) -> None:
     segment.set_modules((("a", "A"), ("b", "B")))
     segment.set_modules((("c", "C"),))
 
@@ -47,9 +48,7 @@ def test_set_modules_replaces_existing(qtbot) -> None:
 
 
 @pytest.mark.qt
-def test_clicking_module_emits_signal(qtbot) -> None:
-    segment = ModulesSegment()
-    qtbot.addWidget(segment)
+def test_clicking_module_emits_signal(qtbot, segment: ModulesSegment) -> None:
     segment.set_modules((("tomography", "Tomography"),))
 
     with qtbot.waitSignal(segment.module_selected, timeout=1000) as blocker:
@@ -60,9 +59,7 @@ def test_clicking_module_emits_signal(qtbot) -> None:
 
 
 @pytest.mark.qt
-def test_clicking_selected_module_deselects(qtbot) -> None:
-    segment = ModulesSegment()
-    qtbot.addWidget(segment)
+def test_clicking_selected_module_deselects(segment: ModulesSegment) -> None:
     segment.set_modules((("tomography", "Tomography"),))
 
     # First click: select.
@@ -75,9 +72,7 @@ def test_clicking_selected_module_deselects(qtbot) -> None:
 
 
 @pytest.mark.qt
-def test_set_selected_marks_button(qtbot) -> None:
-    segment = ModulesSegment()
-    qtbot.addWidget(segment)
+def test_set_selected_marks_button(segment: ModulesSegment) -> None:
     segment.set_modules((("a", "A"), ("b", "B")))
 
     segment.set_selected("b")
@@ -88,9 +83,7 @@ def test_set_selected_marks_button(qtbot) -> None:
 
 
 @pytest.mark.qt
-def test_set_selected_none_clears(qtbot) -> None:
-    segment = ModulesSegment()
-    qtbot.addWidget(segment)
+def test_set_selected_none_clears(segment: ModulesSegment) -> None:
     segment.set_modules((("a", "A"),))
     segment.set_selected("a")
 
@@ -101,9 +94,7 @@ def test_set_selected_none_clears(qtbot) -> None:
 
 
 @pytest.mark.qt
-def test_set_selected_unknown_raises(qtbot) -> None:
-    segment = ModulesSegment()
-    qtbot.addWidget(segment)
+def test_set_selected_unknown_raises(segment: ModulesSegment) -> None:
     segment.set_modules((("a", "A"),))
 
     with pytest.raises(KeyError, match="unknown module_id"):
@@ -111,9 +102,7 @@ def test_set_selected_unknown_raises(qtbot) -> None:
 
 
 @pytest.mark.qt
-def test_set_modules_preserves_selection_when_present(qtbot) -> None:
-    segment = ModulesSegment()
-    qtbot.addWidget(segment)
+def test_set_modules_preserves_selection_when_present(segment: ModulesSegment) -> None:
     segment.set_modules((("a", "A"), ("b", "B")))
     segment.set_selected("b")
 
@@ -123,9 +112,7 @@ def test_set_modules_preserves_selection_when_present(qtbot) -> None:
 
 
 @pytest.mark.qt
-def test_set_modules_clears_selection_when_absent(qtbot) -> None:
-    segment = ModulesSegment()
-    qtbot.addWidget(segment)
+def test_set_modules_clears_selection_when_absent(segment: ModulesSegment) -> None:
     segment.set_modules((("a", "A"), ("b", "B")))
     segment.set_selected("b")
 
@@ -135,9 +122,7 @@ def test_set_modules_clears_selection_when_absent(qtbot) -> None:
 
 
 @pytest.mark.qt
-def test_only_one_module_selected_at_a_time(qtbot) -> None:
-    segment = ModulesSegment()
-    qtbot.addWidget(segment)
+def test_only_one_module_selected_at_a_time(segment: ModulesSegment) -> None:
     segment.set_modules((("a", "A"), ("b", "B")))
 
     segment.set_selected("a")

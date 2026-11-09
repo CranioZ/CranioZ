@@ -28,7 +28,7 @@ pytest.importorskip("vtkmodules.qt")
 
 from pydicom.dataset import Dataset, FileMetaDataset
 from pydicom.uid import ExplicitVRLittleEndian, generate_uid
-from tests.conftest import make_theme_service
+from tests.conftest import make_icon_provider, make_theme_service
 
 from cranioz.application.commands.executor import CommandExecutor
 from cranioz.application.commands.in_memory_bus import InMemoryCommandBus
@@ -170,13 +170,17 @@ def window(qtbot) -> MainWindow:
         transaction_manager=InMemoryTransactionManager(),
     )
 
+    theme_service = make_theme_service(ThemeMode.DARK)
+    icon_provider = make_icon_provider(theme_service)
+
     window = MainWindow(
         catalog=catalog,
         manager=manager,
         actor="test-actor",
         editor_registry=editor_registry,
         tool_registry=tool_registry,
-        theme_service=make_theme_service(ThemeMode.DARK),
+        theme_service=theme_service,
+        icon_provider=icon_provider,
         command_dispatcher=command_dispatcher,
         command_bus=command_bus,
         scene_provider=scene_provider,

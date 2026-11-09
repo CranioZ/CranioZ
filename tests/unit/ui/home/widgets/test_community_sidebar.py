@@ -4,13 +4,24 @@ from __future__ import annotations
 
 import pytest
 from pytestqt.qtbot import QtBot
+from tests.conftest import make_icon_provider, make_theme_service
 
 from cranioz.ui.home.widgets.community_sidebar import CommunitySidebar
+from cranioz.ui.icons.provider import IconProvider
+from cranioz.ui.theme.tokens import ThemeMode
 
 
-def test_has_five_buttons(qtbot: QtBot) -> None:
-    sidebar = CommunitySidebar()
-    qtbot.addWidget(sidebar)
+@pytest.fixture
+def sidebar(qtbot: QtBot) -> CommunitySidebar:
+    """A CommunitySidebar with a dark-theme IconProvider."""
+    theme_service = make_theme_service(ThemeMode.DARK)
+    icon_provider: IconProvider = make_icon_provider(theme_service)
+    widget = CommunitySidebar(icon_provider)
+    qtbot.addWidget(widget)
+    return widget
+
+
+def test_has_five_buttons(sidebar: CommunitySidebar) -> None:
     for key in ("community", "library", "news", "feedback", "contribute"):
         assert sidebar.button_for(key) is not None
 
@@ -25,9 +36,9 @@ def test_has_five_buttons(qtbot: QtBot) -> None:
         ("contribute", "contribute_requested"),
     ],
 )
-def test_buttons_emit_signals(qtbot: QtBot, key: str, signal_name: str) -> None:
-    sidebar = CommunitySidebar()
-    qtbot.addWidget(sidebar)
+def test_buttons_emit_signals(
+    qtbot: QtBot, sidebar: CommunitySidebar, key: str, signal_name: str
+) -> None:
     signal = getattr(sidebar, signal_name)
 
     with qtbot.waitSignal(signal, timeout=1000):

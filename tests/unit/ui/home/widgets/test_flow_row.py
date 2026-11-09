@@ -6,12 +6,15 @@ import pytest
 from PySide6.QtCore import QPointF, Qt
 from PySide6.QtGui import QMouseEvent
 from pytestqt.qtbot import QtBot
+from tests.conftest import make_icon_provider, make_theme_service
 
 from cranioz.application.flows.definition import (
     FlowDefinition,
     FlowStep,
 )
 from cranioz.ui.home.widgets.flow_row import FlowRow
+from cranioz.ui.icons.provider import IconProvider
+from cranioz.ui.theme.tokens import ThemeMode
 
 
 def _flow(flow_id: str = "f1", steps: int = 3) -> FlowDefinition:
@@ -34,6 +37,12 @@ def _identity(key: str) -> str:
     return key
 
 
+def _make_icon_provider_for_tests() -> IconProvider:
+    """Build a dark-theme IconProvider for FlowRow construction."""
+    theme_service = make_theme_service(ThemeMode.DARK)
+    return make_icon_provider(theme_service)
+
+
 def _click(row: FlowRow) -> None:
     """Simulate a left-button click on the row."""
     event = QMouseEvent(
@@ -49,7 +58,11 @@ def _click(row: FlowRow) -> None:
 
 @pytest.fixture
 def row(qtbot: QtBot) -> FlowRow:
-    r = FlowRow(_flow(), translate=_identity)
+    r = FlowRow(
+        _flow(),
+        translate=_identity,
+        icon_provider=_make_icon_provider_for_tests(),
+    )
     qtbot.addWidget(r)
     return r
 
@@ -70,7 +83,11 @@ def test_set_checked_toggles(row: FlowRow) -> None:
 
 
 def test_click_selects_emits_flow_id(qtbot: QtBot) -> None:
-    row = FlowRow(_flow(), translate=_identity)
+    row = FlowRow(
+        _flow(),
+        translate=_identity,
+        icon_provider=_make_icon_provider_for_tests(),
+    )
     qtbot.addWidget(row)
 
     with qtbot.waitSignal(row.selected, timeout=1000) as blocker:
@@ -81,7 +98,11 @@ def test_click_selects_emits_flow_id(qtbot: QtBot) -> None:
 
 
 def test_click_again_deselects_emits_none(qtbot: QtBot) -> None:
-    row = FlowRow(_flow(), translate=_identity)
+    row = FlowRow(
+        _flow(),
+        translate=_identity,
+        icon_provider=_make_icon_provider_for_tests(),
+    )
     qtbot.addWidget(row)
     row.set_checked(True)
 

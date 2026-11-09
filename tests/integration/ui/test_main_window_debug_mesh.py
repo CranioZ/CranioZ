@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pytest
-from tests.conftest import make_theme_service
+from tests.conftest import make_icon_provider, make_theme_service
 
 from cranioz.application.event_bus import EventBus
 from cranioz.application.project.in_memory_project_repository import (
@@ -58,13 +58,17 @@ def window_with_debug_mesh(qtbot, monkeypatch) -> MainWindow:
     editor_registry = EditorRegistry()
     editor_registry.register(PLACEHOLDER_EDITOR_ID, PLACEHOLDER_EDITOR_CLASS)
 
+    theme_service = make_theme_service(ThemeMode.DARK)
+    icon_provider = make_icon_provider(theme_service)
+
     window = MainWindow(
         catalog=catalog,
         manager=manager,
         actor="test-actor",
         editor_registry=editor_registry,
         tool_registry=ToolRegistry(),
-        theme_service=make_theme_service(ThemeMode.DARK),
+        theme_service=theme_service,
+        icon_provider=icon_provider,
     )
     qtbot.addWidget(window)
 
@@ -150,13 +154,17 @@ def test_workspace_default_spec_is_used_without_env_var(qtbot, monkeypatch) -> N
     # The default spec (no CRANIOZ_DEBUG_MESH) references this editor.
     editor_registry.register("editor.tomography", TomographyEditor)
 
+    theme_service = make_theme_service(ThemeMode.DARK)
+    icon_provider = make_icon_provider(theme_service)
+
     window = MainWindow(
         catalog=catalog,
         manager=manager,
         actor="test-actor",
         editor_registry=editor_registry,
         tool_registry=ToolRegistry(),
-        theme_service=make_theme_service(ThemeMode.DARK),
+        theme_service=theme_service,
+        icon_provider=icon_provider,
     )
     qtbot.addWidget(window)
     window.home().refresh()

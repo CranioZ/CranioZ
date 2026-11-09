@@ -31,6 +31,7 @@ from PySide6.QtWidgets import (
 from cranioz.application.flows.definition import FlowDefinition
 from cranioz.infrastructure.i18n import tr
 from cranioz.ui.home.widgets.flow_row import FlowRow
+from cranioz.ui.icons.provider import IconProvider
 
 
 class FlowList(QWidget):
@@ -43,11 +44,13 @@ class FlowList(QWidget):
         self,
         *,
         translate: Callable[[str], str] | None = None,
+        icon_provider: IconProvider,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self.setObjectName("home_page.flow_list")
         self._translate: Callable[[str], str] = translate or (lambda key: key)
+        self._icon_provider = icon_provider
         self._selected_flow_id: str | None = None
         self._rows: dict[str, FlowRow] = {}
 
@@ -115,7 +118,12 @@ class FlowList(QWidget):
             self._placeholder.deleteLater()
 
         for flow in sorted(flows, key=lambda f: f.flow_id):
-            row = FlowRow(flow, translate=self._translate, parent=self._content)
+            row = FlowRow(
+                flow,
+                translate=self._translate,
+                icon_provider=self._icon_provider,
+                parent=self._content,
+            )
             row.selected.connect(self._on_row_selected)
             self._content_layout.insertWidget(self._content_layout.count() - 1, row)
             self._rows[flow.flow_id] = row

@@ -85,17 +85,8 @@ _SHELL_FILES: tuple[Path, ...] = (
 #   (already passed through tr() at the call site, so the literal
 #   argument is a composite string; see dialog.stl_filter).
 # - Empty strings.
-_WHITELIST: tuple[tuple[str, str], ...] = (
-    # Glyphs used as button content. Replaced by icons in a later
-    # phase (ThemeService.icon_name); until then they are the UI.
-    ("src/cranioz/ui/home/widgets/home_top_bar.py", "☰"),
-    ("src/cranioz/ui/home/widgets/home_top_bar.py", "?"),
-    ("src/cranioz/ui/home/widgets/home_top_bar.py", "⚙"),
-    ("src/cranioz/ui/home/widgets/start_button.py", "→"),
-    ("src/cranioz/ui/workspace/structure/modules_segment.py", "+"),
-    # Separator glyph in the flow row.
-    ("src/cranioz/ui/home/widgets/flow_row.py", "→"),
-)
+
+_WHITELIST: tuple[tuple[str, str], ...] = ()
 
 # ---------------------------------------------------------------------
 # AST helpers

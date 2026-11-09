@@ -31,7 +31,7 @@ from __future__ import annotations
 import pytest
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QSplitter
-from tests.conftest import make_theme_service
+from tests.conftest import make_icon_provider, make_theme_service
 
 from cranioz.ui.editors.builtin.test_editor import DummyEditor
 from cranioz.ui.editors.editor_registry import EditorRegistry
@@ -118,7 +118,8 @@ def renderer(
     tool_registry: ToolRegistry,
     theme_service: ThemeService,
 ) -> LayoutRenderer:
-    return LayoutRenderer(tool_registry, theme_service)
+    icon_provider = make_icon_provider(theme_service)
+    return LayoutRenderer(tool_registry, theme_service, icon_provider=icon_provider)
 
 
 # ----- Single Leaf --------------------------------------------------

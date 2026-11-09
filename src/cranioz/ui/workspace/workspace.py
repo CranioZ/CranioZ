@@ -21,8 +21,9 @@ Responsibilities:
   visible when the user toggles them from the Top Bar. This default
   will be replaced by the WorkflowEngine in Phase 5.
 - Receive and forward the TaskManager, TelemetrySink, CommandDispatcher,
-  SceneQuery, EventSubscription, and TranslationService to the Editors
-  it hosts (ADR-0011, ADR-0012, ADR-0007, ADR-0013, Sprint B).
+  SceneQuery, EventSubscription, TranslationService, and IconProvider
+  to the Editors it hosts (ADR-0011, ADR-0012, ADR-0007, ADR-0013,
+  Sprint B, Sprint F).
 
 Non-responsibilities:
 
@@ -48,6 +49,7 @@ from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from cranioz.application.project.project_context import ProjectContext
 from cranioz.ui.editors.editor_registry import EditorRegistry
+from cranioz.ui.icons.provider import IconProvider
 from cranioz.ui.theme.service import ThemeService
 from cranioz.ui.tools.registry.tool_registry import ToolRegistry
 from cranioz.ui.workspace.areas.area import Area
@@ -90,6 +92,7 @@ class Workspace(QWidget):
         editor_registry: EditorRegistry,
         tool_registry: ToolRegistry,
         theme_service: ThemeService,
+        icon_provider: IconProvider,
         project_context: ProjectContext,
         task_manager: TaskManager | None = None,
         telemetry: TelemetrySink | None = None,
@@ -108,6 +111,7 @@ class Workspace(QWidget):
         self._event_subscription = event_subscription
         self._domain_object_store = domain_object_store
         self._translation_service = translation_service
+        self._icon_provider = icon_provider
 
         if project_context is None:
             raise WorkspaceError(
@@ -127,6 +131,7 @@ class Workspace(QWidget):
         self._layout_renderer = LayoutRenderer(
             tool_registry,
             theme_service,
+            icon_provider=icon_provider,
             debug_colors=debug_colors,
             on_splitter_moved=self._reposition_overlays,
         )

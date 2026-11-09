@@ -28,6 +28,7 @@ from PySide6.QtWidgets import (
 )
 
 from cranioz.ui.editors.base_editor import Editor
+from cranioz.ui.icons.provider import IconProvider
 from cranioz.ui.theme.service import ThemeService
 from cranioz.ui.toolbars.base import Toolbar
 from cranioz.ui.toolbars.specification import ToolbarPosition
@@ -50,6 +51,8 @@ class AreaWidget(QWidget):
         area: Area,
         tool_registry: ToolRegistry,
         theme_service: ThemeService,
+        *,
+        icon_provider: IconProvider,
         debug_colors: bool = False,
         parent: QWidget | None = None,
     ) -> None:
@@ -57,6 +60,7 @@ class AreaWidget(QWidget):
         self._area = area
         self._tool_registry = tool_registry
         self._theme_service = theme_service
+        self._icon_provider = icon_provider
         self._debug_colors = debug_colors
         self._content_widgets: dict[str, QWidget] = {}
 
@@ -310,6 +314,7 @@ class AreaWidget(QWidget):
                 spec=spec,
                 registry=self._tool_registry,
                 theme=self._theme_service,
+                icon_provider=self._icon_provider,
                 context=context,
             )
             result.append(toolbar)

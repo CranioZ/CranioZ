@@ -3,7 +3,7 @@
 **Document type:** Roadmap and execution plan
 **Status:** Living document
 **Scope:** Phased implementation of the CranioZ platform, from foundation to release
-**Last updated:** 2026-11-08
+**Last updated:** 2026-11-09
 
 ---
 
@@ -61,7 +61,7 @@ The implementation is divided into 11 phases. The sequence establishes the platf
 |---|---|---|---|
 | **Phase 0** | Foundation & Boot | ✅ Implemented | Startup performance improvements |
 | **Phase 1** | Contracts, Core Domain & i18n | 🚧 In Progress | `EditorContext` propagation (Sprint C) |
-| **Phase 2** | Workspace Engine & Icons | 🚧 In Progress | `IconProvider`, `AreaLayoutRenderer`, `EditorStack` |
+| **Phase 2** | Workspace Engine & Icons | 🚧 In Progress | `AreaLayoutRenderer`, `EditorStack` |
 | **Phase 3** | Project, Home Page & Professional Module | 🚧 In Progress | `ProjectIndex`, coordinated deletion, async loading, Professional module |
 | **Phase 4** | Scene & Visualization | ⏳ Planned | Import Dialog, RenderingAdapter, Viewer Layout Manager, 2D/3D Tools, LUTs |
 | **Phase 5** | Clinical Flows & Panel Widget Registry | ⏳ Planned | WorkflowEngine, WorkflowBreadcrumb, Panel Registry |
@@ -96,9 +96,9 @@ The sprint order below respects dependencies between Phases 1–3.
 | Sprint | Phase | Deliverable | Status | Depends on |
 |---|---|---|---|---|
 | **B** | 1 | i18n contract and catalogs | ✅ Complete | — |
-| **C** | 1 | `EditorContext` propagation | 🚧 Pending | B, E (for `theme_service`), F (for `icon_provider`) |
+| **C** | 1 | `EditorContext` propagation | 🚧 Pending | B, E (`theme_service` ✅), F (`icon_provider` ✅) |
 | **E** | 2 | `ThemeService`, `ThemeCompiler`, tokens | ✅ Complete | — |
-| **F** | 2 | `IconProvider`, `UnicodeIconProvider`, glyph migration | 🚧 Pending | E |
+| **F** | 2 | `IconProvider`, `UnicodeIconProvider`, glyph migration | ✅ Complete | E |
 | **G** | 2 | `AreaLayoutRenderer` | 🚧 Pending | — |
 | **H** | 2 | `EditorStack` | 🚧 Pending | G |
 | **I** | 3 | `ProjectIndex` | 🚧 Pending | — |
@@ -106,9 +106,9 @@ The sprint order below respects dependencies between Phases 1–3.
 | **K** | 3 | Async loading | 🚧 Pending | I, J |
 | **L** | 3 | Professional module | 🚧 Pending | C, E, F |
 
-**Next sprint:** Sprint F — `IconProvider` + `UnicodeIconProvider` + glyph migration.
+**Next sprint:** Sprint C — `EditorContext` propagation (unblocked by Sprint F).
 
-**Note on ordering:** Sprint C depends on Sprints E and F because `EditorContext` will carry `theme_service` and `icon_provider`. Sprint E is now complete; Sprint F is the remaining dependency before Sprint C can start. Alternatively, Sprint C can propagate only services that exist at that time, with a follow-up PR adding `theme_service` and `icon_provider`. The first approach is cleaner and is the recommended one.
+**Note on ordering:** Sprint C depends on Sprints E and F because `EditorContext` will carry `theme_service` and `icon_provider`. Sprints E and F are now complete; Sprint C is unblocked and is the next deliverable. Alternatively, Sprint C can propagate only services that exist at that time, with a follow-up PR adding the remaining services. The first approach is cleaner and is the recommended one.
 
 ---
 
@@ -159,7 +159,7 @@ The sprint order below respects dependencies between Phases 1–3.
   - Contract test: every `name_key` in every `flow.json` resolves in `en_US`.
   - `tests/architecture/test_no_hardcoded_strings_in_shell_widgets.py`: shell widgets must route user-facing strings through `tr(...)`.
 - 🚧 **Sprint C (`EditorContext` propagation):**
-  - Depends on Sprints E (`theme_service`, complete) and F (`icon_provider`, pending).
+  - Depends on Sprints E (`theme_service`, complete) and F (`icon_provider`, complete).
   - Propagate `task_manager`, `telemetry`, `correlation_id`, `command_dispatcher`, `scene_query`, `event_subscription`, `translation_service`, `theme_service`, `icon_provider`.
   - `Workspace._create_editor` and `MainWindow._create_workspace` pass the complete set.
   - `TomographyEditor.initialize` and `MeshDebugEditor.initialize` accept the complete set.
@@ -181,7 +181,7 @@ The sprint order below respects dependencies between Phases 1–3.
 
 ### Phase 2: Workspace Engine & Icons
 
-**Goal:** Close Phase 2 formally. Blockers: `IconProvider` + `UnicodeIconProvider`, `AreaLayoutRenderer`, `EditorStack`.
+**Goal:** Close Phase 2 formally. Blockers: `AreaLayoutRenderer`, `EditorStack`.
 
 **Deliverables:**
 
@@ -193,21 +193,24 @@ The sprint order below respects dependencies between Phases 1–3.
 - ✅ **Sprint E (`ThemeService` + `ThemeCompiler` + tokens):**
   - `ThemeMode` (`DARK`, `LIGHT`, `SYSTEM`) and `ThemeName` (`DARK`, `LIGHT`) as `StrEnum`.
   - `ThemeTokens` + 7 dataclasses (Colors, Typography, Spacing, Dimensions, Borders, Effects, Surfaces).
-  - 47 tokens as specified in `docs/architecture/appearance/themes-and-design-tokens.md`.
+  - 47 tokens as specified in `docs/architecture/appearance/themes/themes_and_design_tokens.md`.
   - `ThemeService`: `mode()`, `set_mode()`, `theme()`, `tokens()`, `color()`, `dimension()`, `surface_color()`, `icon_name()`, `theme_changed` signal, `SYSTEM` resolution via `QStyleHints.colorScheme()`.
   - `ThemeCompiler`: `compile()`, `apply()`, surface composition (toolbar, popover, modal_backdrop), QSS emission. `modal_backdrop` uses a fixed `#000000` base per spec §6.2.
+  - Modern Dark palette applied to `DARK_TOKENS` (neutral greys + iOS system colors). `feedback_information` kept at `#4A90D9` (spec value) to pass WCAG AA against `background_panel`.
   - `cranioz.infrastructure.settings` package: `SettingsService` protocol, `InMemorySettingsService`, `FilesystemSettingsService`, `SettingsStore`, `SettingsMigrator`, `KNOWN_KEYS`, `SettingsError`, `SettingsMigrationError`.
   - `AppPathResolver.user_settings_path()` and `PathsConfig.settings_root` (default `~/.cranioz/Settings/settings.json`).
   - Boot integration: read `appearance.theme_mode` from `SettingsService` before `MainWindow`; invalid → `DARK` + `WARNING`; apply theme before the first window.
+  - Expanded `_build_qss`: tables + headers + scrollbars, `QLineEdit` placeholder and focus, `QComboBox` dropdown, `QLabel` roles (`title`/`subtitle`/`caption`/`arrow`), `QFrame` cards, `QMenu`, `QToolTip`, `StartButton` states, and `FlowRow` checked/step/separator/arrow.
+  - `StartButton` and `FlowRow` migrated from inline `setStyleSheet` to `setProperty` + the global QSS.
   - Contract tests: `test_no_hardcoded_appearance.py`, `test_tokens_used.py`, `test_tokens_present.py`, `test_theme_completeness.py`, `test_theme_values.py`, `test_contrast.py`.
   - Unit tests: `test_service.py`, `test_tokens.py`, `test_compiler.py`, `test_settings_service.py`.
-  - Known debt registered in `_KNOWN_DEBT_FILES` for the widget migration sprint (6 files, 26 literals).
-- 🚧 **Sprint F (`IconProvider` + `UnicodeIconProvider`):**
-  - `IconState` enum.
-  - `IconProvider` Protocol.
-  - `UnicodeIconProvider` with 60-icon catalog from `icons.md`.
-  - Injection into `MainWindow`, `Workspace`, `EditorContext`.
-  - Migration of hardcoded glyphs in `TopBar`, `HomeSegment`, `ModulesSegment`, `ExtrasSegment`, `HomePage`, `Toolbar`.
+- ✅ **Sprint F (`IconProvider` + `UnicodeIconProvider`):**
+  - `IconState` enum (`DEFAULT`, `HOVER`, `PRESSED`, `SELECTED`, `DISABLED`).
+  - `IconProvider` Protocol (`icon(name, size, state) -> QIcon`, `text_glyph(name) -> str`, `invalidate_cache() -> None`).
+  - `UnicodeIconProvider` with the closed 60-icon catalog from `docs/architecture/appearance/icons/icons_and_icon_manager.md` §6.
+  - Injection into `MainWindow`, `Workspace`, `HomePage`, `TopBar` segments, `Toolbar`, `StartButton`, `FlowRow`.
+  - Migration of hardcoded glyphs in `TopBar`, `HomeSegment`, `ModulesSegment`, `ExtrasSegment`, `HomePage`, `Toolbar`, `StartButton`, `FlowRow`.
+  - `_WHITELIST` in `test_no_hardcoded_strings_in_shell_widgets.py` emptied (Sprint B debt paid).
   - Contract tests: `test_icon_catalog.py`, `test_icon_fallback.py`, `test_icon_theme.py`, `test_icon_widget_contract.py`, `test_icon_accessibility.py`.
 - 🚧 **Sprint G (`AreaLayoutRenderer`):**
   - Separates inter-Area from intra-Area layout.
@@ -231,8 +234,9 @@ The sprint order below respects dependencies between Phases 1–3.
 - Contrast tests.
 - ✅ Token and theme completeness tests (Sprint E).
 - ✅ Settings persistence round-trip and fallback tests (Sprint E).
+- ✅ Icon catalog, fallback, theme integration, widget contract, and accessibility tests (Sprint F).
 
-**Status:** 🚧 In Progress. Blockers: Sprints F, G, H.
+**Status:** 🚧 In Progress. Blockers: Sprints G, H.
 
 ---
 
@@ -664,9 +668,13 @@ The foundation, core domain, workspace, project lifecycle, imaging pipeline, and
 
 Sprint B (i18n) is complete: the shell — `MainWindow`, the Home Page tree, the three Top Bar segments, and the Workspace placeholder editor — resolves user-facing strings through the `TranslationService`. The architecture guard `tests/architecture/test_no_hardcoded_strings_in_shell_widgets.py` prevents regressions.
 
-Sprint E (appearance foundation) is complete: `ThemeService` and `ThemeCompiler` are implemented, the 47 canonical design tokens are defined for `DARK` and `LIGHT`, the `cranioz.infrastructure.settings` package provides typed, versioned, and atomically written user settings, and `AppPathResolver.user_settings_path()` resolves the user settings file. The theme is applied at boot before the first window. The test suite grew by 177 tests; total is 1510 passing with 0 failures and 88% coverage. `tests/architecture/test_no_hardcoded_appearance.py` guards against new hardcoded colors and freezes the existing debt for the widget migration sprint.
+Sprint E (appearance foundation) is complete: `ThemeService` and `ThemeCompiler` are implemented, the 47 canonical design tokens are defined for `DARK` and `LIGHT`, the `cranioz.infrastructure.settings` package provides typed, versioned, and atomically written user settings, and `AppPathResolver.user_settings_path()` resolves the user settings file. The Modern Dark palette is applied, the QSS covers tables, headers, scrollbars, buttons, inputs, labels, cards, `StartButton`, and `FlowRow`, and the two Home Page widgets (`StartButton`, `FlowRow`) are migrated from inline `setStyleSheet` to `setProperty` + the global QSS.
 
-The immediate focus is closing Phases 1, 2, and 3 formally through Sprints C, F, G, H, I, J, K, L. Sprints B and E are closed; Sprint C is the remaining Phase 1 blocker, and Sprint F is the next Phase 2 deliverable.
+Sprint F (icons) is complete: `IconState`, `IconProvider` Protocol and `UnicodeIconProvider` are implemented with the closed 60-icon catalog; the provider is injected into `MainWindow`, `Workspace`, `HomePage`, the three Top Bar segments, `Toolbar`, `StartButton`, and `FlowRow`; the hardcoded glyphs in those widgets are migrated to `provider.icon(...)`; and the `_WHITELIST` in `test_no_hardcoded_strings_in_shell_widgets.py` is empty, meaning the Sprint B debt is paid. The five contract tests (`test_icon_catalog.py`, `test_icon_fallback.py`, `test_icon_theme.py`, `test_icon_widget_contract.py`, `test_icon_accessibility.py`) pass.
+
+The test suite is at **1527 passing, 0 failed, 0 errors, 0 skipped, with 88% coverage**. `tests/architecture/test_no_hardcoded_appearance.py` guards against new hardcoded colors and freezes the remaining debt for the widget migration sprint.
+
+The immediate focus is closing Phases 1, 2, and 3 formally through Sprints C, G, H, I, J, K, L. Sprints B, E, and F are closed; Sprint C is the remaining Phase 1 blocker and is unblocked; Sprint G is the next Phase 2 deliverable.
 
 Phase 4 begins after Phases 1–3 are marked `✅ Implemented`. Its first deliverables are the Unified Import Dialog, the `RenderingAdapter`, the `ViewerLayoutManager`, the 2D/3D tools, and the clinical transfer function presets.
 
@@ -676,121 +684,4 @@ The geometry infrastructure initial subset is validated. Full geometry infrastru
 
 ## 10. Known Issues and Resolutions
 
-### 10.1 ADR-0014 (Widget Toolkit Selection) — Accepted
-
-Qt Widgets + QSS modular + Design Tokens in Python. QML rejected as shell foundation. Appearance architecture lives in `docs/architecture/appearance/`. The legacy ADR-0003 is superseded.
-
-### 10.2 Internationalization — Shell migrated (Sprint B complete)
-
-- `TranslationService`, `TranslationCatalog`, `TranslationCatalogRegistry` are implemented and injected.
-- `MainWindow._humanize_translation_key` was removed; every shell widget resolves user-facing strings via `tr(...)`.
-- `tests/architecture/test_no_hardcoded_strings_in_shell_widgets.py` guards against regressions: it scans the AST of each shell file and fails if a user-facing literal is passed directly to a Qt widget constructor or setter without going through `tr(...)`. The whitelist documents every exception (glyphs, `objectName`, QSS selectors, composite file-dialog filters).
-- Pending: `EditorContext` propagation (Sprint C) and full `pt_BR` / `en_US` catalog coverage (Phase 8).
-
-### 10.3 `IconProvider` — Contract defined in Sprint F; product in Phase 8
-
-- Sprint F: `IconProvider` Protocol, `UnicodeIconProvider`, migration of hardcoded glyphs.
-- Phase 8: `SvgIconProvider`, cache, SVG assets, full migration of every widget.
-
-### 10.4 `steps_panel` overlay — Removed
-
-The previous `steps_panel` overlay is **removed from the roadmap**.
-
-Rationale:
-
-- The prototype defines a rich Top Bar with module tabs (Tomography, Registration, Cephalometry, Segmentation, Osteotomy) that already communicates the workflow.
-- A dedicated steps panel duplicates that information and consumes clinical image space.
-- Navigation between steps is served by module tabs and panel widgets.
-
-Replacement: `WorkflowBreadcrumb` in the Top Bar (Phase 5) shows step state without an overlay.
-
-The `steps_panel` design remains archived in `docs/proposals/steps_panel.md` in case clinical validation in Phase 7 reopens the question.
-
-### 10.5 DICOM visualization bug — Resolved (2026-11-06)
-
-**Root cause:** `VtkImageAdapter` combined `transpose(2, 1, 0)` with `ravel(order="C")`, corrupting the memory layout expected by `vtkImageData`.
-
-**Fix:** `data.ravel(order="C")` on the original `(Z, Y, X)` layout with `SetDimensions(nx, ny, nz)`. Direction matrix applied. `int16` (`VTK_SHORT`) as the production scalar type.
-
-**Regression test:** `test_voxel_ordering_matches_numpy` and `_everywhere` cover every voxel.
-
-**Lessons learned:** The 2D slice extraction is a valuable diagnostic; if the 2D slice is correct but the 3D volume shows artifacts, the bug is in the 3D conversion path.
-
-### 10.6 Windows OpenGL / Qt context issues
-
-Documented for reproducibility. Not a blocker. The `wglMakeCurrent failed ... code 6` messages emitted during pytest teardown are VTK reporting OpenGL context destruction after the test window is gone; they do not affect test outcomes.
-
-### 10.7 Editor Layout Tree and Editor Stack — Sprint H
-
-- `AreaLayoutRenderer` (Sprint G) separates inter-Area from intra-Area layout.
-- `EditorLayoutSpec.stack([...])` (Sprint H) enables multiple Editors per Leaf, rendered as tabs.
-- Regression: existing single-Editor behaviour must remain unchanged.
-
-### 10.8 Panel Registry — Phase 5
-
-Left, Right, and Bottom Areas must support zero or more registered panels. The current hardcoded widget compositions are replaced by a `PanelRegistry` and per-Area panel managers.
-
-### 10.9 Unified Import Dialog scope — Phase 4.3.4
-
-The prototype (§97–114) defines a full import manager, not a "DICOM import UI" only. Phase 4.3.4 must deliver categories, sources, preview, auto-tagging, per-category importers, grid/list toggle, and add/remove/select actions.
-
-### 10.10 Clinical transfer functions — Phase 4.5
-
-The prototype defines preset categories (Bone, Soft Tissue, etc.) and LUT selection in the Right Area panel. The presets must be HU-based clinical presets (§5.1.4), not percentiles, for calibrated volumes. The CBCT fallback remains for uncalibrated volumes.
-
-### 10.11 ViewerLayoutManager — Phase 4.5
-
-The prototype defines a dynamic grid system (1×1, 2×2, 3×3, up to 6×4 editable, panoramic, ATM). This is a Phase 4 deliverable; deferring it to Phase 5 would leave the Editor unable to reproduce the prototype layout.
-
-### 10.12 Real background blur — Not supported by design
-
-Frosted glass in CranioZ is **simulated glass** (translucency + gradient + border), not real background blur. `QGraphicsBlurEffect` cannot sample VTK-rendered content. Platform APIs require separate windows. See `docs/architecture/appearance/themes-and-design-tokens.md` §6.3.
-
-### 10.13 Sprint E (appearance foundation) — Complete (2026-11-08)
-
-**Delivered:**
-
-- `cranioz.infrastructure.settings` package with `SettingsService` protocol, `InMemorySettingsService`, `FilesystemSettingsService`, `SettingsStore`, `SettingsMigrator`, `KNOWN_KEYS`, `SettingsError`, `SettingsMigrationError`.
-- `AppPathResolver.user_settings_path()` and `PathsConfig.settings_root` (default `~/.cranioz/Settings/settings.json`).
-- `src/cranioz/ui/theme/tokens.py`: `ThemeMode`, `ThemeName` (`StrEnum`), 8 token dataclasses, 47 canonical tokens for `DARK` and `LIGHT`, `validate_tokens`, `validate_all_themes`, `count_tokens`.
-- `src/cranioz/ui/theme/service.py`: `ThemeService` with mode resolution (`DARK`/`LIGHT`/`SYSTEM` via `QStyleHints`), `theme_changed` signal, token accessors, `surface_color()` delegating to the compiler, and `icon_name()` kept for Sprint F.
-- `src/cranioz/ui/theme/compiler.py`: `ThemeCompiler` + `CompiledStyles` with surface composition (toolbar, popover, modal_backdrop), typed elevations, and QSS emission. `modal_backdrop` uses a fixed `#000000` base per spec §6.2.
-- `src/cranioz/__main__.py`: boot order is now `SettingsService` → `ThemeService` → `apply theme` → `MainWindow`.
-
-**Tests added (177):**
-
-- `tests/unit/ui/theme/test_service.py` (27)
-- `tests/unit/ui/theme/test_tokens.py` (37)
-- `tests/unit/ui/theme/test_compiler.py` (25)
-- `tests/unit/infrastructure/settings/test_settings_service.py` (27)
-- `tests/architecture/test_no_hardcoded_appearance.py` (10)
-- `tests/architecture/test_tokens_used.py` (8)
-- `tests/architecture/test_tokens_present.py` (2)
-- `tests/architecture/test_theme_completeness.py` (12)
-- `tests/architecture/test_theme_values.py` (9)
-- `tests/architecture/test_contrast.py` (20)
-
-**Known debt:**
-
-`_KNOWN_DEBT_FILES` in `tests/architecture/test_no_hardcoded_appearance.py` freezes 26 pre-existing hardcoded color/opacity literals across 6 files:
-
-- `ui/home/widgets/flow_row.py` (9)
-- `ui/home/widgets/start_button.py` (5)
-- `ui/workspace/areas/area_widget.py` (5)
-- `ui/workspace/workspace.py` (3)
-- `ui/workspace/workspace_spec.py` (1)
-- `ui/editors/viewport_3d/presets.py` (3)
-
-These are the target of the widget migration sprint. The guard prevents new literals from being added and the frozen count is the upper bound for each file.
-
----
-
-## 11. References
-
-- `docs/architecture/appearance/` — canonical appearance architecture.
-- `docs/adr/ADR-0013_Editor_Layout_Tree_View_Layout_Tree_and_Toolbar_Placement.md` — accepted.
-- `docs/adr/ADR-0014-widget-toolkit-selection.md` — accepted.
-- `docs/architecture/application/startup.md` — boot sequence.
-- `docs/architecture/settings/configs_and_settings.md` — settings scopes.
-- `docs/known_issues/dicom_visualization_bug.md` — resolved 2026-11-06.
-- `docs/architecture/next_steps.md` — Sprint B / C guidance.
+### 10.1 ADR-0014 (Widget Toolkit Selection)

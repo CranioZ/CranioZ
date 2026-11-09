@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
 )
 
 from cranioz.infrastructure.i18n import tr
+from cranioz.ui.icons.provider import IconProvider
 
 
 class HomeTopBar(QWidget):
@@ -32,16 +33,22 @@ class HomeTopBar(QWidget):
     help_requested = Signal()
     settings_requested = Signal()
 
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        icon_provider: IconProvider,
+        parent: QWidget | None = None,
+    ) -> None:
         super().__init__(parent)
         self.setObjectName("home_page.top_bar")
         self.setFixedHeight(self.FIXED_HEIGHT)
 
-        self._menu_button = QPushButton("☰")
+        self._menu_button = QPushButton()
         self._menu_button.setObjectName("home_page.top_bar.menu")
         self._menu_button.setFlat(True)
         self._menu_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._menu_button.setIcon(icon_provider.icon("menu"))
         self._menu_button.setToolTip(tr("homepage.top_bar.menu", "Menu"))
+        self._menu_button.setAccessibleName(tr("homepage.top_bar.menu", "Menu"))
         self._menu_button.clicked.connect(self.toggle_sidebar_requested)
 
         self._title = QLabel(tr("core.app.name", "CranioZ"))
@@ -51,20 +58,24 @@ class HomeTopBar(QWidget):
         title_font.setBold(True)
         self._title.setFont(title_font)
 
-        self._help_button = QPushButton("?")
+        self._help_button = QPushButton()
         self._help_button.setObjectName("home_page.top_bar.help")
         self._help_button.setFlat(True)
         self._help_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self._help_button.setFixedWidth(32)
+        self._help_button.setIcon(icon_provider.icon("help"))
         self._help_button.setToolTip(tr("homepage.top_bar.help", "Help"))
+        self._help_button.setAccessibleName(tr("homepage.top_bar.help", "Help"))
         self._help_button.clicked.connect(self.help_requested)
 
-        self._settings_button = QPushButton("⚙")
+        self._settings_button = QPushButton()
         self._settings_button.setObjectName("home_page.top_bar.settings")
         self._settings_button.setFlat(True)
         self._settings_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self._settings_button.setFixedWidth(32)
+        self._settings_button.setIcon(icon_provider.icon("settings"))
         self._settings_button.setToolTip(tr("homepage.top_bar.settings", "Settings"))
+        self._settings_button.setAccessibleName(tr("homepage.top_bar.settings", "Settings"))
         self._settings_button.clicked.connect(self.settings_requested)
 
         layout = QHBoxLayout(self)

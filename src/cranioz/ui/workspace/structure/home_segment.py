@@ -16,12 +16,10 @@ formats:
   ``ImportMeshCommand`` are implemented (Phase 6A). Tracked with a
   ``TODO(phase-4)`` in the code.
 
-The glyphs are textual placeholders. A future piece will replace them
-with ``ThemeService.icon_name(...)`` when the icon loader exists.
-
-The segment is a pure presentation widget: it does not know the
-Workspace, the ProjectManager or the ProjectContext. Each user
-intention emits a signal; the MainWindow decides what to do.
+The glyphs are resolved via ``IconProvider``. The segment is a pure
+presentation widget: it does not know the Workspace, the
+ProjectManager or the ProjectContext. Each user intention emits a
+signal; the MainWindow decides what to do.
 
 "Fechar projeto" and the import actions are context-dependent: they
 only make sense while a project is open. ``set_project_open(bool)``
@@ -40,6 +38,7 @@ from PySide6.QtWidgets import (
 )
 
 from cranioz.infrastructure.i18n import tr
+from cranioz.ui.icons.provider import IconProvider
 
 
 class HomeSegment(QWidget):
@@ -53,8 +52,13 @@ class HomeSegment(QWidget):
     import_stl_debug_requested = Signal()
     close_workspace_requested = Signal()
 
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        icon_provider: IconProvider,
+        parent: QWidget | None = None,
+    ) -> None:
         super().__init__(parent)
+        self._icon_provider = icon_provider
         self.setObjectName("workspace.top_bar.home_segment")
 
         layout = QHBoxLayout(self)
@@ -62,24 +66,24 @@ class HomeSegment(QWidget):
         layout.setSpacing(4)
 
         self._toggle_left_button = self._make_button(
-            "☰",
-            "workspace.top_bar.home_segment.toggle_left",
-            tr("workspace.top_bar.toggle_area_left", "Toggle Area Left"),
+            icon_name="toggle_left",
+            object_name="workspace.top_bar.home_segment.toggle_left",
+            tooltip=tr("workspace.top_bar.toggle_area_left", "Toggle Area Left"),
         )
         self._toggle_left_button.clicked.connect(self.toggle_area_left_requested)
 
         self._menu_button = self._make_button(
-            "⋮",
-            "workspace.top_bar.home_segment.menu",
-            tr("workspace.top_bar.project_actions", "Project actions"),
+            icon_name="menu",
+            object_name="workspace.top_bar.home_segment.menu",
+            tooltip=tr("workspace.top_bar.project_actions", "Project actions"),
         )
         self._build_menu()
         self._menu_button.clicked.connect(self._on_menu_button_clicked)
 
         self._close_workspace_button = self._make_button(
-            "⌂",
-            "workspace.top_bar.home_segment.close_workspace",
-            tr("workspace.top_bar.home", "Home"),
+            icon_name="home",
+            object_name="workspace.top_bar.home_segment.close_workspace",
+            tooltip=tr("workspace.top_bar.home", "Home"),
         )
         self._close_workspace_button.clicked.connect(self.close_workspace_requested)
 
@@ -109,12 +113,19 @@ class HomeSegment(QWidget):
 
     # ----- Internals ------------------------------------------------
 
-    def _make_button(self, glyph: str, object_name: str, tooltip: str) -> QPushButton:
-        button = QPushButton(glyph, self)
+    def _make_button(
+        self,
+        icon_name: str,
+        object_name: str,
+        tooltip: str,
+    ) -> QPushButton:
+        button = QPushButton(self)
         button.setObjectName(object_name)
         button.setFlat(True)
         button.setCursor(Qt.CursorShape.PointingHandCursor)
+        button.setIcon(self._icon_provider.icon(icon_name))
         button.setToolTip(tooltip)
+        button.setAccessibleName(tooltip)
         button.setFixedWidth(28)
         return button
 

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pytest
-from tests.conftest import make_theme_service
+from tests.conftest import make_icon_provider, make_theme_service
 
 from cranioz.application.event_bus import EventBus
 from cranioz.application.project.in_memory_project_repository import (
@@ -70,10 +70,14 @@ def _build_workspace_with_full_spec(qtbot) -> Workspace:
     editor_registry = EditorRegistry()
     editor_registry.register(PLACEHOLDER_EDITOR_ID, PLACEHOLDER_EDITOR_CLASS)
 
+    theme_service = make_theme_service(ThemeMode.DARK)
+    icon_provider = make_icon_provider(theme_service)
+
     workspace = Workspace(
         editor_registry=editor_registry,
         tool_registry=ToolRegistry(),
-        theme_service=make_theme_service(ThemeMode.DARK),
+        theme_service=theme_service,
+        icon_provider=icon_provider,
         project_context=context,
     )
     qtbot.addWidget(workspace)

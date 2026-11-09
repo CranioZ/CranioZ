@@ -54,6 +54,7 @@ from collections.abc import Callable
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QSplitter, QWidget
 
+from cranioz.ui.icons.provider import IconProvider
 from cranioz.ui.theme.service import ThemeService
 from cranioz.ui.tools.registry.tool_registry import ToolRegistry
 from cranioz.ui.workspace.areas.area_widget import AreaWidget
@@ -87,11 +88,14 @@ class LayoutRenderer:
         self,
         tool_registry: ToolRegistry,
         theme_service: ThemeService,
+        *,
+        icon_provider: IconProvider,
         debug_colors: bool = False,
         on_splitter_moved: Callable[[], None] | None = None,
     ) -> None:
         self._tool_registry = tool_registry
         self._theme_service = theme_service
+        self._icon_provider = icon_provider
         self._debug_colors = debug_colors
         self._splitter_moved_callback = on_splitter_moved
 
@@ -276,6 +280,7 @@ class LayoutRenderer:
                 area=area,
                 tool_registry=self._tool_registry,
                 theme_service=self._theme_service,
+                icon_provider=self._icon_provider,
                 debug_colors=self._debug_colors,
             )
             self._area_widgets[area.area_id] = widget

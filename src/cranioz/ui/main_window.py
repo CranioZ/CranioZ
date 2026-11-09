@@ -36,8 +36,9 @@ Responsibilities:
   SceneProvider, DomainObjectStore) to the Workspace (ADR-0011,
   ADR-0012).
 - Populate the HomePage's FlowList from the FlowCatalog (A5).
-- Inject the TranslationService into the HomePage so that the
-  FlowList can resolve flow labels via the active catalog.
+- Inject the TranslationService and the IconProvider into the
+  HomePage so that the FlowList and the shell widgets can resolve
+  labels and icons.
 
 Non-responsibilities (see main_window.md §9 and ADR-0006):
 
@@ -99,6 +100,9 @@ from cranioz.ui.editors.viewport_3d.mesh_debug_editor import (
 
 # --- User Interface: Tools & Workspace ---
 from cranioz.ui.home.home_page import HomePage
+
+# --- Icons ---
+from cranioz.ui.icons.provider import IconProvider
 from cranioz.ui.theme.service import ThemeService
 from cranioz.ui.tools.registry.tool_registry import ToolRegistry
 from cranioz.ui.workspace.areas.placement import Placement
@@ -143,6 +147,7 @@ class MainWindow(QMainWindow):
         editor_registry: EditorRegistry,
         tool_registry: ToolRegistry,
         theme_service: ThemeService,
+        icon_provider: IconProvider,
         translation_service: TranslationService | None = None,
         task_manager: TaskManager | None = None,
         telemetry: TelemetrySink | None = None,
@@ -160,6 +165,7 @@ class MainWindow(QMainWindow):
         self._editor_registry = editor_registry
         self._tool_registry = tool_registry
         self._theme_service = theme_service
+        self._icon_provider = icon_provider
         self._translation_service = translation_service
         self._task_manager = task_manager
         self._telemetry = telemetry
@@ -185,6 +191,7 @@ class MainWindow(QMainWindow):
             catalog=self._catalog,
             parent=self,
             translation_service=self._translation_service,
+            icon_provider=self._icon_provider,
         )
         self._stack = QStackedWidget(self)
         self._stack.addWidget(self._home)
@@ -291,6 +298,7 @@ class MainWindow(QMainWindow):
             editor_registry=self._editor_registry,
             tool_registry=self._tool_registry,
             theme_service=self._theme_service,
+            icon_provider=self._icon_provider,
             project_context=context,
             task_manager=self._task_manager,
             telemetry=self._telemetry,
@@ -301,9 +309,9 @@ class MainWindow(QMainWindow):
         )
 
         # TopOverlay: three segments, one per zone.
-        home_segment = HomeSegment()
-        modules_segment = ModulesSegment()
-        extras_segment = ExtrasSegment()
+        home_segment = HomeSegment(self._icon_provider)
+        modules_segment = ModulesSegment(self._icon_provider)
+        extras_segment = ExtrasSegment(self._icon_provider)
 
         # Placeholder module list until Phase 5 delivers WorkflowEngine.
         modules_segment.set_modules((("tomography", "Tomografia"),))

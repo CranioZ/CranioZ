@@ -3,15 +3,25 @@
 from __future__ import annotations
 
 import pytest
+from tests.conftest import make_icon_provider, make_theme_service
 
+from cranioz.ui.icons.provider import IconProvider
+from cranioz.ui.theme.tokens import ThemeMode
 from cranioz.ui.workspace.structure.home_segment import HomeSegment
 
 
-@pytest.mark.qt
-def test_toggle_area_left_button_emits_signal(qtbot) -> None:
-    segment = HomeSegment()
-    qtbot.addWidget(segment)
+@pytest.fixture
+def segment(qtbot) -> HomeSegment:
+    """A HomeSegment with a dark-theme IconProvider, registered with qtbot."""
+    theme_service = make_theme_service(ThemeMode.DARK)
+    icon_provider: IconProvider = make_icon_provider(theme_service)
+    widget = HomeSegment(icon_provider)
+    qtbot.addWidget(widget)
+    return widget
 
+
+@pytest.mark.qt
+def test_toggle_area_left_button_emits_signal(qtbot, segment: HomeSegment) -> None:
     with qtbot.waitSignal(segment.toggle_area_left_requested, timeout=1000):
         segment.findChild(
             type(segment._toggle_left_button),  # noqa: SLF001
@@ -20,10 +30,7 @@ def test_toggle_area_left_button_emits_signal(qtbot) -> None:
 
 
 @pytest.mark.qt
-def test_close_workspace_button_emits_signal(qtbot) -> None:
-    segment = HomeSegment()
-    qtbot.addWidget(segment)
-
+def test_close_workspace_button_emits_signal(qtbot, segment: HomeSegment) -> None:
     with qtbot.waitSignal(segment.close_workspace_requested, timeout=1000):
         segment.findChild(
             type(segment._close_workspace_button),  # noqa: SLF001
@@ -32,27 +39,19 @@ def test_close_workspace_button_emits_signal(qtbot) -> None:
 
 
 @pytest.mark.qt
-def test_menu_new_project_emits_signal(qtbot) -> None:
-    segment = HomeSegment()
-    qtbot.addWidget(segment)
-
+def test_menu_new_project_emits_signal(qtbot, segment: HomeSegment) -> None:
     with qtbot.waitSignal(segment.new_project_requested, timeout=1000):
         segment._action_new_project.trigger()  # noqa: SLF001
 
 
 @pytest.mark.qt
-def test_menu_open_project_emits_signal(qtbot) -> None:
-    segment = HomeSegment()
-    qtbot.addWidget(segment)
-
+def test_menu_open_project_emits_signal(qtbot, segment: HomeSegment) -> None:
     with qtbot.waitSignal(segment.open_project_requested, timeout=1000):
         segment._action_open_project.trigger()  # noqa: SLF001
 
 
 @pytest.mark.qt
-def test_menu_close_project_emits_signal(qtbot) -> None:
-    segment = HomeSegment()
-    qtbot.addWidget(segment)
+def test_menu_close_project_emits_signal(qtbot, segment: HomeSegment) -> None:
     segment.set_project_open(True)
 
     with qtbot.waitSignal(segment.close_project_requested, timeout=1000):
@@ -60,9 +59,7 @@ def test_menu_close_project_emits_signal(qtbot) -> None:
 
 
 @pytest.mark.qt
-def test_menu_import_dicom_emits_signal(qtbot) -> None:
-    segment = HomeSegment()
-    qtbot.addWidget(segment)
+def test_menu_import_dicom_emits_signal(qtbot, segment: HomeSegment) -> None:
     segment.set_project_open(True)
 
     with qtbot.waitSignal(segment.import_files_requested, timeout=1000):
@@ -70,9 +67,7 @@ def test_menu_import_dicom_emits_signal(qtbot) -> None:
 
 
 @pytest.mark.qt
-def test_menu_import_stl_debug_emits_signal(qtbot) -> None:
-    segment = HomeSegment()
-    qtbot.addWidget(segment)
+def test_menu_import_stl_debug_emits_signal(qtbot, segment: HomeSegment) -> None:
     segment.set_project_open(True)
 
     with qtbot.waitSignal(segment.import_stl_debug_requested, timeout=1000):
@@ -80,9 +75,7 @@ def test_menu_import_stl_debug_emits_signal(qtbot) -> None:
 
 
 @pytest.mark.qt
-def test_context_actions_disabled_when_no_project(qtbot) -> None:
-    segment = HomeSegment()
-    qtbot.addWidget(segment)
+def test_context_actions_disabled_when_no_project(segment: HomeSegment) -> None:
     segment.set_project_open(False)
 
     assert not segment._action_close_project.isEnabled()  # noqa: SLF001
@@ -92,9 +85,7 @@ def test_context_actions_disabled_when_no_project(qtbot) -> None:
 
 
 @pytest.mark.qt
-def test_context_actions_enabled_when_project_open(qtbot) -> None:
-    segment = HomeSegment()
-    qtbot.addWidget(segment)
+def test_context_actions_enabled_when_project_open(segment: HomeSegment) -> None:
     segment.set_project_open(True)
 
     assert segment._action_close_project.isEnabled()  # noqa: SLF001
@@ -102,10 +93,7 @@ def test_context_actions_enabled_when_project_open(qtbot) -> None:
 
 
 @pytest.mark.qt
-def test_project_open_state_round_trips(qtbot) -> None:
-    segment = HomeSegment()
-    qtbot.addWidget(segment)
-
+def test_project_open_state_round_trips(segment: HomeSegment) -> None:
     assert segment.is_project_open() is False
     segment.set_project_open(True)
     assert segment.is_project_open() is True

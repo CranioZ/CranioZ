@@ -15,8 +15,8 @@ emits a signal; the caller decides what to do.
 
 Styling is owned by the global QSS emitted by ``ThemeCompiler``. The
 row only toggles its ``checked`` property and repolishes itself; it
-never calls ``setStyleSheet``. The arrows between steps are ``QLabel``
-with ``class="arrow"``; Sprint F will replace them with icons.
+never calls ``setStyleSheet``. The arrows between steps are rendered
+by ``IconProvider`` as small icons.
 """
 
 from __future__ import annotations
@@ -34,6 +34,7 @@ from PySide6.QtWidgets import (
 )
 
 from cranioz.application.flows.definition import FlowDefinition
+from cranioz.ui.icons.provider import IconProvider
 
 
 class FlowRow(QFrame):
@@ -46,9 +47,11 @@ class FlowRow(QFrame):
         flow: FlowDefinition,
         *,
         translate: Callable[[str], str],
+        icon_provider: IconProvider,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
+        self._icon_provider = icon_provider
         self.setObjectName("home_page_flow_list_flow")
         self.setFrameShape(QFrame.Shape.NoFrame)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -73,12 +76,10 @@ class FlowRow(QFrame):
         # Separator between name and steps.
         layout.addWidget(_make_separator())
 
-        # Steps, with arrows between them.
+        # Steps, with icons between them.
         for i, step in enumerate(flow.steps):
             if i > 0:
-                arrow = QLabel("→")
-                arrow.setProperty("class", "arrow")
-                arrow.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                arrow = self._make_arrow_label()
                 layout.addWidget(arrow)
             step_widget = _make_step_widget(self._translate(step.name_key))
             layout.addWidget(step_widget)
@@ -117,6 +118,14 @@ class FlowRow(QFrame):
             self.selected.emit(self._flow.flow_id)
 
     # ----- Internals -----------------------------------------------
+
+    def _make_arrow_label(self) -> QLabel:
+        """Build a small QLabel hosting the forward icon."""
+        label = QLabel()
+        label.setPixmap(self._icon_provider.icon("forward", size=12).pixmap(12, 12))
+        label.setProperty("class", "arrow")
+        label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        return label
 
     def _repolish(self) -> None:
         """Re-evaluate the stylesheet after the dynamic property changed."""

@@ -7,7 +7,7 @@ Responsibilities:
 - Resolve each tool_id declared in the spec against the ToolRegistry.
 - Create the concrete Tool instances for each item.
 - Display the items in the declared orientation.
-- Consume a ThemeService for icon resolution.
+- Consume an IconProvider for icons.
 - Emit a signal when a Tool is triggered or toggled.
 
 Non-responsibilities:
@@ -16,10 +16,6 @@ Non-responsibilities:
   provides at materialization time.
 - The Toolbar does not mutate the Scene. Tools do, via Commands.
 - The Toolbar does not persist state. That is the Editor's job.
-
-This widget is deliberately minimal. It is the first Qt widget in
-CranioZ and it exists to validate the contract between:
-  ToolbarSpec + ToolRegistry + ThemeService → QWidget
 """
 
 from __future__ import annotations
@@ -34,6 +30,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from cranioz.ui.icons.provider import IconProvider
 from cranioz.ui.theme.service import ThemeService
 from cranioz.ui.toolbars.specification import (
     ToolbarOrientation,
@@ -63,6 +60,8 @@ class Toolbar(QWidget):
         spec: ToolbarSpec,
         registry: ToolRegistry,
         theme: ThemeService,
+        *,
+        icon_provider: IconProvider,
         context: ToolContext | None = None,
         parent: QWidget | None = None,
     ) -> None:
@@ -70,6 +69,7 @@ class Toolbar(QWidget):
         self._spec = spec
         self._registry = registry
         self._theme = theme
+        self._icon_provider = icon_provider
         self._context = context if context is not None else ToolContext()
         self._bindings: list[ToolbarItemBinding] = []
 
@@ -106,15 +106,12 @@ class Toolbar(QWidget):
     def _append_tool(self, tool_id: str) -> None:
         tool = self._registry.create(tool_id)
         label = tool.label or tool_id
-        icon_name = self._theme.icon_name(tool.icon) if tool.icon else None
 
-        # For this first version we render Tools as buttons with their label.
-        # Icon resolution is exercised but not yet drawn (no icon loader).
         button = QPushButton(label, self)
         button.setObjectName(f"toolbar.item.{tool_id}")
         button.setToolTip(tool.description or label)
-        if icon_name is not None:
-            button.setProperty("icon_name", icon_name)
+        if tool.icon:
+            button.setIcon(self._icon_provider.icon(tool.icon))
 
         if self._is_toggle(tool):
             button.setCheckable(True)
@@ -148,7 +145,6 @@ class Toolbar(QWidget):
         toggle = getattr(tool, "toggle", None)
         if callable(toggle):
             current = toggle()
-            # The tool's new state wins.
             checked = bool(current)
         self.tool_toggled.emit(tool_id, checked)
 

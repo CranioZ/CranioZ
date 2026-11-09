@@ -22,7 +22,7 @@ from __future__ import annotations
 import pytest
 from PySide6.QtWidgets import QMessageBox, QStackedWidget
 from pytestqt.qtbot import QtBot
-from tests.conftest import make_theme_service
+from tests.conftest import make_icon_provider, make_theme_service
 
 from cranioz.application.event_bus import EventBus
 from cranioz.application.project.in_memory_project_repository import (
@@ -76,7 +76,9 @@ def window(
     tool_registry = ToolRegistry()
     tool_registry.register("tool.log", LogTool)
     tool_registry.register("tool.toggle", ToggleTool)
+
     theme_service = make_theme_service(ThemeMode.DARK)
+    icon_provider = make_icon_provider(theme_service)
 
     w = MainWindow(
         catalog=catalog,
@@ -85,6 +87,7 @@ def window(
         editor_registry=editor_registry,
         tool_registry=tool_registry,
         theme_service=theme_service,
+        icon_provider=icon_provider,
     )
     qtbot.addWidget(w)
     return w
