@@ -89,29 +89,26 @@ class Workspace(QWidget):
     def __init__(
         self,
         *,
-        editor_registry: EditorRegistry,
-        tool_registry: ToolRegistry,
-        theme_service: ThemeService,
-        icon_provider: IconProvider,
+        # --- Application & Domain Services ---
         project_context: ProjectContext,
-        task_manager: TaskManager | None = None,
-        telemetry: TelemetrySink | None = None,
         command_dispatcher: CommandDispatcher | None = None,
         scene_query: SceneQuery | None = None,
         domain_object_store: DomainObjectStore | None = None,
         event_subscription: EventSubscription | None = None,
+        task_manager: TaskManager | None = None,
+        telemetry: TelemetrySink | None = None,
+        # --- User Interface & Registries ---
+        editor_registry: EditorRegistry,
+        tool_registry: ToolRegistry,
+        theme_service: ThemeService,
+        icon_provider: IconProvider,
         translation_service: TranslationService | None = None,
+        # --- Configuration, Flags & Parent ---
         debug_colors: bool = False,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self.setObjectName("workspace")
-        self._command_dispatcher = command_dispatcher
-        self._scene_query = scene_query
-        self._event_subscription = event_subscription
-        self._domain_object_store = domain_object_store
-        self._translation_service = translation_service
-        self._icon_provider = icon_provider
 
         if project_context is None:
             raise WorkspaceError(
@@ -119,14 +116,26 @@ class Workspace(QWidget):
                 "within an opened project (ADR-0006)."
             )
 
+        # --- Application & Domain Services Assignment ---
+        self._project_context = project_context
+        self._command_dispatcher = command_dispatcher
+        self._scene_query = scene_query
+        self._domain_object_store = domain_object_store
+        self._event_subscription = event_subscription
+        self._task_manager = task_manager
+        self._telemetry = telemetry
+
+        # --- User Interface & Registries Assignment ---
         self._editor_registry = editor_registry
         self._tool_registry = tool_registry
         self._theme_service = theme_service
-        self._project_context = project_context
-        self._task_manager = task_manager
-        self._telemetry = telemetry
+        self._icon_provider = icon_provider
+        self._translation_service = translation_service
+
+        # --- Configuration & Flags Assignment ---
         self._debug_colors = debug_colors
 
+        # --- Layout & Component Initialization ---
         self._layout_builder = LayoutBuilder(editor_registry)
         self._layout_renderer = LayoutRenderer(
             tool_registry,
@@ -197,6 +206,8 @@ class Workspace(QWidget):
                 "domain_object_store": self._domain_object_store,
                 "event_subscription": self._event_subscription,
                 "translation_service": self._translation_service,
+                "theme_service": self._theme_service,
+                "icon_provider": self._icon_provider,
             },
         )
 

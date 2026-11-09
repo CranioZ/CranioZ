@@ -15,6 +15,10 @@ global i18n instance (Sprint B).
 
 The context is deliberately narrow. It is not a service locator:
 every field is a specific, named dependency.
+
+The context also carries the ThemeService and the IconProvider, so
+that Editors and their Toolbars can resolve theme tokens and icons
+without importing the global instances (Sprint C).
 """
 
 from __future__ import annotations
@@ -30,6 +34,8 @@ if TYPE_CHECKING:
     from cranioz.application.telemetry.base import TelemetrySink
     from cranioz.domain.scene.domain_object_store import DomainObjectStore
     from cranioz.infrastructure.i18n.translation_service import TranslationService
+    from cranioz.ui.icons.provider import IconProvider
+    from cranioz.ui.theme.service import ThemeService
 
 
 @dataclass(frozen=True)
@@ -40,12 +46,21 @@ class EditorContext:
     editor_id: str
 
     # Optional fields (with default).
+    # --- Application Layer (Commands, Events, and Tasks) ---
+    command_dispatcher: CommandDispatcher | None = None
+    task_manager: TaskManager | None = None
+    event_subscription: EventSubscription | None = None
+
+    # --- Domain Layer ---
+    domain_object_store: DomainObjectStore | None = None
+    scene_query: SceneQuery | None = None
+
+    # --- User Interface & Services (Themes, Icons, and Translation) ---
+    translation_service: TranslationService | None = None
+    theme_service: ThemeService | None = None
+    icon_provider: IconProvider | None = None
+
+    # --- Metadata & General ---
     correlation_id: str | None = None
     extras: dict[str, Any] = field(default_factory=dict)
-    task_manager: TaskManager | None = None
     telemetry: TelemetrySink | None = None
-    command_dispatcher: CommandDispatcher | None = None
-    scene_query: SceneQuery | None = None
-    domain_object_store: DomainObjectStore | None = None
-    event_subscription: EventSubscription | None = None
-    translation_service: TranslationService | None = None
