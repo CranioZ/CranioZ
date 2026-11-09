@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+# Standard Library
 import logging
 import os
 from collections.abc import Callable
 
+# Third-Party Libraries
 import pytest
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QSurfaceFormat
@@ -28,6 +30,11 @@ except ImportError:  # pragma: no cover - VTK is optional
     QVTKRenderWindowInteractor = None  # type: ignore[assignment,misc]
     _HAS_VTK = False
 
+# =====================================================================
+# Local Imports (cranioz.*)
+# =====================================================================
+
+# --- Application Layer (Commands, Events, Flows, and Projects) ---
 from cranioz.application.commands.executor import CommandExecutor
 from cranioz.application.commands.in_memory_bus import InMemoryCommandBus
 from cranioz.application.commands.stack import InMemoryCommandStack
@@ -44,14 +51,30 @@ from cranioz.application.project.project_access_policy import (
 from cranioz.application.project.project_catalog import ProjectCatalog
 from cranioz.application.project.project_manager import ProjectManager
 from cranioz.application.scene.scene_provider import InMemorySceneProvider
+
+# --- Domain Layer ---
 from cranioz.domain.patient.value_objects.patient_id import PatientId
 from cranioz.domain.project.project_id import ProjectId
 from cranioz.domain.scene.domain_object_store import DomainObjectStore
+
+# --- Infrastructure & Configuration (Settings, Workspace, Themes, etc.) ---
+from cranioz.infrastructure.settings.in_memory_settings_service import (
+    InMemorySettingsService,
+)
+
+# --- User Interface: Editors ---
 from cranioz.ui.editors.builtin.test_editor import DummyEditor
 from cranioz.ui.editors.editor_registry import EditorRegistry
 from cranioz.ui.editors.tomography.editor import TomographyEditor
+
+# --- User Interface: Main Window ---
 from cranioz.ui.main_window import MainWindow
-from cranioz.ui.theme.service import ThemeName, ThemeService
+
+# --- User Interface: Themes ---
+from cranioz.ui.theme.service import ThemeService
+from cranioz.ui.theme.tokens import ThemeMode
+
+# --- User Interface: Tools & Toolbars ---
 from cranioz.ui.toolbars.specification import (
     ToolbarOrientation,
     ToolbarSpec,
@@ -60,6 +83,8 @@ from cranioz.ui.toolbars.specification import (
 from cranioz.ui.tools.builtin.log_tool import LogTool
 from cranioz.ui.tools.builtin.toggle_tool import ToggleTool
 from cranioz.ui.tools.registry.tool_registry import ToolRegistry
+
+# --- User Interface: Workspace ---
 from cranioz.ui.workspace.workspace_spec import (
     PLACEHOLDER_EDITOR_CLASS,
     PLACEHOLDER_EDITOR_ID,
@@ -67,7 +92,30 @@ from cranioz.ui.workspace.workspace_spec import (
 
 _logger = logging.getLogger(__name__)
 
-# ----- Qt ------------------------------------------------------------
+
+# =====================================================================
+# Factories
+# =====================================================================
+
+
+def make_theme_service(
+    mode: ThemeMode = ThemeMode.DARK,
+) -> ThemeService:
+    """Build a ThemeService backed by in-memory settings.
+
+    The compiler is NOT applied (no global QSS is set), so tests do not
+    depend on the application stylesheet. Tests that need the compiled
+    styles can call ``service.compiled()``.
+    """
+    return ThemeService(
+        settings=InMemorySettingsService(),
+        default_mode=mode,
+    )
+
+
+# =====================================================================
+# Qt application
+# =====================================================================
 
 
 @pytest.fixture(scope="session")
@@ -131,7 +179,7 @@ def _finalize_vtk_interactors() -> None:
 @pytest.fixture
 def theme_service() -> ThemeService:
     """Default ThemeService (dark theme)."""
-    return ThemeService(theme=ThemeName.DARK)
+    return make_theme_service(ThemeMode.DARK)
 
 
 # ----- Tools and Registry --------------------------------------------
@@ -242,7 +290,7 @@ def main_window_with_open_project(qtbot: QtBot) -> MainWindow:
         actor="test-actor",
         editor_registry=editor_registry,
         tool_registry=tool_registry,
-        theme_service=ThemeService(theme=ThemeName.DARK),
+        theme_service=make_theme_service(ThemeMode.DARK),
         command_dispatcher=command_dispatcher,
         command_bus=command_bus,
         scene_provider=scene_provider,

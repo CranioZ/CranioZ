@@ -27,6 +27,7 @@ class PathsConfig:
     project_root: str | None
     flows_root: str | None
     cache_root: str | None
+    settings_root: str | None
 
 
 @dataclass(frozen=True)
@@ -81,6 +82,7 @@ def build_config(app_data: dict[str, Any], paths_data: dict[str, Any]) -> Config
         project_root=paths_section.get("project_root"),
         flows_root=paths_section.get("flows_root"),
         cache_root=paths_section.get("cache_root"),
+        settings_root=paths_section.get("settings_root"),
     )
 
     return Config(app=app, paths=paths, logging=logging_cfg)

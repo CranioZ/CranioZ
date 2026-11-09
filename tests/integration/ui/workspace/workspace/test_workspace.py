@@ -52,6 +52,7 @@ from datetime import UTC, datetime
 import pytest
 from PySide6.QtWidgets import QWidget
 from pytestqt.qtbot import QtBot
+from tests.conftest import make_theme_service
 
 from cranioz.application.project.project_context import ProjectContext
 from cranioz.application.scene.scene_query import InMemorySceneQuery
@@ -63,7 +64,8 @@ from cranioz.domain.project.project_metadata import ProjectMetadata
 from cranioz.domain.project.project_status import ProjectStatus
 from cranioz.ui.editors.builtin.test_editor import DummyEditor
 from cranioz.ui.editors.editor_registry import EditorRegistry
-from cranioz.ui.theme.service import ThemeName, ThemeService
+from cranioz.ui.theme.service import ThemeService
+from cranioz.ui.theme.tokens import ThemeMode
 from cranioz.ui.tools.builtin.log_tool import LogTool
 from cranioz.ui.tools.builtin.toggle_tool import ToggleTool
 from cranioz.ui.tools.registry.tool_registry import ToolRegistry
@@ -124,7 +126,7 @@ def tool_registry() -> ToolRegistry:
 
 @pytest.fixture
 def theme_service() -> ThemeService:
-    return ThemeService(theme=ThemeName.DARK)
+    return make_theme_service(ThemeMode.DARK)
 
 
 @pytest.fixture

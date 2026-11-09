@@ -31,10 +31,12 @@ from __future__ import annotations
 import pytest
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QSplitter
+from tests.conftest import make_theme_service
 
 from cranioz.ui.editors.builtin.test_editor import DummyEditor
 from cranioz.ui.editors.editor_registry import EditorRegistry
-from cranioz.ui.theme.service import ThemeName, ThemeService
+from cranioz.ui.theme.service import ThemeService
+from cranioz.ui.theme.tokens import ThemeMode
 from cranioz.ui.tools.builtin.log_tool import LogTool
 from cranioz.ui.tools.builtin.toggle_tool import ToggleTool
 from cranioz.ui.tools.registry.tool_registry import ToolRegistry
@@ -108,7 +110,7 @@ def tool_registry() -> ToolRegistry:
 
 @pytest.fixture
 def theme_service() -> ThemeService:
-    return ThemeService(theme=ThemeName.DARK)
+    return make_theme_service(ThemeMode.DARK)
 
 
 @pytest.fixture

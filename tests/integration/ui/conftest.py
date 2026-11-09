@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+from tests.conftest import make_theme_service
 
 from cranioz.application.event_bus import EventBus
 from cranioz.application.project.in_memory_project_repository import (
@@ -19,7 +20,7 @@ from cranioz.domain.project.project_id import ProjectId
 from cranioz.domain.scene.domain_object_store import DomainObjectStore
 from cranioz.ui.editors.editor_registry import EditorRegistry
 from cranioz.ui.main_window import MainWindow
-from cranioz.ui.theme.service import ThemeName, ThemeService
+from cranioz.ui.theme.tokens import ThemeMode
 from cranioz.ui.tools.registry.tool_registry import ToolRegistry
 from cranioz.ui.workspace.workspace_spec import (
     PLACEHOLDER_EDITOR_CLASS,
@@ -58,7 +59,7 @@ def window(qtbot) -> MainWindow:
         actor="test-actor",
         editor_registry=editor_registry,
         tool_registry=ToolRegistry(),
-        theme_service=ThemeService(theme=ThemeName.DARK),
+        theme_service=make_theme_service(ThemeMode.DARK),
         scene_provider=scene_provider,
         domain_object_store=domain_object_store,
     )

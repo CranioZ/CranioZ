@@ -7,6 +7,7 @@ The resolver answers questions like:
 - Where is the root directory that contains all projects?
 - Where are the flow definitions stored?
 - Where is the cache stored?
+- Where is the user settings file stored?
 
 These paths are configured once at boot from ``paths.json`` and
 remain stable for the entire session.
@@ -42,6 +43,8 @@ DEFAULT_PROJECT_ROOT_NAME = "CranioZ"
 DEFAULT_PROJECTS_DIR_NAME = "Projects"
 DEFAULT_FLOWS_DIR_NAME = "Flows"
 DEFAULT_CACHE_DIR_NAME = "Cache"
+DEFAULT_SETTINGS_DIR_NAME = "Settings"
+DEFAULT_SETTINGS_FILE_NAME = "settings.json"
 
 
 class AppPathResolver:
@@ -56,6 +59,7 @@ class AppPathResolver:
         self._projects_root: Path | None = None
         self._flows_root: Path | None = None
         self._cache_root: Path | None = None
+        self._settings_root: Path | None = None
 
     # ----- Initialization -------------------------------------------
 
@@ -96,6 +100,12 @@ class AppPathResolver:
             field_name="cache_root",
             create=create,
         )
+        self._settings_root = self._resolve_dir(
+            configured=config.settings_root,
+            default=self._default_settings_root(),
+            field_name="settings_root",
+            create=create,
+        )
 
     # ----- Accessors ------------------------------------------------
 
@@ -123,6 +133,26 @@ class AppPathResolver:
         if self._cache_root is None:
             raise AppPathInaccessible("resolver is not initialized")
         return self._cache_root
+
+    @property
+    def settings_root(self) -> Path:
+        """Directory that contains the user settings file."""
+        if self._settings_root is None:
+            raise AppPathInaccessible("resolver is not initialized")
+        return self._settings_root
+
+    def user_settings_path(self) -> Path:
+        """Return the path to the user settings file.
+
+        The file itself may not exist yet; the directory that contains
+        it is guaranteed to exist. The file is created on the first
+        ``FilesystemSettingsService.save()`` call.
+
+        This is the file referenced by ``appearance.theme_mode`` (see
+        ``docs/architecture/appearance/themes-and-design-tokens.md``
+        §11.2) and by every other user-scoped preference.
+        """
+        return self.settings_root / DEFAULT_SETTINGS_FILE_NAME
 
     # ----- Path resolution ------------------------------------------
 
@@ -186,3 +216,7 @@ class AppPathResolver:
     @staticmethod
     def _default_cache_root() -> Path:
         return Path.home() / ".cranioz" / DEFAULT_CACHE_DIR_NAME
+
+    @staticmethod
+    def _default_settings_root() -> Path:
+        return Path.home() / ".cranioz" / DEFAULT_SETTINGS_DIR_NAME

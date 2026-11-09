@@ -20,30 +20,22 @@ def _paths_config(
     project_root: str | None = None,
     flows_root: str | None = None,
     cache_root: str | None = None,
+    settings_root: str | None = None,
 ) -> PathsConfig:
     return PathsConfig(
         project_root=project_root,
         flows_root=flows_root,
         cache_root=cache_root,
+        settings_root=settings_root,
     )
 
 
-def _initialize(
-    tmp_path: Path,
-    *,
-    project_root: str | None = None,
-    flows_root: str | None = None,
-    cache_root: str | None = None,
-) -> AppPathResolver:
-    """Build a resolver with all roots pointed at tmp_path subdirs.
-
-    Any root not overridden gets a tmp_path subdirectory, so tests
-    never touch the user's real home directory.
-    """
+def _initialize(tmp_path: Path) -> AppPathResolver:
     cfg = _paths_config(
-        project_root=project_root or str(tmp_path / "projects"),
-        flows_root=flows_root or str(tmp_path / "flows"),
-        cache_root=cache_root or str(tmp_path / "cache"),
+        project_root=str(tmp_path / "projects"),
+        flows_root=str(tmp_path / "flows"),
+        cache_root=str(tmp_path / "cache"),
+        settings_root=str(tmp_path / "settings"),
     )
     resolver = AppPathResolver()
     resolver.initialize(cfg)

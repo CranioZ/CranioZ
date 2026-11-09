@@ -28,6 +28,7 @@ pytest.importorskip("vtkmodules.qt")
 
 from pydicom.dataset import Dataset, FileMetaDataset
 from pydicom.uid import ExplicitVRLittleEndian, generate_uid
+from tests.conftest import make_theme_service
 
 from cranioz.application.commands.executor import CommandExecutor
 from cranioz.application.commands.in_memory_bus import InMemoryCommandBus
@@ -55,7 +56,7 @@ from cranioz.domain.scene.domain_object_store import DomainObjectStore
 from cranioz.ui.editors.editor_registry import EditorRegistry
 from cranioz.ui.editors.tomography.editor import TomographyEditor
 from cranioz.ui.main_window import MainWindow
-from cranioz.ui.theme.service import ThemeName, ThemeService
+from cranioz.ui.theme.tokens import ThemeMode
 from cranioz.ui.tools.builtin.log_tool import LogTool
 from cranioz.ui.tools.builtin.toggle_tool import ToggleTool
 from cranioz.ui.tools.registry.tool_registry import ToolRegistry
@@ -175,7 +176,7 @@ def window(qtbot) -> MainWindow:
         actor="test-actor",
         editor_registry=editor_registry,
         tool_registry=tool_registry,
-        theme_service=ThemeService(theme=ThemeName.DARK),
+        theme_service=make_theme_service(ThemeMode.DARK),
         command_dispatcher=command_dispatcher,
         command_bus=command_bus,
         scene_provider=scene_provider,

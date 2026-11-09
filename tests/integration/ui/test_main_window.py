@@ -22,6 +22,7 @@ from __future__ import annotations
 import pytest
 from PySide6.QtWidgets import QMessageBox, QStackedWidget
 from pytestqt.qtbot import QtBot
+from tests.conftest import make_theme_service
 
 from cranioz.application.event_bus import EventBus
 from cranioz.application.project.in_memory_project_repository import (
@@ -37,7 +38,7 @@ from cranioz.domain.project.project_id import ProjectId
 from cranioz.ui.editors.editor_registry import EditorRegistry
 from cranioz.ui.editors.tomography.editor import TomographyEditor
 from cranioz.ui.main_window import MainWindow
-from cranioz.ui.theme.service import ThemeName, ThemeService
+from cranioz.ui.theme.tokens import ThemeMode
 from cranioz.ui.tools.builtin.log_tool import LogTool
 from cranioz.ui.tools.builtin.toggle_tool import ToggleTool
 from cranioz.ui.tools.registry.tool_registry import ToolRegistry
@@ -75,7 +76,7 @@ def window(
     tool_registry = ToolRegistry()
     tool_registry.register("tool.log", LogTool)
     tool_registry.register("tool.toggle", ToggleTool)
-    theme_service = ThemeService(theme=ThemeName.DARK)
+    theme_service = make_theme_service(ThemeMode.DARK)
 
     w = MainWindow(
         catalog=catalog,

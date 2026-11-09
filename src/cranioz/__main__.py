@@ -9,37 +9,33 @@ Boot sequence:
 6. Initialize shared services (EventBus, CommandBus, CommandStack,
    CommandExecutor, TaskManager, TelemetrySink, ModuleRegistry).
 7. Initialize the project subsystem.
-8. Initialize the UI registries (editors, tools) and the theme service.
-9. Create and show the MainWindow.
-10. Start the Qt event loop.
+8. Initialize user settings (readable/writable, distinct from config).
+9. Initialize the UI registries (editors, tools) and the theme service.
+10. Compile and apply the theme (QSS) before the first window.
+11. Create and show the MainWindow.
+12. Start the Qt event loop.
 """
 
 from __future__ import annotations
 
+# Standard Library
 import getpass
 import logging
 import logging.config
 import os
 from pathlib import Path
 
+# Third-Party Libraries
 import vtk
 import yaml
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QSurfaceFormat
 from PySide6.QtWidgets import QApplication, QMessageBox
 
-# ----- VTK / OpenGL configuration ------------------------------------
-# These MUST run before the first QApplication is created. Qt reads
-# the global QSurfaceFormat and the AA_ShareOpenGLContexts attribute
-# exactly once, at application startup. If they are set after the
-# QApplication, they are silently ignored and QVTKRenderWindowInteractor
-# fails with a silent white widget (and, on some drivers, a
-# 0xC0000005 crash) on Windows.
-#
-# The Compatibility Profile (OpenGL 2.1) is mandatory for VTK 9 with
-# QVTKRenderWindowInteractor on Windows. The Core Profile (3.2), which
-# is PySide6's default, causes VTK to report success while producing
-# an empty render buffer. See the project's bug history for details.
+# ----- VTK / OpenGL configuration (CRITICAL: Must run before QApplication) -----
+# VTK 9 + PySide6 on Windows requires OpenGL 2.1 Compatibility Profile to avoid
+# white screens or crashes. Do not move below QApplication creation.
+
 vtk.vtkObject.GlobalWarningDisplayOff()
 os.environ.setdefault("VTK_DEFAULT_OPENGL_WINDOW", "vtkWin32OpenGLRenderWindow")
 
@@ -52,7 +48,11 @@ _fmt.setVersion(2, 1)
 _fmt.setProfile(QSurfaceFormat.OpenGLContextProfile.CompatibilityProfile)
 QSurfaceFormat.setDefaultFormat(_fmt)
 
-# Imports from cranioz.* (safe: QSurfaceFormat is already applied).
+# =====================================================================
+# Local Imports (cranioz.*)
+# =====================================================================
+
+# --- Application Layer (Commands, Events, Flows, and Projects) ---
 from cranioz import __version__  # noqa: E402
 from cranioz.application.commands.executor import CommandExecutor  # noqa: E402
 from cranioz.application.commands.in_memory_bus import InMemoryCommandBus  # noqa: E402
@@ -73,7 +73,11 @@ from cranioz.application.scene.scene_provider import (  # noqa: E402
 )
 from cranioz.config.loader import ConfigurationLoader  # noqa: E402
 from cranioz.config.schema import Config  # noqa: E402
+
+# --- Domain Layer ---
 from cranioz.domain.scene.domain_object_store import DomainObjectStore  # noqa: E402
+
+# --- Infrastructure: Application paths, settings, flows, i18n ---
 from cranioz.infrastructure.app.app_path_resolver import (  # noqa: E402
     AppPathInaccessible,
     AppPathResolver,
@@ -94,18 +98,32 @@ from cranioz.infrastructure.i18n.translation_service import (  # noqa: E402
 from cranioz.infrastructure.project.filesystem_project_repository import (  # noqa: E402
     FilesystemProjectRepository,
 )
+from cranioz.infrastructure.settings.filesystem_settings_service import (  # noqa: E402
+    FilesystemSettingsService,
+)
+from cranioz.infrastructure.settings.protocol import (  # noqa: E402
+    SettingsService,
+)
 from cranioz.infrastructure.tasks.qt_task_manager import QtTaskManager  # noqa: E402
 from cranioz.infrastructure.telemetry.logging_sink import (  # noqa: E402
     LoggingTelemetrySink,
 )
+
+# --- Modules ---
 from cranioz.modules.builtin import BUILTIN_MANIFESTS  # noqa: E402
 from cranioz.modules.registry.module_registry import (  # noqa: E402
     InMemoryModuleRegistry,
 )
+
+# --- User Interface: Editors ---
 from cranioz.ui.editors.editor_registry import EditorRegistry  # noqa: E402
 from cranioz.ui.editors.tomography.editor import TomographyEditor  # noqa: E402
+
+# --- User Interface: Main Window ---
 from cranioz.ui.main_window import MainWindow  # noqa: E402
-from cranioz.ui.theme.service import ThemeName, ThemeService  # noqa: E402
+from cranioz.ui.theme import ThemeMode, ThemeService  # noqa: E402
+
+# --- User Interface: Tools ---
 from cranioz.ui.tools.builtin.log_tool import LogTool  # noqa: E402
 from cranioz.ui.tools.builtin.toggle_tool import ToggleTool  # noqa: E402
 from cranioz.ui.tools.registry.tool_registry import ToolRegistry  # noqa: E402
@@ -209,18 +227,29 @@ def _build_ui_registries() -> tuple[EditorRegistry, ToolRegistry]:
     return editor_registry, tool_registry
 
 
-def _build_theme_service(config: Config) -> ThemeService:
-    """Build the theme service from configuration."""
+def _build_theme_service(
+    config: Config,
+    settings: SettingsService,
+) -> ThemeService:
+    """Build the theme service.
+
+    ``config.app.theme`` is the *initial default* used when
+    ``appearance.theme_mode`` is absent from the user settings. Once
+    the user chooses a theme, the persisted value wins.
+    """
     try:
-        theme_name = ThemeName(config.app.theme.lower())
+        default_mode = ThemeMode(config.app.theme.lower())
     except ValueError:
-        theme_name = ThemeName.DARK
+        default_mode = ThemeMode.DARK
         _logger.warning(
-            "unknown theme %r; falling back to %s",
+            "unknown theme %r in app.json; falling back to %s",
             config.app.theme,
-            theme_name.value,
+            default_mode.value,
         )
-    return ThemeService(theme=theme_name)
+    return ThemeService(
+        settings=settings,
+        default_mode=default_mode,
+    )
 
 
 def _build_flow_catalog(app_paths: AppPathResolver) -> FlowCatalog:
@@ -304,9 +333,17 @@ def main() -> int:
     _logger.debug("SceneProvider initialized: %r", scene_provider)
     _logger.debug("DomainObjectStore initialized: %r", domain_object_store)
 
+    # ----- User settings (readable/writable, distinct from config) ---
+    settings = FilesystemSettingsService(
+        path=app_paths.user_settings_path(),
+    )
+    _logger.debug("SettingsService initialized: %r", settings)
+
     # ----- UI services ------------------------------------------------
     editor_registry, tool_registry = _build_ui_registries()
-    theme_service = _build_theme_service(config)
+    theme_service = _build_theme_service(config, settings)
+    theme_service.compiler().apply(theme_service.compiled())
+    _logger.debug("ThemeService initialized and applied: %r", theme_service)
     actor = _resolve_actor()
 
     # ----- Flows ------------------------------------------------------

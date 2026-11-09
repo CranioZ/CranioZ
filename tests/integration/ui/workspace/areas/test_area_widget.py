@@ -18,9 +18,11 @@ from __future__ import annotations
 
 import pytest
 from PySide6.QtWidgets import QLabel, QSplitter, QTabWidget, QWidget
+from tests.conftest import make_theme_service
 
 from cranioz.ui.editors.builtin.test_editor import DummyEditor
-from cranioz.ui.theme.service import ThemeName, ThemeService
+from cranioz.ui.theme.service import ThemeService
+from cranioz.ui.theme.tokens import ThemeMode
 from cranioz.ui.toolbars.base import Toolbar
 from cranioz.ui.tools.builtin.log_tool import LogTool
 from cranioz.ui.tools.builtin.toggle_tool import ToggleTool
@@ -75,7 +77,7 @@ def tool_registry() -> ToolRegistry:
 @pytest.fixture
 def theme_service() -> ThemeService:
     """Default ThemeService (dark theme)."""
-    return ThemeService(theme=ThemeName.DARK)
+    return make_theme_service(ThemeMode.DARK)
 
 
 # ----- Empty Area ---------------------------------------------------

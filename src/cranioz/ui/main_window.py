@@ -51,11 +51,13 @@ Non-responsibilities (see main_window.md §9 and ADR-0006):
 
 from __future__ import annotations
 
+# Standard Library
 import logging
 import os
 import uuid
 from typing import TYPE_CHECKING
 
+# Third-Party Libraries
 from PySide6.QtWidgets import (
     QFileDialog,
     QMainWindow,
@@ -64,6 +66,10 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+# =====================================================================
+# Local Imports (cranioz.*)
+# =====================================================================
+# --- Application Layer (Commands, Events, Flows, and Projects) ---
 from cranioz.application.commands.base import CommandDispatchError
 from cranioz.application.flows.catalog import FlowCatalog
 from cranioz.application.project.project_catalog import ProjectCatalog
@@ -76,14 +82,22 @@ from cranioz.application.scene.commands.scene_commands import (
 from cranioz.application.scene.handlers.scene_handlers import (
     ImportDicomSeriesHandler,
 )
+
+# --- Domain Layer ---
 from cranioz.domain.project.project_id import ProjectId
+
+# --- Infrastructure & Configuration (Services, Scene Adapters, Themes, i18n) ---
 from cranioz.infrastructure.i18n.translation_service import TranslationService
 from cranioz.infrastructure.scene.scene_query_adapter import SceneQueryAdapter
+
+# --- User Interface: Editors ---
 from cranioz.ui.editors.editor_registry import EditorRegistry
 from cranioz.ui.editors.viewport_3d.mesh_debug_editor import (
     MESH_DEBUG_EDITOR_ID,
     MeshDebugEditor,
 )
+
+# --- User Interface: Tools & Workspace ---
 from cranioz.ui.home.home_page import HomePage
 from cranioz.ui.theme.service import ThemeService
 from cranioz.ui.tools.registry.tool_registry import ToolRegistry
@@ -105,6 +119,7 @@ from cranioz.ui.workspace.workspace_spec import (
     PLACEHOLDER_EDITOR_ID,
 )
 
+# --- Type Checking Imports ---
 if TYPE_CHECKING:
     from cranioz.application.commands.bus import CommandBus
     from cranioz.application.commands.dispatcher import CommandDispatcher
