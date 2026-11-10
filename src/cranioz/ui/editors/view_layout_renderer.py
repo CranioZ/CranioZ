@@ -64,6 +64,24 @@ class ViewLayoutRendererError(ValueError):
 class ViewLayoutRenderer:
     """Materializes a ViewLayoutSpec into Qt widgets."""
 
+    #: Minimum width for a VERTICAL Toolbar (LEFT/RIGHT). Wide enough
+    #: for the widest built-in label ("Toggle") with a 20px icon.
+    _VERTICAL_TOOLBAR_WIDTH: int = 80
+
+    #: Minimum height for a HORIZONTAL Toolbar (TOP/BOTTOM).
+    _HORIZONTAL_TOOLBAR_HEIGHT: int = 44
+
+    #: Minimum size for a View container. The parent QSplitter uses
+    #: this as the floor when distributing space; without it, the
+    #: container collapses to the sizeHint of its children (~49 px).
+    _VIEW_CONTAINER_MIN_SIZE: int = 200
+
+    #: Minimum size for a View's content widget. Without it, MPRView's
+    #: QLabel and the QVTKRenderWindowInteractor (before Initialize)
+    #: report 1x1 or 0x0 and the container has no usable content area.
+    _CONTENT_MIN_WIDTH: int = 200
+    _CONTENT_MIN_HEIGHT: int = 150
+
     def __init__(
         self,
         tool_registry: ToolRegistry,
@@ -158,6 +176,14 @@ class ViewLayoutRenderer:
         and it prevents the container (and its Toolbars) from being
         re-created (and leaked) every time a 2x2 grid or a split is
         re-reconciled.
+
+        Minimum size and Expanding size policy are essential: without
+        them, the parent ``QSplitter`` collapses the container to the
+        tiny sizeHint of its children (a Toolbar button, an empty
+        QLabel, a VTK widget whose minimum is 1x1). ``QSplitter``
+        respects ``sizePolicy`` when distributing available space;
+        ``setSizes()`` alone is ignored when the children report a
+        tiny effective minimum.
         """
         existing = self._view_containers.get(view.view_id)
         if existing is not None:
@@ -165,6 +191,18 @@ class ViewLayoutRenderer:
 
         container = QWidget()
         container.setObjectName(f"view_container.{view.view_id}")
+        # Minimum size is the floor; Expanding policy is what allows
+        # the QSplitter to actually give the container more than the
+        # floor. With only minimumSize, the QSplitter limits the
+        # child to that value and leaves the rest of the window blank.
+        container.setMinimumSize(
+            self._VIEW_CONTAINER_MIN_SIZE,
+            self._VIEW_CONTAINER_MIN_SIZE,
+        )
+        container.setSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Expanding,
+        )
 
         toolbars_by_position: dict[ToolbarPosition, list[Toolbar]] = {
             ToolbarPosition.TOP: [],
@@ -193,6 +231,11 @@ class ViewLayoutRenderer:
                 QSizePolicy.Policy.Fixed,
                 QSizePolicy.Policy.Expanding,
             )
+            # A VERTICAL Toolbar has a QVBoxLayout of buttons. Without
+            # a fixed width, the QHBoxLayout of the container would
+            # give it stretch and the buttons would stretch
+            # horizontally, eating the View's space.
+            toolbar.setFixedWidth(self._VERTICAL_TOOLBAR_WIDTH)
             outer.addWidget(toolbar, stretch=0)
 
         inner = QWidget(container)
@@ -205,10 +248,19 @@ class ViewLayoutRenderer:
                 QSizePolicy.Policy.Expanding,
                 QSizePolicy.Policy.Fixed,
             )
+            toolbar.setFixedHeight(self._HORIZONTAL_TOOLBAR_HEIGHT)
             inner_layout.addWidget(toolbar, stretch=0)
 
         content = view.content_widget()
         content.setParent(inner)
+        # Force the View's content to occupy meaningful space. MPRView's
+        # QLabel and the QVTKRenderWindowInteractor (before Initialize)
+        # report minimum sizes of 1x1 (or 0x0), which would collapse
+        # the container otherwise.
+        content.setMinimumSize(
+            self._CONTENT_MIN_WIDTH,
+            self._CONTENT_MIN_HEIGHT,
+        )
         inner_layout.addWidget(content, stretch=1)
 
         for toolbar in toolbars_by_position[ToolbarPosition.BOTTOM]:
@@ -216,6 +268,7 @@ class ViewLayoutRenderer:
                 QSizePolicy.Policy.Expanding,
                 QSizePolicy.Policy.Fixed,
             )
+            toolbar.setFixedHeight(self._HORIZONTAL_TOOLBAR_HEIGHT)
             inner_layout.addWidget(toolbar, stretch=0)
 
         outer.addWidget(inner, stretch=1)
@@ -225,12 +278,11 @@ class ViewLayoutRenderer:
                 QSizePolicy.Policy.Fixed,
                 QSizePolicy.Policy.Expanding,
             )
+            toolbar.setFixedWidth(self._VERTICAL_TOOLBAR_WIDTH)
             outer.addWidget(toolbar, stretch=0)
 
         self._view_containers[view.view_id] = container
         return container
-
-    # ----- 2x2 grid (unchanged from Sprint G) -----------------------
 
     @staticmethod
     def _is_2x2_grid(node: ViewLayoutSpec) -> bool:

@@ -398,7 +398,13 @@ class Viewport3DView(View):
 
         container = QWidget()
         container.setObjectName(f"viewport_3d.view.{self.view_id}")
-        container.setMinimumSize(1, 1)
+        # A Viewport3DView without a Volume/Mesh does not initialize the
+        # VTK interactor, so the QVTKRenderWindowInteractor reports a
+        # sizeHint of 0x0. Without a minimum size, a parent QSplitter
+        # (e.g. a bare AreaWidget or a MeshDebugEditor) would collapse
+        # the container to 0. 200x150 is the same floor used by
+        # ViewLayoutRenderer._CONTENT_MIN_WIDTH/_HEIGHT.
+        container.setMinimumSize(200, 150)
 
         container_layout = QVBoxLayout(container)
         container_layout.setContentsMargins(0, 0, 0, 0)
