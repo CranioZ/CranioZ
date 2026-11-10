@@ -45,7 +45,9 @@ def test_empty_title_raises() -> None:
 
 
 def test_visibility_mode_members() -> None:
-    expected = {"ALWAYS", "COLLAPSIBLE", "AUTO_HIDE", "HIDDEN"}
+    # ACTIVE_ONLY was added in ADR-0013 (revised) for View-level
+    # Toolbars, which are only visible when the owning View is active.
+    expected = {"ALWAYS", "COLLAPSIBLE", "AUTO_HIDE", "ACTIVE_ONLY", "HIDDEN"}
     actual = {member.name for member in ToolbarVisibilityMode}
     assert actual == expected
 

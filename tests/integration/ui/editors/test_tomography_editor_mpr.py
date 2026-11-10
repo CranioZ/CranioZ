@@ -25,6 +25,8 @@ import pytest
 pytest.importorskip("vtk")
 pytest.importorskip("vtkmodules.qt")
 
+from tests.conftest import make_icon_provider, make_theme_service
+
 from cranioz.application.scene.scene_query import InMemorySceneQuery
 from cranioz.domain.imaging.image_metadata import (
     ImageMetadata,
@@ -39,6 +41,10 @@ from cranioz.ui.editors.mpr_viewer.view import MPRView
 from cranioz.ui.editors.tomography.editor import TomographyEditor
 from cranioz.ui.editors.viewport_3d.presets import get_preset
 from cranioz.ui.editors.viewport_3d.view import Viewport3DView
+from cranioz.ui.theme.tokens import ThemeMode
+from cranioz.ui.tools.builtin.log_tool import LogTool
+from cranioz.ui.tools.builtin.toggle_tool import ToggleTool
+from cranioz.ui.tools.registry.tool_registry import ToolRegistry
 
 
 def _make_volume() -> Volume:
@@ -94,10 +100,27 @@ def _make_context(
     store: DomainObjectStore,
     scene_query: InMemorySceneQuery,
 ) -> EditorContext:
+    """Build an EditorContext complete enough for the TomographyEditor.
+
+    Per ADR-0013 §2.6, the Editor needs tool_registry, theme_service
+    and icon_provider to materialize its Views' Toolbars (via the
+    ViewLayoutRenderer). The store and scene_query provide the Volume
+    that the Editor resolves for its Views.
+    """
+    registry = ToolRegistry()
+    registry.register("tool.log", LogTool)
+    registry.register("tool.toggle", ToggleTool)
+
+    theme_service = make_theme_service(ThemeMode.DARK)
+    icon_provider = make_icon_provider(theme_service)
+
     return EditorContext(
         editor_id="editor.tomography",
         scene_query=scene_query,
         domain_object_store=store,
+        tool_registry=registry,
+        theme_service=theme_service,
+        icon_provider=icon_provider,
     )
 
 

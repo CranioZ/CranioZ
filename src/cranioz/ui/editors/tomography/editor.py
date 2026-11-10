@@ -51,8 +51,6 @@ _logger = logging.getLogger(__name__)
 
 
 class TomographyEditor(Editor):
-    """Hosts the 2x2 grid of MPR + 3D Views for tomography."""
-
     def __init__(
         self,
         editor_id: str = "editor.tomography",
@@ -65,7 +63,11 @@ class TomographyEditor(Editor):
         self._sagittal = MPRView(view_id="view.sagittal", view_type="sagittal")
         self._viewport = Viewport3DView(view_id="view.3d")
 
-        self._view_layout_renderer = ViewLayoutRenderer()
+        # ViewLayoutRenderer needs its dependencies at construction.
+        # They are pulled from the EditorContext (ADR-0002 hybrid
+        # model): the shell injects tool_registry, theme_service and
+        # icon_provider through the context.
+        self._view_layout_renderer: ViewLayoutRenderer | None = None
         self._content: QWidget | None = None
         self._context: EditorContext | None = None
         self._volume_applied = False
@@ -75,8 +77,25 @@ class TomographyEditor(Editor):
     def initialize(self, context: EditorContext) -> None:
         self._context = context
 
-    def activate(self) -> None:
-        self._try_apply_volume()
+    def _ensure_renderer(self) -> ViewLayoutRenderer:
+        if self._view_layout_renderer is not None:
+            return self._view_layout_renderer
+        ctx = self._context
+        if ctx is None:
+            raise RuntimeError(
+                "TomographyEditor.initialize() must be called before content_widget()"
+            )
+        if ctx.tool_registry is None or ctx.theme_service is None or ctx.icon_provider is None:
+            raise RuntimeError(
+                "TomographyEditor requires tool_registry, theme_service and "
+                "icon_provider in its EditorContext (ADR-0013 §2.6)."
+            )
+        self._view_layout_renderer = ViewLayoutRenderer(
+            tool_registry=ctx.tool_registry,
+            theme_service=ctx.theme_service,
+            icon_provider=ctx.icon_provider,
+        )
+        return self._view_layout_renderer
 
     def _tr(self, key: str, source: str) -> str:
         ctx = self._context
@@ -116,7 +135,8 @@ class TomographyEditor(Editor):
         if self._content is None:
             self._try_apply_volume()
             views_by_id: dict[str, View] = {v.view_id: v for v in self.views()}
-            self._content = self._view_layout_renderer.render(
+            renderer = self._ensure_renderer()
+            self._content = renderer.render(
                 self.view_layout(),
                 views_by_id,
             )
@@ -227,9 +247,12 @@ class TomographyEditor(Editor):
         if self._content is None:
             return
         super().dispose()  # disposes each View
-        self._view_layout_renderer.clear_cache()
+        renderer = self._view_layout_renderer
+        if renderer is not None:
+            renderer.clear_cache()
         self._content.setParent(None)
         self._content.deleteLater()
         self._content = None
+        self._view_layout_renderer = None
         self._context = None
         self._volume_applied = False

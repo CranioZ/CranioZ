@@ -4,15 +4,12 @@ A View is hosted by an Editor. It is not an Editor itself. The
 Editor coordinates its Views, manages its Toolbars, and handles
 the user's interaction with the underlying data.
 
-Examples of Views:
-- AxialView, CoronalView, SagittalView (2D MPR views)
-- Viewport3DView (3D view)
-- CurvedMPRView (panoramic reconstruction)
+A View may declare its own Toolbars and Control Panels (ADR-0013
+§2.6). Those are materialized around the View's content widget by
+the ViewLayoutRenderer, and are typically visible only when the
+View is active (ToolbarVisibilityMode.ACTIVE_ONLY).
 
-The View does NOT own the Scene. It reads the Scene through
-SceneQuery (read-only).
-
-See ADR-0013 §2.3.
+See ADR-0013 §2.3, §2.6.
 """
 
 from __future__ import annotations
@@ -22,6 +19,8 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from PySide6.QtWidgets import QWidget
+
+    from cranioz.ui.toolbars.specification import ToolbarSpec
 
 
 class View(ABC):
@@ -38,10 +37,43 @@ class View(ABC):
         self.view_id = view_id
         self.view_type = view_type
 
+    # ----- Content --------------------------------------------------
+
     @abstractmethod
     def content_widget(self) -> QWidget:
         """Return the widget that represents this View's content."""
         ...
+
+    # ----- Toolbars (ADR-0013 §2.6) --------------------------------
+
+    def toolbar_specs(self) -> list[ToolbarSpec]:
+        """Return the Toolbars declared by this View.
+
+        Empty by default. Views that own interaction tools override
+        this method to declare them (typically with
+        ``ToolbarVisibilityMode.ACTIVE_ONLY`` so that only the active
+        View shows its tools).
+
+        The declarations are materialized by the ViewLayoutRenderer
+        around ``content_widget()``; the View does not create the
+        Toolbar widgets itself.
+        """
+        return []
+
+    def control_panel_specs(self) -> list[ToolbarSpec]:
+        """Return the display Control Panels declared by this View.
+
+        A Control Panel is a specialized Toolbar (same ToolbarSpec
+        contract) used for display settings (window/level, LUT,
+        visibility, ...). Empty by default.
+
+        Semantically distinct from ``toolbar_specs()`` even though
+        both use the same data type: the distinction is a UI
+        convention, not an architectural one.
+        """
+        return []
+
+    # ----- Lifecycle ------------------------------------------------
 
     def dispose(self) -> None:
         """Release the View's resources. Idempotent."""

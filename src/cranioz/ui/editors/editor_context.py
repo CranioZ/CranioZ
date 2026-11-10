@@ -36,6 +36,7 @@ if TYPE_CHECKING:
     from cranioz.infrastructure.i18n.translation_service import TranslationService
     from cranioz.ui.icons.provider import IconProvider
     from cranioz.ui.theme.service import ThemeService
+    from cranioz.ui.tools.registry.tool_registry import ToolRegistry
 
 
 @dataclass(frozen=True)
@@ -50,6 +51,7 @@ class EditorContext:
     command_dispatcher: CommandDispatcher | None = None
     task_manager: TaskManager | None = None
     event_subscription: EventSubscription | None = None
+    tool_registry: ToolRegistry | None = None
 
     # --- Domain Layer ---
     domain_object_store: DomainObjectStore | None = None

@@ -3,24 +3,28 @@
 Materializes a ViewLayoutSpec (nested split tree of Views) into Qt
 widgets.
 
+Per ADR-0013 §2.4, the ViewLayoutRenderer is responsible for
+materializing the Views and their declared Toolbars/Control Panels
+(§2.6). Each Leaf is rendered as a container:
+
+    [View Toolbars LEFT] [View content] [View Control Panels RIGHT]
+    with optional TOP/BOTTOM slots around the content.
+
+The container is built by ``_build_view_container``. The Toolbars
+are created by the existing ``Toolbar`` widget (ui/toolbars/base.py),
+which needs a ``ToolRegistry``, a ``ThemeService``, and an
+``IconProvider``. All three are injected into the renderer.
+
 For the common 2x2 grid pattern (Split(VERTICAL) with two
-Split(HORIZONTAL) children, each with two leaves), the renderer uses
-a QGridLayout, so the row and column dividers are shared (dragging
-one divider moves all cells in that row/column). This is the
-expected behavior for a 2x2 grid.
+Split(HORIZONTAL) children, each with two leaves), the renderer
+still uses a shared QSplitter grid (see previous version). The
+Toolbar-wrapping happens at the Leaf level, inside
+``_build_view_container``.
 
-For other layouts (arbitrary N-ary split trees), the renderer falls
-back to nested QSplitters, each managing its own children
-independently. This is the expected behavior for non-grid layouts.
+The renderer is stateless with respect to a single render() call.
+It does not mutate the spec.
 
-This is the counterpart of LayoutRenderer (which materializes the
-Area Layout Tree). The ViewLayoutRenderer does the same job for the
-View Layout Tree inside an Editor.
-
-The renderer is stateless with respect to a single render() call: it
-can be reused across renders. It does not mutate the spec.
-
-See ADR-0013 §2.4.
+See ADR-0013 §2.4, §2.6.
 """
 
 from __future__ import annotations
@@ -30,7 +34,13 @@ from collections.abc import Callable
 from typing import cast
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QSplitter, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QHBoxLayout,
+    QSizePolicy,
+    QSplitter,
+    QVBoxLayout,
+    QWidget,
+)
 
 from cranioz.ui.editors.view import View
 from cranioz.ui.editors.view_layout_spec import (
@@ -38,6 +48,11 @@ from cranioz.ui.editors.view_layout_spec import (
     ViewLayoutSpec,
     ViewLayoutType,
 )
+from cranioz.ui.icons.provider import IconProvider
+from cranioz.ui.theme.service import ThemeService
+from cranioz.ui.toolbars.base import Toolbar
+from cranioz.ui.toolbars.specification import ToolbarPosition
+from cranioz.ui.tools.registry.tool_registry import ToolRegistry
 
 _logger = logging.getLogger(__name__)
 
@@ -49,10 +64,21 @@ class ViewLayoutRendererError(ValueError):
 class ViewLayoutRenderer:
     """Materializes a ViewLayoutSpec into Qt widgets."""
 
-    def __init__(self, on_splitter_moved: Callable[[], None] | None = None) -> None:
+    def __init__(
+        self,
+        tool_registry: ToolRegistry,
+        theme_service: ThemeService,
+        *,
+        icon_provider: IconProvider,
+        on_splitter_moved: Callable[[], None] | None = None,
+    ) -> None:
+        self._tool_registry = tool_registry
+        self._theme_service = theme_service
+        self._icon_provider = icon_provider
         self._splitter_moved_callback = on_splitter_moved
         self._split_widgets: dict[int, QSplitter] = {}
         self._grid_widgets: dict[int, QWidget] = {}
+        self._view_containers: dict[str, QWidget] = {}
 
     # ----- Public API -----------------------------------------------
 
@@ -75,6 +101,11 @@ class ViewLayoutRenderer:
             grid.setParent(None)
             grid.deleteLater()
         self._grid_widgets.clear()
+
+        for container in self._view_containers.values():
+            container.setParent(None)
+            container.deleteLater()
+        self._view_containers.clear()
 
     # ----- Internals ------------------------------------------------
 
@@ -102,13 +133,107 @@ class ViewLayoutRenderer:
         view = views_by_id.get(view_id)
         if view is None:
             raise ViewLayoutRendererError(f"no View registered for view_id: {view_id!r}")
-        return view.content_widget()
+        return self._build_view_container(view)
 
-    # ----- 2x2 grid (QGridLayout) -----------------------------------
+    def _build_view_container(self, view: View) -> QWidget:
+        """Wrap the View's content widget with its declared Toolbars.
+
+        Layout:
+
+            outer (QHBoxLayout)
+            ├── Toolbar(s) LEFT
+            ├── inner (QVBoxLayout)
+            │   ├── Toolbar(s) TOP
+            │   ├── view.content_widget() (stretch=1)
+            │   └── Toolbar(s) BOTTOM
+            └── Toolbar(s) RIGHT
+
+        The Container is what the Editor's View Layout Tree places in
+        its QSplitter. The View itself is unchanged; its Toolbars are
+        created here, by the ``Toolbar`` widget.
+
+        The container is cached by ``view.view_id``: rendering the same
+        View twice returns the same container instance. This is what the
+        cache test in ``test_view_layout_renderer_toolbars.py`` asserts,
+        and it prevents the container (and its Toolbars) from being
+        re-created (and leaked) every time a 2x2 grid or a split is
+        re-reconciled.
+        """
+        existing = self._view_containers.get(view.view_id)
+        if existing is not None:
+            return existing
+
+        container = QWidget()
+        container.setObjectName(f"view_container.{view.view_id}")
+
+        toolbars_by_position: dict[ToolbarPosition, list[Toolbar]] = {
+            ToolbarPosition.TOP: [],
+            ToolbarPosition.BOTTOM: [],
+            ToolbarPosition.LEFT: [],
+            ToolbarPosition.RIGHT: [],
+        }
+
+        specs = [*view.toolbar_specs(), *view.control_panel_specs()]
+        for spec in specs:
+            toolbar = Toolbar(
+                spec=spec,
+                registry=self._tool_registry,
+                theme=self._theme_service,
+                icon_provider=self._icon_provider,
+                parent=container,
+            )
+            toolbars_by_position[spec.position].append(toolbar)
+
+        outer = QHBoxLayout(container)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(0)
+
+        for toolbar in toolbars_by_position[ToolbarPosition.LEFT]:
+            toolbar.setSizePolicy(
+                QSizePolicy.Policy.Fixed,
+                QSizePolicy.Policy.Expanding,
+            )
+            outer.addWidget(toolbar, stretch=0)
+
+        inner = QWidget(container)
+        inner_layout = QVBoxLayout(inner)
+        inner_layout.setContentsMargins(0, 0, 0, 0)
+        inner_layout.setSpacing(0)
+
+        for toolbar in toolbars_by_position[ToolbarPosition.TOP]:
+            toolbar.setSizePolicy(
+                QSizePolicy.Policy.Expanding,
+                QSizePolicy.Policy.Fixed,
+            )
+            inner_layout.addWidget(toolbar, stretch=0)
+
+        content = view.content_widget()
+        content.setParent(inner)
+        inner_layout.addWidget(content, stretch=1)
+
+        for toolbar in toolbars_by_position[ToolbarPosition.BOTTOM]:
+            toolbar.setSizePolicy(
+                QSizePolicy.Policy.Expanding,
+                QSizePolicy.Policy.Fixed,
+            )
+            inner_layout.addWidget(toolbar, stretch=0)
+
+        outer.addWidget(inner, stretch=1)
+
+        for toolbar in toolbars_by_position[ToolbarPosition.RIGHT]:
+            toolbar.setSizePolicy(
+                QSizePolicy.Policy.Fixed,
+                QSizePolicy.Policy.Expanding,
+            )
+            outer.addWidget(toolbar, stretch=0)
+
+        self._view_containers[view.view_id] = container
+        return container
+
+    # ----- 2x2 grid (unchanged from Sprint G) -----------------------
 
     @staticmethod
     def _is_2x2_grid(node: ViewLayoutSpec) -> bool:
-        """Return True if node is a 2x2 grid pattern."""
         if node.type is not ViewLayoutType.SPLIT:
             return False
         if node.direction is not SplitDirection.VERTICAL:
@@ -160,7 +285,6 @@ class ViewLayoutRenderer:
             self._sync_splitters(top_splitter, bottom_splitter)
             self._grid_widgets[key] = container
 
-        # Find the outer splitter and the two inner splitters.
         outer_layout = cast(QVBoxLayout, container.layout())
         item = outer_layout.itemAt(0)
         if item is None:
@@ -169,7 +293,6 @@ class ViewLayoutRenderer:
         top_splitter = cast(QSplitter, outer_splitter.widget(0))
         bottom_splitter = cast(QSplitter, outer_splitter.widget(1))
 
-        # Clear existing children from the inner splitters.
         for splitter in (top_splitter, bottom_splitter):
             while splitter.count():
                 widget = splitter.widget(0)
@@ -193,13 +316,7 @@ class ViewLayoutRenderer:
 
         return container
 
-    def _sync_splitters(
-        self,
-        a: QSplitter,
-        b: QSplitter,
-    ) -> None:
-        """Synchronize two splitters: dragging one moves the other."""
-
+    def _sync_splitters(self, a: QSplitter, b: QSplitter) -> None:
         def _sync(source: QSplitter, target: QSplitter) -> None:
             target.blockSignals(True)
             target.setSizes(source.sizes())
@@ -228,7 +345,6 @@ class ViewLayoutRenderer:
         return splitter
 
     def _on_splitter_moved(self, pos: int, index: int) -> None:
-        """Notify the Editor that a splitter was moved."""
         if self._splitter_moved_callback is not None:
             self._splitter_moved_callback()
 
@@ -238,7 +354,6 @@ class ViewLayoutRenderer:
         node: ViewLayoutSpec,
         views_by_id: dict[str, View],
     ) -> None:
-        """Ensure the splitter's children match the spec's children."""
         expected: list[QWidget] = [self._render_node(child, views_by_id) for child in node.children]
 
         current: list[QWidget] = []
@@ -255,11 +370,9 @@ class ViewLayoutRenderer:
                 continue
             splitter.insertWidget(index, widget)
 
-        # Give every child the same stretch factor.
         for index in range(splitter.count()):
             splitter.setStretchFactor(index, 1)
 
-        # Force a perfectly equal distribution of sizes.
         if splitter.count() >= 2:
             n = splitter.count()
             base = 1000 // n

@@ -7,8 +7,17 @@ These tests verify:
 - The four Views are exposed via views().
 - The view_layout() is a 2x2 grid (nested ViewLayoutSpec).
 - The content_widget() materializes the four Views as nested QSplitters.
-- The Toolbars are declared with LEFT and RIGHT positions.
 - dispose() releases the Views and the content widget.
+
+Per ADR-0013 §2.6, the TomographyEditor no longer declares Editor-level
+Toolbars; its Views (MPRView, Viewport3DView) declare their own
+View-level Toolbars. The former ``test_editor_declares_two_toolbars``
+and ``test_editor_toolbars_have_left_and_right_positions`` tests moved
+to ``test_view_layout_renderer_toolbars.py`` and ``test_mpr_view.py``.
+
+The fixture builds a complete ``EditorContext`` (tool_registry,
+theme_service, icon_provider) so ``content_widget()`` can materialize
+the View Layout Tree via the ViewLayoutRenderer.
 """
 
 from __future__ import annotations
@@ -17,7 +26,9 @@ import pytest
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QSplitter
 from pytestqt.qtbot import QtBot
+from tests.conftest import make_icon_provider, make_theme_service
 
+from cranioz.ui.editors.editor_context import EditorContext
 from cranioz.ui.editors.mpr_viewer.view import MPRView
 from cranioz.ui.editors.tomography.editor import TomographyEditor
 from cranioz.ui.editors.view_layout_spec import (
@@ -26,12 +37,37 @@ from cranioz.ui.editors.view_layout_spec import (
     ViewLayoutType,
 )
 from cranioz.ui.editors.viewport_3d.view import Viewport3DView
-from cranioz.ui.toolbars.specification import ToolbarPosition
+from cranioz.ui.theme.tokens import ThemeMode
+from cranioz.ui.tools.builtin.log_tool import LogTool
+from cranioz.ui.tools.builtin.toggle_tool import ToggleTool
+from cranioz.ui.tools.registry.tool_registry import ToolRegistry
 
 
 @pytest.fixture
 def editor() -> TomographyEditor:
-    return TomographyEditor()
+    """Build a TomographyEditor with a complete EditorContext.
+
+    ADR-0013 §2.6: the Editor needs tool_registry, theme_service and
+    icon_provider to materialize its Views' Toolbars. The fixture
+    provides them, so ``content_widget()`` can render the View Layout
+    Tree.
+    """
+    registry = ToolRegistry()
+    registry.register("tool.log", LogTool)
+    registry.register("tool.toggle", ToggleTool)
+    theme_service = make_theme_service(ThemeMode.DARK)
+    icon_provider = make_icon_provider(theme_service)
+
+    e = TomographyEditor()
+    e.initialize(
+        EditorContext(
+            editor_id="editor.tomography",
+            tool_registry=registry,
+            theme_service=theme_service,
+            icon_provider=icon_provider,
+        )
+    )
+    return e
 
 
 # ----- Views --------------------------------------------------------
@@ -125,41 +161,28 @@ def test_content_widget_renders_nested_splitters(
     widget = editor.content_widget()
     qtbot.addWidget(widget)
 
-    # The root is a container (QWidget) with the grid.
     assert widget is not None
 
-    # Find the QSplitters inside the container.
+    # Find the QSplitters inside the container. The 2x2 grid has an
+    # outer vertical splitter and two inner horizontal splitters. The
+    # order returned by findChildren() is depth-first, so the outer
+    # splitter is first (it is the parent of the two inner ones).
     splitters = widget.findChildren(QSplitter)
     assert len(splitters) >= 1, "Expected at least one QSplitter in the grid"
 
-    # The outer splitter is vertical (divides rows).
-    outer = splitters[0]
-    assert outer.orientation() == Qt.Orientation.Vertical
-    assert outer.count() == 2
+    # Find the vertical splitter that divides the two rows.
+    vertical = next(
+        (s for s in splitters if s.orientation() == Qt.Orientation.Vertical),
+        None,
+    )
+    assert vertical is not None, "Expected a vertical QSplitter dividing the rows"
+    assert vertical.count() == 2
 
-    # Each row is a horizontal splitter (divides columns).
-    top_row = outer.widget(0)
-    bottom_row = outer.widget(1)
-    assert isinstance(top_row, QSplitter)
-    assert isinstance(bottom_row, QSplitter)
-    assert top_row.orientation() == Qt.Orientation.Horizontal
-    assert bottom_row.orientation() == Qt.Orientation.Horizontal
-
-
-# ----- Toolbars -----------------------------------------------------
-
-
-def test_editor_declares_two_toolbars(editor: TomographyEditor) -> None:
-    specs = editor.toolbar_specs()
-    assert len(specs) == 2
-
-
-def test_editor_toolbars_have_left_and_right_positions(
-    editor: TomographyEditor,
-) -> None:
-    specs = editor.toolbar_specs()
-    positions = {s.position for s in specs}
-    assert positions == {ToolbarPosition.LEFT, ToolbarPosition.RIGHT}
+    # Both rows are horizontal splitters.
+    for i in range(vertical.count()):
+        row = vertical.widget(i)
+        assert isinstance(row, QSplitter)
+        assert row.orientation() == Qt.Orientation.Horizontal
 
 
 # ----- Dispose ------------------------------------------------------
@@ -172,5 +195,6 @@ def test_dispose_releases_content(
     widget = editor.content_widget()
     qtbot.addWidget(widget)
     editor.dispose()
-    # After dispose, content_widget() creates a fresh widget.
-    # (We don't assert the exact identity; we just verify dispose does not raise.)
+    # After dispose, content_widget() would need to be recreated by
+    # calling content_widget() again. The important contract is that
+    # dispose() does not raise.

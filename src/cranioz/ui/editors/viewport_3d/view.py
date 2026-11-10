@@ -51,6 +51,12 @@ from cranioz.ui.editors.viewport_3d.presets import (
     VolumePreset,
     get_preset,
 )
+from cranioz.ui.toolbars.specification import (
+    ToolbarOrientation,
+    ToolbarPosition,
+    ToolbarSpec,
+    ToolbarVisibilityMode,
+)
 
 _DEFAULT_PRESET = "bone"
 _CBCT_PRESET = "cbct"
@@ -466,3 +472,29 @@ class Viewport3DView(View):
         volume_property.SetColor(color)
         volume_property.SetScalarOpacity(opacity)
         volume_property.SetScalarOpacityUnitDistance(1.0)
+
+    def toolbar_specs(self) -> list[ToolbarSpec]:
+        """Interaction tools: ROI, cut, paint, annotations."""
+        return [
+            ToolbarSpec(
+                toolbar_id=f"toolbar.{self.view_id}.tools",
+                title="3D Tools",
+                orientation=ToolbarOrientation.VERTICAL,
+                position=ToolbarPosition.LEFT,
+                tool_ids=("tool.log",),
+                visibility_mode=ToolbarVisibilityMode.ACTIVE_ONLY,
+            )
+        ]
+
+    def control_panel_specs(self) -> list[ToolbarSpec]:
+        """Display controls: preset, orientation, background."""
+        return [
+            ToolbarSpec(
+                toolbar_id=f"toolbar.{self.view_id}.display",
+                title="3D Display",
+                orientation=ToolbarOrientation.VERTICAL,
+                position=ToolbarPosition.RIGHT,
+                tool_ids=("tool.toggle",),
+                visibility_mode=ToolbarVisibilityMode.ACTIVE_ONLY,
+            )
+        ]

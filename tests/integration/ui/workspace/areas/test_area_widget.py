@@ -1,13 +1,19 @@
 """Integration tests for AreaWidget.
 
 The AreaWidget is the first widget in CranioZ that materializes the
-contents of a single Area: its Editors' Toolbars (inside each Editor)
-and their content widgets.
+contents of a single Area: the Editors' content widgets (and, inside
+each Editor, the View Layout Tree with its View-level Toolbars).
 
 Per ADR-0013, multiple Editors are organized in a QSplitter (the
-Editor Layout Tree), not a QTabWidget. The tests below validate this
-new behavior, as well as the placement of Toolbars inside the Editor
-(ADR-0002).
+Editor Layout Tree), not a QTabWidget.
+
+Per ADR-0013 §2.6, Toolbars are declared and materialized by the
+ViewLayoutRenderer inside each Editor, not by the AreaWidget. The
+DummyEditor used in these tests declares ToolbarSpecs but does not
+materialize them itself, so the AreaWidget contains no Toolbar.
+These tests therefore assert that no Toolbar appears at the Area
+level; the Toolbar materialization is covered by
+test_view_layout_renderer_toolbars.py.
 
 These tests use qtbot: an AreaWidget is a real QWidget, and the
 Editors it hosts (DummyEditor) return a QLabel as content. A
@@ -52,8 +58,9 @@ def _add_editor(
     """Create a DummyEditor, add it to the Area, and return it.
 
     The DummyEditor declares one ToolbarSpec with tool.log and
-    tool.toggle. This is enough to exercise Toolbar materialization
-    inside the AreaWidget.
+    tool.toggle. The AreaWidget does not materialize it (ADR-0013
+    §2.6); the DummyEditor does not use a ViewLayoutRenderer, so the
+    Toolbar remains a declaration only.
     """
     kwargs = {"editor_id": editor_id, "title": title or editor_id}
     if toolbar_orientation is not None:
@@ -169,30 +176,39 @@ def test_area_widget_renders_content_widget_of_single_editor(
     assert widget.isAncestorOf(content)
 
 
-def test_area_widget_renders_toolbars_of_single_editor(
+def test_area_widget_does_not_materialize_toolbars_of_single_editor(
     qtbot,
     tool_registry: ToolRegistry,
     theme_service: ThemeService,
     icon_provider: IconProvider,
 ) -> None:
+    """ADR-0013 §2.6: Toolbars are materialized by the Editor, not the Area.
+
+    The DummyEditor declares one ToolbarSpec but does not use a
+    ViewLayoutRenderer, so the Toolbar is not materialized anywhere.
+    The AreaWidget must not create Toolbars of its own.
+    """
     area = _area()
     _add_editor(area, "editor.patient")
 
     widget = AreaWidget(area, tool_registry, theme_service, icon_provider=icon_provider)
     qtbot.addWidget(widget)
 
-    toolbars = widget.findChildren(Toolbar)
-    assert len(toolbars) == 1
-    assert set(toolbars[0].tool_ids()) == {"tool.log", "tool.toggle"}
+    assert widget.findChildren(Toolbar) == []
 
 
-def test_area_widget_toolbar_is_inside_editor_container(
+def test_area_widget_editor_container_has_no_toolbar_children(
     qtbot,
     tool_registry: ToolRegistry,
     theme_service: ThemeService,
     icon_provider: IconProvider,
 ) -> None:
-    """Per ADR-0002, the Toolbar is inside the Editor, not beside it."""
+    """The Editor container exists (named) but has no Toolbar inside it.
+
+    Per ADR-0013 §2.6, Toolbars live inside the Editor's View Layout
+    Tree, not inside the Area-level Editor container. The container's
+    only child is the Editor's ``content_widget()``.
+    """
     area = _area()
     editor = _add_editor(area, "editor.a")
 
@@ -204,10 +220,10 @@ def test_area_widget_toolbar_is_inside_editor_container(
         f"area_widget.{area.area_id}.editor.{editor.editor_id}",
     )
     assert container is not None
+    assert container.isAncestorOf(editor.content_widget())
 
-    # The Toolbar is a descendant of the Editor container.
-    toolbars = container.findChildren(Toolbar)
-    assert len(toolbars) == 1
+    # No Toolbar was materialized by the AreaWidget.
+    assert container.findChildren(Toolbar) == []
 
 
 # ----- Multi-Editor Area --------------------------------------------
@@ -309,8 +325,8 @@ def test_area_widget_refresh_rebuilds_from_area(
     assert "empty" not in labels_after[0].text().lower()
     assert widget.isAncestorOf(editor.content_widget())
 
-    toolbars = widget.findChildren(Toolbar)
-    assert len(toolbars) == 1
+    # ADR-0013 §2.6: the AreaWidget does not materialize Toolbars.
+    assert widget.findChildren(Toolbar) == []
 
 
 def test_area_widget_refresh_idempotent(
@@ -330,4 +346,5 @@ def test_area_widget_refresh_idempotent(
     widget.refresh()
     toolbars_after = widget.findChildren(Toolbar)
 
-    assert len(toolbars_before) == len(toolbars_after) == 1
+    # Neither refresh produced Toolbars; the count is stable at zero.
+    assert toolbars_before == toolbars_after == []

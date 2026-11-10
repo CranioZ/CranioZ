@@ -208,6 +208,7 @@ class Workspace(QWidget):
                 "translation_service": self._translation_service,
                 "theme_service": self._theme_service,
                 "icon_provider": self._icon_provider,
+                "tool_registry": self._tool_registry,
             },
         )
 

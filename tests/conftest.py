@@ -30,6 +30,11 @@ except ImportError:  # pragma: no cover - VTK is optional
     QVTKRenderWindowInteractor = None  # type: ignore[assignment,misc]
     _HAS_VTK = False
 
+try:
+    import shiboken6
+except ImportError:  # pragma: no cover
+    shiboken6 = None
+
 # =====================================================================
 # Local Imports (cranioz.*)
 # =====================================================================
@@ -95,7 +100,6 @@ from cranioz.ui.workspace.workspace_spec import (
 )
 
 _logger = logging.getLogger(__name__)
-
 
 # =====================================================================
 # Factories
@@ -168,28 +172,27 @@ def qapp() -> QApplication:
 def _finalize_vtk_interactors() -> None:
     """Finalize every live QVTKRenderWindowInteractor after each test.
 
-    Without this, the VTK render window is destroyed by Qt after the
-    OpenGL context is already gone, producing a flood of
-    ``wglMakeCurrent failed ... code 6`` messages. Finalizing before
-    Qt's teardown releases the context cleanly.
+    The C++ side of a QVTKRenderWindowInteractor may already be destroyed
+    when the test's widgets are garbage-collected. Calling ``Finalize()``
+    on a destroyed C++ object is undefined behaviour (Windows raises
+    STATUS_HEAP_CORRUPTION). Use ``shiboken6.isValid`` to skip dead
+    wrappers, and skip the whole loop if shiboken6 is unavailable.
     """
     yield
     if not _HAS_VTK:
         return
+    if shiboken6 is None:
+        return
 
     for widget in QApplication.allWidgets():
-        if isinstance(widget, QVTKRenderWindowInteractor):
-            try:
-                widget.Finalize()
-            except Exception:
-                # Finalize can raise if the widget was already torn down
-                # by Qt. That is expected during teardown; log at debug
-                # so failures remain diagnosable without polluting output.
-                _logger.debug(
-                    "VTK Finalize failed for %r",
-                    widget,
-                    exc_info=True,
-                )
+        if not isinstance(widget, QVTKRenderWindowInteractor):
+            continue
+        if not shiboken6.isValid(widget):
+            continue
+        try:
+            widget.Finalize()
+        except RuntimeError:
+            _logger.debug("VTK Finalize failed for %r", widget, exc_info=True)
 
 
 # ----- Theme ---------------------------------------------------------

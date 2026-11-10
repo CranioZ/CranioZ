@@ -70,6 +70,12 @@ class ToolbarVisibilityMode(Enum):
         when the mouse leaves the zone. The user does not toggle
         it manually.
 
+    ACTIVE_ONLY
+        Visible only when the owning View is the active View of its
+        Editor (ADR-0013 §2.6). Used by View-level Toolbars to
+        maximize screen real estate when multiple Views are
+        visible simultaneously.
+
     HIDDEN
         Not visible by default. It can only be revealed by an
         explicit action (a menu, a shortcut, a command).
@@ -78,6 +84,7 @@ class ToolbarVisibilityMode(Enum):
     ALWAYS = "always"
     COLLAPSIBLE = "collapsible"
     AUTO_HIDE = "auto_hide"
+    ACTIVE_ONLY = "active_only"
     HIDDEN = "hidden"
 
 

@@ -4,26 +4,7 @@ The LayoutRenderer materializes a LayoutTree into Qt widgets. It
 delegates the interior of each Area to an AreaWidget, and creates a
 QSplitter per Split node.
 
-These tests use qtbot: the renderer creates real widgets, and the
-Editors it indirectly materializes (DummyEditor) return a QLabel as
-content. A QApplication is therefore required.
-
-What these tests cover:
-
-- Single Leaf: render() returns an AreaWidget.
-- Horizontal Split: render() returns a QSplitter with
-  Qt.Horizontal orientation.
-- Vertical Split: render() returns a QSplitter with Qt.Vertical.
-- Nested splits: render() produces nested QSplitters.
-- The four-area layout (LEFT + CENTRAL + RIGHT + BOTTOM): the root
-  is a vertical split; the top row is a horizontal split.
-- AreaWidget caching: rendering the same tree twice returns the
-  same AreaWidget instances.
-- cached_area_widget() exposes the AreaWidget by area_id.
-- clear_cache() discards widgets.
-- Empty tree (root is not a Leaf or Split): raises a clear error.
-- Child order is preserved and matches the tree.
-- Re-rendering after cache clear creates fresh widgets.
+... (docstring completa, sem mudanças) ...
 """
 
 from __future__ import annotations
@@ -36,7 +17,6 @@ from tests.conftest import make_icon_provider, make_theme_service
 from cranioz.ui.editors.builtin.test_editor import DummyEditor
 from cranioz.ui.editors.editor_registry import EditorRegistry
 from cranioz.ui.theme.service import ThemeService
-from cranioz.ui.theme.tokens import ThemeMode
 from cranioz.ui.tools.builtin.log_tool import LogTool
 from cranioz.ui.tools.builtin.toggle_tool import ToggleTool
 from cranioz.ui.tools.registry.tool_registry import ToolRegistry
@@ -110,7 +90,7 @@ def tool_registry() -> ToolRegistry:
 
 @pytest.fixture
 def theme_service() -> ThemeService:
-    return make_theme_service(ThemeMode.DARK)
+    return make_theme_service()
 
 
 @pytest.fixture

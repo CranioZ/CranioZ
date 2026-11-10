@@ -46,6 +46,12 @@ from PySide6.QtWidgets import (
 
 from cranioz.domain.imaging.volume import Volume
 from cranioz.ui.editors.view import View
+from cranioz.ui.toolbars.specification import (
+    ToolbarOrientation,
+    ToolbarPosition,
+    ToolbarSpec,
+    ToolbarVisibilityMode,
+)
 
 _logger = logging.getLogger(__name__)
 
@@ -297,3 +303,29 @@ class MPRView(View):
         self._image_label = image_label
         self._slice_label = slice_label
         self._slider = slider
+
+    def toolbar_specs(self) -> list[ToolbarSpec]:
+        """Interaction tools: window/level, zoom, pan, cursor."""
+        return [
+            ToolbarSpec(
+                toolbar_id=f"toolbar.{self.view_id}.tools",
+                title=f"{self.view_type.capitalize()} Tools",
+                orientation=ToolbarOrientation.VERTICAL,
+                position=ToolbarPosition.LEFT,
+                tool_ids=("tool.log",),  # placeholder until real tools land
+                visibility_mode=ToolbarVisibilityMode.ACTIVE_ONLY,
+            )
+        ]
+
+    def control_panel_specs(self) -> list[ToolbarSpec]:
+        """Display controls: LUT, ruler, crosshair."""
+        return [
+            ToolbarSpec(
+                toolbar_id=f"toolbar.{self.view_id}.display",
+                title=f"{self.view_type.capitalize()} Display",
+                orientation=ToolbarOrientation.VERTICAL,
+                position=ToolbarPosition.RIGHT,
+                tool_ids=("tool.toggle",),  # placeholder
+                visibility_mode=ToolbarVisibilityMode.ACTIVE_ONLY,
+            )
+        ]
