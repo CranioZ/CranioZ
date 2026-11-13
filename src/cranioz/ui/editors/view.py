@@ -73,6 +73,25 @@ class View(ABC):
         """
         return []
 
+    # ----- Activation ----------------------------------------------
+
+    def activation_widget(self) -> QWidget:
+        """Return the widget that receives activation events.
+
+        The ViewLayoutRenderer installs an event filter on this
+        widget to detect ``MouseButtonPress`` and ``FocusIn`` and
+        forward them to ``Editor.set_active_view``. The default is
+        ``content_widget()``, which is correct for Views whose
+        content widget is the interactive surface.
+
+        Views backed by a native ``QVTKRenderWindowInteractor`` MUST
+        override this method to return the interactor. Qt delivers
+        input events to the leaf widget under the cursor, so an
+        event filter installed on the container would never fire
+        for a click inside the VTK viewport.
+        """
+        return self.content_widget()
+
     # ----- Lifecycle ------------------------------------------------
 
     def dispose(self) -> None:

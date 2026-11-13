@@ -94,6 +94,7 @@ class TomographyEditor(Editor):
             tool_registry=ctx.tool_registry,
             theme_service=ctx.theme_service,
             icon_provider=ctx.icon_provider,
+            editor=self,
         )
         return self._view_layout_renderer
 
