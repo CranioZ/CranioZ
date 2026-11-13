@@ -156,3 +156,13 @@ def test_with_last_opened_sets_timestamp() -> None:
 
     assert new_md.last_opened_at == later
     assert md.last_opened_at is None
+
+def test_with_status_has_docstring() -> None:
+    """The method's docstring must be reachable via __doc__.
+
+    Regression: a stray `...` before the docstring prevented the
+    string literal from being treated as a docstring by the Python
+    runtime.
+    """
+    assert ProjectMetadata.with_status.__doc__ is not None
+    assert "status" in ProjectMetadata.with_status.__doc__
