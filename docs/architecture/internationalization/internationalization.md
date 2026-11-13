@@ -93,7 +93,7 @@ Example of `translations/pt-BR/tomography.json`:
 {
   "_metadata": {
     "module": "tomography",
-    "language": "pt-BR-BR",
+    "language": "pt-BR",
     "format_version": 1
   },
   "segmentation": {
