@@ -311,11 +311,31 @@ class Viewport3DView(View):
 
     def content_widget(self) -> QWidget:
         """Return the container widget for this view."""
+        # Create the VTK pipeline eagerly so that the
+        # QVTKRenderWindowInteractor exists before
+        # ViewLayoutRenderer.activation_widget() is called. The
+        # renderer installs its activation filter on the interactor,
+        # not on the container (see activation_widget below).
+        self._ensure_pipeline()
         self._ensure_container()
         container = self._container
         if container is None:  # pragma: no cover - defensive
             raise RuntimeError("Viewport3DView container was not initialized correctly")
         return container
+
+    def activation_widget(self) -> QWidget:
+        """Return the VTK interactor as the activation surface.
+
+        ``ViewLayoutRenderer`` installs its event filter here. The
+        interactor is the leaf widget under the cursor when the user
+        clicks inside the 3D viewport, so this is the only widget
+        that actually receives ``MouseButtonPress``.
+        """
+        self._ensure_pipeline()
+        interactor = self._interactor
+        if interactor is not None:
+            return interactor
+        return self.content_widget()
 
     def dispose(self) -> None:
         """Release the VTK pipeline and the Qt widgets. Idempotent."""

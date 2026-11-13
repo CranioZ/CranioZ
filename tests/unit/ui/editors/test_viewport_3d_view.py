@@ -95,14 +95,22 @@ def test_viewport_3d_rejects_unknown_preset(qtbot) -> None:
 
 @pytest.mark.qt
 def test_viewport_3d_content_widget_returns_container(qtbot) -> None:
+    """content_widget() must eagerly create the VTK pipeline.
+
+    Block 4: ``content_widget()`` calls ``_ensure_pipeline()`` so that
+    the ``QVTKRenderWindowInteractor`` exists before
+    ``ViewLayoutRenderer`` installs its activation filter on it. The
+    renderer is therefore non-None immediately after the first
+    ``content_widget()`` call, even before any volume is attached.
+    """
     view = Viewport3DView(view_id="view.3d")
     widget = view.content_widget()
     qtbot.addWidget(widget)
     assert widget is not None
-    # The VTK pipeline is lazy: it is created on the first set_volume(),
-    # so renderer is None until a volume is attached.
-    assert not view.has_volume
-    assert view.renderer is None
+    # The pipeline exists (interactor + renderer), but no volume is
+    # attached yet.
+    assert view.has_volume is False
+    assert view.renderer is not None
 
 
 @pytest.mark.qt

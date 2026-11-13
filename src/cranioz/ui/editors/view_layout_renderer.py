@@ -23,6 +23,22 @@ the Leaf level, inside ``_build_view_container``.
 The renderer is stateless with respect to a single render() call.
 It does not mutate the spec.
 
+Active-View flow (Block 4)
+--------------------------
+
+When the renderer is constructed with an ``editor``, it installs an
+event filter on each View's ``activation_widget()``. Mouse presses
+and focus-in events forward to ``editor.set_active_view(view_id)``.
+The Editor's ``active_view_changed`` signal is connected to
+``_on_active_view_changed``, which toggles the ``ACTIVE_ONLY``
+Toolbars of each View: active View's toolbars are emphasized, the
+others are dimmed. Toolbars with other visibility modes are
+unaffected (``Toolbar.set_active`` is a no-op for them).
+
+If ``editor`` is ``None`` (e.g. in tests that only verify
+materialization), the filter is not installed and the ACTIVE_ONLY
+policy is not applied.
+
 See ADR-0013 §2.4, §2.6.
 """
 
@@ -32,7 +48,7 @@ import logging
 from collections.abc import Callable
 from typing import cast
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QEvent, QObject, Qt
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QSizePolicy,
@@ -41,6 +57,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from cranioz.ui.editors.base_editor import Editor
 from cranioz.ui.editors.view import View
 from cranioz.ui.editors.view_layout_spec import (
     SplitDirection,
@@ -50,7 +67,10 @@ from cranioz.ui.editors.view_layout_spec import (
 from cranioz.ui.icons.provider import IconProvider
 from cranioz.ui.theme.service import ThemeService
 from cranioz.ui.toolbars.base import Toolbar
-from cranioz.ui.toolbars.specification import ToolbarPosition
+from cranioz.ui.toolbars.specification import (
+    ToolbarPosition,
+    ToolbarVisibilityMode,
+)
 from cranioz.ui.tools.registry.tool_registry import ToolRegistry
 
 _logger = logging.getLogger(__name__)
@@ -58,6 +78,31 @@ _logger = logging.getLogger(__name__)
 
 class ViewLayoutRendererError(ValueError):
     """Raised when the ViewLayoutRenderer cannot materialize a spec."""
+
+
+class _ViewActivationFilter(QObject):
+    """Event filter that forwards activation events to a callback.
+
+    Installed on a View's ``activation_widget()``. Detects
+    ``MouseButtonPress`` and ``FocusIn`` and calls the callback with
+    the view_id. Always returns False so that the event continues to
+    propagate (the View's own handlers must keep working; the filter
+    only observes).
+    """
+
+    _ACTIVATION_EVENTS = frozenset(
+        {QEvent.Type.MouseButtonPress, QEvent.Type.FocusIn}
+    )
+
+    def __init__(self, view_id: str, callback: Callable[[str], None]) -> None:
+        super().__init__()
+        self._view_id = view_id
+        self._callback = callback
+
+    def eventFilter(self, obj: QObject, event: QEvent) -> bool:  # noqa: N802
+        if event.type() in self._ACTIVATION_EVENTS:
+            self._callback(self._view_id)
+        return False
 
 
 class ViewLayoutRenderer:
@@ -88,14 +133,21 @@ class ViewLayoutRenderer:
         *,
         icon_provider: IconProvider,
         on_splitter_moved: Callable[[], None] | None = None,
+        editor: Editor | None = None,
     ) -> None:
         self._tool_registry = tool_registry
         self._theme_service = theme_service
         self._icon_provider = icon_provider
         self._splitter_moved_callback = on_splitter_moved
+        self._editor = editor
         self._split_widgets: dict[int, QSplitter] = {}
         self._grid_widgets: dict[int, QWidget] = {}
         self._view_containers: dict[str, QWidget] = {}
+        self._view_filters: dict[str, _ViewActivationFilter] = {}
+        self._view_filter_targets: dict[str, QWidget] = {}
+        self._toolbars_by_view: dict[str, list[Toolbar]] = {}
+        if editor is not None:
+            editor.active_view_changed.connect(self._on_active_view_changed)
 
     # ----- Public API -----------------------------------------------
 
@@ -109,6 +161,20 @@ class ViewLayoutRenderer:
 
     def clear_cache(self) -> None:
         """Discard all cached widgets."""
+        # Remove event filters first: the widgets may be destroyed
+        # below, and removeEventFilter on a dead C++ object raises
+        # RuntimeError.
+        for view_id, view_filter in self._view_filters.items():
+            widget = self._view_filter_targets.get(view_id)
+            if widget is not None:
+                try:
+                    widget.removeEventFilter(view_filter)
+                except RuntimeError:
+                    pass
+        self._view_filters.clear()
+        self._view_filter_targets.clear()
+        self._toolbars_by_view.clear()
+
         for splitter in self._split_widgets.values():
             splitter.setParent(None)
             splitter.deleteLater()
@@ -183,6 +249,10 @@ class ViewLayoutRenderer:
         respects ``sizePolicy`` when distributing available space;
         ``setSizes()`` alone is ignored when the children report a
         tiny effective minimum.
+
+        Block 4: after building the container, the renderer indexes
+        the Toolbars by View and (if an Editor was injected) installs
+        the activation filter on the View's ``activation_widget()``.
         """
         existing = self._view_containers.get(view.view_id)
         if existing is not None:
@@ -202,6 +272,12 @@ class ViewLayoutRenderer:
             QSizePolicy.Policy.Expanding,
             QSizePolicy.Policy.Expanding,
         )
+        # The container must be focusable so that FocusIn reaches the
+        # event filter installed on the activation widget. (For Views
+        # whose activation widget is the container itself, this is
+        # sufficient; for Views backed by a VTK interactor, the
+        # interactor's own focus policy applies.)
+        container.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
 
         toolbars_by_position: dict[ToolbarPosition, list[Toolbar]] = {
             ToolbarPosition.TOP: [],
@@ -279,6 +355,33 @@ class ViewLayoutRenderer:
             )
             toolbar.setFixedWidth(self._VERTICAL_TOOLBAR_WIDTH)
             outer.addWidget(toolbar, stretch=0)
+
+        # ----- Block 4: index Toolbars, set initial state, install filter
+
+        all_toolbars: list[Toolbar] = []
+        for tb_list in toolbars_by_position.values():
+            all_toolbars.extend(tb_list)
+        self._toolbars_by_view[view.view_id] = all_toolbars
+
+        # ACTIVE_ONLY toolbars start inactive: the Editor starts with
+        # no active View (Editor.active_view_id is None), so no View's
+        # toolbars should be emphasized until the user activates one.
+        for tb in all_toolbars:
+            if tb.spec.visibility_mode is ToolbarVisibilityMode.ACTIVE_ONLY:
+                tb.set_active(False)
+
+        # Install the activation filter on the View's activation
+        # widget. For most Views this is the content widget; for
+        # Viewport3DView it is the QVTKRenderWindowInteractor, which
+        # is the leaf that receives MouseButtonPress.
+        if self._editor is not None:
+            activation_widget = view.activation_widget()
+            activation_filter = _ViewActivationFilter(
+                view.view_id, self._on_view_activated
+            )
+            activation_widget.installEventFilter(activation_filter)
+            self._view_filters[view.view_id] = activation_filter
+            self._view_filter_targets[view.view_id] = activation_widget
 
         self._view_containers[view.view_id] = container
         return container
@@ -413,6 +516,32 @@ class ViewLayoutRenderer:
     def _on_splitter_moved(self, pos: int, index: int) -> None:
         if self._splitter_moved_callback is not None:
             self._splitter_moved_callback()
+
+    # ----- Active-View forwarding (Block 4) -------------------------
+
+    def _on_view_activated(self, view_id: str) -> None:
+        """Forward a View activation to the Editor.
+
+        Called by the event filter when the user clicks or focuses a
+        View. The Editor decides whether to emit
+        ``active_view_changed`` (it is idempotent for the same id).
+        """
+        if self._editor is None:
+            return
+        self._editor.set_active_view(view_id)
+
+    def _on_active_view_changed(self, view_id: str | None) -> None:
+        """Apply the ACTIVE_ONLY policy to every Toolbar.
+
+        ``set_active`` is a no-op on non-ACTIVE_ONLY Toolbars, so it is
+        safe to call on every Toolbar regardless of its visibility mode.
+        """
+        for vid, toolbars in self._toolbars_by_view.items():
+            active = vid == view_id
+            for toolbar in toolbars:
+                toolbar.set_active(active)
+
+    # ----- Internals ------------------------------------------------
 
     def _reconcile_children(
         self,
