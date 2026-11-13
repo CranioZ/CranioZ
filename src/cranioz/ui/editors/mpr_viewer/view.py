@@ -219,7 +219,7 @@ class MPRView(View):
             arr.strides[0],
             QImage.Format.Format_Grayscale8,
         )
-        q_image = q_image.mirrored(False, True)
+        q_image = q_image.flipped(Qt.Orientation.Vertical)
 
         pixmap = QPixmap.fromImage(q_image)
         image_label.setPixmap(pixmap)

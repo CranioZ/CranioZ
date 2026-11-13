@@ -305,3 +305,65 @@ def test_clear_cache_discards_splitters(
     second = renderer.render(spec, views)
     qtbot.addWidget(second)
     assert isinstance(second, QSplitter)
+
+
+def test_render_2x2_grid_container_expands(
+    qtbot: QtBot,
+    renderer: ViewLayoutRenderer,
+    views: dict[str, View],
+) -> None:
+    """The grid container must use Expanding policy (G2 polish).
+
+    Without Expanding, the QVBoxLayout of the AreaWidget limits the
+    grid to its sizeHint, leaving ~200 px of unused space.
+    """
+    from PySide6.QtWidgets import QSizePolicy
+
+    spec = ViewLayoutSpec.split(
+        SplitDirection.VERTICAL,
+        (
+            ViewLayoutSpec.split(
+                SplitDirection.HORIZONTAL,
+                (ViewLayoutSpec.leaf("view.a"), ViewLayoutSpec.leaf("view.b")),
+            ),
+            ViewLayoutSpec.split(
+                SplitDirection.HORIZONTAL,
+                (ViewLayoutSpec.leaf("view.c"), ViewLayoutSpec.leaf("view.d")),
+            ),
+        ),
+    )
+    root = renderer.render(spec, views)
+    qtbot.addWidget(root)
+
+    assert root.sizePolicy().horizontalPolicy() == QSizePolicy.Policy.Expanding
+    assert root.sizePolicy().verticalPolicy() == QSizePolicy.Policy.Expanding
+
+
+def test_render_2x2_outer_splitter_expands(
+    qtbot: QtBot,
+    renderer: ViewLayoutRenderer,
+    views: dict[str, View],
+) -> None:
+    """The outer QSplitter of the 2x2 grid must use Expanding policy."""
+    from PySide6.QtWidgets import QSizePolicy
+
+    spec = ViewLayoutSpec.split(
+        SplitDirection.VERTICAL,
+        (
+            ViewLayoutSpec.split(
+                SplitDirection.HORIZONTAL,
+                (ViewLayoutSpec.leaf("view.a"), ViewLayoutSpec.leaf("view.b")),
+            ),
+            ViewLayoutSpec.split(
+                SplitDirection.HORIZONTAL,
+                (ViewLayoutSpec.leaf("view.c"), ViewLayoutSpec.leaf("view.d")),
+            ),
+        ),
+    )
+    root = renderer.render(spec, views)
+    qtbot.addWidget(root)
+
+    outer_splitter = root.findChild(QSplitter)
+    assert outer_splitter is not None
+    assert outer_splitter.sizePolicy().horizontalPolicy() == QSizePolicy.Policy.Expanding
+    assert outer_splitter.sizePolicy().verticalPolicy() == QSizePolicy.Policy.Expanding

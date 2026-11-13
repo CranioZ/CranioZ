@@ -83,7 +83,11 @@ class Toolbar(QWidget):
         )
         self._layout.setContentsMargins(4, 4, 4, 4)
         self._layout.setSpacing(4)
-        self._layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        # Align buttons to the top of a VERTICAL Toolbar (and to the
+        # left of a HORIZONTAL Toolbar). Without this, the default
+        # alignment centers the buttons vertically, which looks
+        # disconnected from the top edge of the View.
+        self._layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         for tool_id in spec.tool_ids:
             self._append_tool(tool_id)

@@ -256,3 +256,26 @@ def test_unknown_tool_id_raises(
         assert "tool.unknown" in str(exc)
     else:
         raise AssertionError("expected KeyError for unknown tool_id")
+
+def test_vertical_toolbar_buttons_align_to_top(
+    toolbar_factory,
+    make_toolbar_spec,
+) -> None:
+    """Buttons must align to the top of a VERTICAL Toolbar (G2 polish).
+
+    Without AlignTop, the default alignment centers the buttons
+    vertically, which looks disconnected from the top edge of the
+    View.
+    """
+    from PySide6.QtCore import Qt
+    from cranioz.ui.toolbars.specification import ToolbarOrientation
+
+    spec = make_toolbar_spec(
+        orientation=ToolbarOrientation.VERTICAL,
+        tool_ids=("tool.log",),
+    )
+    toolbar = toolbar_factory(spec)
+
+    layout = toolbar.layout()
+    assert layout is not None
+    assert layout.alignment() & Qt.AlignmentFlag.AlignTop

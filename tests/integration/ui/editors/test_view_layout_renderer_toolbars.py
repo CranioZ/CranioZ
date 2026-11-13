@@ -276,6 +276,44 @@ def test_clear_cache_disposes_view_containers(
 
 
 # ---------------------------------------------------------------------
+# ViewLayoutRenderer — G2 polish (Toolbar width)
+# ---------------------------------------------------------------------
+
+
+def test_left_toolbar_has_fixed_96_width(
+    qtbot: QtBot,
+    renderer: ViewLayoutRenderer,
+) -> None:
+    """LEFT/RIGHT Toolbars must be 96 px wide (G2 polish).
+
+    The width fits "[? Toggle]" without truncation. Before the polish,
+    it was 80 px, which cut "Toggle" to "Toggl".
+    """
+    view = FakeView("view.test")
+    spec = ViewLayoutSpec.leaf("view.test")
+
+    container = renderer.render(spec, {"view.test": view})
+    qtbot.addWidget(container)
+
+    left_toolbar = next(
+        tb
+        for tb in container.findChildren(Toolbar)
+        if tb.spec.toolbar_id == "toolbar.view.test.tools"
+    )
+    right_toolbar = next(
+        tb
+        for tb in container.findChildren(Toolbar)
+        if tb.spec.toolbar_id == "toolbar.view.test.display"
+    )
+
+    # Both LEFT and RIGHT Toolbars must have the fixed 96 px width.
+    assert left_toolbar.minimumWidth() == 96
+    assert left_toolbar.maximumWidth() == 96
+    assert right_toolbar.minimumWidth() == 96
+    assert right_toolbar.maximumWidth() == 96
+
+
+# ---------------------------------------------------------------------
 # Separation from AreaLayoutRenderer
 # ---------------------------------------------------------------------
 

@@ -17,9 +17,8 @@ which needs a ``ToolRegistry``, a ``ThemeService``, and an
 
 For the common 2x2 grid pattern (Split(VERTICAL) with two
 Split(HORIZONTAL) children, each with two leaves), the renderer
-still uses a shared QSplitter grid (see previous version). The
-Toolbar-wrapping happens at the Leaf level, inside
-``_build_view_container``.
+still uses a shared QSplitter grid. The Toolbar-wrapping happens at
+the Leaf level, inside ``_build_view_container``.
 
 The renderer is stateless with respect to a single render() call.
 It does not mutate the spec.
@@ -66,7 +65,7 @@ class ViewLayoutRenderer:
 
     #: Minimum width for a VERTICAL Toolbar (LEFT/RIGHT). Wide enough
     #: for the widest built-in label ("Toggle") with a 20px icon.
-    _VERTICAL_TOOLBAR_WIDTH: int = 80
+    _VERTICAL_TOOLBAR_WIDTH: int = 96
 
     #: Minimum height for a HORIZONTAL Toolbar (TOP/BOTTOM).
     _HORIZONTAL_TOOLBAR_HEIGHT: int = 44
@@ -313,6 +312,14 @@ class ViewLayoutRenderer:
         if container is None:
             container = QWidget()
             container.setObjectName(f"view_layout_grid_{key}")
+            # Expanding policy lets the grid fill the entire
+            # AreaWidget. Without it, the QVBoxLayout of the
+            # AreaWidget limits the grid to its sizeHint, leaving
+            # ~200 px of unused space at the bottom.
+            container.setSizePolicy(
+                QSizePolicy.Policy.Expanding,
+                QSizePolicy.Policy.Expanding,
+            )
 
             outer_layout = QVBoxLayout(container)
             outer_layout.setContentsMargins(0, 0, 0, 0)
@@ -321,6 +328,13 @@ class ViewLayoutRenderer:
             outer_splitter = QSplitter(Qt.Orientation.Vertical)
             outer_splitter.setObjectName(f"view_layout_grid_{key}_rows")
             outer_splitter.setChildrenCollapsible(False)
+            # Same reasoning as the container: the splitter must
+            # expand, otherwise it limits the grid to the sizeHint of
+            # its rows.
+            outer_splitter.setSizePolicy(
+                QSizePolicy.Policy.Expanding,
+                QSizePolicy.Policy.Expanding,
+            )
 
             top_splitter = QSplitter(Qt.Orientation.Horizontal)
             top_splitter.setObjectName(f"view_layout_grid_{key}_top")
