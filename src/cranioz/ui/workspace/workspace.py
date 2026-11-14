@@ -24,6 +24,11 @@ Responsibilities:
   SceneQuery, EventSubscription, TranslationService, and IconProvider
   to the Editors it hosts (ADR-0011, ADR-0012, ADR-0007, ADR-0013,
   Sprint B, Sprint F).
+- Apply the default percentage-based sizes to the splitters (Block
+  5.5). Left = 20%, Right = 25%, Bottom = 20%, Central = fill. The
+  Central Area never drops below the Top Bar's dynamic minimum
+  (``TopOverlay.minimum_width()``). Persistence of the user's
+  custom sizes is Phase 4.5 (ADR-0010).
 
 Non-responsibilities:
 
@@ -43,9 +48,9 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QTimer
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QResizeEvent, QShowEvent
-from PySide6.QtWidgets import QVBoxLayout, QWidget
+from PySide6.QtWidgets import QSplitter, QVBoxLayout, QWidget
 
 from cranioz.application.project.project_context import ProjectContext
 from cranioz.ui.editors.editor_registry import EditorRegistry
@@ -85,6 +90,12 @@ class WorkspaceError(RuntimeError):
 
 class Workspace(QWidget):
     """The Workspace facade."""
+
+    #: Block 5.5: default percentages applied on the first render.
+    #: Persistence of user-dragged sizes is Phase 4.5 (ADR-0010).
+    _LEFT_RATIO: float = 0.20
+    _RIGHT_RATIO: float = 0.25
+    _BOTTOM_RATIO: float = 0.20
 
     def __init__(
         self,
@@ -229,7 +240,12 @@ class Workspace(QWidget):
         # 6. Hide Left, Right and Bottom (Central is always visible).
         self._hide_lateral_areas_by_default()
 
-        # 7. Position overlays after the layout is computed.
+        # 7. Apply the default percentage-based sizes (Block 5.5).
+        #    Deferred to the next event loop so the widget tree has
+        #    real geometries.
+        QTimer.singleShot(0, self._apply_default_splitter_sizes)
+
+        # 8. Position overlays after the layout is computed.
         QTimer.singleShot(0, self._reposition_overlays)
 
     def clear(self) -> None:
@@ -347,7 +363,10 @@ class Workspace(QWidget):
             if widget is not None:
                 widget.setVisible(visible)
 
-        self._layout_renderer.refresh_splitter_sizes()
+        # Block 5.5: reapply percentage-based sizes now that the
+        # visible set changed. Deferred so Qt has processed the
+        # visibility change before we distribute space.
+        QTimer.singleShot(0, self._apply_default_splitter_sizes)
         self._reposition_overlays()
 
     def reload_volume(self) -> None:
@@ -381,14 +400,143 @@ class Workspace(QWidget):
 
     def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802
         super().resizeEvent(event)
+        # Block 5.5: the percentages are relative to the current
+        # window size, so the splitter sizes must be recomputed on
+        # every resize. Deferred so Qt completes the layout pass
+        # before we query widget widths.
+        QTimer.singleShot(0, self._apply_default_splitter_sizes)
         self._reposition_overlays()
 
     def showEvent(self, event: QShowEvent) -> None:  # noqa: N802
         """Reposition overlays after the workspace is shown."""
         super().showEvent(event)
+        QTimer.singleShot(0, self._apply_default_splitter_sizes)
         QTimer.singleShot(0, self._reposition_overlays)
 
     # ----- Internals ------------------------------------------------
+
+    def _apply_default_splitter_sizes(self) -> None:
+        """Apply the default percentage-based sizes to the splitters.
+
+        Left = 20%, Right = 25%, Bottom = 20%. Central is the fill:
+        the remainder of the available space, computed as
+        ``total - left - right`` (horizontal) and
+        ``total - bottom`` (vertical). Central is never given a
+        percentage directly; it always fills what is left.
+
+        The Central Area cannot be squeezed below the Top Bar's
+        dynamic minimum (``TopOverlay.minimum_width()``). If the
+        requested lateral sizes would leave less than that for
+        Central, the lateral sizes are scaled down proportionally.
+
+        This method runs once per load_spec, on resize, and when the
+        Top Bar content changes (``ModulesSegment.modules_changed``).
+        It does not preserve user-dragged sizes; that is Phase 4.5
+        (ADR-0010).
+        """
+        if self._build_result is None or self._root_widget is None:
+            return
+
+        total_w = self._root_widget.width()
+        total_h = self._root_widget.height()
+        if total_w <= 0 or total_h <= 0:
+            # Layout not ready yet; try again on the next event loop.
+            QTimer.singleShot(50, self._apply_default_splitter_sizes)
+            return
+
+        min_central = self._top_overlay.minimum_width()
+
+        # ----- Horizontal splitters (Left | Central | Right) --------
+        for splitter in self._layout_renderer._split_widgets.values():  # noqa: SLF001
+            if splitter.orientation() != Qt.Orientation.Horizontal:
+                continue
+            count = splitter.count()
+            if count == 0:
+                continue
+
+            placements: list[str] = []
+            for i in range(count):
+                child = splitter.widget(i)
+                area = (
+                    getattr(child, "area", lambda: None)()
+                    if child is not None
+                    else None
+                )
+                placements.append(area.placement.value if area else "")
+
+            left_px = right_px = 0
+            central_indices: list[int] = []
+            for i, p in enumerate(placements):
+                if p == "left":
+                    left_px = int(total_w * self._LEFT_RATIO)
+                elif p == "right":
+                    right_px = int(total_w * self._RIGHT_RATIO)
+                elif p == "central":
+                    central_indices.append(i)
+
+            handle_px = splitter.handleWidth() * max(0, count - 1)
+            available_for_central = total_w - left_px - right_px - handle_px
+
+            # If the Top Bar minimum exceeds the available space for
+            # Central, shrink the lateral Areas proportionally.
+            if available_for_central < min_central and (left_px + right_px) > 0:
+                deficit = min_central - available_for_central
+                total_lateral = left_px + right_px
+                scale = max(0.0, (total_lateral - deficit) / total_lateral)
+                left_px = int(left_px * scale)
+                right_px = int(right_px * scale)
+                available_for_central = total_w - left_px - right_px - handle_px
+
+            sizes = [0] * count
+            if "left" in placements:
+                sizes[placements.index("left")] = left_px
+            if "right" in placements:
+                sizes[placements.index("right")] = right_px
+            if central_indices:
+                per_central = available_for_central // len(central_indices)
+                for i in central_indices:
+                    sizes[i] = per_central
+                # Distribute the rounding remainder into the last
+                # central area so the total is exact.
+                sizes[central_indices[-1]] += (
+                    available_for_central - per_central * len(central_indices)
+                )
+
+            splitter.setSizes(sizes)
+
+        # ----- Vertical splitter (Top row | Bottom) -----------------
+        for splitter in self._layout_renderer._split_widgets.values():  # noqa: SLF001
+            if splitter.orientation() != Qt.Orientation.Vertical:
+                continue
+            count = splitter.count()
+            if count == 0:
+                continue
+
+            placements: list[str] = []
+            for i in range(count):
+                child = splitter.widget(i)
+                if isinstance(child, QSplitter):
+                    # The top row (a QSplitter) contains the Central
+                    # Area. Treat it as Central for the vertical split.
+                    placements.append("central")
+                else:
+                    area = (
+                        getattr(child, "area", lambda: None)()
+                        if child is not None
+                        else None
+                    )
+                    placements.append(area.placement.value if area else "")
+
+            bottom_px = (
+                int(total_h * self._BOTTOM_RATIO) if "bottom" in placements else 0
+            )
+            handle_px = splitter.handleWidth() * max(0, count - 1)
+            top_px = total_h - bottom_px - handle_px
+            sizes = [0] * count
+            if "bottom" in placements:
+                sizes[placements.index("bottom")] = bottom_px
+            sizes[0] = max(top_px, 0)
+            splitter.setSizes(sizes)
 
     def _hide_lateral_areas_by_default(self) -> None:
         """Hide Left, Right and Bottom after a load_spec().
@@ -409,10 +557,6 @@ class Workspace(QWidget):
         after ``load_spec`` returns. The state and the presentation
         must always agree: the Top Bar toggles read the state, and
         the user sees the widgets.
-
-        After hiding the widgets, the splitter sizes are recomputed
-        so the Central Area occupies the full width/height freed by
-        the hidden Areas.
         """
         if self._build_result is None:
             return
@@ -426,7 +570,11 @@ class Workspace(QWidget):
             if widget is not None:
                 widget.setVisible(False)
 
-        self._layout_renderer.refresh_splitter_sizes()
+        # Block 5.5: the default sizes now reflect the visible set
+        # (Central only), so the layout is correct after load_spec.
+        # Deferred because load_spec itself is called during the
+        # widget tree's construction.
+        QTimer.singleShot(0, self._apply_default_splitter_sizes)
         self._reposition_overlays()
 
     def _reposition_overlays(self) -> None:

@@ -16,6 +16,11 @@ publishes ``SceneObjectAdded`` events (ADR-0007), the Editor will
 subscribe and react to specific volumes. Until then, the Editor
 resolves on ``activate`` and ``content_widget``.
 
+The Editor-level Toolbars are declared by ``toolbar_specs()`` and
+materialized by ``_wrap_with_editor_toolbars()`` around the View grid.
+This is symmetric to what ``ViewLayoutRenderer`` does for View-level
+Toolbars: the Editor owns its Toolbars, the renderer owns the View's.
+
 See ADR-0013, scene.md, Medical Imaging Infrastructure §3.2.
 """
 
@@ -24,7 +29,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QHBoxLayout, QSizePolicy, QWidget
 
 from cranioz.domain.imaging.volume import Volume
 from cranioz.ui.editors.base_editor import Editor
@@ -37,6 +42,7 @@ from cranioz.ui.editors.view_layout_spec import (
     ViewLayoutSpec,
 )
 from cranioz.ui.editors.viewport_3d.view import Viewport3DView
+from cranioz.ui.toolbars.base import Toolbar
 from cranioz.ui.toolbars.specification import (
     ToolbarOrientation,
     ToolbarPosition,
@@ -51,6 +57,15 @@ _logger = logging.getLogger(__name__)
 
 
 class TomographyEditor(Editor):
+    """Tomography Editor with a 2x2 grid and Editor-level Toolbars."""
+
+    #: Fixed width for VERTICAL editor-level Toolbars. Matches the
+    #: ViewLayoutRenderer's _VERTICAL_TOOLBAR_WIDTH (ADR-0013).
+    #: Phase 4.5 (ViewerLayoutManager) will consolidate both into a
+    #: shared module; for now the value is duplicated locally to
+    #: avoid importing a private attribute from the renderer.
+    _EDITOR_VERTICAL_TOOLBAR_WIDTH: int = 96
+
     def __init__(
         self,
         editor_id: str = "editor.tomography",
@@ -71,6 +86,11 @@ class TomographyEditor(Editor):
         self._content: QWidget | None = None
         self._context: EditorContext | None = None
         self._volume_applied = False
+        # Editor-level Toolbars (materialized in content_widget()).
+        # Used by dispose() to release references explicitly. The
+        # container deletion would suffice, but keeping the list
+        # makes the intent explicit and the tests straightforward.
+        self._editor_toolbars: list[Toolbar] = []
 
     # ----- Lifecycle -------------------------------------------------
 
@@ -137,11 +157,89 @@ class TomographyEditor(Editor):
             self._try_apply_volume()
             views_by_id: dict[str, View] = {v.view_id: v for v in self.views()}
             renderer = self._ensure_renderer()
-            self._content = renderer.render(
+            views_widget = renderer.render(
                 self.view_layout(),
                 views_by_id,
             )
+            self._content = self._wrap_with_editor_toolbars(views_widget)
         return self._content
+
+    def _wrap_with_editor_toolbars(self, views_widget: QWidget) -> QWidget:
+        """Wrap the View grid with the Editor's own Toolbars.
+
+        Symmetric to what ViewLayoutRenderer does for View-level
+        Toolbars. Editor-level Toolbars are declared in
+        ``toolbar_specs()`` and rendered here, at the outer edge of
+        the Editor's content.
+
+        Returns ``views_widget`` unchanged when the Editor declares
+        no Toolbars (empty list from ``toolbar_specs()``) or when the
+        EditorContext is missing the dependencies needed to
+        materialize them.
+        """
+        specs = self.toolbar_specs()
+        if not specs:
+            return views_widget
+
+        ctx = self._context
+        if (
+            ctx is None
+            or ctx.tool_registry is None
+            or ctx.theme_service is None
+            or ctx.icon_provider is None
+        ):
+            # Defensive: without the Toolbar's dependencies, we cannot
+            # materialize them. The Editor still shows its Views,
+            # just without Editor-level Toolbars.
+            _logger.warning(
+                "TomographyEditor cannot materialize Editor-level Toolbars: "
+                "EditorContext is missing tool_registry, theme_service, or "
+                "icon_provider (ADR-0013 §2.6)."
+            )
+            return views_widget
+
+        container = QWidget()
+        container.setObjectName(f"editor_container.{self.editor_id}")
+        outer = QHBoxLayout(container)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(0)
+
+        by_position: dict[ToolbarPosition, list[Toolbar]] = {
+            ToolbarPosition.LEFT: [],
+            ToolbarPosition.RIGHT: [],
+            ToolbarPosition.TOP: [],
+            ToolbarPosition.BOTTOM: [],
+        }
+        for spec in specs:
+            toolbar = Toolbar(
+                spec=spec,
+                registry=ctx.tool_registry,
+                theme=ctx.theme_service,
+                icon_provider=ctx.icon_provider,
+                parent=container,
+            )
+            by_position[spec.position].append(toolbar)
+            self._editor_toolbars.append(toolbar)
+
+        for toolbar in by_position[ToolbarPosition.LEFT]:
+            toolbar.setSizePolicy(
+                QSizePolicy.Policy.Fixed,
+                QSizePolicy.Policy.Expanding,
+            )
+            toolbar.setFixedWidth(self._EDITOR_VERTICAL_TOOLBAR_WIDTH)
+            outer.addWidget(toolbar, stretch=0)
+
+        outer.addWidget(views_widget, stretch=1)
+
+        for toolbar in by_position[ToolbarPosition.RIGHT]:
+            toolbar.setSizePolicy(
+                QSizePolicy.Policy.Fixed,
+                QSizePolicy.Policy.Expanding,
+            )
+            toolbar.setFixedWidth(self._EDITOR_VERTICAL_TOOLBAR_WIDTH)
+            outer.addWidget(toolbar, stretch=0)
+
+        return container
 
     # ----- Toolbars --------------------------------------------------
 
@@ -251,6 +349,7 @@ class TomographyEditor(Editor):
         renderer = self._view_layout_renderer
         if renderer is not None:
             renderer.clear_cache()
+        self._editor_toolbars.clear()
         self._content.setParent(None)
         self._content.deleteLater()
         self._content = None

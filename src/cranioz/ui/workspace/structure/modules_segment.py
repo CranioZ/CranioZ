@@ -32,6 +32,7 @@ class ModulesSegment(QWidget):
 
     module_selected = Signal(str)
     add_module_requested = Signal()
+    modules_changed = Signal()
 
     def __init__(
         self,
@@ -67,6 +68,10 @@ class ModulesSegment(QWidget):
 
         The current selection is preserved when the selected module is
         still present. Otherwise the selection is cleared.
+
+        Block 5.5: emits ``modules_changed`` once at the end, so the
+        Workspace can reapply splitter sizes (the Top Bar's minimum
+        width depends on the number of modules).
         """
         # Remove existing module buttons (keep the "+" button at the end).
         for button in self._module_buttons.values():
@@ -93,17 +98,29 @@ class ModulesSegment(QWidget):
         if previous is not None and previous in self._module_buttons:
             self.set_selected(previous)
 
+        # Emit once at the end. The selection restoration above may
+        # already have emitted via set_selected(); a second emission
+        # is harmless (the Workspace handler is idempotent) but
+        # skipping it when no selection was restored keeps the
+        # no-op case quiet.
+        if previous is None or previous not in self._module_buttons:
+            self.modules_changed.emit()
+
     def set_selected(self, module_id: str | None) -> None:
         """Mark a module as selected.
 
         The selection is mutually exclusive: selecting one button
         unchecks all others. ``None`` clears the selection.
+
+        Block 5.5: emits ``modules_changed`` once at the end, so the
+        Workspace can reapply splitter sizes.
         """
         if module_id is not None and module_id not in self._module_buttons:
             raise KeyError(f"unknown module_id: {module_id!r}")
         self._selected_id = module_id
         for mid, button in self._module_buttons.items():
             button.setChecked(mid == module_id)
+        self.modules_changed.emit()
 
     def selected_module_id(self) -> str | None:
         return self._selected_id

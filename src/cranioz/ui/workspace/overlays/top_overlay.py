@@ -9,15 +9,18 @@ Geometric behavior:
 - Fixed height.
 - Fixed lateral and top margins.
 - Width spans the Region minus the lateral margins (dynamic).
+- Minimum width = the sum of the three segments' sizeHints (dynamic).
+  This prevents the Top Bar from being squeezed below the point where
+  its segments overlap.
 
 Structural behavior:
 - Contains three segments: Left, Center, Right.
 - Each segment has a QHBoxLayout, ready to receive content.
 - The Center segment is always horizontally centered within the Top Bar.
 - The Left and Right segments are anchored to their respective edges.
-- Content is injected by the MainWindow via set_left_content / set_center_content /
-  set_right_content. The TopOverlay does not know what the injected widgets do
-  (ADR-0006).
+- Content is injected by the MainWindow via set_left_content /
+  set_center_content / set_right_content. The TopOverlay does not
+  know what the injected widgets do (ADR-0006).
 
 Design rules:
 - The TopOverlay computes its own geometry from the Region Bounds
@@ -29,6 +32,11 @@ Design rules:
   for the visual presentation.
 - The TopOverlay never destroys its widget. It can be hidden and
   shown again; the widget instance remains the same.
+
+Block 5.5: minimum_width() is dynamic. The Workspace queries it
+before applying splitter sizes so the Central Area cannot be
+squeezed below the Top Bar's real minimum. The minimum changes as
+the ModulesSegment gains or loses modules.
 """
 
 from __future__ import annotations
@@ -62,6 +70,12 @@ class TopOverlay(Overlay):
     DEFAULT_MARGIN_X: int = 8
     DEFAULT_MARGIN_Y: int = 8
 
+    #: Internal margins and spacing of the segment layout (used by
+    #: minimum_width()). Kept as class constants so the calculation
+    #: stays in sync with __init__.
+    _LAYOUT_MARGIN: int = 4
+    _LAYOUT_SPACING: int = 4
+
     # ----- Construction ---------------------------------------------
 
     def __init__(
@@ -91,8 +105,13 @@ class TopOverlay(Overlay):
         # The Center segment is centered by inserting stretches
         # before and after it.
         self._layout = QHBoxLayout(self._widget)
-        self._layout.setContentsMargins(4, 4, 4, 4)
-        self._layout.setSpacing(4)
+        self._layout.setContentsMargins(
+            self._LAYOUT_MARGIN,
+            self._LAYOUT_MARGIN,
+            self._LAYOUT_MARGIN,
+            self._LAYOUT_MARGIN,
+        )
+        self._layout.setSpacing(self._LAYOUT_SPACING)
         self._layout.setAlignment(Qt.AlignmentFlag.AlignVCenter)
 
         self._left_segment = QWidget()
@@ -115,11 +134,17 @@ class TopOverlay(Overlay):
 
         # The center segment is guaranteed to be centered by
         # inserting equal stretches on both sides.
-        self._layout.addWidget(self._left_segment, alignment=Qt.AlignmentFlag.AlignLeft)
+        self._layout.addWidget(
+            self._left_segment, alignment=Qt.AlignmentFlag.AlignLeft
+        )
         self._layout.addStretch(1)
-        self._layout.addWidget(self._center_segment, alignment=Qt.AlignmentFlag.AlignCenter)
+        self._layout.addWidget(
+            self._center_segment, alignment=Qt.AlignmentFlag.AlignCenter
+        )
         self._layout.addStretch(1)
-        self._layout.addWidget(self._right_segment, alignment=Qt.AlignmentFlag.AlignRight)
+        self._layout.addWidget(
+            self._right_segment, alignment=Qt.AlignmentFlag.AlignRight
+        )
 
     # ----- Overlay API ----------------------------------------------
 
@@ -139,13 +164,17 @@ class TopOverlay(Overlay):
 
         The Top Bar is anchored to the top-left of the Region with
         the configured margins. Its width is the Region's width
-        minus twice the lateral margin. If the resulting width
-        would be negative (extremely narrow Region), it is clamped
-        to zero so that Qt receives a valid geometry.
+        minus twice the lateral margin, but never less than
+        ``minimum_width()``. If the Region is narrower than the
+        Top Bar's minimum, the Top Bar overflows the Region (the
+        Workspace is responsible for preventing that by keeping the
+        Central Area wide enough; see ``Workspace._apply_default_splitter_sizes``).
         """
+        min_width = self.minimum_width()
         x = bounds.x + self._margin_x
         y = bounds.y + self._margin_y
         width = max(0, bounds.width - 2 * self._margin_x)
+        width = max(width, min_width)
         height = self._height
 
         self._widget.setGeometry(
@@ -161,6 +190,30 @@ class TopOverlay(Overlay):
 
     def is_visible(self) -> bool:
         return self._visible
+
+    # ----- Minimum width (Block 5.5) --------------------------------
+
+    def minimum_width(self) -> int:
+        """Return the minimum width required by the three segments.
+
+        Home and Extras have fixed, predictable widths (3 buttons
+        each). Modules has variable width depending on the active
+        workflow (number of modules). This method sums the three
+        segments' sizeHints plus the TopOverlay's internal layout
+        margins and spacings.
+
+        Called by the Workspace before applying splitter sizes, so
+        the Central Area cannot be squeezed below the Top Bar's
+        real minimum. The value changes when the ModulesSegment
+        gains or loses modules.
+        """
+        return (
+            self._LAYOUT_MARGIN * 2
+            + self._LAYOUT_SPACING * 2
+            + self._left_segment.sizeHint().width()
+            + self._center_segment.sizeHint().width()
+            + self._right_segment.sizeHint().width()
+        )
 
     # ----- Convenience accessors ------------------------------------
 
@@ -182,11 +235,7 @@ class TopOverlay(Overlay):
     # ----- Segment accessors ----------------------------------------
 
     def left_segment(self) -> QWidget:
-        """Return the container for the Left segment.
-
-        Deprecated for direct use: prefer ``set_left_content(widget)``,
-        which places the widget in the segment's layout correctly.
-        """
+        """Return the container for the Left segment."""
         return self._left_segment
 
     def center_segment(self) -> QWidget:
@@ -200,45 +249,21 @@ class TopOverlay(Overlay):
     # ----- Content injection ----------------------------------------
 
     def set_left_content(self, widget: QWidget | None) -> None:
-        """Inject content into the Left segment.
-
-        The segment owns the widget after this call. Replaces any
-        previous content. Passing ``None`` clears the segment.
-
-        The TopOverlay does not know what the widget does. It is a
-        generic container (ADR-0006). The MainWindow injects the
-        ``HomeSegment`` here.
-        """
+        """Inject content into the Left segment."""
         _replace_content(self._left_layout, widget)
 
     def set_center_content(self, widget: QWidget | None) -> None:
-        """Inject content into the Center segment.
-
-        Symmetric to ``set_left_content``. The MainWindow injects the
-        ``ModulesSegment`` here. The segment is centered horizontally
-        by the TopOverlay layout, regardless of the content width.
-        """
+        """Inject content into the Center segment."""
         _replace_content(self._center_layout, widget)
 
     def set_right_content(self, widget: QWidget | None) -> None:
-        """Inject content into the Right segment.
-
-        Symmetric to ``set_left_content``. The MainWindow injects the
-        ``ExtrasSegment`` here. The segment is anchored to the right
-        edge by the TopOverlay layout.
-        """
+        """Inject content into the Right segment."""
         _replace_content(self._right_layout, widget)
 
     # ----- Content layout -------------------------------------------
 
     def content_layout(self) -> QLayout:
-        """Return the QLayout that arranges the three segments.
-
-        Exposed so that future pieces (the TopBar composition) can
-        inspect or extend the segment arrangement without reaching
-        into private state. The layout is stable across calls: the
-        same instance is returned every time.
-        """
+        """Return the QLayout that arranges the three segments."""
         return self._layout
 
 
@@ -246,12 +271,7 @@ class TopOverlay(Overlay):
 
 
 def _replace_content(layout: QHBoxLayout, widget: QWidget | None) -> None:
-    """Remove any existing children from the layout and add the widget.
-
-    Uses deleteLater for removed widgets so that Qt cleans up after
-    the current event loop iteration. Safe to call during signal
-    handlers.
-    """
+    """Remove any existing children from the layout and add the widget."""
     while layout.count():
         item = layout.takeAt(0)
         existing = item.widget() if item is not None else None

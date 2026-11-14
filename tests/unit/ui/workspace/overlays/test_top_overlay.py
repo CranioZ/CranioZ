@@ -118,16 +118,67 @@ def test_reposition_with_origin_bounds(overlay: TopOverlay) -> None:
     assert geom.height() == 40
 
 
-def test_reposition_clamps_negative_width_to_zero(
+def test_reposition_uses_minimum_width_when_bounds_is_narrower(
     overlay: TopOverlay,
 ) -> None:
-    # Region narrower than twice the margin. Expected: width = 0.
+    """Block 5.5: the Top Bar never shrinks below its minimum width.
+
+    The minimum is the sum of the three segments' sizeHints plus
+    the internal margins/spacings. If the Region is narrower than
+    that, the Top Bar overflows the Region (the Workspace is
+    responsible for preventing it by keeping the Central Area
+    wide enough).
+    """
     bounds = Bounds(x=0.0, y=0.0, width=10.0, height=100.0)
     overlay.reposition(bounds)
 
     geom = overlay.widget().geometry()
-    assert geom.width() == 0
+    min_width = overlay.minimum_width()
+    assert geom.width() == min_width, (
+        f"Expected width={min_width} (minimum), got {geom.width()}"
+    )
+    assert geom.width() > 0
     assert geom.height() == 40
+
+def test_reposition_uses_bounds_width_when_above_minimum(
+    overlay: TopOverlay,
+) -> None:
+    """Block 5.5: when the Region is wide enough, the Top Bar
+    respects the Region's width (minus margins)."""
+    bounds = Bounds(x=100.0, y=50.0, width=800.0, height=600.0)
+    overlay.reposition(bounds)
+
+    geom = overlay.widget().geometry()
+    # 800 - 2*8 = 784 > min_width, so bounds width wins.
+    assert geom.width() == 800 - 2 * 8
+    assert geom.x() == 100 + 8
+    assert geom.y() == 50 + 8
+
+
+def test_minimum_width_is_zero_when_segments_empty(overlay: TopOverlay) -> None:
+    """The default minimum is the layout's margins + spacings only
+    (segments are empty in a fresh TopOverlay)."""
+    # 2 * margin + 2 * spacing = 8 + 8 = 16
+    assert overlay.minimum_width() == 16
+
+
+def test_minimum_width_grows_with_content(qtbot) -> None:
+    """Adding content to the segments increases the minimum width."""
+    overlay = TopOverlay()
+    qtbot.addWidget(overlay.widget())
+
+    before = overlay.minimum_width()
+
+    # Add a 200x30 widget to the center segment.
+    from PySide6.QtWidgets import QLabel
+
+    content = QLabel("x" * 20)
+    content.setFixedWidth(200)
+    content.setFixedHeight(30)
+    overlay.set_center_content(content)
+
+    after = overlay.minimum_width()
+    assert after > before, f"before={before}, after={after}"
 
 
 def test_reposition_is_idempotent(overlay: TopOverlay) -> None:

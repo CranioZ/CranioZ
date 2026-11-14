@@ -59,6 +59,7 @@ import uuid
 from typing import TYPE_CHECKING
 
 # Third-Party Libraries
+from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import (
     QFileDialog,
     QMainWindow,
@@ -278,20 +279,11 @@ class MainWindow(QMainWindow):
         self._register_dicom_import_handler()
 
     def _create_workspace(self, context: ProjectContext) -> Workspace:
-        # Build the SceneQueryAdapter from the provider's Scene, if any.
-        # The adapter is recreated per Workspace, but the underlying
-        # Scene is owned by the provider (single source of truth).
-        # See ADR-0008, scene.md, editors.md §15.
         scene_query = None
         if self._scene_provider is not None:
             scene = self._scene_provider.get_scene()
             scene_query = SceneQueryAdapter(scene)
 
-        # Ensure the built-in tools required by the default editor
-        # specs are registered. The TomographyEditor declares toolbars
-        # that reference "tool.log" and "tool.toggle"; without them,
-        # AreaWidget._build_toolbars raises KeyError. Registration is
-        # idempotent: re-registering the same factory is a no-op.
         self._ensure_builtin_tools()
 
         workspace = Workspace(
@@ -308,17 +300,13 @@ class MainWindow(QMainWindow):
             translation_service=self._translation_service,
         )
 
-        # TopOverlay: three segments, one per zone.
         home_segment = HomeSegment(self._icon_provider)
         modules_segment = ModulesSegment(self._icon_provider)
         extras_segment = ExtrasSegment(self._icon_provider)
 
-        # Placeholder module list until Phase 5 delivers WorkflowEngine.
+        modules_segment.modules_changed.connect(self._on_top_bar_content_changed)
         modules_segment.set_modules((("tomography", "Tomografia"),))
 
-        # The project is open at this point: context-dependent actions
-        # in the Home menu ("Fechar projeto", "Importar arquivos") are
-        # enabled.
         home_segment.set_project_open(True)
 
         self._wire_top_bar_segments(workspace, home_segment, modules_segment, extras_segment)
@@ -329,6 +317,7 @@ class MainWindow(QMainWindow):
 
         spec = WORKSPACE_SPEC_DEBUG_MESH if self._debug_mesh else WORKSPACE_SPEC_DEFAULT
         workspace.load_spec(spec)
+
         return workspace
 
     def _ensure_builtin_tools(self) -> None:
@@ -392,6 +381,14 @@ class MainWindow(QMainWindow):
         extras.toggle_area_right_requested.connect(
             lambda: self._toggle_area(workspace, Placement.RIGHT)
         )
+
+    def _on_top_bar_content_changed(self) -> None:
+        """Block 5.5: reapply the Workspace's splitter sizes when the
+        Top Bar content changes (adding/removing modules changes the
+        Top Bar's minimum width, which in turn constrains the Central
+        Area)."""
+        if self._workspace is not None:
+            self._workspace._apply_default_splitter_sizes()  # noqa: SLF001
 
     def _toggle_area(self, workspace: Workspace, placement: Placement) -> None:
         """Toggle an Area's visibility and reflect the new state.
