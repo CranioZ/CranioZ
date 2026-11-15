@@ -35,7 +35,9 @@ The **2026-11-13 cleanup** removed a substantial amount of dead code (two source
 
 **Sprint M is complete (frameless window + native chrome + drag + native resize).** The `MainWindow` now removes the native Windows title bar, wraps the `QStackedWidget` in a `_central_container` with 4px margins, and supports native resizing via `windowHandle().startSystemResize(edges)` and dragging via `WindowDragFilter` on the custom top bars. 3 new integration tests. Suite: 1625 passed, 2 skipped.
 
-**Next work item:** Sprint G — `AreaLayoutRenderer`. It is the next Phase 2 deliverable after Block 6 (visual validation). Before starting Sprint G, close the remaining Block 5.5 corrections and the Block 6 visual validation.
+**Block 6 is complete (debug_workspace.py visual validation).** The script `scripts/debug/ui/workspace/debug_workspace.py` was run end-to-end with Blocks 4–6, 5.5–5.6.1, and Sprint M applied. The visual matches the Prototipagem_UI_17 reference with the frameless window (drag, resize, maximize, minimize, close). Committed.
+
+**Next work item:** Sprint G — `AreaLayoutRenderer`. It is the next Phase 2 deliverable after Block 6. Before starting Sprint G, close the two small pending items in §8 (Block 5.5 correction 6 and the `"pt-BR-BR"` locale bug).
 
 ---
 
@@ -114,6 +116,10 @@ The **2026-11-13 cleanup** removed a substantial amount of dead code (two source
   - `_update_maximize_icon(restore=...)` keeps the maximize/restore icon in sync between `HomeTopBar` and `ExtrasSegment`.
   - 3 new integration tests in `test_main_window.py`: `test_main_window_is_frameless`, `test_main_window_drag_filter_is_installed`, `test_main_window_central_container_has_margins`.
   - Known limitation: `window_restore` may not be present in the `IconProvider` catalog yet; tracked as a future icon-set task.
+- **Block 6 complete (debug_workspace.py visual validation).**
+  - The script was run end-to-end with Blocks 4–6, 5.5–5.6.1, and Sprint M applied.
+  - Visual matches the Prototipagem_UI_17 reference with the frameless window (drag, resize, maximize, minimize, close).
+  - Committed.
 
 ### 2.3 Implementation plan
 
@@ -133,7 +139,7 @@ Unchanged from prior versions. Phase 1 is closed.
 
 ### 3.2 Phase 2 — Workspace Engine & Icons
 
-**Goal:** close Phase 2 formally. Blockers: `AreaLayoutRenderer` (Sprint G), `EditorStack` (Sprint H), and Block 6 (visual validation).
+**Goal:** close Phase 2 formally. Blockers: `AreaLayoutRenderer` (Sprint G) and `EditorStack` (Sprint H).
 
 #### 3.2.1 `ThemeService` + `ThemeCompiler` + tokens (Sprint E) — ✅ Complete
 
@@ -163,15 +169,7 @@ Deliverables:
 - Single-Editor case remains unchanged.
 - Tests for tab switching, editor lifecycle, dispose.
 
-#### 3.2.5 `debug_workspace.py` final visual validation (Block 6) — 🚧 Pending
-
-Deliverables:
-
-- Update `scripts/debug/ui/workspace/debug_workspace.py` to exercise Blocks 4–5.6.1 and Sprint M end to end.
-- Confirm that the layout matches the Prototipagem_UI_17 reference (proportions, gap, colors, Top Bar does not overflow) with the frameless window.
-- Screenshot or description comparing to the reference.
-
-**Phase 2 is complete when:** `AreaLayoutRenderer` and `EditorStack` are implemented, contract tests pass, CI is green, and the visual validation is confirmed.
+**Phase 2 is complete when:** `AreaLayoutRenderer` and `EditorStack` are implemented, contract tests pass, CI is green, and the visual validation is confirmed (already confirmed in Block 6).
 
 ---
 
@@ -219,18 +217,18 @@ Key Phase 4 items still pending:
 | 5.5 | 2 | Percentage-based Area layout, QSS Areas, TopOverlay minimum width | ✅ Complete | 4, 5 |
 | 5.6 | 2 | Window controls in ExtrasSegment; `closeEvent` with confirmation | ✅ Complete | 5.5 |
 | 5.6.1 | 2 | Window controls in HomeTopBar; end-to-end tests | ✅ Complete | 5.6 |
-| **M** | **2** | **Frameless window, drag support, native resize** | **✅ Complete** | **E, F** |
-| **6** | **2** | **`debug_workspace.py` final visual validation** | **⏳ Next** | **5, 5.5, 5.6, 5.6.1, M** |
-| G | 2 | `AreaLayoutRenderer` (inter-Area vs intra-Area split) | 🚧 Pending | 6 |
+| M | 2 | Frameless window, drag support, native resize | ✅ Complete | E, F |
+| 6 | 2 | `debug_workspace.py` final visual validation | ✅ Complete | 5, 5.5, 5.6, 5.6.1, M |
+| **G** | **2** | **`AreaLayoutRenderer` (inter-Area vs intra-Area split)** | **⏳ Next** | **6** |
 | H | 2 | `EditorStack` | 🚧 Pending | G |
 | I | 3 | `ProjectIndex` | 🚧 Pending | — |
 | J | 3 | Coordinated deletion | 🚧 Pending | I |
 | K | 3 | Async loading | 🚧 Pending | I, J |
 | L | 3 | Professional module | 🚧 Pending | C, E, F |
 
-**Next work item:** Block 6 — `debug_workspace.py` final visual validation, now including Sprint M.
+**Next work item:** Sprint G — `AreaLayoutRenderer`. Before starting, close the two pending items in §8 (Block 5.5 correction 6 and the `"pt-BR-BR"` locale bug).
 
-**Note on ordering:** Blocks 5.5/5.6/5.6.1 and Sprint M are complete. Sprint G (`AreaLayoutRenderer`) is the next Phase 2 deliverable after Block 6. Sprint H depends on G. Sprints I–L belong to Phase 3.
+**Note on ordering:** Blocks 5.5/5.6/5.6.1, Sprint M, and Block 6 are complete. Sprint G (`AreaLayoutRenderer`) is the next Phase 2 deliverable. Sprint H depends on G. Sprints I–L belong to Phase 3.
 
 ---
 
@@ -245,7 +243,7 @@ This handoff is complete when:
 5. Blocks 1–6, 5.5–5.6.1, and Sprint M are committed.
 6. The `test_no_hardcoded_appearance.py` duplicate under `tests/unit/architecture/` is resolved.
 7. The current test count and coverage are recorded in §2.2 (1625 passing, 2 skipped).
-8. The next conversation starts with **Block 6 (`debug_workspace.py` final visual validation)**.
+8. The next conversation starts with **Sprint G (`AreaLayoutRenderer`)**.
 
 ---
 
@@ -293,8 +291,8 @@ Unchanged from prior versions, with the following additions:
 | Window controls in HomeTopBar (Block 5.6.1) | ✅ Complete (11 tests + 3 end-to-end) | `tests/unit/ui/home/widgets/test_home_top_bar.py`, `test_home_page.py`, `test_main_window.py` |
 | `closeEvent` with confirmation and teardown | ✅ Complete (3 tests) | `tests/integration/ui/test_main_window.py` |
 | Frameless window + native chrome + drag + native resize (Sprint M) | ✅ Complete (3 integration tests) | `tests/integration/ui/test_main_window.py` |
+| `debug_workspace.py` visual validation (Block 6) | ✅ Complete | This document §2.2 |
 | `AreaLayoutRenderer` intra-Area `Expanding` | 🚧 **Pending** (Block 5.5 correction 6 not yet applied) | `area_layout_renderer.py` |
-| `debug_workspace.py` visual validation | 🚧 **Pending — Block 6** | `scripts/debug/ui/workspace/debug_workspace.py` |
 | `AreaLayoutRenderer` (Sprint G) | 🚧 Pending | This document §3.2.3 |
 | `EditorStack` (Sprint H) | 🚧 Pending | This document §3.2.4 |
 | `ProjectIndex` (Sprint I) | 🚧 Pending | This document §3.3.1 |
@@ -311,7 +309,7 @@ Unchanged from prior versions, with the following additions:
 
 ## 8. Immediate action items
 
-Before starting Block 6:
+Before starting Sprint G:
 
 1. Apply the **three remaining Block 5.5 corrections** (if not already applied):
    - `top_overlay.py`: remove `width = max(width, min_width)` from `reposition()`.
@@ -320,8 +318,7 @@ Before starting Block 6:
 2. Confirm that the 4 window-control icons exist in `UnicodeIconProvider`:
    - `window_minimize`, `window_maximize`, `window_restore`, `window_close`.
 3. Update `test_icon_catalog.py` to expect 70 icons.
-4. Run `pytest tests\unit\ui\icons\ tests\unit\ui\workspace\structure\ -q` to confirm.
-5. Run `pytest tests\integration\ui\test_main_window.py -q` to confirm the 3 Sprint M tests pass.
-6. Run `python scripts\debug\ui\workspace\debug_layout.py` and confirm the visual matches the Prototipagem_UI_17 reference — including the frameless window (drag, resize, maximize).
-7. Commit Blocks 5.5, 5.6, 5.6.1, and Sprint M in separate commits (or one consolidated, if preferred).
-8. Only then start Block 6 (`debug_workspace.py` final visual validation).
+4. Fix the `"pt-BR-BR"` locale value in `test_loader.py` to `"pt-BR"`.
+5. Run `pytest tests\unit\ui\icons\ tests\unit\ui\workspace\structure\ -q` to confirm.
+6. Run `pytest tests\integration\ui\test_main_window.py -q` to confirm the 3 Sprint M tests pass.
+7. Only then start Sprint G (`AreaLayoutRenderer`).
