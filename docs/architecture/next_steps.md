@@ -2,7 +2,7 @@
 
 **Document type:** Action plan and handoff
 **Status:** Active
-**Scope:** Immediate next work items after Blocks 1–6 and the 2026-11-15 Blocks 5.5/5.6 closure
+**Scope:** Immediate next work items after Blocks 1–6, 5.5–5.6.1, and Sprint M (frameless window)
 **Last updated:** 2026-11-15
 
 ---
@@ -13,7 +13,7 @@ The VTK rendering pipeline is validated end-to-end. The DICOM visualization bug 
 
 The appearance architecture has been decided. `docs/architecture/appearance/` is the canonical specification. ADR-0014 registers the toolkit decision (Qt Widgets + QSS modular + Design Tokens in Python, not QML). The DICOM path, the 3D viewport, the MPR view, and the workspace layout are operational and covered by a growing test suite.
 
-**Current test baseline: ~1621 passing, 0 failed, 0 errors, 0 skipped** (exact count depends on the `test_extras_segment.py` and `test_home_top_bar.py` additions). The baseline before the 2026-11-13 cleanup was 1528 passing, 88% coverage. The 9 remaining warnings are all `vtkCellArray.GetData` (VTK 9.6+ deprecation; removal planned for VTK 10), tracked in §7.
+**Current test baseline: 1625 passing, 0 failed, 0 errors, 2 skipped (Block 5.5 intencionais).** A baseline anterior ao cleanup de 2026-11-13 era 1528 passing, 88% coverage. Os 9 warnings restantes são todos de `vtkCellArray.GetData` (deprecação do VTK 9.6+; remoção planejada para o VTK 10), rastreados em §7.
 
 Sprint B (i18n) is complete: the shell — `MainWindow`, the Home Page tree, the three Top Bar segments, and the Workspace placeholder editor — resolves user-facing strings through the `TranslationService`. `tests/architecture/test_no_hardcoded_strings_in_shell_widgets.py` guards against regressions.
 
@@ -33,7 +33,9 @@ The **2026-11-13 cleanup** removed a substantial amount of dead code (two source
 
 **Blocks 5.5, 5.6, 5.6.1 are complete** (`Workspace` percentage-based Area layout with rounded corners and gap; window controls in `ExtrasSegment` and `HomeTopBar`; `closeEvent` with confirmation). These add the visual layout polish required before the final Phase 2 visual validation.
 
-**Next work item:** Block 6 — `debug_workspace.py` final visual validation.
+**Sprint M is complete (frameless window + native chrome + drag + native resize).** The `MainWindow` now removes the native Windows title bar, wraps the `QStackedWidget` in a `_central_container` with 4px margins, and supports native resizing via `windowHandle().startSystemResize(edges)` and dragging via `WindowDragFilter` on the custom top bars. 3 new integration tests. Suite: 1625 passed, 2 skipped.
+
+**Next work item:** Sprint G — `AreaLayoutRenderer`. It is the next Phase 2 deliverable after Block 6 (visual validation). Before starting Sprint G, close the remaining Block 5.5 corrections and the Block 6 visual validation.
 
 ---
 
@@ -52,7 +54,7 @@ The **2026-11-13 cleanup** removed a substantial amount of dead code (two source
 
 ### 2.2 Code and tests
 
-- **Test baseline after Blocks 1–6 and 5.5/5.6/5.6.1: ~1621 passing** (exact count after the `test_extras_segment.py` and `test_home_top_bar.py` additions).
+- **Test baseline after Blocks 1–6, 5.5–5.6.1, and Sprint M: 1625 passing, 2 skipped (Block 5.5 intencionais).**
 - `ruff check` clean; `ruff format --check` clean.
 - `mypy src` clean.
 - `VtkImageAdapter` corrected (no transposition, `int16`, direction matrix).
@@ -105,11 +107,19 @@ The **2026-11-13 cleanup** removed a substantial amount of dead code (two source
   - `HomePage` forwards the 3 new signals.
   - `MainWindow._connect_home_signals` connects them.
   - `test_home_top_bar.py` +5 tests, `test_home_page.py` +3 tests, `test_main_window.py` +3 end-to-end tests.
+- **Sprint M complete (frameless window + native chrome).**
+  - `MainWindow` now sets `Qt.FramelessWindowHint` and uses a `_central_container` with `setContentsMargins(4, 4, 4, 4)` to create a resize dead zone.
+  - `WindowDragFilter` installed on `HomeTopBar` and `Workspace`'s `TopOverlay`; allows dragging the window by clicking on the custom top bars. Ignores `QPushButton` clicks.
+  - Native resize via `windowHandle().startSystemResize(edges)` in `mousePressEvent`; dynamic cursor in `mouseMoveEvent`.
+  - `_update_maximize_icon(restore=...)` keeps the maximize/restore icon in sync between `HomeTopBar` and `ExtrasSegment`.
+  - 3 new integration tests in `test_main_window.py`: `test_main_window_is_frameless`, `test_main_window_drag_filter_is_installed`, `test_main_window_central_container_has_margins`.
+  - Known limitation: `window_restore` may not be present in the `IconProvider` catalog yet; tracked as a future icon-set task.
 
 ### 2.3 Implementation plan
 
 - `implementation_plan.md` is the current roadmap. It defines 11 phases.
 - Phase 4 is marked as the next major implementation phase, with the following items already complete: voxel ordering, `int16`, direction matrix, `Viewport3DView.set_volume(Volume)`, STL path validation, DICOM path validation.
+- **Phase 2 has advanced further than the plan reflects.** The frameless window work (Sprint M) and the resize/drag support are additional Phase 2 deliverables not yet recorded in `implementation_plan.md`. The plan update should be applied in the same commit as the Sprint M delivery.
 
 ---
 
@@ -157,8 +167,8 @@ Deliverables:
 
 Deliverables:
 
-- Update `scripts/debug/ui/workspace/debug_workspace.py` to exercise Blocks 4–5.6.1 end to end.
-- Confirm that the layout matches the Prototipagem_UI_17 reference (proportions, gap, colors, Top Bar does not overflow).
+- Update `scripts/debug/ui/workspace/debug_workspace.py` to exercise Blocks 4–5.6.1 and Sprint M end to end.
+- Confirm that the layout matches the Prototipagem_UI_17 reference (proportions, gap, colors, Top Bar does not overflow) with the frameless window.
 - Screenshot or description comparing to the reference.
 
 **Phase 2 is complete when:** `AreaLayoutRenderer` and `EditorStack` are implemented, contract tests pass, CI is green, and the visual validation is confirmed.
@@ -178,6 +188,7 @@ Phase 4 remains the active implementation phase after Phases 2–3 close. The fo
 - `TomographyEditor` materializes Editor-level Toolbars (Block 5).
 - `ViewLayoutRenderer` `ACTIVE_ONLY` policy is wired (Block 4).
 - `Workspace` applies percentage-based sizes and respects the Top Bar minimum (Block 5.5).
+- The application shell is frameless with custom drag and native resize (Sprint M).
 
 Key Phase 4 items still pending:
 
@@ -208,7 +219,8 @@ Key Phase 4 items still pending:
 | 5.5 | 2 | Percentage-based Area layout, QSS Areas, TopOverlay minimum width | ✅ Complete | 4, 5 |
 | 5.6 | 2 | Window controls in ExtrasSegment; `closeEvent` with confirmation | ✅ Complete | 5.5 |
 | 5.6.1 | 2 | Window controls in HomeTopBar; end-to-end tests | ✅ Complete | 5.6 |
-| **6** | **2** | **`debug_workspace.py` final visual validation** | **⏳ Next** | **5, 5.5, 5.6, 5.6.1** |
+| **M** | **2** | **Frameless window, drag support, native resize** | **✅ Complete** | **E, F** |
+| **6** | **2** | **`debug_workspace.py` final visual validation** | **⏳ Next** | **5, 5.5, 5.6, 5.6.1, M** |
 | G | 2 | `AreaLayoutRenderer` (inter-Area vs intra-Area split) | 🚧 Pending | 6 |
 | H | 2 | `EditorStack` | 🚧 Pending | G |
 | I | 3 | `ProjectIndex` | 🚧 Pending | — |
@@ -216,9 +228,9 @@ Key Phase 4 items still pending:
 | K | 3 | Async loading | 🚧 Pending | I, J |
 | L | 3 | Professional module | 🚧 Pending | C, E, F |
 
-**Next work item:** Block 6 — `debug_workspace.py` final visual validation.
+**Next work item:** Block 6 — `debug_workspace.py` final visual validation, now including Sprint M.
 
-**Note on ordering:** Blocks 5.5/5.6/5.6.1 are complete. Sprint G (`AreaLayoutRenderer`) is the next Phase 2 deliverable after Block 6. Sprint H depends on G. Sprints I–L belong to Phase 3.
+**Note on ordering:** Blocks 5.5/5.6/5.6.1 and Sprint M are complete. Sprint G (`AreaLayoutRenderer`) is the next Phase 2 deliverable after Block 6. Sprint H depends on G. Sprints I–L belong to Phase 3.
 
 ---
 
@@ -226,13 +238,13 @@ Key Phase 4 items still pending:
 
 This handoff is complete when:
 
-1. `implementation_plan.md` reflects Phases 2–3 status with Blocks 4–6 and 5.5–5.6.1 marked `✅ Implemented`.
+1. `implementation_plan.md` reflects Phases 2–3 status with Blocks 4–6, 5.5–5.6.1, and Sprint M marked `✅ Implemented`.
 2. `docs/adr/ADR-0014-widget-toolkit-selection.md` is committed.
 3. `docs/architecture/appearance/` is consolidated.
 4. The 2026-11-13 cleanup is committed.
-5. Blocks 1–6 and 5.5–5.6.1 are committed.
+5. Blocks 1–6, 5.5–5.6.1, and Sprint M are committed.
 6. The `test_no_hardcoded_appearance.py` duplicate under `tests/unit/architecture/` is resolved.
-7. The current test count and coverage are recorded in §2.2.
+7. The current test count and coverage are recorded in §2.2 (1625 passing, 2 skipped).
 8. The next conversation starts with **Block 6 (`debug_workspace.py` final visual validation)**.
 
 ---
@@ -246,7 +258,9 @@ Unchanged from prior versions, with the following additions:
 - 2D tools and clinical transfer function presets — Phase 4.5.
 - Persistence of user-dragged splitter sizes — Phase 4.5 (ADR-0010).
 - Real toolbar icons (currently `tool.log` and `tool.toggle` placeholders) — Phase 4.5.
-- `closeEvent` toggle of the maximize icon (`window_maximize` ↔ `window_restore`) — Phase 5.6.2.
+- `closeEvent` toggle of the maximize icon (`window_maximize` ↔ `window_restore`) — **Delivered in Sprint M** (icon toggle is functional; catalog asset may still be missing).
+- `window_restore` icon in `UnicodeIconProvider` — Phase 4.5 (icon-set task).
+- Drop shadow under the frameless window — optional, deferred (would require `WA_TranslucentBackground` + an inner container with 10px margins).
 
 ---
 
@@ -278,6 +292,7 @@ Unchanged from prior versions, with the following additions:
 | Window controls in ExtrasSegment (Block 5.6) | ✅ Complete (19 tests) | `tests/unit/ui/workspace/structure/test_extras_segment.py` |
 | Window controls in HomeTopBar (Block 5.6.1) | ✅ Complete (11 tests + 3 end-to-end) | `tests/unit/ui/home/widgets/test_home_top_bar.py`, `test_home_page.py`, `test_main_window.py` |
 | `closeEvent` with confirmation and teardown | ✅ Complete (3 tests) | `tests/integration/ui/test_main_window.py` |
+| Frameless window + native chrome + drag + native resize (Sprint M) | ✅ Complete (3 integration tests) | `tests/integration/ui/test_main_window.py` |
 | `AreaLayoutRenderer` intra-Area `Expanding` | 🚧 **Pending** (Block 5.5 correction 6 not yet applied) | `area_layout_renderer.py` |
 | `debug_workspace.py` visual validation | 🚧 **Pending — Block 6** | `scripts/debug/ui/workspace/debug_workspace.py` |
 | `AreaLayoutRenderer` (Sprint G) | 🚧 Pending | This document §3.2.3 |
@@ -289,7 +304,8 @@ Unchanged from prior versions, with the following additions:
 | Viewer status badges (A/C/S/3D) | 🚧 Phase 4.5 | `Implementation Plan` §4.5 |
 | Dynamic grids (1×3, 3×3, 2×3) | 🚧 Phase 4.5 (`ViewerLayoutManager`) | `Implementation Plan` §4.5 |
 | Persistence of user-dragged sizes | 🚧 Phase 4.5 (ADR-0010) | `Implementation Plan` §5 |
-| Maximize/restore icon toggle in window controls | 🚧 Phase 5.6.2 | This document §6 |
+| Maximize/restore icon toggle in window controls | ✅ Delivered in Sprint M (icon asset may still be missing) | This document §6 |
+| `window_restore` icon asset | 🚧 Phase 4.5 (icon-set task) | This document §6 |
 
 ---
 
@@ -301,10 +317,11 @@ Before starting Block 6:
    - `top_overlay.py`: remove `width = max(width, min_width)` from `reposition()`.
    - `tomography/editor.py`: `container.setSizePolicy(Expanding, Expanding)` in `_wrap_with_editor_toolbars`.
    - `area_layout_renderer.py`: `container.setSizePolicy(Expanding, Expanding)` in `_build_editor_container`.
-2. Add the 4 window-control icons to `UnicodeIconProvider` (if not already added):
+2. Confirm that the 4 window-control icons exist in `UnicodeIconProvider`:
    - `window_minimize`, `window_maximize`, `window_restore`, `window_close`.
 3. Update `test_icon_catalog.py` to expect 70 icons.
 4. Run `pytest tests\unit\ui\icons\ tests\unit\ui\workspace\structure\ -q` to confirm.
-5. Run `python scripts\debug\ui\workspace\debug_layout.py` and confirm the visual matches the Prototipagem_UI_17 reference.
-6. Commit Blocks 5.5, 5.6, 5.6.1 in separate commits (or one consolidated, if preferred).
-7. Only then start Block 6 (`debug_workspace.py` final visual validation).
+5. Run `pytest tests\integration\ui\test_main_window.py -q` to confirm the 3 Sprint M tests pass.
+6. Run `python scripts\debug\ui\workspace\debug_layout.py` and confirm the visual matches the Prototipagem_UI_17 reference — including the frameless window (drag, resize, maximize).
+7. Commit Blocks 5.5, 5.6, 5.6.1, and Sprint M in separate commits (or one consolidated, if preferred).
+8. Only then start Block 6 (`debug_workspace.py` final visual validation).

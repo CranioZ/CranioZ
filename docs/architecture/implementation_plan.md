@@ -3,7 +3,7 @@
 **Document type:** Roadmap and execution plan
 **Status:** Living document
 **Scope:** Phased implementation of the CranioZ platform, from foundation to release
-**Last updated:** 2026-11-13
+**Last updated:** 2026-11-15
 
 ---
 
@@ -102,6 +102,7 @@ The work order below respects dependencies between Phases 2–3. Blocks 1–6 co
 | **E** | 2 | `ThemeService`, `ThemeCompiler`, tokens | ✅ Complete | — |
 | **F** | 2 | `IconProvider`, `UnicodeIconProvider`, glyph migration | ✅ Complete | E |
 | — | — | **2026-11-13 cleanup** (dead code, `QImage.flipped`, PySide6 bump) | ✅ Complete | — |
+| **M** | 2 | **Frameless window, drag support, native resize** (UI Shell polish) | ✅ Complete | E, F |
 | **1** | 2 | **Toolbar polish** (`AlignTop`, fixed width, `Expanding` grid) | ✅ Complete | — |
 | **2** | 2 | **`Toolbar.set_active` / `set_expanded` / chevron** | ✅ Complete | 1 |
 | **3** | 2 | **`Editor._EditorSignals` + `Editor.set_active_view`** | ✅ Complete | — |
@@ -224,6 +225,15 @@ The work order below respects dependencies between Phases 2–3. Blocks 1–6 co
   - Migration of hardcoded glyphs in `TopBar`, `HomeSegment`, `ModulesSegment`, `ExtrasSegment`, `HomePage`, `Toolbar`, `StartButton`, `FlowRow`.
   - `_WHITELIST` in `test_no_hardcoded_strings_in_shell_widgets.py` emptied (Sprint B debt paid).
   - Contract tests: `test_icon_catalog.py`, `test_icon_fallback.py`, `test_icon_theme.py`, `test_icon_widget_contract.py`, `test_icon_accessibility.py`.
+- ✅ **Sprint M (Frameless Window & Native Chrome):** *(2026-11-15)*
+  - `MainWindow` now uses `Qt.FramelessWindowHint`; the native Windows title bar is removed.
+  - `WindowDragFilter`: allows dragging the window by clicking and dragging on the custom top bars (HomePage and Workspace TopOverlay).
+  - `_central_container` wraps the `QStackedWidget` with a 4px margin, creating a dead zone where native resize is detected.
+  - Native resizing via `windowHandle().startSystemResize(edges)` in `mousePressEvent`, with dynamic cursor feedback in `mouseMoveEvent` (Qt 6 API, cross-platform).
+  - Maximize/restore icon sync between `HomeTopBar` and `ExtrasSegment` via `_update_maximize_icon`.
+  - **Known limitation:** the `window_restore` icon is referenced by `_update_maximize_icon` but may not yet be present in the `IconProvider` catalog. Tracked as a future icon-set task.
+  - Added integration tests: `test_main_window_is_frameless`, `test_main_window_drag_filter_is_installed`, `test_main_window_central_container_has_margins`.
+  - Suite: 1625 passed, 2 skipped (Block 5.5).
 - ✅ **Toolbar and Editor active-View foundation (Blocks 1–3, 2026-11-13):**
   - **Block 1 — Toolbar polish.** `Toolbar._root_layout.setAlignment(Qt.AlignmentFlag.AlignTop)`; `ViewLayoutRenderer._VERTICAL_TOOLBAR_WIDTH = 96` with `setFixedWidth(96)` for LEFT/RIGHT toolbars (fits "Toggle" without truncation); grid container and outer splitter use `QSizePolicy.Expanding`; vertical toolbars get `(Fixed, Expanding)` and horizontal toolbars get `(Expanding, Fixed)`. 8 tests.
   - **Block 2 — `Toolbar.set_active` / `set_expanded` / chevron.** `set_active(bool)` attenuates via `QGraphicsOpacityEffect(0.5)` without hiding; `set_expanded(bool)` compresses to a chevron; `expanded_changed` signal. Chevron flips automatically; persistence deferred. 11 tests.
@@ -264,6 +274,7 @@ The work order below respects dependencies between Phases 2–3. Blocks 1–6 co
 - ✅ Token and theme completeness tests (Sprint E).
 - ✅ Settings persistence round-trip and fallback tests (Sprint E).
 - ✅ Icon catalog, fallback, theme integration, widget contract, and accessibility tests (Sprint F).
+- ✅ Frameless window, drag filter and native resize tests (Sprint M).
 - ✅ Toolbar polish tests (Block 1).
 - ✅ `Toolbar.set_active` / `set_expanded` / chevron tests (Block 2).
 - ✅ `Editor.set_active_view` contract tests (Block 3).
@@ -534,52 +545,4 @@ The work order below respects dependencies between Phases 2–3. Blocks 1–6 co
 #### Phase 6D — Surgical Guides
 
 - ⏳ Parametric guide generation.
-- ⏳ Guide-to-anatomy fit validation.
-- ⏳ Manufacturing constraints.
-- ⏳ Export for additive manufacturing.
-
-#### Phase 6E — Integrated Validation
-
-- ⏳ End-to-end orthognathic workflow.
-- ⏳ Data integrity and reproducibility tests.
-- ⏳ Geometric validation.
-- ⏳ Clinical workflow usability tests.
-
-**Status:** ⏳ Planned.
-
----
-
-### Phase 7: Scientific Validation
-
-**Goal:** Execute the scientific validation protocols defined in the doctoral research project.
-
-**Deliverables:**
-
-- Geometric validation reports.
-- Reproducibility studies.
-- Inter- and intra-examiner reliability.
-- ICC and measurement error analysis.
-- Usability evaluation.
-- Performance evaluation on reference hardware.
-- Documentation of validation methodology.
-
-**Status:** ⏳ Planned.
-
----
-
-### Phase 8: Scientific Product (Release 1.0)
-
-**Goal:** Consolidate the validated clinical core into a stable, distributable scientific product.
-
-**Deliverables:**
-
-- Windows installer.
-- Autosave and crash recovery.
-- PDF report generation (localized).
-- Final user and developer documentation.
-- **Recent Projects** on the Home Page.
-- **SQLite ProjectIndex** (backend for the Phase 3 contract).
-- **IconManager complete:** `SvgIconProvider`, SVG assets, cache by (name, size, theme), SVG recoloring.
-- **Complete migration of every widget** to `ThemeService.color(...)` + `IconProvider.icon(...)`.
-- **Locale selector UI.**
-- **Complete `pt_BR` and `en_US` catalogs.
+- ⏳ Guide-to

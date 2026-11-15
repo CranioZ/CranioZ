@@ -2,8 +2,8 @@
 
 **Document Type:** Technical Planning Document  
 **Scope:** Architecture, infrastructure, medical imaging, visualization, user interface, and code quality  
-**Version:** 2.1  
-**Date:** November 13, 2026  
+**Version:** 2.2  
+**Date:** November 15, 2026  
 **Status:** Proposed for Implementation  
 **Project:** CranioZ  
 **Companion documents:** `Next Steps.md` (immediate work items), `Implementation Plan.md` (11-phase roadmap), `docs/adr/` (architectural decisions)
@@ -98,7 +98,7 @@ an explicit orientation test.
 Potential inconsistencies have also been identified in the application of
 axis spacing and anatomical orientation.
 
-#### Status (2026-11-13)
+#### Status (2026-11-15)
 
 - Done: `QImage.mirrored(False, True)` migrated to
   `QImage.flipped(Qt.Orientation.Vertical)` in `MPRView`. The deprecated
@@ -729,11 +729,11 @@ Verify, at each future phase, that no new parallel implementation has
 been introduced for concepts that already have a canonical one. This is a
 standing task, not a one-off correction.
 
-### 7.4. Phase 2 Toolbar/Editor Foundation (Blocks 1-3) — Completed 2026-11-13
+### 7.4. Phase 2 Toolbar/Editor Foundation (Blocks 1–6, 5.5–5.6.1, Sprint M) — Completed 2026-11-15
 
 **Priority:** P1  
 **Category:** Consolidation  
-**Status:** Resolved 2026-11-13  
+**Status:** Resolved 2026-11-15 (Blocks 4–6, 5.5–5.6.1, Sprint M); 2026-11-13 (Blocks 1–3)  
 **Refs:** `Next Steps.md` §2.2, `Implementation Plan.md` §5.1
 
 Delivered:
@@ -754,9 +754,56 @@ Delivered:
   (unknown id produces a WARNING and no signal); idempotent for the same
   id; `None` clears. `dispose()` resets without emitting. 12 tests in
   `tests/unit/ui/editors/test_editor_active_view.py`.
+- **Block 4 — `ViewLayoutRenderer` event filter + `ACTIVE_ONLY`.**
+  Activation filter installed on each View's `activation_widget()`
+  (Viewport3DView returns the `QVTKRenderWindowInteractor`; other Views
+  return `content_widget()`); forwards `MouseButtonPress` and `FocusIn`
+  to `editor.set_active_view`; `ACTIVE_ONLY` toolbars start inactive;
+  `clear_cache()` removes filters correctly. 12 tests.
+- **Block 5 — `TomographyEditor` materializes Editor-level Toolbars.**
+  `content_widget()` wraps the View grid with LEFT (`ALWAYS`) and RIGHT
+  (`COLLAPSIBLE`) toolbars; `_editor_toolbars` cleared on `dispose()`.
+  7 tests.
+- **Block 5.5 — Percentage-based Area layout.**
+  `Workspace._LEFT_RATIO = 0.20`, `_RIGHT_RATIO = 0.25`,
+  `_BOTTOM_RATIO = 0.20`; `_apply_default_splitter_sizes()` never lets
+  the Central Area drop below `TopOverlay.minimum_width()`;
+  `AreaWidget.refresh()` returns early when hidden;
+  `_build_empty_placeholder()` uses `WA_TranslucentBackground`.
+- **Block 5.6 — Window controls in ExtrasSegment.**
+  `minimize_requested`, `maximize_requested`, `close_requested`;
+  `MainWindow._on_window_maximize_requested` toggles
+  `showMaximized`/`showNormal`; `closeEvent` asks for confirmation when
+  a project is open, then tears it down via `_close_active_project`.
+  19 tests.
+- **Block 5.6.1 — Window controls in HomeTopBar.**
+  `HomeTopBar.minimize_requested`, `maximize_requested`,
+  `close_requested`; `HomePage` forwards the three signals;
+  `MainWindow._connect_home_signals` connects them.
+  `test_home_top_bar.py` +5 tests, `test_home_page.py` +3 tests,
+  `test_main_window.py` +3 end-to-end tests.
+- **Sprint M — Frameless window + native chrome.**
+  `MainWindow` uses `Qt.FramelessWindowHint`; the native Windows title
+  bar is removed. `WindowDragFilter` installed on `HomeTopBar` and the
+  `Workspace`'s `TopOverlay` allows dragging the window from the custom
+  top bars (ignores `QPushButton` clicks). `_central_container` wraps
+  the `QStackedWidget` with `setContentsMargins(4, 4, 4, 4)` to create
+  a resize dead zone. Native resize is delegated to the OS via
+  `windowHandle().startSystemResize(edges)` in `mousePressEvent`, with
+  dynamic cursor feedback in `mouseMoveEvent`.
+  `_update_maximize_icon(restore=...)` keeps the maximize/restore icon
+  in sync between `HomeTopBar` and `ExtrasSegment`. 3 new integration
+  tests in `test_main_window.py` (`test_main_window_is_frameless`,
+  `test_main_window_drag_filter_is_installed`,
+  `test_main_window_central_container_has_margins`).
 
-Not yet delivered (Block 4, next work item): `ViewLayoutRenderer` event
-filter and `ACTIVE_ONLY` wiring. See `Next Steps.md` §8.6.
+**Not yet delivered (Phase 2 remaining):**
+
+- Block 6 — `debug_workspace.py` final visual validation.
+- Sprint G — `AreaLayoutRenderer` (inter-Area vs intra-Area split).
+- Sprint H — `EditorStack`.
+
+See `Next Steps.md` §8 for the next work item.
 
 ---
 
@@ -801,6 +848,64 @@ application.
 - Visualization tests are reproducible.
 - Behavior in environments without graphical support is defined and
   tested (skip with a clear reason, not a silent failure).
+
+### 8.2. Frameless Window and Native Chrome Delegation
+
+**Priority:** P2  
+**Category:** Consolidation  
+**Status:** Resolved 2026-11-15 (Sprint M)  
+**Subsystem:** UI / Bootstrap / Visualization
+
+#### Identified Issue
+
+The application used the native Windows title bar, which consumed
+vertical screen space and broke visual consistency with the custom
+top bars (HomePage and Workspace TopOverlay). The custom minimize,
+maximize and close buttons existed but were redundant with the
+native chrome.
+
+#### Required Corrections (Delivered)
+
+- `MainWindow` now uses `Qt.FramelessWindowHint` alongside
+  `Qt.WindowType.Window` to preserve correct OS-level window behavior
+  (taskbar, etc.).
+- `WindowDragFilter` installed on `HomeTopBar` and `TopOverlay` allows
+  dragging the window by clicking the custom top bars. It ignores
+  `QPushButton` events so buttons remain clickable.
+- `_central_container` wraps the `QStackedWidget` with a 4 px margin,
+  creating a resize dead zone where the OS can detect the mouse near
+  the border.
+- Native resizing is delegated to the OS via
+  `windowHandle().startSystemResize(edges)` in `mousePressEvent`
+  (Qt 6 API, cross-platform). `mouseMoveEvent` provides dynamic
+  cursor feedback.
+- `_update_maximize_icon(restore=...)` keeps the maximize/restore
+  icon in sync between `HomeTopBar` and `ExtrasSegment`.
+
+#### Documentation
+
+The behavior is documented in `MainWindow`'s class docstring and
+`WindowDragFilter`'s docstring. A code comment in
+`MainWindow.mousePressEvent` explains why `startSystemResize` is
+used instead of `ctypes`/`nativeEvent` (portability and
+maintainability).
+
+#### Known Limitation
+
+`window_restore` may not yet be present in the `UnicodeIconProvider`
+catalog. Tracked as a Phase 4.5 icon-set task in
+`Next Steps.md` §6. The behavior is correct; only the visual asset
+is pending.
+
+#### Acceptance Criteria
+
+- The window has no native title bar.
+- The window can be dragged by the custom top bars (Home and Workspace).
+- The window can be resized from all edges and corners.
+- The maximize/restore icon reflects the window state.
+- The window remains usable after maximize → restore.
+- Tests cover the frameless flags, drag filter installation, and
+  container margins.
 
 ---
 
@@ -1002,28 +1107,33 @@ duplicated, revisit.
 #### Identified Issues
 
 - Tests that describe nine fields in comments but verify only seven
-  (`test_editor_context_propagation.py`).
+  (`test_editor_context_propagation.py`). **Resolved:** the test now
+  asserts all nine fields, including `theme_service` and
+  `icon_provider` (Sprint C).
 - The architectural test
   `tests/unit/architecture/test_no_hardcoded_appearance.py` differs from
-  `tests/architecture/test_no_hardcoded_appearance.py`.
-- Invalid locale value `"pt-BR-BR"` in `test_loader.py`.
+  `tests/architecture/test_no_hardcoded_appearance.py`. **Resolved:** the
+  duplicate under `tests/unit/architecture/` was removed. The
+  `tests/architecture/` version is the live one.
+- Invalid locale value `"pt-BR-BR"` in `test_loader.py`. **Pending**:
+  still needs correction (P1).
 - Potential inconsistencies in the `_KNOWN_DEBT_FILES` list.
+  **Pending**: verify and align.
 
 #### Required Corrections
 
-- Review comments and assertions; align them.
-- Remove the duplicate `test_no_hardcoded_appearance.py` in
-  `tests/unit/architecture/`. A `Compare-Object` between the two files
-  shows that the `tests/unit/` version differs only by two placeholder
-  lines (the literal text `# ...` twice) and is otherwise a truncated copy
-  of the live `tests/architecture/` version, which contains the full
-  module docstring and the same `_KNOWN_DEBT_FILES` rules. The
-  `tests/architecture/` version is the live one.
-- Correct the locale value `"pt-BR-BR"` to `"pt-BR"`.
-- Review `_KNOWN_DEBT_FILES` and ensure the count matches the current
-  number of literals per file.
-- Add a test that asserts the `_KNOWN_DEBT_FILES` counts, so that future
-  additions are caught (the test already exists; verify it passes).
+- **Done:** align `test_editor_context_propagation.py` with the
+  nine-field contract.
+- **Done:** remove the duplicate `test_no_hardcoded_appearance.py`.
+- **Pending:** correct the locale value `"pt-BR-BR"` to `"pt-BR"`.
+- **Pending:** review `_KNOWN_DEBT_FILES` counts and ensure the count
+  matches the current number of literals per file.
+- **Done:** the test that asserts the `_KNOWN_DEBT_FILES` counts exists
+  and passes.
+- **Done:** add `test_main_window_is_frameless`,
+  `test_main_window_drag_filter_is_installed`, and
+  `test_main_window_central_container_has_margins` — **Delivered in
+  Sprint M**.
 
 #### Acceptance Criteria
 
@@ -1200,6 +1310,12 @@ core.
 6. Implement anatomical orientation indicators.
 7. Create reference datasets and regression tests.
 
+**Status (2026-11-15):** The MPR vertical flip was migrated from
+`QImage.mirrored` to `QImage.flipped` (2026-11-13). The orientation
+test, the code comment explaining the flip, and the anatomical
+orientation indicators remain pending. The DICOM pixel decoding
+(`pixel_array` adoption) remains pending.
+
 **Completion Milestone:** Reliable DICOM import and geometrically correct
 MPR visualization.
 
@@ -1230,6 +1346,14 @@ workflow.
    prerequisite for Phase 5.
 6. Correct test inconsistencies (§11.3).
 7. Correct `ProjectMetadata.with_status` docstring (§11.4).
+
+**Status (2026-11-15):** The frameless window (Sprint M) is a
+new Phase C deliverable that was not in the original plan. It is
+delivered. The `MainWindow` responsibility split (Phase C items 1–3)
+remains pending. The OpenGL configuration consolidation (§8.1)
+remains pending. The `WorkspaceSpec` / Module System integration
+(§6.1) remains pending. The test inconsistencies (§11.3) are
+partially resolved.
 
 **Completion Milestone:** Organized application initialization, navigation,
 command execution, and lifecycle management.
@@ -1380,3 +1504,27 @@ reviewers who have read the previous draft.
   integer comparisons with prose to avoid Markdown parser edge cases.
 - Version bumped to 2.1.
 - Companion documents line added at the top of the file.
+
+---
+
+## Appendix B — What Changed from v2.1 to v2.2
+
+This appendix documents the revisions from version 2.1 to version 2.2 for
+reviewers who have read the previous draft.
+
+### Content
+
+- §7.4: expanded to cover Blocks 4–6, 5.5–5.6.1, and Sprint M as
+  delivered. The "Not yet delivered" list now points to the correct
+  remaining items (Block 6, Sprint G, Sprint H).
+- §8.2: new section documenting the frameless window, drag filter,
+  native resize, and the `window_restore` icon limitation.
+- §11.3: updated to reflect that the `test_editor_context_propagation.py`
+  nine-field assertion, the duplicate `test_no_hardcoded_appearance.py`
+  removal, and the `_KNOWN_DEBT_FILES` count test are resolved. Locale
+  and debt count corrections remain pending.
+- §14: added status notes to Phase A and Phase C reflecting the
+  Sprint M delivery and the remaining items.
+- Appendix B (new) documents the v2.1 → v2.2 changes.
+- Version bumped to 2.2.
+- Date updated to 2026-11-15.
