@@ -25,6 +25,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QSizePolicy, QSplitter, QVBoxLayout, QWidget
 
 from cranioz.ui.workspace.areas.area import Area
+from cranioz.ui.editors.base_editor import Editor
 
 
 class AreaLayoutRenderer:
@@ -68,20 +69,35 @@ class AreaLayoutRenderer:
             splitter.addWidget(self._build_editor_container(editor, area, content_widgets))
         return splitter
 
-    def _build_editor_container(self, editor, area, content_widgets):
+    def _build_editor_container(
+            self,
+            editor: Editor,
+            area: Area,
+            content_widgets: dict[str, QWidget],
+    ) -> QWidget:
+        """Build the container widget for a single Editor.
+
+        The container has a QVBoxLayout that hosts the Editor's
+        ``content_widget``. Both the container and the content are given
+        ``QSizePolicy.Expanding`` / ``Ignored`` and ``setMinimumSize(0, 0)``
+        so the parent QSplitter respects the percentage-based sizes
+        computed by the Workspace, even when the placeholder or the
+        TomographyEditor has a large ``sizeHint``.
+        """
         container = QWidget()
         container.setObjectName(f"area_widget.{area.area_id}.editor.{editor.editor_id}")
         container.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        container.setMinimumSize(0, 0)  # <-- CRUCIAL
+        container.setMinimumSize(0, 0)  # Allow the container to shrink to 0.
 
         layout = QVBoxLayout(container)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
         content = editor.content_widget()
-        # Força o conteúdo a ignorar o sizeHint para não expandir o splitter
+        # Force the content to ignore its sizeHint so it does not
+        # expand the parent QSplitter beyond the percentage-based sizes.
         content.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
-        content.setMinimumSize(0, 0)  # <-- CRUCIAL
+        content.setMinimumSize(0, 0)  # Allow the content to shrink to 0.
 
         content.setParent(container)
         layout.addWidget(content)

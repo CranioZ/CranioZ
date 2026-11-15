@@ -13,6 +13,13 @@ The window controls (minimize, maximize, close) emit dedicated
 signals. The HomeTopBar does not call showMinimized(),
 showMaximized(), or close() itself: the MainWindow is responsible
 (Block 5.6.1).
+
+Block 5.5 fix: the __init__ was refactored to extract
+``_build_menu_button``, ``_build_title``, ``_build_help_button``,
+``_build_settings_button``, ``_build_window_controls`` and
+``_build_layout``. The original __init__ had 52 statements (Ruff
+PLR0915 limit is 50); the extracted methods keep each block small
+and the code easier to read. Behavior is unchanged.
 """
 
 from __future__ import annotations
@@ -52,68 +59,93 @@ class HomeTopBar(QWidget):
         self.setObjectName("home_page.top_bar")
         self.setFixedHeight(self.FIXED_HEIGHT)
 
-        self._menu_button = QPushButton()
-        self._menu_button.setObjectName("home_page.top_bar.menu")
-        self._menu_button.setFlat(True)
-        self._menu_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        self._menu_button.setIcon(icon_provider.icon("menu"))
-        self._menu_button.setToolTip(tr("homepage.top_bar.menu", "Menu"))
-        self._menu_button.setAccessibleName(tr("homepage.top_bar.menu", "Menu"))
-        self._menu_button.clicked.connect(self.toggle_sidebar_requested)
+        self._icon_provider = icon_provider
 
-        self._title = QLabel(tr("core.app.name", "CranioZ"))
-        self._title.setObjectName("home_page.top_bar.title")
-        title_font = self._title.font()
-        title_font.setPointSize(14)
-        title_font.setBold(True)
-        self._title.setFont(title_font)
+        # Build the widgets. Each helper returns the widget and
+        # wires its signal.
+        self._menu_button = self._build_menu_button()
+        self._title = self._build_title()
+        self._help_button = self._build_help_button()
+        self._settings_button = self._build_settings_button()
+        (
+            self._minimize_button,
+            self._maximize_button,
+            self._close_button,
+        ) = self._build_window_controls()
+        self._build_layout()
 
-        self._help_button = QPushButton()
-        self._help_button.setObjectName("home_page.top_bar.help")
-        self._help_button.setFlat(True)
-        self._help_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        self._help_button.setFixedWidth(32)
-        self._help_button.setIcon(icon_provider.icon("help"))
-        self._help_button.setToolTip(tr("homepage.top_bar.help", "Help"))
-        self._help_button.setAccessibleName(tr("homepage.top_bar.help", "Help"))
-        self._help_button.clicked.connect(self.help_requested)
+    # ----- Widget builders -----------------------------------------
 
-        self._settings_button = QPushButton()
-        self._settings_button.setObjectName("home_page.top_bar.settings")
-        self._settings_button.setFlat(True)
-        self._settings_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        self._settings_button.setFixedWidth(32)
-        self._settings_button.setIcon(icon_provider.icon("settings"))
-        self._settings_button.setToolTip(tr("homepage.top_bar.settings", "Settings"))
-        self._settings_button.setAccessibleName(tr("homepage.top_bar.settings", "Settings"))
-        self._settings_button.clicked.connect(self.settings_requested)
+    def _build_menu_button(self) -> QPushButton:
+        button = QPushButton()
+        button.setObjectName("home_page.top_bar.menu")
+        button.setFlat(True)
+        button.setCursor(Qt.CursorShape.PointingHandCursor)
+        button.setIcon(self._icon_provider.icon("menu"))
+        button.setToolTip(tr("homepage.top_bar.menu", "Menu"))
+        button.setAccessibleName(tr("homepage.top_bar.menu", "Menu"))
+        button.clicked.connect(self.toggle_sidebar_requested)
+        return button
 
-        # Window controls (Block 5.6.1). 28px wide, matching the
-        # ExtrasSegment buttons.
-        self._minimize_button = self._make_window_button(
-            icon_provider,
+    def _build_title(self) -> QLabel:
+        title = QLabel(tr("core.app.name", "CranioZ"))
+        title.setObjectName("home_page.top_bar.title")
+        font = title.font()
+        font.setPointSize(14)
+        font.setBold(True)
+        title.setFont(font)
+        return title
+
+    def _build_help_button(self) -> QPushButton:
+        button = QPushButton()
+        button.setObjectName("home_page.top_bar.help")
+        button.setFlat(True)
+        button.setCursor(Qt.CursorShape.PointingHandCursor)
+        button.setFixedWidth(32)
+        button.setIcon(self._icon_provider.icon("help"))
+        button.setToolTip(tr("homepage.top_bar.help", "Help"))
+        button.setAccessibleName(tr("homepage.top_bar.help", "Help"))
+        button.clicked.connect(self.help_requested)
+        return button
+
+    def _build_settings_button(self) -> QPushButton:
+        button = QPushButton()
+        button.setObjectName("home_page.top_bar.settings")
+        button.setFlat(True)
+        button.setCursor(Qt.CursorShape.PointingHandCursor)
+        button.setFixedWidth(32)
+        button.setIcon(self._icon_provider.icon("settings"))
+        button.setToolTip(tr("homepage.top_bar.settings", "Settings"))
+        button.setAccessibleName(tr("homepage.top_bar.settings", "Settings"))
+        button.clicked.connect(self.settings_requested)
+        return button
+
+    def _build_window_controls(self) -> tuple[QPushButton, QPushButton, QPushButton]:
+        """Build the minimize, maximize and close buttons."""
+        minimize = self._make_window_button(
             icon_name="window_minimize",
             object_name="home_page.top_bar.window_minimize",
             tooltip=tr("workspace.window.minimize", "Minimize"),
         )
-        self._minimize_button.clicked.connect(self.minimize_requested)
+        minimize.clicked.connect(self.minimize_requested)
 
-        self._maximize_button = self._make_window_button(
-            icon_provider,
+        maximize = self._make_window_button(
             icon_name="window_maximize",
             object_name="home_page.top_bar.window_maximize",
             tooltip=tr("workspace.window.maximize", "Maximize"),
         )
-        self._maximize_button.clicked.connect(self.maximize_requested)
+        maximize.clicked.connect(self.maximize_requested)
 
-        self._close_button = self._make_window_button(
-            icon_provider,
+        close = self._make_window_button(
             icon_name="window_close",
             object_name="home_page.top_bar.window_close",
             tooltip=tr("workspace.window.close", "Close"),
         )
-        self._close_button.clicked.connect(self.close_requested)
+        close.clicked.connect(self.close_requested)
 
+        return minimize, maximize, close
+
+    def _build_layout(self) -> None:
         layout = QHBoxLayout(self)
         layout.setContentsMargins(8, 4, 8, 4)
         layout.setSpacing(6)
@@ -130,7 +162,6 @@ class HomeTopBar(QWidget):
 
     def _make_window_button(
         self,
-        icon_provider: IconProvider,
         icon_name: str,
         object_name: str,
         tooltip: str,
@@ -140,7 +171,7 @@ class HomeTopBar(QWidget):
         button.setFlat(True)
         button.setCursor(Qt.CursorShape.PointingHandCursor)
         button.setFixedWidth(28)
-        button.setIcon(icon_provider.icon(icon_name))
+        button.setIcon(self._icon_provider.icon(icon_name))
         button.setToolTip(tooltip)
         button.setAccessibleName(tooltip)
         return button

@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import pytest
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QLabel, QSplitter, QWidget
+from PySide6.QtWidgets import QLabel, QSizePolicy, QSplitter, QWidget
 from pytestqt.qtbot import QtBot
 from tests.conftest import make_icon_provider, make_theme_service
 
@@ -317,7 +317,6 @@ def test_render_2x2_grid_container_expands(
     Without Expanding, the QVBoxLayout of the AreaWidget limits the
     grid to its sizeHint, leaving ~200 px of unused space.
     """
-    from PySide6.QtWidgets import QSizePolicy
 
     spec = ViewLayoutSpec.split(
         SplitDirection.VERTICAL,
@@ -345,7 +344,6 @@ def test_render_2x2_outer_splitter_expands(
     views: dict[str, View],
 ) -> None:
     """The outer QSplitter of the 2x2 grid must use Expanding policy."""
-    from PySide6.QtWidgets import QSizePolicy
 
     spec = ViewLayoutSpec.split(
         SplitDirection.VERTICAL,

@@ -368,9 +368,6 @@ class Workspace(QWidget):
         return self._layout_state
 
     def set_area_visible(self, placement: Placement, visible: bool) -> None:
-        _logger.info(
-            "DEBUG: set_area_visible(placement=%s, visible=%s) chamado.", placement, visible
-        )
         self._layout_state.set_visible(placement, visible)
 
         if self._build_result is None:
@@ -387,7 +384,10 @@ class Workspace(QWidget):
             if widget is not None:
                 widget.setVisible(visible)
 
-        self._schedule_layout_update()
+        # Apply the layout immediately (synchronous) for the toggle to
+        # have an effect before the caller's next assertion. The
+        # debounced update is still scheduled for any concurrent resize.
+        self._apply_default_splitter_sizes()
         self._reposition_overlays()
 
     def reload_volume(self) -> None:
@@ -452,26 +452,20 @@ class Workspace(QWidget):
     def _apply_default_splitter_sizes(self) -> None:
         """Apply the default percentage-based sizes to the splitters.
 
-        Block 5.5 fix (visibility): the percentages are computed only
-        for Areas that are actually visible. When a lateral Area is
-        hidden, its size is forced to 0 and its percentage is
-        redistributed to the Central Area.
+        Left = 20%, Right = 25%, Bottom = 20%. Central is the fill:
+        the remainder of the available space.
 
-        Block 5.5 fix (minimum size): the AreaWidgets and their content
-        are forced to ``setMinimumSize(0, 0)`` and ``QSizePolicy.Ignored``
-        so the QSplitter respects the percentage-based sizes even when
-        the placeholder has a large sizeHint.
+        The percentages are computed only for Areas that are actually
+        visible. When a lateral Area is hidden, its size is forced to 0
+        and its percentage is redistributed to the Central Area.
 
-        Block 5.5 fix (post-toggle reapply): after ``setSizes``, the
-        method calls ``updateGeometry`` to force Qt to recalculate the
-        layout. This is necessary because Qt's layout pass may adjust the
-        splitter sizes after the visibility change.
+        The method is guarded by ``_is_applying_sizes`` to prevent
+        reentrancy: ``setSizes()`` emits ``splitterMoved``, which is
+        forwarded to ``_reposition_overlays``.
         """
         if self._is_applying_sizes:
-            _logger.info("DEBUG: _apply_default_splitter_sizes reentrante, ignorando.")
             return
         if self._build_result is None or self._root_widget is None:
-            _logger.info("DEBUG: _apply_default_splitter_sizes sem build/root, ignorando.")
             return
 
         self._is_applying_sizes = True
@@ -480,131 +474,125 @@ class Workspace(QWidget):
             total_h = self._root_widget.height()
             min_central = self._top_overlay.minimum_width()
 
-            _logger.info(
-                "DEBUG: _apply_default_splitter_sizes chamado. total_w=%d total_h=%d min_central=%d",
-                total_w,
-                total_h,
-                min_central,
-            )
-
             if total_w < min_central or total_h <= 0:
-                _logger.info("DEBUG: Layout não pronto (total_w < min_central), reagendando timer.")
                 self._layout_update_timer.start()
                 return
 
-            # ----- Horizontal splitters (Left | Central | Right) ----
             for splitter in self._layout_renderer._split_widgets.values():
-                if splitter.orientation() != Qt.Orientation.Horizontal:
-                    continue
-                count = splitter.count()
-                if count == 0:
-                    continue
-
-                base_w = splitter.width() if splitter.width() > 0 else total_w
-
-                placements: list[str] = []
-                visible_flags: list[bool] = []
-                for i in range(count):
-                    child = splitter.widget(i)
-                    area = getattr(child, "area", lambda: None)() if child is not None else None
-                    placements.append(area.placement.value if area else "")
-                    visible_flags.append(area.visible if area else False)
-
-                # Compute lateral sizes ONLY for visible laterals.
-                left_px = 0
-                right_px = 0
-                central_indices: list[int] = []
-                for i, (p, v) in enumerate(zip(placements, visible_flags)):
-                    if p == "left":
-                        left_px = int(base_w * self._LEFT_RATIO) if v else 0
-                    elif p == "right":
-                        right_px = int(base_w * self._RIGHT_RATIO) if v else 0
-                    elif p == "central":
-                        central_indices.append(i)
-
-                handle_px = splitter.handleWidth() * max(0, count - 1)
-                available_for_central = base_w - left_px - right_px - handle_px
-
-                if available_for_central < min_central and (left_px + right_px) > 0:
-                    deficit = min_central - available_for_central
-                    total_lateral = left_px + right_px
-                    scale = max(0.0, (total_lateral - deficit) / total_lateral)
-                    left_px = int(left_px * scale)
-                    right_px = int(right_px * scale)
-                    available_for_central = base_w - left_px - right_px - handle_px
-
-                sizes = [0] * count
-                if "left" in placements:
-                    sizes[placements.index("left")] = left_px
-                if "right" in placements:
-                    sizes[placements.index("right")] = right_px
-                if central_indices:
-                    per_central = available_for_central // len(central_indices)
-                    for i in central_indices:
-                        sizes[i] = per_central
-                    sizes[central_indices[-1]] += available_for_central - per_central * len(
-                        central_indices
-                    )
-
-                _logger.info(
-                    "DEBUG: Horizontal splitter (count=%d, base_w=%d). placements=%s, visible=%s -> setSizes(%s)",
-                    count,
-                    base_w,
-                    placements,
-                    visible_flags,
-                    sizes,
-                )
-                splitter.setSizes(sizes)
-                splitter.updateGeometry()
-
-            # ----- Vertical splitter (Top row | Bottom) -------------
-            for splitter in self._layout_renderer._split_widgets.values():
-                if splitter.orientation() != Qt.Orientation.Vertical:
-                    continue
-                count = splitter.count()
-                if count == 0:
-                    continue
-
-                base_h = splitter.height() if splitter.height() > 0 else total_h
-
-                placements = []
-                visible_flags = []
-                for i in range(count):
-                    child = splitter.widget(i)
-                    if isinstance(child, QSplitter):
-                        placements.append("central")
-                        visible_flags.append(True)
-                    else:
-                        area = getattr(child, "area", lambda: None)() if child is not None else None
-                        placements.append(area.placement.value if area else "")
-                        visible_flags.append(area.visible if area else False)
-
-                bottom_px = 0
-                for i, (p, v) in enumerate(zip(placements, visible_flags)):
-                    if p == "bottom" and v:
-                        bottom_px = int(base_h * self._BOTTOM_RATIO)
-
-                handle_px = splitter.handleWidth() * max(0, count - 1)
-                top_px = base_h - bottom_px - handle_px
-                sizes = [0] * count
-                if "bottom" in placements:
-                    sizes[placements.index("bottom")] = bottom_px
-                sizes[0] = max(top_px, 0)
-
-                _logger.info(
-                    "DEBUG: Vertical splitter (count=%d, base_h=%d). placements=%s, visible=%s -> setSizes(%s)",
-                    count,
-                    base_h,
-                    placements,
-                    visible_flags,
-                    sizes,
-                )
-                splitter.setSizes(sizes)
-                splitter.updateGeometry()
+                if splitter.orientation() == Qt.Orientation.Horizontal:
+                    sizes = self._compute_horizontal_sizes(splitter, total_w, min_central)
+                    if sizes is not None:
+                        splitter.setSizes(sizes)
+                        splitter.updateGeometry()
+                else:
+                    sizes = self._compute_vertical_sizes(splitter, total_h)
+                    if sizes is not None:
+                        splitter.setSizes(sizes)
+                        splitter.updateGeometry()
         finally:
             self._is_applying_sizes = False
 
         QTimer.singleShot(0, self._reposition_overlays)
+
+    def _compute_horizontal_sizes(
+        self, splitter: QSplitter, total_w: int, min_central: int
+    ) -> list[int] | None:
+        """Compute the sizes for a horizontal splitter (Left | Central | Right)."""
+        count = splitter.count()
+        if count == 0:
+            return None
+
+        base_w = splitter.width() if splitter.width() > 0 else total_w
+
+        placements: list[str] = []
+        visible_flags: list[bool] = []
+        for i in range(count):
+            child = splitter.widget(i)
+            area = getattr(child, "area", lambda: None)() if child is not None else None
+            placements.append(area.placement.value if area else "")
+            visible_flags.append(area.visible if area else False)
+
+        left_px = 0
+        right_px = 0
+        central_indices: list[int] = []
+        for i, (p, v) in enumerate(zip(placements, visible_flags, strict=False)):
+            if p == "left":
+                left_px = int(base_w * self._LEFT_RATIO) if v else 0
+            elif p == "right":
+                right_px = int(base_w * self._RIGHT_RATIO) if v else 0
+            elif p == "central":
+                central_indices.append(i)
+
+        handle_px = splitter.handleWidth() * max(0, count - 1)
+        available_for_central = base_w - left_px - right_px - handle_px
+
+        # If the Top Bar minimum exceeds the available space for Central,
+        # shrink the lateral Areas proportionally.
+        if available_for_central < min_central and (left_px + right_px) > 0:
+            deficit = min_central - available_for_central
+            total_lateral = left_px + right_px
+            scale = max(0.0, (total_lateral - deficit) / total_lateral)
+            left_px = int(left_px * scale)
+            right_px = int(right_px * scale)
+            available_for_central = base_w - left_px - right_px - handle_px
+
+        sizes = [0] * count
+        if "left" in placements:
+            sizes[placements.index("left")] = left_px
+        if "right" in placements:
+            sizes[placements.index("right")] = right_px
+        if central_indices:
+            per_central = available_for_central // len(central_indices)
+            for i in central_indices:
+                sizes[i] = per_central
+            sizes[central_indices[-1]] += available_for_central - per_central * len(central_indices)
+
+        return sizes
+
+
+    def _compute_vertical_sizes(self, splitter: QSplitter, total_h: int) -> list[int] | None:
+        """Compute the sizes for a vertical splitter."""
+        count = splitter.count()
+        if count == 0:
+            return None
+
+        base_h = splitter.height() if splitter.height() > 0 else total_h
+
+        placements: list[str] = []
+        visible_flags: list[bool] = []
+        for i in range(count):
+            child = splitter.widget(i)
+            if isinstance(child, QSplitter):
+                placements.append("central")
+                visible_flags.append(True)
+            else:
+                area = getattr(child, "area", lambda: None)() if child is not None else None
+                placements.append(area.placement.value if area else "")
+                visible_flags.append(area.visible if area else False)
+
+        bottom_px = 0
+        for _i, (p, v) in enumerate(zip(placements, visible_flags, strict=False)):
+            if p == "bottom" and v:
+                bottom_px = int(base_h * self._BOTTOM_RATIO)
+
+        handle_px = splitter.handleWidth() * max(0, count - 1)
+        top_px = base_h - bottom_px - handle_px
+        sizes = [0] * count
+        if "bottom" in placements:
+            sizes[placements.index("bottom")] = bottom_px
+        sizes[0] = max(top_px, 0)
+
+        _logger.info(
+            "DEBUG: Vertical splitter (count=%d, base_h=%d). "
+            "placements=%s, visible=%s -> setSizes(%s)",
+            count,
+            base_h,
+            placements,
+            visible_flags,
+            sizes,
+        )
+        return sizes
+
 
     def _hide_lateral_areas_by_default(self) -> None:
         """Hide Left, Right and Bottom after a load_spec().

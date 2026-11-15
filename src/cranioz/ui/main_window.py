@@ -27,6 +27,7 @@ import os
 import uuid
 from typing import TYPE_CHECKING
 
+from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import (
     QFileDialog,
     QMainWindow,
@@ -331,7 +332,7 @@ class MainWindow(QMainWindow):
         else:
             self.showMaximized()
 
-    def closeEvent(self, event) -> None:  # noqa: N802
+    def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802
         if self._current_project_id is not None:
             reply = QMessageBox.question(
                 self,

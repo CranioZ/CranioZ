@@ -15,3 +15,7 @@
 # Coverage
 .venv\Scripts\python.exe -m coverage run -m pytest
 .venv\Scripts\python.exe -m coverage report
+
+
+# Teste com log
+.venv\Scripts\python.exe -u -m pytest -v --tb=short -x 2>&1 | Tee-Object -FilePath pytest_debug.log

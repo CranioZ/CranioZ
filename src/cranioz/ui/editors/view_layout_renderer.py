@@ -44,6 +44,7 @@ See ADR-0013 §2.4, §2.6.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 from collections.abc import Callable
 from typing import cast
@@ -165,10 +166,8 @@ class ViewLayoutRenderer:
         for view_id, view_filter in self._view_filters.items():
             widget = self._view_filter_targets.get(view_id)
             if widget is not None:
-                try:
+                with contextlib.suppress(RuntimeError):
                     widget.removeEventFilter(view_filter)
-                except RuntimeError:
-                    pass
         self._view_filters.clear()
         self._view_filter_targets.clear()
         self._toolbars_by_view.clear()

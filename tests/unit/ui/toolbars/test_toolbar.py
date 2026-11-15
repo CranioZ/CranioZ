@@ -13,6 +13,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 import pytest
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QPushButton
 from pytestqt.qtbot import QtBot
 from tests.conftest import make_icon_provider
@@ -268,10 +269,6 @@ def test_vertical_toolbar_buttons_align_to_top(
     vertically, which looks disconnected from the top edge of the
     View.
     """
-    from PySide6.QtCore import Qt
-
-    from cranioz.ui.toolbars.specification import ToolbarOrientation
-
     spec = make_toolbar_spec(
         orientation=ToolbarOrientation.VERTICAL,
         tool_ids=("tool.log",),
