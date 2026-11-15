@@ -160,7 +160,12 @@ def _build_qss(tokens: ThemeTokens) -> str:
     Covers the shell: base surfaces, standard controls, table + header,
     scrollbars, buttons (default and primary/secondary classes), labels
     with roles, cards, and the StartButton / FlowRow classes used by the
-    Home Page.
+    Home Page. Also covers the Workspace Areas (Block 5.5): Central
+    Area with ``background_elevated``, lateral Areas with
+    ``background_panel``, rounded corners, and an 8px splitter handle
+    that acts as the gap between Areas. And the window control buttons
+    (Block 5.6.1) with a flat OS-like style: transparent in the default
+    state, neutral hover for minimize/maximize, red hover for close.
     """
     c = tokens.colors
     t = tokens.typography
@@ -170,6 +175,16 @@ def _build_qss(tokens: ThemeTokens) -> str:
 
     # StartButton is a 56x56 circle; the radius is half the size.
     start_button_radius = 28
+
+    # Block 5.5: Area backgrounds and rounded corners. The Central
+    # Area is the lightest (background_elevated); lateral and bottom
+    # Areas are darker (background_panel). The splitter handle is
+    # painted with the window's base background so the gap reads as
+    # empty space, not as a divider.
+    area_central_bg = c.background_elevated
+    area_side_bg = c.background_panel
+    splitter_handle_bg = c.background_application
+    area_radius = b.radius_panel
 
     return f"""
 /* ----- Base ------------------------------------------------------ */
@@ -184,6 +199,38 @@ QMainWindow, QDialog {{
     background-color: {c.background_application};
 }}
 
+/* ----- Workspace Areas (Block 5.5) ------------------------------- */
+QWidget[area_placement="central"] {{
+    background-color: {area_central_bg};
+    border-radius: {area_radius}px;
+}}
+
+QWidget[area_placement="left"],
+QWidget[area_placement="right"],
+QWidget[area_placement="bottom"] {{
+    background-color: {area_side_bg};
+    border-radius: {area_radius}px;
+}}
+
+QSplitter::handle {{
+    background-color: {splitter_handle_bg};
+}}
+
+QSplitter::handle:horizontal {{
+    width: 8px;
+}}
+
+QSplitter::handle:vertical {{
+    height: 8px;
+}}
+
+/* ----- TopOverlay (Top Bar) -------------------------------------- */
+QFrame#top_overlay {{
+    background-color: {c.background_application};
+    border-radius: {area_radius}px;
+}}
+
+/* ----- Panels ---------------------------------------------------- */
 QFrame#Panel, QWidget#Panel {{
     background-color: {c.background_panel};
     border: {b.width_default}px solid {c.border_default};
@@ -203,6 +250,15 @@ QFrame[class="card_elevated"] {{
     border: {b.width_default}px solid {c.border_default};
     border-radius: {b.radius_panel}px;
     padding: {s.md}px;
+}}
+
+/* ----- Home Page Dashboard Containers ---------------------------- */
+QWidget#home_page_project_table, QWidget#home_page_flow_list, QWidget#home_page_community_sidebar {{
+    background-color: {c.background_panel};
+    border: {b.width_default}px solid {c.border_default};
+    border-radius: {b.radius_panel}px;
+    margin: {s.xs}px {s.sm}px;
+    padding: {s.sm}px;
 }}
 
 /* ----- Toolbars -------------------------------------------------- */
@@ -266,6 +322,47 @@ QPushButton[class="secondary"], QToolButton[class="secondary"] {{
 QPushButton[class="secondary"]:hover, QToolButton[class="secondary"]:hover {{
     background-color: {c.background_panel};
     border-color: {c.interactive_hover};
+}}
+
+/* ----- Window control buttons (Block 5.6.1) --------------------- */
+/* Flat buttons matching the Windows OS convention:
+   - Transparent background in the default state.
+   - Neutral hover for minimize and maximize.
+   - Red hover for close.
+   These selectors have higher specificity than the generic
+   QPushButton rule, so the transparent background wins. */
+QPushButton#home_page\\.top_bar\\.window_minimize,
+QPushButton#home_page\\.top_bar\\.window_maximize,
+QPushButton#home_page\\.top_bar\\.window_close,
+QPushButton#workspace\\.top_bar\\.extras_segment\\.minimize,
+QPushButton#workspace\\.top_bar\\.extras_segment\\.maximize,
+QPushButton#workspace\\.top_bar\\.extras_segment\\.close {{
+    background-color: transparent;
+    border: none;
+}}
+
+QPushButton#home_page\\.top_bar\\.window_minimize:hover,
+QPushButton#home_page\\.top_bar\\.window_maximize:hover,
+QPushButton#workspace\\.top_bar\\.extras_segment\\.minimize:hover,
+QPushButton#workspace\\.top_bar\\.extras_segment\\.maximize:hover {{
+    background-color: {c.background_elevated};
+}}
+
+QPushButton#home_page\\.top_bar\\.window_close:hover,
+QPushButton#workspace\\.top_bar\\.extras_segment\\.close:hover {{
+    background-color: {c.feedback_error};
+}}
+
+QPushButton#home_page\\.top_bar\\.window_minimize:pressed,
+QPushButton#home_page\\.top_bar\\.window_maximize:pressed,
+QPushButton#workspace\\.top_bar\\.extras_segment\\.minimize:pressed,
+QPushButton#workspace\\.top_bar\\.extras_segment\\.maximize:pressed {{
+    background-color: {c.interactive_pressed};
+}}
+
+QPushButton#home_page\\.top_bar\\.window_close:pressed,
+QPushButton#workspace\\.top_bar\\.extras_segment\\.close:pressed {{
+    background-color: {c.feedback_error};
 }}
 
 /* ----- StartButton (floating circular action) ------------------- */

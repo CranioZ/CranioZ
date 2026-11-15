@@ -200,6 +200,13 @@ class TomographyEditor(Editor):
 
         container = QWidget()
         container.setObjectName(f"editor_container.{self.editor_id}")
+        # Block 5.5: the container must expand to fill the Area.
+        # Without this, the AreaLayoutRenderer's QSplitter gives it
+        # only its sizeHint, leaving the Central Area half-empty.
+        container.setSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Expanding,
+        )
         outer = QHBoxLayout(container)
         outer.setContentsMargins(0, 0, 0, 0)
         outer.setSpacing(0)

@@ -32,6 +32,7 @@ from cranioz.ui.editors.editor_registry import EditorRegistry
 from cranioz.ui.editors.mock.console import MockConsoleEditor
 from cranioz.ui.editors.mock.objetos import MockObjetosEditor
 from cranioz.ui.editors.mock.posicao import MockPosicaoEditor
+from cranioz.ui.editors.mock.mpr import MockMPREditor
 from cranioz.ui.icons.unicode import UnicodeIconProvider
 from cranioz.ui.theme.service import ThemeService
 from cranioz.ui.theme.tokens import ThemeMode
@@ -80,6 +81,7 @@ def main() -> int:
     editors.register("editor.mock.posicao", MockPosicaoEditor)
     editors.register("editor.mock.objetos", MockObjetosEditor)
     editors.register("editor.mock.console", MockConsoleEditor)
+    editors.register("editor.mock.mpr", MockMPREditor)
 
     tools = ToolRegistry()
     tools.register("tool.log", LogTool)
@@ -118,7 +120,7 @@ def main() -> int:
                 area_id="area.central",
                 title="Central",
                 placement=Placement.CENTRAL,
-                editor_layout=EditorLayoutSpec.leaf("editor.mock.posicao"),
+                editor_layout=EditorLayoutSpec.leaf("editor.mock.mpr"),
             ),
             AreaSpec(
                 area_id="area.left",

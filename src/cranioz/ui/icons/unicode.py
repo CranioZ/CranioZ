@@ -37,6 +37,13 @@ _DEFAULT_GLYPHS: Final[dict[str, str]] = {
     "back": "←",
     "forward": "→",
     "sidebar_toggle": "▤",
+
+    # Window controls (Block 5.6)
+    "window_minimize": "—",  # em dash (horizontal bar)
+    "window_maximize": "▢",  # white square with rounded corners
+    "window_restore": "❐",  # two overlapping squares (reserved for toggle)
+    "window_close": "✕",  # multiplication X
+
     # 6.2 Area Toggles (4)
     "toggle_left": "◧",
     "toggle_right": "◨",

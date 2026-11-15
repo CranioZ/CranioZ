@@ -279,3 +279,23 @@ def test_start_button_disables_when_search_filters_selected_project(
     page._project_table_widget()._search_edit.setText("beta")
 
     assert page._start_button_widget().isEnabled() is False
+
+def test_top_bar_minimize_signal_is_forwarded(qtbot: QtBot) -> None:
+    page, _, _ = _make_page()
+    qtbot.addWidget(page)
+    with qtbot.waitSignal(page.minimize_requested, timeout=1000):
+        page._top_bar_widget()._minimize_button.click()  # noqa: SLF001
+
+
+def test_top_bar_maximize_signal_is_forwarded(qtbot: QtBot) -> None:
+    page, _, _ = _make_page()
+    qtbot.addWidget(page)
+    with qtbot.waitSignal(page.maximize_requested, timeout=1000):
+        page._top_bar_widget()._maximize_button.click()  # noqa: SLF001
+
+
+def test_top_bar_close_signal_is_forwarded(qtbot: QtBot) -> None:
+    page, _, _ = _make_page()
+    qtbot.addWidget(page)
+    with qtbot.waitSignal(page.close_requested, timeout=1000):
+        page._top_bar_widget()._close_button.click()  # noqa: SLF001

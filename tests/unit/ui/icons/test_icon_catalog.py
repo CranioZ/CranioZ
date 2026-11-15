@@ -4,8 +4,8 @@ from cranioz.ui.icons.unicode import _DEFAULT_GLYPHS
 
 
 def test_catalog_has_expected_count() -> None:
-    # 60 canonical + 6 shell-specific = 66
-    assert len(_DEFAULT_GLYPHS) == 66
+    # 60 canonical + 6 shell-specific + 4 window controls = 70
+    assert len(_DEFAULT_GLYPHS) == 70
 
 
 def test_catalog_contains_required_names() -> None:

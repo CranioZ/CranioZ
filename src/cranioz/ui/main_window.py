@@ -207,12 +207,6 @@ class MainWindow(QMainWindow):
     # ----- HomePage signal wiring ------------------------------------
 
     def _connect_home_signals(self) -> None:
-        """Connect HomePage signals to their handlers.
-
-        The import actions belong to the Top Bar's HomeSegment, not to
-        the HomePage; they are wired in ``_wire_top_bar_segments`` when
-        the Workspace is created.
-        """
         home = self._home
         home.project_open_requested.connect(self._on_project_open_requested)
         home.new_project_requested.connect(self._on_new_project_requested)
@@ -225,6 +219,10 @@ class MainWindow(QMainWindow):
         home.news_requested.connect(self._on_news_requested)
         home.feedback_requested.connect(self._on_feedback_requested)
         home.contribute_requested.connect(self._on_contribute_requested)
+        # Window controls (Block 5.6.1)
+        home.minimize_requested.connect(self.showMinimized)
+        home.maximize_requested.connect(self._on_window_maximize_requested)
+        home.close_requested.connect(self.close)
 
     # ----- Flow population -------------------------------------------
 
@@ -343,11 +341,11 @@ class MainWindow(QMainWindow):
                 self._tool_registry.register(tool_id, factory)
 
     def _wire_top_bar_segments(
-        self,
-        workspace: Workspace,
-        home: HomeSegment,
-        modules: ModulesSegment,
-        extras: ExtrasSegment,
+            self,
+            workspace: Workspace,
+            home: HomeSegment,
+            modules: ModulesSegment,
+            extras: ExtrasSegment,
     ) -> None:
         """Wire the Top Bar segment signals to their handlers.
 
@@ -369,7 +367,7 @@ class MainWindow(QMainWindow):
         # Modules zone
         modules.add_module_requested.connect(self._on_manage_flows_requested)
 
-        # Extras zone
+        # Extras zone (Block 5.6: window controls added)
         extras.settings_requested.connect(self._on_settings_requested)
         extras.themes_requested.connect(self._on_settings_requested)  # placeholder
         extras.help_requested.connect(self._on_help_requested)
@@ -381,6 +379,49 @@ class MainWindow(QMainWindow):
         extras.toggle_area_right_requested.connect(
             lambda: self._toggle_area(workspace, Placement.RIGHT)
         )
+        extras.minimize_requested.connect(self.showMinimized)
+        extras.maximize_requested.connect(self._on_window_maximize_requested)
+        extras.close_requested.connect(self.close)
+
+    def _on_window_maximize_requested(self) -> None:
+        """Toggle between maximized and normal window state.
+
+        The ExtrasSegment's maximize button emits a single signal for
+        both "maximize" and "restore". The MainWindow reads the current
+        state and toggles it. A future Phase 5.6.1 may add a visual
+        toggle (window_maximize icon vs. window_restore icon) driven by
+        the MainWindow's changeEvent.
+        """
+        if self.isMaximized():
+            self.showNormal()
+        else:
+            self.showMaximized()
+
+    def closeEvent(self, event) -> None:  # noqa: N802
+        """Confirm close when a project is open, and clean up.
+
+        The Top Bar's close button (Block 5.6) calls self.close(),
+        which triggers this event. If there is an open project, ask
+        for confirmation. On confirmation, tear down the project and
+        the Workspace before accepting the close.
+        """
+        if self._current_project_id is not None:
+            reply = QMessageBox.question(
+                self,
+                self._tr("workspace.dialog.confirm_close_title", "Close application?"),
+                self._tr(
+                    "workspace.dialog.confirm_close_body",
+                    "There is an open project. Any unsaved changes will be lost. "
+                    "Do you want to close the application?",
+                ),
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
+            )
+            if reply != QMessageBox.StandardButton.Yes:
+                event.ignore()
+                return
+            self._close_active_project()
+        event.accept()
 
     def _on_top_bar_content_changed(self) -> None:
         """Block 5.5: reapply the Workspace's splitter sizes when the
@@ -400,6 +441,18 @@ class MainWindow(QMainWindow):
         workspace.set_area_visible(placement, not current)
 
     def _on_home_clicked(self) -> None:
+        """Return to the Home Page (close the current project)."""
+        self._close_active_project()
+        self._stack.setCurrentWidget(self._home)
+        self._home.refresh()
+
+    def _close_active_project(self) -> None:
+        """Close the current project and tear down the Workspace.
+
+        Shared by _on_home_clicked (user navigation) and closeEvent
+        (application shutdown). The latter must not leave a project
+        open when the process exits.
+        """
         if self._current_project_id is None or self._workspace is None:
             return
 
@@ -410,9 +463,6 @@ class MainWindow(QMainWindow):
         self._workspace.deleteLater()
         self._workspace = None
         self._current_project_id = None
-
-        self._stack.setCurrentWidget(self._home)
-        self._home.refresh()
 
     # ----- DICOM import handler lifecycle ----------------------------
 

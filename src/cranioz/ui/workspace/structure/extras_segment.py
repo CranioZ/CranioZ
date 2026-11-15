@@ -1,16 +1,21 @@
 """ExtrasSegment — the right zone of the Workspace Top Bar.
 
-Three buttons, left to right:
+Six buttons, left to right:
 
 - ``⋮`` (three dots): a ``QMenu`` with application-level actions
   (Configurações, Temas, Ajuda, Atualizações, Sobre).
 - Two panel-toggle glyphs: toggle Area Bottom and toggle Area Right.
+- Three window controls: minimize, maximize/restore, close.
 
 The menu is auto-contained: the items are fixed and independent of
 context. Each item emits a dedicated signal. The segment does not
 know the application; the MainWindow connects the signals to its
 existing handlers (or placeholders, until the corresponding phases
 deliver real implementations).
+
+The window controls emit dedicated signals too. The ExtrasSegment
+does not call ``showMinimized()``, ``showMaximized()``, or
+``close()`` itself: those are the MainWindow's responsibility.
 
 The glyphs are resolved via ``IconProvider``.
 """
@@ -40,6 +45,12 @@ class ExtrasSegment(QWidget):
     toggle_area_bottom_requested = Signal()
     toggle_area_right_requested = Signal()
 
+    # Window controls (Block 5.6). The MainWindow decides what to do:
+    # showMinimized(), showMaximized()/showNormal(), close().
+    minimize_requested = Signal()
+    maximize_requested = Signal()
+    close_requested = Signal()
+
     def __init__(
         self,
         icon_provider: IconProvider,
@@ -53,6 +64,7 @@ class ExtrasSegment(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(4)
 
+        # ----- Extras (menu + area toggles) -----
         self._menu_button = self._make_button(
             icon_name="menu",
             object_name="workspace.top_bar.extras_segment.menu",
@@ -75,9 +87,34 @@ class ExtrasSegment(QWidget):
         )
         self._toggle_right_button.clicked.connect(self.toggle_area_right_requested)
 
+        # ----- Window controls (Block 5.6) -----
+        self._minimize_button = self._make_button(
+            icon_name="window_minimize",
+            object_name="workspace.top_bar.extras_segment.minimize",
+            tooltip=tr("workspace.window.minimize", "Minimize"),
+        )
+        self._minimize_button.clicked.connect(self.minimize_requested)
+
+        self._maximize_button = self._make_button(
+            icon_name="window_maximize",
+            object_name="workspace.top_bar.extras_segment.maximize",
+            tooltip=tr("workspace.window.maximize", "Maximize"),
+        )
+        self._maximize_button.clicked.connect(self.maximize_requested)
+
+        self._close_button = self._make_button(
+            icon_name="window_close",
+            object_name="workspace.top_bar.extras_segment.close",
+            tooltip=tr("workspace.window.close", "Close"),
+        )
+        self._close_button.clicked.connect(self.close_requested)
+
         layout.addWidget(self._menu_button)
         layout.addWidget(self._toggle_bottom_button)
         layout.addWidget(self._toggle_right_button)
+        layout.addWidget(self._minimize_button)
+        layout.addWidget(self._maximize_button)
+        layout.addWidget(self._close_button)
 
     # ----- Internals ------------------------------------------------
 

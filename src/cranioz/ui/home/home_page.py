@@ -73,6 +73,11 @@ class HomePage(QWidget):
     help_requested = Signal()
     settings_requested = Signal()
 
+    # Window controls (Block 5.6.1)
+    minimize_requested = Signal()
+    maximize_requested = Signal()
+    close_requested = Signal()
+
     # ----- Community sidebar -----------------------------------------
 
     community_requested = Signal()
@@ -137,7 +142,7 @@ class HomePage(QWidget):
         right_layout.addWidget(self._flow_list, stretch=42)
         right_layout.addWidget(self._bottom_bar, stretch=8)
 
-        # ----- Whole page: sidebar (left) | right column ---------------
+        # ----- Whole page: sidebar (left) | right column -------------
         # The sidebar uses QSizePolicy.Expanding vertically (see its
         # class), so it fills the full height of the HomePage — not
         # just the height of the content above the bottom bar.
@@ -183,6 +188,9 @@ class HomePage(QWidget):
         tb.toggle_sidebar_requested.connect(self._on_toggle_sidebar)
         tb.help_requested.connect(self.help_requested)
         tb.settings_requested.connect(self.settings_requested)
+        tb.minimize_requested.connect(self.minimize_requested)
+        tb.maximize_requested.connect(self.maximize_requested)
+        tb.close_requested.connect(self.close_requested)
 
         sb = self._sidebar
         sb.community_requested.connect(self.community_requested)

@@ -42,3 +42,34 @@ def test_settings_button_emits_signal(qtbot: QtBot, bar: HomeTopBar) -> None:
 
 def test_title_is_cranioz(bar: HomeTopBar) -> None:
     assert bar._title.text() == "CranioZ"
+
+@pytest.mark.qt
+def test_minimize_button_emits_signal(qtbot: QtBot, bar: HomeTopBar) -> None:
+    with qtbot.waitSignal(bar.minimize_requested, timeout=1000):
+        bar._minimize_button.click()  # noqa: SLF001
+
+
+@pytest.mark.qt
+def test_maximize_button_emits_signal(qtbot: QtBot, bar: HomeTopBar) -> None:
+    with qtbot.waitSignal(bar.maximize_requested, timeout=1000):
+        bar._maximize_button.click()  # noqa: SLF001
+
+
+@pytest.mark.qt
+def test_close_button_emits_signal(qtbot: QtBot, bar: HomeTopBar) -> None:
+    with qtbot.waitSignal(bar.close_requested, timeout=1000):
+        bar._close_button.click()  # noqa: SLF001
+
+
+@pytest.mark.qt
+def test_window_buttons_have_fixed_width_28(bar: HomeTopBar) -> None:
+    assert bar._minimize_button.width() == 28  # noqa: SLF001
+    assert bar._maximize_button.width() == 28  # noqa: SLF001
+    assert bar._close_button.width() == 28  # noqa: SLF001
+
+
+@pytest.mark.qt
+def test_window_buttons_have_icons(bar: HomeTopBar) -> None:
+    assert not bar._minimize_button.icon().isNull()  # noqa: SLF001
+    assert not bar._maximize_button.icon().isNull()  # noqa: SLF001
+    assert not bar._close_button.icon().isNull()  # noqa: SLF001

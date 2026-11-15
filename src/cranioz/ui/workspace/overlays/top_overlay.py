@@ -164,17 +164,21 @@ class TopOverlay(Overlay):
 
         The Top Bar is anchored to the top-left of the Region with
         the configured margins. Its width is the Region's width
-        minus twice the lateral margin, but never less than
-        ``minimum_width()``. If the Region is narrower than the
-        Top Bar's minimum, the Top Bar overflows the Region (the
-        Workspace is responsible for preventing that by keeping the
-        Central Area wide enough; see ``Workspace._apply_default_splitter_sizes``).
+        minus twice the lateral margin. The Top Bar respects the
+        Region's width: it does not overflow, even if the Region is
+        narrower than ``minimum_width()``.
+
+        The Workspace is responsible for keeping the Central Area
+        wide enough: ``Workspace._apply_default_splitter_sizes``
+        reserves at least ``minimum_width()`` for the Central Area,
+        so the Top Bar always fits. If the user manually resizes the
+        window below that threshold, the Top Bar is clipped (the
+        Phase 4.5 ``ViewerLayoutManager`` will add scroll to the
+        Modules segment to handle this case gracefully).
         """
-        min_width = self.minimum_width()
         x = bounds.x + self._margin_x
         y = bounds.y + self._margin_y
         width = max(0, bounds.width - 2 * self._margin_x)
-        width = max(width, min_width)
         height = self._height
 
         self._widget.setGeometry(

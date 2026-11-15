@@ -293,6 +293,7 @@ class LayoutRenderer:
             splitter = QSplitter(self._orientation_for(split.direction))
             splitter.setObjectName(f"split_{key}")
             splitter.setChildrenCollapsible(False)
+            splitter.setHandleWidth(8)
             splitter.splitterMoved.connect(self._on_splitter_moved)
             self._split_widgets[key] = splitter
 
@@ -322,13 +323,23 @@ class LayoutRenderer:
         for widget in expected_widgets:
             splitter.addWidget(widget)
 
-        # Give every child the same stretch factor and equal sizes.
-        for index in range(splitter.count()):
-            splitter.setStretchFactor(index, 1)
-        if splitter.count() >= 2:
-            n = splitter.count()
-            base = 1000 // n
-            splitter.setSizes([base] * n)
+        # Configure stretch factors and sizes dynamically based on placement or position
+        count = splitter.count()
+        for index in range(count):
+            widget = splitter.widget(index)
+            # If it is a central area in a horizontal splitter, give it higher stretch priority (stretch=2),
+            # while the side areas keep stretch=1 to maintain fixed/proportional sizes.
+            is_central = hasattr(widget, "area") and widget.area().placement.value == "central"
+            stretch = 2 if is_central else 1
+            splitter.setStretchFactor(index, stretch)
+
+        if count >= 2:
+            # Initial proportional size distribution (Central with larger proportion)
+            if splitter.orientation() == Qt.Orientation.Horizontal and count == 3:
+                splitter.setSizes([200, 800, 250])  # Proportional example for Left, Central, Right
+            else:
+                base = 1000 // count
+                splitter.setSizes([base] * count)
 
     @staticmethod
     def _orientation_for(direction: SplitDirection) -> Qt.Orientation:

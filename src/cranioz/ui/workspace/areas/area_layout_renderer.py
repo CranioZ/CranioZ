@@ -22,7 +22,7 @@ See ADR-0013 §2.2, §2.7.
 from __future__ import annotations
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QSplitter, QWidget
+from PySide6.QtWidgets import QSizePolicy, QSplitter, QWidget
 
 from cranioz.ui.editors.base_editor import Editor
 from cranioz.ui.workspace.areas.area import Area
@@ -70,10 +70,10 @@ class AreaLayoutRenderer:
         return splitter
 
     def _build_editor_container(
-        self,
-        editor: Editor,
-        area: Area,
-        content_widgets: dict[str, QWidget],
+            self,
+            editor: Editor,
+            area: Area,
+            content_widgets: dict[str, QWidget],
     ) -> QWidget:
         """Build the container widget for a single Editor.
 
@@ -82,9 +82,20 @@ class AreaLayoutRenderer:
         Layout Tree and View-level Toolbars). The container only
         namespaces it so that tests and the AreaWidget can identify
         it.
+
+        Block 5.5: the container must expand to fill the Area.
+        Without this, the AreaLayoutRenderer's QSplitter gives it
+        only its sizeHint, leaving the Central Area half-empty.
+        The Expanding size policy is what lets the QSplitter
+        distribute the available space to the container instead of
+        collapsing it to the Editor's minimum.
         """
         container = QWidget()
         container.setObjectName(f"area_widget.{area.area_id}.editor.{editor.editor_id}")
+        container.setSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Expanding,
+        )
 
         content = editor.content_widget()
         content.setParent(container)

@@ -52,6 +52,7 @@ _KNOWN_DEBT_FILES: frozenset[str] = frozenset(
         "src/cranioz/ui/workspace/workspace.py",
         "src/cranioz/ui/workspace/workspace_spec.py",
         "src/cranioz/ui/editors/viewport_3d/presets.py",
+        "src/cranioz/ui/editors/mock/mpr.py",
     }
 )
 
@@ -64,6 +65,9 @@ _DEBT_MAX_LITERALS: dict[str, int] = {
     "src/cranioz/ui/workspace/workspace.py": 3,
     "src/cranioz/ui/workspace/workspace_spec.py": 1,
     "src/cranioz/ui/editors/viewport_3d/presets.py": 3,
+    # Debug-only mock. 4 viewport colors + 1 border color + 1 rgba
+    # overlay + 1 button background = 7 literals.
+    "src/cranioz/ui/editors/mock/mpr.py": 7,
 }
 
 #: Directories to scan for hardcoded appearance literals.

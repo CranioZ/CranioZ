@@ -14,11 +14,13 @@ They are intentionally simple: no VTK, no real data, no state.
 """
 
 from cranioz.ui.editors.mock.console import MockConsoleEditor
+from cranioz.ui.editors.mock.mpr import MockMPREditor
 from cranioz.ui.editors.mock.objetos import MockObjetosEditor
 from cranioz.ui.editors.mock.posicao import MockPosicaoEditor
 
 __all__ = [
     "MockConsoleEditor",
+    "MockMPREditor",
     "MockObjetosEditor",
     "MockPosicaoEditor",
 ]

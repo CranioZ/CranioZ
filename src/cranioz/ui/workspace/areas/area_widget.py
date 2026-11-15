@@ -20,6 +20,17 @@ The AreaLayoutRenderer is responsible for:
 - Materializing the Editor containers and their Toolbars.
 - Building the QSplitter when there are multiple Editors.
 
+Block 5.5: the AreaWidget exposes a dynamic property
+``area_placement`` (values: ``"central"``, ``"left"``, ``"right"``,
+``"bottom"``) consumed by the global QSS to paint the Area with the
+correct background and rounded corners. The property is set in
+``__init__`` before ``refresh()``; ``unpolish/polish`` is called to
+force the QSS to match immediately.
+
+Block 5.5: ``refresh()`` returns early when the Area model says it
+is hidden. This prevents the placeholder label from appearing in an
+Area that the Workspace has just hidden via ``set_area_visible``.
+
 See ADR-0013 (Editor Layout Tree), ADR-0002 (Toolbars inside Editors).
 """
 
@@ -82,6 +93,19 @@ class AreaWidget(QWidget):
 
         self.setObjectName(f"area_widget.{area.area_id}")
 
+        # Block 5.5: expose the placement as a dynamic property so
+        # the global QSS (QWidget[area_placement="..."]) can paint
+        # the Area with the correct background and rounded corners.
+        # The property MUST be set before WA_StyledBackground and
+        # before refresh() so the QSS matches on the first paint.
+        self.setProperty("area_placement", self._area.placement.value)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        # Force the QSS to apply now that the property is set. Without
+        # this, the QSS set on the QApplication before this widget was
+        # created does not match the property-based selector.
+        self.style().unpolish(self)
+        self.style().polish(self)
+
         self._root_layout = QVBoxLayout(self)
         self._root_layout.setContentsMargins(0, 0, 0, 0)
         self._root_layout.setSpacing(0)
@@ -105,6 +129,13 @@ class AreaWidget(QWidget):
         return self._area
 
     def refresh(self) -> None:
+        # Block 5.5: if the Area model says it is hidden, do not
+        # render the placeholder or the content. The Workspace also
+        # calls setVisible(False) on the widget, but refresh() may
+        # run while the widget is still visible during a transition.
+        if not self._area.visible:
+            return
+
         # 1. Dispose the Editors' internal resources before rebuilding.
         for editor in self._area.editors():
             try:
@@ -118,6 +149,10 @@ class AreaWidget(QWidget):
         # 3. Build the empty placeholder if there are no Editors.
         if self._area.is_empty():
             self._root_layout.addWidget(self._build_empty_placeholder())
+            # Re-polish after adding the placeholder, so the QSS
+            # applies to the new child.
+            self.style().unpolish(self)
+            self.style().polish(self)
             return
 
         # 4. Optional debug label.
@@ -135,6 +170,11 @@ class AreaWidget(QWidget):
         # 6. Force VTK to render its first frame.
         QTimer.singleShot(0, self._force_vtk_render)
         QTimer.singleShot(100, self._force_vtk_render)
+
+        # 7. Re-polish after the refresh, so the QSS applies to the
+        # newly created children (the container, its labels, etc.).
+        self.style().unpolish(self)
+        self.style().polish(self)
 
     # ----- Internals ------------------------------------------------
 
@@ -217,4 +257,6 @@ class AreaWidget(QWidget):
         label = QLabel(f"{self._area.title} (empty)")
         label.setObjectName(f"area_widget.{self._area.area_id}.placeholder")
         label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        # Transparent so the Area background (via QSS) shows through.
+        label.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         return label
