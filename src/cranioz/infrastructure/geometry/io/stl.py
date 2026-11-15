@@ -132,6 +132,14 @@ def _read_faces(poly: vtkPolyData) -> np.ndarray:
     if vtk_cells is None or vtk_cells.GetNumberOfCells() == 0:
         raise StlReadError("STL contains no triangles")
 
+    # TODO(vtk-10): GetData() is deprecated in VTK 9.6 and will be removed
+    # in VTK 10. Migrate to ExportLegacyFormat() with an explicit
+    # vtkIdTypeArray destination when the VTK version is bumped.
+    # Until then, GetData() is correct and avoids the extra allocation +
+    # copy that ExportLegacyFormat would introduce for large STLs.
+    #
+    # The VTK deprecation warning is expected and documented in
+    # Consolidation Plan §10.2.
     raw = vtk_to_numpy(vtk_cells.GetData())  # type: ignore[no-untyped-call]
     # vtkCellArray's legacy representation is flat:
     # [3, i0, i1, i2, 3, i3, i4, i5, ...].

@@ -8,7 +8,7 @@ import uuid
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QEvent, QObject, QPoint, Qt
-from PySide6.QtGui import QCloseEvent
+from PySide6.QtGui import QCloseEvent, QMouseEvent
 from PySide6.QtWidgets import (
     QFileDialog,
     QMainWindow,
@@ -83,7 +83,7 @@ class WindowDragFilter(QObject):
         self._window = window
         self._drag_pos: QPoint | None = None
 
-    def eventFilter(self, obj: QObject, event: QEvent) -> bool:
+    def eventFilter(self, obj: QObject, event: QEvent) -> bool:  # noqa: N802
         if isinstance(obj, QPushButton):
             return super().eventFilter(obj, event)
 
@@ -189,9 +189,9 @@ class MainWindow(QMainWindow):
         # para que os eventos de mouse cheguem na MainWindow
         self._central_container.setMouseTracking(True)
 
-        self._home._top_bar_widget().installEventFilter(self._drag_filter)  # noqa: SLF001
-        if hasattr(self._home._top_bar_widget(), "_title"):  # noqa: SLF001
-            self._home._top_bar_widget()._title.installEventFilter(self._drag_filter)  # noqa: SLF001
+        self._home._top_bar_widget().installEventFilter(self._drag_filter)
+        if hasattr(self._home._top_bar_widget(), "_title"):
+            self._home._top_bar_widget()._title.installEventFilter(self._drag_filter)
 
         self._connect_home_signals()
         self._populate_flow_list()
@@ -202,7 +202,7 @@ class MainWindow(QMainWindow):
 
     # ----- Redimensionamento Nativo (Qt 6) ---------------------------
 
-    def mouseMoveEvent(self, event) -> None:  # noqa: N802
+    def mouseMoveEvent(self, event: QMouseEvent) -> None:  # noqa: N802
         """Detecta a borda e muda o cursor para redimensionamento."""
         pos = event.position().toPoint()
         edges = Qt.Edge(0)
@@ -224,7 +224,7 @@ class MainWindow(QMainWindow):
 
         super().mouseMoveEvent(event)
 
-    def mousePressEvent(self, event) -> None:  # noqa: N802
+    def mousePressEvent(self, event: QMouseEvent) -> None:  # noqa: N802
         """Inicia o redimensionamento nativo se o clique for na borda."""
         if event.button() == Qt.MouseButton.LeftButton:
             pos = event.position().toPoint()
@@ -315,7 +315,7 @@ class MainWindow(QMainWindow):
         except Exception:
             _logger.exception("cannot load flows into the Home Page")
             return
-        self._home._flow_list_widget().set_flows(definitions)  # noqa: SLF001
+        self._home._flow_list_widget().set_flows(definitions)
 
     # ----- Project navigation ----------------------------------------
 
@@ -435,15 +435,15 @@ class MainWindow(QMainWindow):
         icon_name = "window_restore" if restore else "window_maximize"
         icon = self._icon_provider.icon(icon_name)
 
-        tb = self._home._top_bar_widget()  # noqa: SLF001
+        tb = self._home._top_bar_widget()
         if hasattr(tb, "_maximize_button"):
-            tb._maximize_button.setIcon(icon)  # noqa: SLF001
+            tb._maximize_button.setIcon(icon)
 
         if self._workspace is not None:
             right_segment = self._workspace.top_overlay().right_segment()
             extras = right_segment.findChild(ExtrasSegment)
             if extras and hasattr(extras, "_maximize_button"):
-                extras._maximize_button.setIcon(icon)  # noqa: SLF001
+                extras._maximize_button.setIcon(icon)
 
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802
         if self._current_project_id is not None:
@@ -466,7 +466,7 @@ class MainWindow(QMainWindow):
 
     def _on_top_bar_content_changed(self) -> None:
         if self._workspace is not None:
-            self._workspace._schedule_layout_update()  # noqa: SLF001
+            self._workspace._schedule_layout_update()
 
     def _toggle_area(self, workspace: Workspace, placement: Placement) -> None:
         current = workspace.layout_state().is_visible(placement)

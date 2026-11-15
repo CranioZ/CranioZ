@@ -63,7 +63,7 @@ The implementation is divided into 11 phases. The sequence establishes the platf
 |---|---|---|---|
 | **Phase 0** | Foundation & Boot | ✅ Implemented | Startup performance improvements |
 | **Phase 1** | Contracts, Core Domain & i18n | ✅ Implemented | — |
-| **Phase 2** | Workspace Engine & Icons | 🚧 In Progress | Block 4 (`ACTIVE_ONLY`), Block 5 (`TomographyEditor` wiring), Block 6 (`debug_workspace.py`), `AreaLayoutRenderer`, `EditorStack` |
+| **Phase 2** | Workspace Engine & Icons | 🚧 In Progress | Sprint H (`EditorStack`) |
 | **Phase 3** | Project, Home Page & Professional Module | 🚧 In Progress | `ProjectIndex`, coordinated deletion, async loading, Professional module |
 | **Phase 4** | Scene & Visualization | ⏳ Planned | Import Dialog, Viewer Layout Manager, 2D/3D Tools, LUTs |
 | **Phase 5** | Clinical Flows & Panel Widget Registry | ⏳ Planned | WorkflowEngine, WorkflowBreadcrumb, Panel Registry |
@@ -89,11 +89,11 @@ The implementation is divided into 11 phases. The sequence establishes the platf
 
 **Phases 1, 2, and 3** are being closed formally before deeper investment in Phase 4. This prevents silent debt from accumulating as the clinical pipeline grows.
 
-Phase 1 is now closed. Phases 2 and 3 remain in progress. Phase 4 begins only after Phases 2–3 are marked `✅ Implemented` in this document.
+Phase 1 is now closed. Phase 2 is one deliverable away from closure (`EditorStack`, Sprint H). Phase 3 remains in progress. Phase 4 begins only after Phases 2–3 are marked `✅ Implemented` in this document.
 
 ### 5.1 Immediate Priorities
 
-The work order below respects dependencies between Phases 2–3. Blocks 1–6 complete the Toolbar/Editor active-View foundation before Sprint G; the foundation is a prerequisite for `AreaLayoutRenderer`, which reuses the same event-filter pattern for Area activation.
+The work order below respects dependencies between Phases 2–3. Blocks 1–6 completed the Toolbar/Editor active-View foundation; Sprint G completed the intra-Area split; Sprint H completes the multi-Editor Area composition.
 
 | Sprint | Phase | Deliverable | Status | Depends on |
 |---|---|---|---|---|
@@ -106,21 +106,22 @@ The work order below respects dependencies between Phases 2–3. Blocks 1–6 co
 | **1** | 2 | **Toolbar polish** (`AlignTop`, fixed width, `Expanding` grid) | ✅ Complete | — |
 | **2** | 2 | **`Toolbar.set_active` / `set_expanded` / chevron** | ✅ Complete | 1 |
 | **3** | 2 | **`Editor._EditorSignals` + `Editor.set_active_view`** | ✅ Complete | — |
-| **4** | 2 | **`ViewLayoutRenderer` event filter + `ACTIVE_ONLY`** | ⏳ Next | 3 |
-| **5** | 2 | **`TomographyEditor` wires the active-View flow** | 🚧 Pending | 4 |
-| **6** | 2 | **`debug_workspace.py` final visual validation** | 🚧 Pending | 5 |
-| — | — | **Document i18n/scene test stubs** (README + `# TODO`) | 🚧 Pending | — |
-| — | — | **Resolve `test_no_hardcoded_appearance.py` duplicate** | 🚧 Pending | — |
-| **G** | 2 | `AreaLayoutRenderer` | 🚧 Pending | Blocks 1–6 |
-| **H** | 2 | `EditorStack` | 🚧 Pending | G |
+| **4** | 2 | **`ViewLayoutRenderer` event filter + `ACTIVE_ONLY`** | ✅ Complete | 3 |
+| **5** | 2 | **`TomographyEditor` wires the active-View flow** | ✅ Complete | 4 |
+| **5.5** | 2 | **Percentage-based Area layout, QSS Areas, TopOverlay minimum width** | ✅ Complete | 4, 5 |
+| **5.6** | 2 | **Window controls in ExtrasSegment; `closeEvent` with confirmation** | ✅ Complete | 5.5 |
+| **5.6.1** | 2 | **Window controls in HomeTopBar; end-to-end tests** | ✅ Complete | 5.6 |
+| **6** | 2 | **`debug_workspace.py` final visual validation** | ✅ Complete | 5, 5.5, 5.6, 5.6.1, M |
+| **G** | 2 | **`AreaLayoutRenderer` (inter-Area vs intra-Area split)** | ✅ Complete | 6 |
+| **H** | 2 | **`EditorStack`** | ⏳ Next | G |
 | **I** | 3 | `ProjectIndex` | 🚧 Pending | — |
 | **J** | 3 | Coordinated deletion | 🚧 Pending | I |
 | **K** | 3 | Async loading | 🚧 Pending | I, J |
 | **L** | 3 | Professional module | 🚧 Pending | C, E, F |
 
-**Next work item:** Block 4 — `ViewLayoutRenderer` event filter + `ACTIVE_ONLY`. It is the next Phase 2 deliverable and depends on Block 3 (complete). Before Block 4, close the cleanup documentation tasks (see `Next Steps.md` §8.1–§8.5).
+**Next work item:** Sprint H — `EditorStack`. It is the last Phase 2 deliverable. The point of extension is `AreaLayoutRenderer._resolve_spec`: change it to return `AreaLayoutType.STACK` for multiple Editors, and replace `_render_split` with `_render_stack`.
 
-**Note on ordering:** Blocks 4–6 complete the active-View foundation and are prerequisites for Sprint G (`AreaLayoutRenderer` uses the same event-filter pattern for Area activation). Sprints G and I are independent. Sprint H depends on G; Sprints J and K depend on I; Sprint L depends on C (complete), E (complete), and F (complete).
+**Note on ordering:** Blocks 4–6, 5.5–5.6.1, Sprint M, and Sprint G are complete. Sprint H is the last Phase 2 deliverable. Sprints I and J are independent of H. Sprints J and K depend on I; Sprint L depends on C (complete), E (complete), and F (complete).
 
 ---
 
@@ -194,7 +195,7 @@ The work order below respects dependencies between Phases 2–3. Blocks 1–6 co
 
 ### Phase 2: Workspace Engine & Icons
 
-**Goal:** Close Phase 2 formally. Blockers: Blocks 4–6, Sprint G (`AreaLayoutRenderer`), Sprint H (`EditorStack`).
+**Goal:** Close Phase 2 formally. Blocker: Sprint H (`EditorStack`).
 
 **Deliverables:**
 
@@ -220,7 +221,7 @@ The work order below respects dependencies between Phases 2–3. Blocks 1–6 co
 - ✅ **Sprint F (`IconProvider` + `UnicodeIconProvider`):**
   - `IconState` enum (`DEFAULT`, `HOVER`, `PRESSED`, `SELECTED`, `DISABLED`).
   - `IconProvider` Protocol (`icon(name, size, state) -> QIcon`, `text_glyph(name) -> str`, `invalidate_cache() -> None`).
-  - `UnicodeIconProvider` with the closed 60-icon catalog from `docs/architecture/appearance/icons/icons_and_icon_manager.md` §6.
+  - `UnicodeIconProvider` with the closed 70-icon catalog (60 canonical + 6 shell + 4 window controls).
   - Injection into `MainWindow`, `Workspace`, `HomePage`, `TopBar` segments, `Toolbar`, `StartButton`, `FlowRow`.
   - Migration of hardcoded glyphs in `TopBar`, `HomeSegment`, `ModulesSegment`, `ExtrasSegment`, `HomePage`, `Toolbar`, `StartButton`, `FlowRow`.
   - `_WHITELIST` in `test_no_hardcoded_strings_in_shell_widgets.py` emptied (Sprint B debt paid).
@@ -231,34 +232,62 @@ The work order below respects dependencies between Phases 2–3. Blocks 1–6 co
   - `_central_container` wraps the `QStackedWidget` with a 4px margin, creating a dead zone where native resize is detected.
   - Native resizing via `windowHandle().startSystemResize(edges)` in `mousePressEvent`, with dynamic cursor feedback in `mouseMoveEvent` (Qt 6 API, cross-platform).
   - Maximize/restore icon sync between `HomeTopBar` and `ExtrasSegment` via `_update_maximize_icon`.
-  - **Known limitation:** the `window_restore` icon is referenced by `_update_maximize_icon` but may not yet be present in the `IconProvider` catalog. Tracked as a future icon-set task.
-  - Added integration tests: `test_main_window_is_frameless`, `test_main_window_drag_filter_is_installed`, `test_main_window_central_container_has_margins`.
-  - Suite: 1625 passed, 2 skipped (Block 5.5).
+  - Integration tests: `test_main_window_is_frameless`, `test_main_window_drag_filter_is_installed`, `test_main_window_central_container_has_margins`.
 - ✅ **Toolbar and Editor active-View foundation (Blocks 1–3, 2026-11-13):**
   - **Block 1 — Toolbar polish.** `Toolbar._root_layout.setAlignment(Qt.AlignmentFlag.AlignTop)`; `ViewLayoutRenderer._VERTICAL_TOOLBAR_WIDTH = 96` with `setFixedWidth(96)` for LEFT/RIGHT toolbars (fits "Toggle" without truncation); grid container and outer splitter use `QSizePolicy.Expanding`; vertical toolbars get `(Fixed, Expanding)` and horizontal toolbars get `(Expanding, Fixed)`. 8 tests.
   - **Block 2 — `Toolbar.set_active` / `set_expanded` / chevron.** `set_active(bool)` attenuates via `QGraphicsOpacityEffect(0.5)` without hiding; `set_expanded(bool)` compresses to a chevron; `expanded_changed` signal. Chevron flips automatically; persistence deferred. 11 tests.
   - **Block 3 — `Editor._EditorSignals` + `Editor.set_active_view`.** `active_view_changed = Signal(object)` (str | None); `set_active_view` validates `view_id` against the Editor's Views (unknown → WARNING, no signal); idempotent for the same id; `None` clears. `dispose()` resets without emitting. 12 tests in `tests/unit/ui/editors/test_editor_active_view.py`.
-  - See `Next Steps.md` §2.2 for the full delivery list.
-- ⏳ **Block 4 (`ViewLayoutRenderer` event filter + `ACTIVE_ONLY`):**
-  - Install `QObject` event filter on each View container and on `QVTKRenderWindowInteractor` (for the 3D view).
+- ✅ **Block 4 (`ViewLayoutRenderer` event filter + `ACTIVE_ONLY`):**
+  - Installs `QObject` event filter on each View's `activation_widget()` (Viewport3DView returns the `QVTKRenderWindowInteractor`; other Views return `content_widget()`).
   - Filter detects `QEvent.MouseButtonPress` and `QEvent.FocusIn`; calls `editor.set_active_view(view_id)`. Hover is not used.
-  - Connect `editor.active_view_changed` to a slot that applies `toolbar.set_active(...)` per `ACTIVE_ONLY` toolbar.
-  - Initial state: `editor.set_active_view(None)` after rendering.
+  - Connects `editor.active_view_changed` to a slot that applies `toolbar.set_active(...)` per `ACTIVE_ONLY` toolbar.
+  - `clear_cache()` removes filters from the correct target widget.
+  - Toolbars `ACTIVE_ONLY` start inactive; `editor.set_active_view(None)` after rendering.
   - Regression test: rendering the same View Layout twice does not duplicate event filters.
-- ⏳ **Block 5 (`TomographyEditor` wires the active-View flow):**
-  - The `TomographyEditor` itself must subscribe to `editor.active_view_changed` if any Editor-level Toolbar depends on the active View.
-  - Regression tests using the real 2×2 grid.
-- ⏳ **Block 6 (`debug_workspace.py` final visual validation):**
-  - Update `scripts/debug/ui/workspace/debug_workspace.py` to exercise Blocks 4–5 end to end.
-- 🚧 **Sprint G (`AreaLayoutRenderer`):** *(after Blocks 4–6)*
-  - Separates inter-Area from intra-Area layout.
-  - `AreaWidget` delegates to `AreaLayoutRenderer`.
-  - No visible behavior change for the single-Editor case.
-  - Regression tests.
-  - Reuses the event-filter pattern from Block 4 for Area activation.
-- 🚧 **Sprint H (`EditorStack`):**
-  - `EditorLayoutSpec.stack([...])`.
-  - `EditorStack` widget (tabs per Leaf).
+  - 12 tests in `tests/unit/ui/editors/test_view_layout_renderer_active_only.py`.
+- ✅ **Block 5 (`TomographyEditor` wires the active-View flow):**
+  - `TomographyEditor.content_widget()` wraps the View grid with the Editor-level Toolbars via `_wrap_with_editor_toolbars` (LEFT `ALWAYS` + RIGHT `COLLAPSIBLE`).
+  - `_editor_toolbars` list; `dispose()` clears it.
+  - 7 tests in `tests/integration/ui/editors/test_tomography_editor_active_view.py`.
+- ✅ **Block 5.5 (Workspace percentage-based Area layout):**
+  - `Workspace._LEFT_RATIO = 0.20`, `_RIGHT_RATIO = 0.25`, `_BOTTOM_RATIO = 0.20`.
+  - `Workspace._apply_default_splitter_sizes()` computes sizes as percentages (Central = fill), never letting the Central Area drop below `TopOverlay.minimum_width()`.
+  - `AreaWidget.refresh()` returns early when the Area model is hidden, preventing placeholder rendering in hidden Areas.
+  - `_build_empty_placeholder()` uses `WA_TranslucentBackground` so the QSS background shows through.
+  - Debug Editors `MockPosicaoEditor`, `MockObjetosEditor`, `MockConsoleEditor`, `MockMPREditor` added under `src/cranioz/ui/editors/mock/`.
+- ✅ **Block 5.6 (Window controls in ExtrasSegment):**
+  - `ExtrasSegment.minimize_requested`, `maximize_requested`, `close_requested`.
+  - 3 new buttons, 28px wide, icons via `IconProvider`.
+  - `MainWindow._wire_top_bar_segments` connects the 3 signals.
+  - `MainWindow._on_window_maximize_requested` toggles `showMaximized`/`showNormal`.
+  - `MainWindow.closeEvent` asks for confirmation when a project is open, then tears it down via `_close_active_project`.
+  - `test_extras_segment.py` — 19 tests.
+  - `test_main_window.py` — 3 tests for `closeEvent`.
+- ✅ **Block 5.6.1 (Window controls in HomeTopBar):**
+  - `HomeTopBar.minimize_requested`, `maximize_requested`, `close_requested`.
+  - `HomePage` forwards the 3 new signals.
+  - `MainWindow._connect_home_signals` connects them.
+  - `test_home_top_bar.py` +5 tests, `test_home_page.py` +3 tests, `test_main_window.py` +3 end-to-end tests.
+- ✅ **Block 6 (`debug_workspace.py` final visual validation):**
+  - The script `scripts/debug/ui/workspace/debug_workspace.py` was run end-to-end with Blocks 4–6, 5.5–5.6.1, and Sprint M applied.
+  - The visual matches the Prototipagem_UI_17 reference with the frameless window (drag, resize, maximize, minimize, close).
+  - Committed.
+- ✅ **Sprint G (`AreaLayoutRenderer`):** *(2026-11-15)*
+  - `AreaLayoutSpec` introduced in `src/cranioz/ui/workspace/areas/area_layout_spec.py` with `SINGLE`, `SPLIT`, and `STACK` types, validated structurally in `__post_init__`.
+  - `AreaLayoutRenderer._resolve_spec()` returns `SINGLE` for one Editor and `SPLIT` for multiple (current behavior preserved).
+  - `STACK` is declared and raises `NotImplementedError` until Sprint H; the point of extension is explicit and testable.
+  - `AreaLayoutRenderer._materialize()` validates that `spec.editor_ids` matches the Area's Editors, guarding against future drift between spec and instances.
+  - `_render_split()` extracted from the previous `else` branch; `_build_editor_container()` unchanged (preserves the `Expanding`/`Ignored` policy that Block 5.5 corrected).
+  - 6 unit tests for `AreaLayoutSpec` in `tests/unit/ui/workspace/areas/test_area_layout_spec.py`.
+  - 1 integration test for the `STACK` failure mode in `tests/integration/ui/workspace/areas/test_area_layout_renderer.py`.
+  - `stl.py` reverted to `GetData()` with `# TODO(vtk-10)` (the `ExportLegacyFormat()` migration requires a `vtkIdTypeArray` destination, not a `vtkCellArray`; deferred to Phase 4.5).
+  - `main_window.py` `mouseMoveEvent` and `mousePressEvent` annotated with `QMouseEvent` (mypy `no-untyped-def` resolved).
+  - `ruff check .` clean; `mypy src` clean; `pytest` 1632 passing, 2 skipped.
+- ⏳ **Sprint H (`EditorStack`):** *(next)*
+  - `EditorLayoutSpec.stack([...])` — declarative spec for an Area that hosts multiple Editors as tabs. Symmetric to `ViewLayoutSpec` and `AreaLayoutSpec`.
+  - `EditorStack` widget — a `QTabWidget`-based container, one tab per Editor. The Editor's `content_widget()` is placed in the tab. Lifecycle: `activate()` / `deactivate()` fire on tab change; `dispose()` fires when a tab is removed or the stack is destroyed.
+  - `AreaLayoutRenderer._render_stack()` replaces `_render_split()` for multiple Editors.
+  - `AreaLayoutRenderer._resolve_spec()` returns `AreaLayoutType.STACK` for multiple Editors (replacing the current `SPLIT`).
   - Single-Editor case remains unchanged.
   - Tests for tab switching, editor lifecycle, dispose.
 
@@ -278,11 +307,16 @@ The work order below respects dependencies between Phases 2–3. Blocks 1–6 co
 - ✅ Toolbar polish tests (Block 1).
 - ✅ `Toolbar.set_active` / `set_expanded` / chevron tests (Block 2).
 - ✅ `Editor.set_active_view` contract tests (Block 3).
-- ⏳ `ACTIVE_ONLY` wiring tests (Block 4).
-- ⏳ `TomographyEditor` active-View flow tests (Block 5).
-- ⏳ `debug_workspace.py` visual validation (Block 6).
+- ✅ `ACTIVE_ONLY` wiring tests (Block 4).
+- ✅ `TomographyEditor` active-View flow tests (Block 5).
+- ✅ Percentage-based Area layout tests (Block 5.5).
+- ✅ Window controls tests (Blocks 5.6, 5.6.1).
+- ✅ `debug_workspace.py` visual validation (Block 6).
+- ✅ `AreaLayoutSpec` structural tests (Sprint G).
+- ✅ `STACK` failure-mode integration test (Sprint G).
+- ⏳ `EditorStack` tab-switching, lifecycle, and dispose tests (Sprint H).
 
-**Status:** 🚧 In Progress. Blockers: Blocks 4–6, Sprints G, H.
+**Status:** 🚧 In Progress. Blocker: Sprint H (`EditorStack`).
 
 ---
 
@@ -420,129 +454,12 @@ The work order below respects dependencies between Phases 2–3. Blocks 1–6 co
 - ✅ Viewer-level Toolbars (`toolbar_specs`, `control_panel_specs`) with `ACTIVE_ONLY` visibility mode declared in `MPRView` and `Viewport3DView`.
 - ✅ `Toolbar.set_active` and `Toolbar.set_expanded` (Block 2) available to the ViewLayoutRenderer.
 - ✅ `Editor.active_view_changed` and `Editor.set_active_view` (Block 3) available for View activation.
+- ✅ `ViewLayoutRenderer` `ACTIVE_ONLY` policy wired (Block 4).
+- ✅ `TomographyEditor` materializes Editor-level Toolbars (Block 5).
 
 **Pending:**
 
 - ⏳ `RenderingAdapter` (removed in the 2026-11-13 cleanup; will be reintroduced only if a real second backend is required).
-- ⏳ `ACTIVE_ONLY` policy wiring in `ViewLayoutRenderer` (Block 4).
 - ⏳ **ViewerLayoutManager** (dynamic grids: 1×1, 2×2, 3×3, editable up to 6×4, panoramic, ATM).
 - ⏳ **2D Tools** (brightness/contrast, pan, zoom, HU probe, ROI, nerve drawing, distance/angle, crosshair, ruler, LUT selection, LUT inversion, background color, animation, thumbnail).
-- ⏳ **3D Tools** (ROI, cut, paint, annotations, distance/angle, preset selection, orthographic/perspective, background color, lock rotation, thumbnail).
-- ⏳ **Clinical transfer functions** (HU-based presets: `bone_cortical`, `bone_trabecular`, `soft_tissue`, `air`, `metal`, `cbct_percentile`).
-- ⏳ **Viewer status indicators** (active view badge, orientation badge, inactive state).
-- ⏳ Remove the debug bounding box from `Viewport3DView`.
-- ⏳ VTK resource lifecycle under repeated open/close.
-- ⏳ Headless and Windows rendering tests.
-
-**Architectural constraints:**
-
-- Domain data must not depend on VTK.
-- VTK actors, mappers, and render windows are presentation objects.
-- Rendering adapters translate semantic Scene objects into renderable representations.
-- Rendering updates must not mutate clinical source data.
-- VTK render-window and actor lifecycle operations remain on the GUI thread (ADR-0011).
-
-#### 4.6 Module Integration
-
-- 🚧 `InMemoryModuleLoader` with dependency resolution.
-- 🚧 Entry-point imports.
-- 🚧 Tools, Editors, Services, Flows registration.
-- 🚧 `BUILTIN_MANIFESTS`.
-- 🚧 Shared EventBus across ModuleContexts.
-- ⏳ First functional built-in module.
-
-#### 4.7 Tests
-
-- DICOM import tests.
-- Geometry and coordinate conversion tests.
-- Slice ordering and spacing validation.
-- Intensity calibration tests.
-- NumPy/VTK interoperability tests.
-- Geometry Infrastructure tests.
-- VTI round-trip tests.
-- Scene lifecycle and persistence tests.
-- ✅ Voxel ordering regression tests.
-- ✅ `int16` fidelity test.
-- ✅ `spacing_z` test.
-- ✅ `QImage.flipped` migration validated (18 UI tests pass without the deprecation warning).
-- ⏳ Import Dialog end-to-end tests.
-- ⏳ ViewerLayoutManager tests.
-- ⏳ Tool behavior tests.
-- ⏳ LUT selection and inversion tests.
-- ⏳ Preset selection tests.
-- ⏳ Performance tests.
-
----
-
-### Phase 5: Clinical Flows & Panel Widget Registry
-
-**Goal:** Implement workflow execution, panel composition per Area, and layout persistence.
-
-**Deliverables:**
-
-- ⏳ `WorkflowEngine` (evaluates requirements, transitions).
-- ⏳ JSON flow loading and requirement evaluation.
-- ⏳ Step-state computation.
-- ⏳ **`WorkflowBreadcrumb` in the Top Bar** (replaces the removed `steps_panel`).
-- ⏳ Flow state persistence.
-- ⏳ **`PanelRegistry`:** panels registered by ID, addressable by Area.
-- ⏳ Area panel management: Left, Right, Bottom support zero or more registered panels.
-- ⏳ Built-in panels:
-  - **Left:** Objects, Volumes, Cephalometric Points, Masks, Measurements.
-  - **Right:** Registry, Scene, History, Material, Osteotomy Patterns, Object Properties, Tomography, Segmentation.
-  - **Bottom:** Console, History, Animation, AI Assistant, Nodes.
-- ⏳ Layout State Persistence (ADR-0010).
-- ⏳ Real ModuleRegistry and ModuleLoader integration.
-- ✅ Flow Catalog and repositories.
-
-**Status:** ⏳ Planned.
-
----
-
-### Phase 6: Clinical Pipeline
-
-**Goal:** Implement the clinical tools required for the initial orthognathic surgery workflow.
-
-#### Phase 6A — Tomography & Segmentation
-
-- ⏳ Tomography Editor clinical workflow.
-- ⏳ Synchronized axial, coronal, sagittal navigation.
-- ⏳ Physical-coordinate crosshair and slice positioning.
-- ⏳ Slice distance, count, range controls.
-- ⏳ Window/Level and intensity display controls.
-- ⏳ Intensity probing.
-- ⏳ ROI tools (display ROI vs processing ROI).
-- ⏳ Threshold-based segmentation.
-- ⏳ Mask creation and editing.
-- ⏳ Segmentation paint/erase/close holes/small-segment removal.
-- ⏳ AI-assisted segmentation (deferred to Phase 10 if not ready).
-- ⏳ Curved MPR and panoramic reconstruction.
-- ⏳ Surface generation from segmentation masks.
-- ⏳ Clinical workflow integration.
-
-#### Phase 6B — Registration & Cephalometry
-
-- ⏳ Image and surface registration.
-- ⏳ Reference-based alignment.
-- ⏳ Cephalometric template system.
-- ⏳ Cephalometric capture strategies (manual, thirds cube, facial fifths, dental cusps, AI-assisted).
-- ⏳ Primary vs secondary point distinction.
-- ⏳ Point connectivity.
-- ⏳ Landmark refinement and verification.
-- ⏳ Cephalometric measurements and reports.
-- ⏳ Registration and landmark validation.
-
-#### Phase 6C — Osteotomy
-
-- ⏳ Le Fort I, BSSO, genioplasty.
-- ⏳ Osteotomy pattern library.
-- ⏳ Boolean operations and fragment separation.
-- ⏳ Fragment movement and transform management.
-- ⏳ Pre-op vs post-op comparison and animation.
-- ⏳ Soft-tissue thickness map and color map.
-- ⏳ Surgical plan persistence.
-
-#### Phase 6D — Surgical Guides
-
-- ⏳ Parametric guide generation.
-- ⏳ Guide-to
+- ⏳ **3D Tools** (

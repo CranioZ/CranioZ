@@ -16,6 +16,10 @@ from cranioz.ui.editors.builtin.test_editor import DummyEditor
 from cranioz.ui.toolbars.base import Toolbar
 from cranioz.ui.workspace.areas.area import Area
 from cranioz.ui.workspace.areas.area_layout_renderer import AreaLayoutRenderer
+from cranioz.ui.workspace.areas.area_layout_spec import (
+    AreaLayoutSpec,
+    AreaLayoutType,
+)
 from cranioz.ui.workspace.areas.placement import Placement
 
 
@@ -113,4 +117,28 @@ def test_empty_area_raises(renderer: AreaLayoutRenderer) -> None:
     area = _area()
     content_widgets: dict[str, QWidget] = {}
     with pytest.raises(ValueError, match="non-empty Area"):
+        renderer.render(area, content_widgets)
+
+
+def test_stack_spec_is_not_yet_materialized(
+    qtbot: QtBot,
+    renderer: AreaLayoutRenderer,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """STACK is reserved for Sprint H. The renderer must fail loudly
+    instead of silently falling back to a splitter."""
+    area = _area()
+    area.add_editor(DummyEditor(editor_id="editor.a"))
+    area.add_editor(DummyEditor(editor_id="editor.b"))
+    content_widgets: dict[str, QWidget] = {}
+
+    def _force_stack(target: Area) -> AreaLayoutSpec:
+        return AreaLayoutSpec(
+            AreaLayoutType.STACK,
+            tuple(e.editor_id for e in target.editors()),
+        )
+
+    monkeypatch.setattr(renderer, "_resolve_spec", _force_stack)
+
+    with pytest.raises(NotImplementedError, match="Sprint H"):
         renderer.render(area, content_widgets)
