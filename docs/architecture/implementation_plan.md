@@ -63,7 +63,7 @@ The implementation is divided into 11 phases. The sequence establishes the platf
 |---|---|---|---|
 | **Phase 0** | Foundation & Boot | ✅ Implemented | Startup performance improvements |
 | **Phase 1** | Contracts, Core Domain & i18n | ✅ Implemented | — |
-| **Phase 2** | Workspace Engine & Icons | 🚧 In Progress | Sprint H (`EditorStack`) |
+| **Phase 2** | Workspace Engine & Icons | ✅ Implemented | — |
 | **Phase 3** | Project, Home Page & Professional Module | 🚧 In Progress | `ProjectIndex`, coordinated deletion, async loading, Professional module |
 | **Phase 4** | Scene & Visualization | ⏳ Planned | Import Dialog, Viewer Layout Manager, 2D/3D Tools, LUTs |
 | **Phase 5** | Clinical Flows & Panel Widget Registry | ⏳ Planned | WorkflowEngine, WorkflowBreadcrumb, Panel Registry |
@@ -89,11 +89,11 @@ The implementation is divided into 11 phases. The sequence establishes the platf
 
 **Phases 1, 2, and 3** are being closed formally before deeper investment in Phase 4. This prevents silent debt from accumulating as the clinical pipeline grows.
 
-Phase 1 is now closed. Phase 2 is one deliverable away from closure (`EditorStack`, Sprint H). Phase 3 remains in progress. Phase 4 begins only after Phases 2–3 are marked `✅ Implemented` in this document.
+**Phase 1 is closed.** **Phase 2 is now closed** (Sprint H was the last deliverable). Phase 3 remains in progress. Phase 4 begins only after Phase 3 is marked `✅ Implemented` in this document.
 
 ### 5.1 Immediate Priorities
 
-The work order below respects dependencies between Phases 2–3. Blocks 1–6 completed the Toolbar/Editor active-View foundation; Sprint G completed the intra-Area split; Sprint H completes the multi-Editor Area composition.
+The work order below respects dependencies between Phases 2–3. Blocks 1–6 completed the Toolbar/Editor active-View foundation; Sprint G completed the intra-Area split; Sprint H completed the multi-Editor Area composition and closed Phase 2.
 
 | Sprint | Phase | Deliverable | Status | Depends on |
 |---|---|---|---|---|
@@ -113,15 +113,18 @@ The work order below respects dependencies between Phases 2–3. Blocks 1–6 co
 | **5.6.1** | 2 | **Window controls in HomeTopBar; end-to-end tests** | ✅ Complete | 5.6 |
 | **6** | 2 | **`debug_workspace.py` final visual validation** | ✅ Complete | 5, 5.5, 5.6, 5.6.1, M |
 | **G** | 2 | **`AreaLayoutRenderer` (inter-Area vs intra-Area split)** | ✅ Complete | 6 |
-| **H** | 2 | **`EditorStack`** | ⏳ Next | G |
+| **H** | 2 | **`EditorStack`** | ✅ Complete | G |
 | **I** | 3 | `ProjectIndex` | 🚧 Pending | — |
 | **J** | 3 | Coordinated deletion | 🚧 Pending | I |
 | **K** | 3 | Async loading | 🚧 Pending | I, J |
 | **L** | 3 | Professional module | 🚧 Pending | C, E, F |
 
-**Next work item:** Sprint H — `EditorStack`. It is the last Phase 2 deliverable. The point of extension is `AreaLayoutRenderer._resolve_spec`: change it to return `AreaLayoutType.STACK` for multiple Editors, and replace `_render_split` with `_render_stack`.
+**Next work item:** Phase 3 begins. The user must choose between:
 
-**Note on ordering:** Blocks 4–6, 5.5–5.6.1, Sprint M, and Sprint G are complete. Sprint H is the last Phase 2 deliverable. Sprints I and J are independent of H. Sprints J and K depend on I; Sprint L depends on C (complete), E (complete), and F (complete).
+- **Refactor the Editor package layout** (`ui/editors/central`, `ui/editors/left`, etc.) to prepare the "Add Editor" catalog (Imagem 3).
+- **Sprint I (`ProjectIndex`)** — start Phase 3.
+
+**Note on ordering:** Blocks 4–6, 5.5–5.6.1, Sprint M, Sprint G, and Sprint H are complete. Phase 2 is closed. Sprints I–L belong to Phase 3 and can be executed in any order once the editor package refactor decision is made.
 
 ---
 
@@ -195,7 +198,7 @@ The work order below respects dependencies between Phases 2–3. Blocks 1–6 co
 
 ### Phase 2: Workspace Engine & Icons
 
-**Goal:** Close Phase 2 formally. Blocker: Sprint H (`EditorStack`).
+**Goal:** Close Phase 2 formally.
 
 **Deliverables:**
 
@@ -283,13 +286,22 @@ The work order below respects dependencies between Phases 2–3. Blocks 1–6 co
   - `stl.py` reverted to `GetData()` with `# TODO(vtk-10)` (the `ExportLegacyFormat()` migration requires a `vtkIdTypeArray` destination, not a `vtkCellArray`; deferred to Phase 4.5).
   - `main_window.py` `mouseMoveEvent` and `mousePressEvent` annotated with `QMouseEvent` (mypy `no-untyped-def` resolved).
   - `ruff check .` clean; `mypy src` clean; `pytest` 1632 passing, 2 skipped.
-- ⏳ **Sprint H (`EditorStack`):** *(next)*
-  - `EditorLayoutSpec.stack([...])` — declarative spec for an Area that hosts multiple Editors as tabs. Symmetric to `ViewLayoutSpec` and `AreaLayoutSpec`.
-  - `EditorStack` widget — a `QTabWidget`-based container, one tab per Editor. The Editor's `content_widget()` is placed in the tab. Lifecycle: `activate()` / `deactivate()` fire on tab change; `dispose()` fires when a tab is removed or the stack is destroyed.
-  - `AreaLayoutRenderer._render_stack()` replaces `_render_split()` for multiple Editors.
-  - `AreaLayoutRenderer._resolve_spec()` returns `AreaLayoutType.STACK` for multiple Editors (replacing the current `SPLIT`).
-  - Single-Editor case remains unchanged.
-  - Tests for tab switching, editor lifecycle, dispose.
+- ✅ **Sprint H (`EditorStack`):** *(2026-11-15)*
+  - `EditorLayoutSpec` introduced with `LEAF`, `SPLIT`, and `STACK` (via `stacked=True`) node types, plus `EditorStackOrientation` (`TOP`, `BOTTOM`, `LEFT`, `RIGHT`).
+  - `EditorStack` widget is a `QStackedWidget` + `EditorStackSwitcher` (compact row/column of buttons), **not a `QTabWidget`** (ADR-0013 §2.5).
+  - Lazy materialization: only the active Editor's `content_widget()` is materialized eagerly; inactive Editors are materialized on first activation.
+  - Lifecycle: `activate()`/`deactivate()` fire on tab switch; `dispose()` fires exactly once per Editor.
+  - `AreaLayoutRenderer` extended with `_materialize_tree()`, `_materialize_split()`, and `_materialize_stack()`. The flat `_resolve_spec()` path is kept for backward compatibility.
+  - `LayoutBuilder` collects `editor_ids` recursively via `_collect_editor_ids()` (handles `LEAF`, `SPLIT`, and `STACK`) and propagates the spec to the `Area` via `set_editor_layout_spec()`.
+  - `Area` exposes `editor_layout_spec` (property) and `set_editor_layout_spec()`.
+  - `AreaWidget` forwards `IconProvider` to `AreaLayoutRenderer` and disposes the `EditorStack` before detaching content widgets (`_clear_layout`).
+  - `PlaceholderEditor` moved to `src/cranioz/ui/editors/placeholder_editor.py` (public).
+  - Backward-compatibility shim at `specs/editor_layout_spec.py` (re-exports the canonical implementation in `areas/`).
+  - `debug_workspace.py` updated to use a `STACK` `ModuleUISpec`; visual validation confirmed (TomographyEditor + Placeholder tabs).
+  - 6 `EditorLayoutSpec` tests, 4 `EditorStack` tests, 1 `STACK` integration test.
+  - `tests/unit/ui/workspace/specs/test_editor_layout_spec.py` removed (redundant with the canonical test under `areas/`).
+  - `test_no_hardcoded_appearance.py` updated with `placeholder_editor.py` (1 literal) and `editor_stack.py` (7 literals) in `_KNOWN_DEBT_FILES` and `_DEBT_MAX_LITERALS`.
+  - `ruff check .` clean; `ruff format` clean; `mypy src` clean; `pytest` 1633 passing, 2 skipped.
 
 **Tests:**
 
@@ -314,9 +326,11 @@ The work order below respects dependencies between Phases 2–3. Blocks 1–6 co
 - ✅ `debug_workspace.py` visual validation (Block 6).
 - ✅ `AreaLayoutSpec` structural tests (Sprint G).
 - ✅ `STACK` failure-mode integration test (Sprint G).
-- ⏳ `EditorStack` tab-switching, lifecycle, and dispose tests (Sprint H).
+- ✅ `EditorLayoutSpec` structural tests (Sprint H).
+- ✅ `EditorStack` lifecycle, lazy materialization, and switcher tests (Sprint H).
+- ✅ `STACK` materialization integration test (Sprint H).
 
-**Status:** 🚧 In Progress. Blocker: Sprint H (`EditorStack`).
+**Status:** ✅ Implemented. Phase 2 is closed.
 
 ---
 
@@ -421,45 +435,4 @@ The work order below respects dependencies between Phases 2–3. Blocks 1–6 co
 
 **4.3.4 Unified Import Dialog (required)**
 
-- `ImportManager` with categories (Volume, Radiographs, Scans, Photographs, Meshes, Dental Implants, Facial Implants), sources (project, file, sample data), preview, auto-tagging.
-- `ImportDialog` with tab bar, source selector, asset grid/list, preview panel, add/remove/select actions.
-- Per-category importers.
-- Scene and DomainObjectStore integration.
-- TaskManager progress, cancellation, error reporting.
-
-**4.3.5 Storage and export**
-
-- ⏳ External Reference and Managed Copy storage modes.
-- ⏳ Preserve source DICOM as canonical.
-- ⏳ VTI export with round-trip validation.
-- ⏳ Project deletion never removes external source data.
-
-#### 4.4 Geometry Infrastructure
-
-**Implemented:** `Mesh`, `CoordinateFrame`, STL I/O, VTK adapter, `MeshDebugEditor`. `VtkImageAdapter` is the sole bridge from `Volume` to `vtkImageData`.
-
-**Deferred:** `GeometryRevision`, content-hash deduplication, persistent asset storage, `ValidationProfile`, `GeometryOperation`, booleans, welding, benchmarks.
-
-#### 4.5 Visualization Infrastructure
-
-**Implemented:**
-
-- ✅ `MPRView` (manual `vtkImageReslice` pipeline).
-- ✅ `Viewport3DView` (`vtkSmartVolumeMapper`, `VTK_SHORT`).
-- ✅ Axial, coronal, sagittal, 3D orientations.
-- ✅ Volume rendering presets.
-- ✅ `set_volume(Volume)`, `set_mesh(Mesh)`.
-- ✅ DICOM volume path validated in MPR and 3D.
-- ✅ `QImage.flipped(Qt.Orientation.Vertical)` used in `MPRView` (replaces the deprecated `QImage.mirrored`; PySide6 minimum raised to 6.9).
-- ✅ Viewer-level Toolbars (`toolbar_specs`, `control_panel_specs`) with `ACTIVE_ONLY` visibility mode declared in `MPRView` and `Viewport3DView`.
-- ✅ `Toolbar.set_active` and `Toolbar.set_expanded` (Block 2) available to the ViewLayoutRenderer.
-- ✅ `Editor.active_view_changed` and `Editor.set_active_view` (Block 3) available for View activation.
-- ✅ `ViewLayoutRenderer` `ACTIVE_ONLY` policy wired (Block 4).
-- ✅ `TomographyEditor` materializes Editor-level Toolbars (Block 5).
-
-**Pending:**
-
-- ⏳ `RenderingAdapter` (removed in the 2026-11-13 cleanup; will be reintroduced only if a real second backend is required).
-- ⏳ **ViewerLayoutManager** (dynamic grids: 1×1, 2×2, 3×3, editable up to 6×4, panoramic, ATM).
-- ⏳ **2D Tools** (brightness/contrast, pan, zoom, HU probe, ROI, nerve drawing, distance/angle, crosshair, ruler, LUT selection, LUT inversion, background color, animation, thumbnail).
-- ⏳ **3D Tools** (
+- `ImportManager` with categories (Volume, Radiographs

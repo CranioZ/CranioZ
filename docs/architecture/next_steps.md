@@ -2,7 +2,7 @@
 
 **Document type:** Action plan and handoff
 **Status:** Active
-**Scope:** Immediate next work items after Sprint G (`AreaLayoutRenderer`)
+**Scope:** Immediate next work items after Sprint H (`EditorStack`)
 **Last updated:** 2026-11-15
 
 ---
@@ -13,7 +13,7 @@ The VTK rendering pipeline is validated end-to-end. The DICOM visualization bug 
 
 The appearance architecture has been decided. `docs/architecture/appearance/` is the canonical specification. ADR-0014 registers the toolkit decision (Qt Widgets + QSS modular + Design Tokens in Python, not QML). The DICOM path, the 3D viewport, the MPR view, and the workspace layout are operational and covered by a growing test suite.
 
-**Current test baseline: 1632 passing, 0 failed, 0 errors, 2 skipped (Block 5.5 intencionais).** O baseline anterior era 1625 passing; o delta de +7 é exatamente o Sprint G (`AreaLayoutSpec` com 6 testes de unidade + 1 teste de integração do modo `STACK`). Os 9 warnings remanescentes são todos de `vtkCellArray.GetData` (deprecação do VTK 9.6+; remoção planejada para o VTK 10), rastreados em §7.
+**Current test baseline: 1633 passing, 0 failed, 0 errors, 2 skipped (Block 5.5 intencionais).** O baseline anterior era 1632; o delta de +1 reflete o Sprint H (`EditorLayoutSpec` refatorado com validação mais limpa, testes do `EditorStack` consolidados, e a remoção de testes redundantes em `specs/`). Os 9 warnings remanescentes são todos de `vtkCellArray.GetData` (deprecação do VTK 9.6+; remoção planejada para o VTK 10), rastreados em §7.
 
 Sprint B (i18n) is complete: the shell — `MainWindow`, the Home Page tree, the three Top Bar segments, and the Workspace placeholder editor — resolves user-facing strings through the `TranslationService`. `tests/architecture/test_no_hardcoded_strings_in_shell_widgets.py` guards against regressions.
 
@@ -38,7 +38,24 @@ The **2026-11-13 cleanup** removed a substantial amount of dead code (two source
 - `main_window.py` `mouseMoveEvent` and `mousePressEvent` annotated with `QMouseEvent`.
 - `ruff check .` clean, `mypy src` clean, `pytest` 1632 passing.
 
-**Next work item:** Sprint H — `EditorStack`. Depends on Sprint G (complete). The point of extension is `AreaLayoutRenderer._resolve_spec`: change it to return `AreaLayoutType.STACK` for multiple Editors, and replace `_render_split` with `_render_stack`.
+**Sprint H is complete (`EditorStack`).** 2026-11-15. Phase 2 is now closed.
+
+- `EditorLayoutSpec` (LEAF/SPLIT/STACK) with structural validation, `stack(...)` constructor, and `EditorStackOrientation` (TOP/BOTTOM/LEFT/RIGHT).
+- `EditorStack` widget (QStackedWidget + `EditorStackSwitcher`), not a `QTabWidget` (ADR-0013 §2.5).
+- Lazy materialization: only the active Editor's `content_widget()` is materialized eagerly.
+- Lifecycle: `activate()`/`deactivate()` fire on tab switch; `dispose()` fires exactly once per Editor.
+- `AreaLayoutRenderer` extended to materialize the N-ary `EditorLayoutSpec` (LEAF → container; SPLIT → QSplitter; STACK → EditorStack).
+- `LayoutBuilder` collects `editor_ids` recursively (handles LEAF, SPLIT, and STACK) and propagates the spec to the Area via `set_editor_layout_spec()`.
+- `AreaWidget` forwards `IconProvider` to the renderer and disposes the `EditorStack` before detaching content widgets.
+- Backward-compatibility shim at `specs/editor_layout_spec.py` (re-exports the canonical implementation in `areas/`).
+- `PlaceholderEditor` moved to `src/cranioz/ui/editors/placeholder_editor.py` (public).
+- `debug_workspace.py` updated to use a `STACK` `ModuleUISpec`; visual validation confirmed.
+- 6 unit tests for `EditorLayoutSpec`, 4 unit tests for `EditorStack`, 1 integration test for `STACK` materialization.
+- `tests/unit/ui/workspace/specs/test_editor_layout_spec.py` removed (redundant with the canonical test under `areas/`).
+- `tests/architecture/test_no_hardcoded_appearance.py` updated with `placeholder_editor.py` (1 literal) and `editor_stack.py` (7 literals) in `_KNOWN_DEBT_FILES` and `_DEBT_MAX_LITERALS`.
+- `ruff check .` clean, `ruff format` clean, `mypy src` clean, `pytest` 1633 passing, 2 skipped.
+
+**Next work item:** Phase 3 begins. The next logical deliverable is the **Sprint de Refatoração de Arquitetura de Editores** (a nova estrutura `ui/editors/central`, `ui/editors/left`, etc.) or **Sprint I (`ProjectIndex`)**. Both depend on a decision from the user.
 
 ---
 
@@ -57,7 +74,7 @@ The **2026-11-13 cleanup** removed a substantial amount of dead code (two source
 
 ### 2.2 Code and tests
 
-- **Test baseline after Sprint G: 1632 passing, 2 skipped.**
+- **Test baseline after Sprint H: 1633 passing, 2 skipped.**
 - `ruff check` clean; `ruff format --check` clean.
 - `mypy src` clean.
 - `VtkImageAdapter` corrected (no transposition, `int16`, direction matrix).
@@ -110,13 +127,27 @@ The **2026-11-13 cleanup** removed a substantial amount of dead code (two source
   - 6 unit tests for `AreaLayoutSpec` + 1 integration test for the `STACK` failure mode.
   - `stl.py` reverted to `GetData()` with `# TODO(vtk-10)`.
   - `main_window.py` `mouseMoveEvent` and `mousePressEvent` annotated with `QMouseEvent`.
+- **Sprint H complete** (`EditorStack`). 2026-11-15.
+  - `EditorLayoutSpec` (LEAF/SPLIT/STACK) with `stack(...)` constructor and `EditorStackOrientation`.
+  - `EditorStack` widget + `EditorStackSwitcher` (compact, dark-styled, not a `QTabWidget`).
+  - `AreaLayoutRenderer` materializes the N-ary tree (`_materialize_tree`, `_materialize_split`, `_materialize_stack`).
+  - `LayoutBuilder` collects `editor_ids` recursively and propagates the spec to the Area.
+  - `Area` exposes `editor_layout_spec` / `set_editor_layout_spec()`.
+  - `AreaWidget` forwards `IconProvider` to the renderer and disposes the `EditorStack` before detaching content widgets.
+  - Backward-compatibility shim at `specs/editor_layout_spec.py`.
+  - `PlaceholderEditor` moved to `src/cranioz/ui/editors/placeholder_editor.py` (public).
+  - `debug_workspace.py` updated to use a `STACK` `ModuleUISpec`.
+  - 6 `EditorLayoutSpec` tests + 4 `EditorStack` tests + 1 `STACK` integration test.
+  - `tests/unit/ui/workspace/specs/test_editor_layout_spec.py` removed (redundant).
+  - `test_no_hardcoded_appearance.py` updated with `placeholder_editor.py` (1 literal) and `editor_stack.py` (7 literals).
+  - `ruff check .` clean, `ruff format` clean, `mypy src` clean, `pytest` 1633 passing.
 
 ### 2.3 Implementation plan
 
 - `implementation_plan.md` is the current roadmap. It defines 11 phases.
-- Phase 4 is marked as the next major implementation phase, with the following items already complete: voxel ordering, `int16`, direction matrix, `Viewport3DView.set_volume(Volume)`, STL path validation, DICOM path validation.
-- **Phase 2 has advanced further than the plan reflects.** The frameless window work (Sprint M) and the resize/drag support are additional Phase 2 deliverables.
-- **Sprint G is complete.** The `Implementation Plan` §5.1 should be updated to mark Sprint G as `✅ Complete` and Sprint H as `⏳ Next`.
+- Phase 2 is now complete (`✅ Implemented`).
+- Phase 3 is the next major implementation phase. Blockers: `ProjectIndex` (Sprint I), coordinated deletion (Sprint J), async loading (Sprint K), Professional module (Sprint L).
+- **Sprint H is complete.** The `Implementation Plan` §5.1 and §6 should be updated to mark Sprint H as `✅ Complete` and Phase 2 as `✅ Implemented`.
 
 ---
 
@@ -128,9 +159,9 @@ Unchanged from prior versions. Phase 1 is closed.
 
 ---
 
-### 3.2 Phase 2 — Workspace Engine & Icons
+### 3.2 Phase 2 — Workspace Engine & Icons — ✅ Complete
 
-**Goal:** close Phase 2 formally. Blocker: `EditorStack` (Sprint H).
+All Sprint E, F, G, H deliverables are complete. Phase 2 is closed.
 
 #### 3.2.1 `ThemeService` + `ThemeCompiler` + tokens (Sprint E) — ✅ Complete
 
@@ -151,28 +182,78 @@ Delivered:
 - `_build_editor_container` applies `Expanding` on the container and `Ignored` on the content (preserves the percentage-based layout computed by the Workspace).
 - 6 unit tests for `AreaLayoutSpec` + 1 integration test for the `STACK` failure mode.
 
-The point of extension for Sprint H is `AreaLayoutRenderer._resolve_spec`: change it to return `STACK` for multiple Editors, and replace `_render_split` with `_render_stack`.
-
-#### 3.2.4 `EditorStack` (Sprint H) — ⏳ Next
+#### 3.2.4 `EditorStack` (Sprint H) — ✅ Complete
 
 **Depends on:** Sprint G (complete).
 
-Deliverables:
+Delivered:
 
-- `EditorLayoutSpec.stack([...])`.
-- `EditorStack` widget (tabs per Leaf).
-- `AreaLayoutRenderer._render_stack()` (replaces `_render_split` for multiple Editors).
-- Change `AreaLayoutRenderer._resolve_spec()` to return `AreaLayoutType.STACK` for multiple Editors.
-- Single-Editor case remains unchanged.
-- Tests for tab switching, editor lifecycle, dispose.
+- `EditorLayoutSpec.stack([...])` with `EditorStackOrientation`.
+- `EditorStack` widget (QStackedWidget + `EditorStackSwitcher`, not a `QTabWidget`).
+- `AreaLayoutRenderer._materialize_tree()` (replaces the old `_render_split`-only path and supports LEAF/SPLIT/STACK).
+- `LayoutBuilder` collects `editor_ids` recursively.
+- `Area` exposes `editor_layout_spec` / `set_editor_layout_spec()`.
+- `AreaWidget` forwards `IconProvider` and disposes the `EditorStack`.
+- Backward-compatibility shim at `specs/editor_layout_spec.py`.
+- `debug_workspace.py` visual validation (confirmed in the console + screenshot).
+- 6 `EditorLayoutSpec` tests + 4 `EditorStack` tests + 1 `STACK` integration test.
 
-**Phase 2 is complete when:** `EditorStack` is implemented, contract tests pass, CI is green, and the visual validation is confirmed (already confirmed in Block 6).
+**Phase 2 is complete.** All contract tests pass, CI is green, and the visual validation is confirmed.
 
 ---
 
 ### 3.3 Phase 3 — Project, Home Page & Professional Module
 
-Unchanged from prior versions. Blockers: `ProjectIndex`, coordinated deletion, async loading, Professional module. i18n unit-test stubs documented (see prior §3.3.5).
+**Goal:** close Phase 3 formally. Blockers: `ProjectIndex` (Sprint I), coordinated deletion (Sprint J), async loading (Sprint K), Professional module (Sprint L).
+
+#### 3.3.1 `ProjectIndex` (Sprint I) — 🚧 Pending
+
+Deliverables:
+
+- `ProjectIndex` interface (`add`, `remove`, `lookup`, `list`).
+- `InMemoryProjectIndex`.
+- `FilesystemProjectIndex`.
+- `ProjectCatalog` consumes `ProjectIndex` instead of scanning the filesystem directly.
+- Contract tests: add/remove/lookup/list, concurrent access, cache invalidation.
+
+#### 3.3.2 Coordinated deletion (Sprint J) — 🚧 Pending
+
+Deliverables:
+
+- `ProjectManager.delete_project` coordinates `ProjectCatalog` → `ProjectIndex` → `FilesystemProjectRepository`.
+- Rollback when any step fails.
+- External source data (External Reference mode) is never removed by project deletion.
+- Contract tests.
+
+#### 3.3.3 Async loading (Sprint K) — 🚧 Pending
+
+Deliverables:
+
+- `HomePage` loads projects and flows via `TaskManager`.
+- No blocking I/O in `MainWindow.__init__`.
+- `HomePage.refresh()` does not block the GUI thread.
+- Rollback if `Workspace` creation fails after project open.
+- Regression tests.
+
+#### 3.3.4 Professional module (Sprint L) — 🚧 Pending
+
+Deliverables:
+
+- `ProfessionalEditor` registered in `EditorRegistry`.
+- `ModuleUISpec` for the Professional module.
+- Settings integration (`professional.*` keys).
+- Tests.
+
+#### 3.3.5 Test stub documentation — 🚧 Pending
+
+- `tests/infrastructure/i18n/` (4 stubs) and `tests/infrastructure/scene/test_scene_query_adapter.py` are intentionally empty. They reserve the contract for the missing granular unit tests of `infrastructure/i18n/` and `infrastructure/scene/`. End-to-end coverage already exists in `tests/integration/i18n/`.
+- Add `README.md` to `tests/infrastructure/i18n/` explaining the contract, and a `# TODO(sprint-i18n)` line to each stub. Same for `tests/infrastructure/scene/`.
+
+**Deferred to Phase 8:**
+
+- SQLite `ProjectIndex` backend.
+- Recent Projects.
+- Background disk reconciliation.
 
 ---
 
@@ -184,7 +265,7 @@ Phase 4 remains the active implementation phase after Phases 2–3 close. The fo
 - `ViewLayoutRenderer` `ACTIVE_ONLY` policy is wired (Block 4).
 - `Workspace` applies percentage-based sizes and respects the Top Bar minimum (Block 5.5).
 - The application shell is frameless with custom drag and native resize (Sprint M).
-- `AreaLayoutRenderer` is separate from `LayoutRenderer` (Sprint G).
+- `AreaLayoutRenderer` is separate from `LayoutRenderer` (Sprint G) and materializes the N-ary `EditorLayoutSpec` (Sprint H).
 
 Key Phase 4 items still pending:
 
@@ -218,15 +299,18 @@ Key Phase 4 items still pending:
 | M | 2 | Frameless window, drag support, native resize | ✅ Complete | E, F |
 | 6 | 2 | `debug_workspace.py` final visual validation | ✅ Complete | 5, 5.5, 5.6, 5.6.1, M |
 | G | 2 | `AreaLayoutRenderer` (inter-Area vs intra-Area split) | ✅ Complete | 6 |
-| **H** | **2** | **`EditorStack`** | **⏳ Next** | **G** |
+| **H** | **2** | **`EditorStack`** | **✅ Complete** | **G** |
 | I | 3 | `ProjectIndex` | 🚧 Pending | — |
 | J | 3 | Coordinated deletion | 🚧 Pending | I |
 | K | 3 | Async loading | 🚧 Pending | I, J |
 | L | 3 | Professional module | 🚧 Pending | C, E, F |
 
-**Next work item:** Sprint H — `EditorStack`. The point of extension is `AreaLayoutRenderer._resolve_spec`: change it to return `AreaLayoutType.STACK` for multiple Editors, and replace `_render_split` with `_render_stack`.
+**Next work item:** Phase 3 begins. The user must choose between:
 
-**Note on ordering:** Blocks 5.5/5.6/5.6.1, Sprint M, Block 6, and Sprint G are complete. Sprint H (`EditorStack`) is the next Phase 2 deliverable. Sprints I–L belong to Phase 3 and can be executed in parallel with Sprint H if desired.
+- **Refactor the Editor package layout** (the `ui/editors/central`, `ui/editors/left`, etc. structure discussed) to prepare the "Add Editor" catalog.
+- **Sprint I (`ProjectIndex`)** — start Phase 3.
+
+**Note on ordering:** Blocks 5.5/5.6/5.6.1, Sprint M, Block 6, Sprint G, and Sprint H are complete. Sprints I–L belong to Phase 3 and can be executed in any order once the editor package refactor decision is made.
 
 ---
 
@@ -234,14 +318,14 @@ Key Phase 4 items still pending:
 
 This handoff is complete when:
 
-1. `implementation_plan.md` reflects Phases 2–3 status with Blocks 4–6, 5.5–5.6.1, Sprint M, and Sprint G marked `✅ Complete`.
+1. `implementation_plan.md` reflects Phases 2–3 status with Blocks 4–6, 5.5–5.6.1, Sprint M, Sprint G, and Sprint H marked `✅ Complete`.
 2. `docs/adr/ADR-0014-widget-toolkit-selection.md` is committed.
 3. `docs/architecture/appearance/` is consolidated.
 4. The 2026-11-13 cleanup is committed.
-5. Blocks 1–6, 5.5–5.6.1, Sprint M, and Sprint G are committed.
+5. Blocks 1–6, 5.5–5.6.1, Sprint M, Sprint G, and Sprint H are committed.
 6. The `test_no_hardcoded_appearance.py` duplicate under `tests/unit/architecture/` is resolved.
-7. The current test count and coverage are recorded in §2.2 (1632 passing, 2 skipped).
-8. The next conversation starts with **Sprint H (`EditorStack`)**.
+7. The current test count and coverage are recorded in §2.2 (1633 passing, 2 skipped).
+8. The next conversation starts with either the **Editor package refactor** or **Sprint I (`ProjectIndex`)**.
 
 ---
 
@@ -258,6 +342,8 @@ Unchanged from prior versions, with the following additions:
 - Drop shadow under the frameless window — optional, deferred (would require `WA_TranslucentBackground` + an inner container with 10px margins).
 - `stl.py` migration from `GetData()` to `ExportLegacyFormat()` — Phase 4.5 (P2; see §7).
 - `pyproject.toml` `ignore_missing_imports` entries (`cupy.*`, `cv2.*`, `numba.*`, `reportlab.*`, `scipy.*`) — cleanup task, no functional impact.
+- `EditorStack` styling literals (7 colors) — Sprint F+ (tracked in `_KNOWN_DEBT_FILES`).
+- `PlaceholderEditor` styling literal (1 color) — Sprint F+ (tracked in `_KNOWN_DEBT_FILES`).
 
 ---
 
@@ -272,13 +358,13 @@ Unchanged from prior versions, with the following additions:
 | Shell hardcoded strings | ✅ Guarded by `test_no_hardcoded_strings_in_shell_widgets.py`; `_WHITELIST` is empty | `tests/architecture/` |
 | `test_modules_segment.py` duplicate | ✅ Rewritten to test `ModulesSegment` | `tests/unit/ui/workspace/structure/` |
 | Appearance foundation (Sprint E) | ✅ Complete | This document §3.2.1 |
-| Hardcoded colors in shell | ✅ Guarded by `test_no_hardcoded_appearance.py`; `_KNOWN_DEBT_FILES` includes `mock/mpr.py` (debug-only) | `tests/architecture/` |
+| Hardcoded colors in shell | ✅ Guarded by `test_no_hardcoded_appearance.py`; `_KNOWN_DEBT_FILES` includes `mock/mpr.py` (debug-only), `placeholder_editor.py` (1), and `editor_stack.py` (7) | `tests/architecture/` |
 | Icon provider (Sprint F) | ✅ Complete (70 icons) | This document §3.2.2 |
 | Glyph migration (Sprint F) | ✅ Complete | `tests/architecture/` |
 | `EditorContext` propagation (Sprint C) | ✅ Complete | This document §3.1 |
 | `correlation_id` propagation | 🚧 Not yet propagated by `Workspace`; tracked as debt | `implementation_plan.md` §3.1.2 |
 | `event_subscription` in the contract test | 🚧 Passed as `None`; dedicated test pending | `tests/integration/ui/workspace/test_editor_context_propagation.py` |
-| Widget migration to tokens (12 literals in 4 files) | 🚧 Tracked in `_KNOWN_DEBT_FILES` | `test_no_hardcoded_appearance.py` |
+| Widget migration to tokens (12 literals in 4 files + 8 new literals in Sprint H) | 🚧 Tracked in `_KNOWN_DEBT_FILES` | `test_no_hardcoded_appearance.py` |
 | Toolbar polish (Block 1) | ✅ Complete (8 tests) | This document §2.2 |
 | `Toolbar.set_active` / `set_expanded` / chevron (Block 2) | ✅ Complete (11 tests) | This document §2.2 |
 | `Editor._EditorSignals` + `Editor.set_active_view` (Block 3) | ✅ Complete (12 tests) | `tests/unit/ui/editors/test_editor_active_view.py` |
@@ -292,8 +378,8 @@ Unchanged from prior versions, with the following additions:
 | Frameless window + native chrome + drag + native resize (Sprint M) | ✅ Complete (3 integration tests) | `tests/integration/ui/test_main_window.py` |
 | `debug_workspace.py` visual validation (Block 6) | ✅ Complete | This document §2.2 |
 | `AreaLayoutRenderer` intra-Area `Expanding` | ✅ Complete (Block 5.5 correction 6) | `area_layout_renderer.py` |
-| `AreaLayoutRenderer` (Sprint G) | ✅ Complete (7 tests; `AreaLayoutSpec` with SINGLE/SPLIT/STACK; STACK reserved for Sprint H) | This document §3.2.3 |
-| `EditorStack` (Sprint H) | ⏳ Next | This document §3.2.4 |
+| `AreaLayoutRenderer` (Sprint G) | ✅ Complete (7 tests; `AreaLayoutSpec` with SINGLE/SPLIT/STACK) | This document §3.2.3 |
+| `EditorStack` (Sprint H) | ✅ Complete (6 `EditorLayoutSpec` tests + 4 `EditorStack` tests + 1 `STACK` integration test) | This document §3.2.4 |
 | `ProjectIndex` (Sprint I) | 🚧 Pending | This document §3.3.1 |
 | Coordinated deletion (Sprint J) | 🚧 Pending | This document §3.3.2 |
 | Async loading (Sprint K) | 🚧 Pending | This document §3.3.3 |
@@ -310,34 +396,6 @@ Unchanged from prior versions, with the following additions:
 
 ## 8. Immediate action items
 
-Sprint G is complete. Before starting Sprint H:
+Sprint H is complete. Phase 2 is closed. Before starting Phase 3:
 
-1. Commit the Sprint G delivery (code, tests, and this document update).
-2. Update `implementation_plan.md` §5.1 and §6 (Phase 2) with the Sprint G status (`✅ Complete`) and Sprint H status (`⏳ Next`).
-3. Confirm `grep -rn "pt-BR-BR" tests/` returns nothing (locale fix applied during Sprint G prep).
-4. Confirm `test_icon_catalog.py` expects 70 icons (already verified).
-5. Start Sprint H — `EditorStack`.
-
----
-
-## 9. Sprint H — `EditorStack` (preview)
-
-The next deliverable. Details are pending the design phase, but the outline is:
-
-- **`EditorLayoutSpec.stack([...])`**: the declarative spec for an Area that hosts multiple Editors as tabs. Symmetric to `ViewLayoutSpec` and `AreaLayoutSpec`.
-- **`EditorStack` widget**: a `QTabWidget`-based container, one tab per Editor. The Editor's `content_widget()` is placed in the tab. Lifecycle: `activate()` / `deactivate()` fire on tab change; `dispose()` fires when a tab is removed or the stack is destroyed.
-- **`AreaLayoutRenderer._render_stack()`**: materializes the `EditorStack` from the spec.
-- **`AreaLayoutRenderer._resolve_spec()`**: changed to return `AreaLayoutType.STACK` for multiple Editors (replacing the current `SPLIT`).
-- **Tests**: tab switching, Editor lifecycle, dispose, single-Editor case remains unchanged.
-
----
-
-## 10. Handoff checklist
-
-- [x] Sprint G committed (code + tests + docs).
-- [x] `ruff check .` clean.
-- [x] `mypy src` clean.
-- [x] `pytest` 1632 passing, 2 skipped.
-- [ ] `implementation_plan.md` §5.1 and §6 updated (Sprint G → ✅ Complete, Sprint H → ⏳ Next).
-- [ ] This document committed.
-- [ ] Next conversation starts with Sprint H design.
+1. Commit the Sprint H delivery (code, tests, and
