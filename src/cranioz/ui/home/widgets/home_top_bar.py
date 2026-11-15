@@ -85,9 +85,7 @@ class HomeTopBar(QWidget):
         self._settings_button.setFixedWidth(32)
         self._settings_button.setIcon(icon_provider.icon("settings"))
         self._settings_button.setToolTip(tr("homepage.top_bar.settings", "Settings"))
-        self._settings_button.setAccessibleName(
-            tr("homepage.top_bar.settings", "Settings")
-        )
+        self._settings_button.setAccessibleName(tr("homepage.top_bar.settings", "Settings"))
         self._settings_button.clicked.connect(self.settings_requested)
 
         # Window controls (Block 5.6.1). 28px wide, matching the

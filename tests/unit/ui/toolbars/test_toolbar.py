@@ -257,6 +257,7 @@ def test_unknown_tool_id_raises(
     else:
         raise AssertionError("expected KeyError for unknown tool_id")
 
+
 def test_vertical_toolbar_buttons_align_to_top(
     toolbar_factory,
     make_toolbar_spec,
@@ -268,6 +269,7 @@ def test_vertical_toolbar_buttons_align_to_top(
     View.
     """
     from PySide6.QtCore import Qt
+
     from cranioz.ui.toolbars.specification import ToolbarOrientation
 
     spec = make_toolbar_spec(

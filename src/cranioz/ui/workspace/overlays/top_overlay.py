@@ -37,6 +37,14 @@ Block 5.5: minimum_width() is dynamic. The Workspace queries it
 before applying splitter sizes so the Central Area cannot be
 squeezed below the Top Bar's real minimum. The minimum changes as
 the ModulesSegment gains or loses modules.
+
+Block 5.5 fix: reposition() guards against placeholder or
+zero-sized Bounds. During the first layout pass, the Central
+Area's geometry is not yet known and the Bounds are (0, 0, 0, 0).
+Calling setGeometry(8, 8, 0, 40) in that state would paint the
+Top Bar at the top-left corner for one frame — the "flash" that
+the user perceived as the Top Bar extravasando. The guard keeps
+the previous geometry until a valid Bounds is available.
 """
 
 from __future__ import annotations
@@ -134,17 +142,11 @@ class TopOverlay(Overlay):
 
         # The center segment is guaranteed to be centered by
         # inserting equal stretches on both sides.
-        self._layout.addWidget(
-            self._left_segment, alignment=Qt.AlignmentFlag.AlignLeft
-        )
+        self._layout.addWidget(self._left_segment, alignment=Qt.AlignmentFlag.AlignLeft)
         self._layout.addStretch(1)
-        self._layout.addWidget(
-            self._center_segment, alignment=Qt.AlignmentFlag.AlignCenter
-        )
+        self._layout.addWidget(self._center_segment, alignment=Qt.AlignmentFlag.AlignCenter)
         self._layout.addStretch(1)
-        self._layout.addWidget(
-            self._right_segment, alignment=Qt.AlignmentFlag.AlignRight
-        )
+        self._layout.addWidget(self._right_segment, alignment=Qt.AlignmentFlag.AlignRight)
 
     # ----- Overlay API ----------------------------------------------
 
@@ -168,14 +170,18 @@ class TopOverlay(Overlay):
         Region's width: it does not overflow, even if the Region is
         narrower than ``minimum_width()``.
 
-        The Workspace is responsible for keeping the Central Area
-        wide enough: ``Workspace._apply_default_splitter_sizes``
-        reserves at least ``minimum_width()`` for the Central Area,
-        so the Top Bar always fits. If the user manually resizes the
-        window below that threshold, the Top Bar is clipped (the
-        Phase 4.5 ``ViewerLayoutManager`` will add scroll to the
-        Modules segment to handle this case gracefully).
+        Block 5.5 fix: placeholder or zero-sized Bounds are ignored.
+        During the first layout pass, the Central Area's geometry is
+        not yet known and the Bounds are (0, 0, 0, 0). Calling
+        setGeometry(8, 8, 0, 40) in that state would paint the Top
+        Bar at the top-left corner for one frame — the "flash" that
+        the user perceived as the Top Bar extravasando. The guard
+        keeps the previous geometry until a valid Bounds is
+        available.
         """
+        if bounds.is_placeholder() or bounds.width <= 0 or bounds.height <= 0:
+            return
+
         x = bounds.x + self._margin_x
         y = bounds.y + self._margin_y
         width = max(0, bounds.width - 2 * self._margin_x)

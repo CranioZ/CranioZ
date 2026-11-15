@@ -27,9 +27,9 @@ _LOG_LINES = (
     "14:21 - Visibilidade da cena ajustada: isolamento do complexo maxilomandibular.",
     "14:24 - Ferramenta ativada: Osteotomia Le Fort I.",
     "14:25 - Plano de corte Le Fort I definido e aplicado.",
-    "14:26 - Comando IA executado: \"Avance a maxila 4.0 mm\".",
+    '14:26 - Comando IA executado: "Avance a maxila 4.0 mm".',
     "14:27 - Ferramenta ativada: Osteotomia BSSO (Mandible).",
-    "14:30 - Comando IA executado: \"Avance a mandíbula 6.0 mm com preservação condilar\".",
+    '14:30 - Comando IA executado: "Avance a mandíbula 6.0 mm com preservação condilar".',
     "14:32 - Operação booleana: União de segmentos osteotomizados.",
     "14:35 - Verificação de oclusão e métricas de distância realizadas.",
 )

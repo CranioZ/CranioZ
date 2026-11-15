@@ -35,7 +35,6 @@ from cranioz.ui.toolbars.specification import (
 )
 from cranioz.ui.tools.registry.tool_registry import ToolRegistry
 
-
 # ----- Fixtures ------------------------------------------------------
 
 
@@ -187,6 +186,7 @@ def test_set_expanded_true_restores(
     title = toolbar.findChild(QLabel, "toolbar.tb.test.title")
     assert title is not None
     assert not title.isVisibleTo(toolbar)
+
 
 def test_set_expanded_is_noop_for_always(toolbar_factory) -> None:
     toolbar = toolbar_factory(visibility_mode=ToolbarVisibilityMode.ALWAYS)

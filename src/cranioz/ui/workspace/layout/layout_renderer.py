@@ -138,43 +138,6 @@ class LayoutRenderer:
         """Return the cached AreaWidget for the given area_id, if any."""
         return self._area_widgets.get(area_id)
 
-    def refresh_splitter_sizes(self) -> None:
-        """Redistribute the QSplitter sizes to account for hidden children.
-
-        When a child is hidden with ``setVisible(False)``, the
-        QSplitter keeps its previous sizes: the hidden child keeps its
-        pixel budget and the layout does not reflow. This method
-        recomputes the sizes so that visible children share the
-        available space equally.
-
-        Hidden children get size 0. The method iterates over every
-        cached splitter (the root splitter and any nested splitter),
-        so both the vertical ``Split(top, bottom)`` and the horizontal
-        ``Split(left, central, right)`` are recomputed.
-
-        Called by ``Workspace`` after toggling an Area's visibility.
-        """
-        for splitter in self._split_widgets.values():
-            count = splitter.count()
-            if count == 0:
-                continue
-
-            visible_indices: list[int] = []
-            for i in range(count):
-                widget = splitter.widget(i)
-                if widget is not None and not widget.isHidden():
-                    visible_indices.append(i)
-
-            if not visible_indices:
-                continue
-
-            n = len(visible_indices)
-            base = 1000 // n
-            new_sizes = [0] * count
-            for i in visible_indices:
-                new_sizes[i] = base
-            splitter.setSizes(new_sizes)
-
     # ----- Region geometry ------------------------------------------
 
     def compute_region_bounds(self, workspace: QWidget) -> dict[Placement, Bounds]:
@@ -275,9 +238,14 @@ class LayoutRenderer:
         """Return (or create) an AreaWidget for the leaf's Area.
 
         Block 5.5: the widget uses ``QSizePolicy.Expanding`` so the
-        parent QSplitter gives it the full available space. Without
-        it, the AreaWidget is limited to its ``sizeHint``, which
-        makes the Central Area half-empty.
+        parent QSplitter gives it the full available space. The
+        minimum size is forced to 0 so the Workspace can apply
+        percentage-based splitter sizes (20% / 25% / 20%) even when
+        the editor content has a larger intrinsic sizeHint. This is
+        the *only* place where the minimum is reset; the Workspace
+        does not need to do it on every layout pass, which keeps the
+        layout recalculation O(1) per widget instead of O(N) per
+        splitter per event.
         """
         area = leaf.area
         widget = self._area_widgets.get(area.area_id)
@@ -289,6 +257,9 @@ class LayoutRenderer:
                 icon_provider=self._icon_provider,
                 debug_colors=self._debug_colors,
             )
+            # Force minimum to 0 so the QSplitter respects the
+            # percentage-based setSizes() applied by the Workspace.
+            widget.setMinimumSize(0, 0)
             self._area_widgets[area.area_id] = widget
         return widget
 
@@ -307,7 +278,14 @@ class LayoutRenderer:
         return splitter
 
     def _on_splitter_moved(self, pos: int, index: int) -> None:
-        """Notify the Workspace that a splitter was moved."""
+        """Notify the Workspace that a splitter was moved.
+
+        Block 5.5: the Workspace uses this callback to reposition
+        the overlays (so the TopOverlay follows the Central Area's
+        new bounds) but does NOT reschedule the splitter-size
+        calculation, so a user drag is not overwritten by the
+        default percentages.
+        """
         if self._splitter_moved_callback is not None:
             self._splitter_moved_callback()
 
@@ -316,7 +294,16 @@ class LayoutRenderer:
         splitter: QSplitter,
         split: Split,
     ) -> None:
-        """Ensure the splitter's children match the split's children."""
+        """Ensure the splitter's children match the split's children.
+
+        Block 5.5: the earlier version hardcoded
+        ``setSizes([200, 800, 250])`` here, which competed with the
+        Workspace's percentage-based sizing and caused the Central
+        Area to be squeezed or the lateral Areas to look oversized.
+        The hardcoded call is removed: the Workspace is now the
+        single source of truth for splitter sizes, applied in
+        ``_apply_default_splitter_sizes``.
+        """
         expected_widgets: list[QWidget] = [self._render_node(child) for child in split.children]
 
         # Detach all current widgets. We re-add them below.
@@ -329,23 +316,13 @@ class LayoutRenderer:
         for widget in expected_widgets:
             splitter.addWidget(widget)
 
-        # Configure stretch factors and sizes dynamically based on placement or position
+        # Configure stretch factors based on placement.
         count = splitter.count()
         for index in range(count):
             widget = splitter.widget(index)
-            # If it is a central area in a horizontal splitter, give it higher stretch priority (stretch=2),
-            # while the side areas keep stretch=1 to maintain fixed/proportional sizes.
             is_central = hasattr(widget, "area") and widget.area().placement.value == "central"
             stretch = 2 if is_central else 1
             splitter.setStretchFactor(index, stretch)
-
-        if count >= 2:
-            # Initial proportional size distribution (Central with larger proportion)
-            if splitter.orientation() == Qt.Orientation.Horizontal and count == 3:
-                splitter.setSizes([200, 800, 250])  # Proportional example for Left, Central, Right
-            else:
-                base = 1000 // count
-                splitter.setSizes([base] * count)
 
     @staticmethod
     def _orientation_for(direction: SplitDirection) -> Qt.Orientation:

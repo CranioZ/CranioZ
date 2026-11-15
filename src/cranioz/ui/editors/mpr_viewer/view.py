@@ -26,6 +26,14 @@ the image. Navigation between slices is done via the slider at the
 bottom of the widget. The slider value is kept in sync with the
 current slice index.
 
+Block 5.5 note: the View-level Toolbars (Tools on the LEFT,
+Display on the RIGHT) are temporarily disabled to reduce visual
+noise in the prototype. ``toolbar_specs()`` and
+``control_panel_specs()`` return empty lists, so
+``ViewLayoutRenderer`` short-circuits and does not materialize
+them. Re-enabling them is a one-line change (return the specs
+lists instead of ``[]``).
+
 See ADR-0013 §2.3, scene.md §24.
 """
 
@@ -46,12 +54,7 @@ from PySide6.QtWidgets import (
 
 from cranioz.domain.imaging.volume import Volume
 from cranioz.ui.editors.view import View
-from cranioz.ui.toolbars.specification import (
-    ToolbarOrientation,
-    ToolbarPosition,
-    ToolbarSpec,
-    ToolbarVisibilityMode,
-)
+from cranioz.ui.toolbars.specification import ToolbarSpec
 
 _logger = logging.getLogger(__name__)
 
@@ -195,10 +198,7 @@ class MPRView(View):
         if slice_data.size == 0:
             return
 
-        # Window/level by percentiles (1% and 99%). Same calculation
-        # used by the Matplotlib debug script that proved the data is
-        # correct. The percentiles ignore the outlier air (-6114) and
-        # metal (16383) values that would otherwise flatten the image.
+        # Window/level by percentiles (1% and 99%).
         p1, p99 = np.percentile(slice_data, [1, 99])
         if p99 <= p1:
             p99 = p1 + 1.0
@@ -206,11 +206,6 @@ class MPRView(View):
         arr = np.clip((arr - p1) / (p99 - p1), 0.0, 1.0)
         arr = (arr * 255.0).astype(np.uint8)
 
-        # Volume.data is (nz, ny, nx). The slice_data is already
-        # (ny, nx), which is what QImage expects. QImage's origin is
-        # top-left; the Matplotlib debug script used origin='lower'
-        # to match the VTK convention. We flip the image vertically
-        # to keep the same orientation as the (now 3D-only) VTK view.
         height, width = arr.shape
         q_image = QImage(
             arr.tobytes(),
@@ -305,46 +300,48 @@ class MPRView(View):
         self._slider = slider
 
     def toolbar_specs(self) -> list[ToolbarSpec]:
-        """Interaction tools: window/level, zoom, pan, cursor."""
-        return [
-            ToolbarSpec(
-                toolbar_id=f"toolbar.{self.view_id}.tools",
-                title=f"{self.view_type.capitalize()} Tools",
-                orientation=ToolbarOrientation.VERTICAL,
-                position=ToolbarPosition.LEFT,
-                tool_ids=("tool.log",),  # placeholder until real tools land
-                visibility_mode=ToolbarVisibilityMode.ACTIVE_ONLY,
-            )
-        ]
+        """Return the View-level Toolbar specs.
+
+        Block 5.5: temporarily returns an empty list to remove the
+        visual noise of the Log/Toggle buttons in the prototype.
+        Re-enabling them is a one-line change (return the original
+        specs list).
+        """
+        return []
+
+        # Original specs (uncomment to re-enable):
+        # return [
+        #     ToolbarSpec(
+        #         toolbar_id=f"toolbar.{self.view_id}.tools",
+        #         title=f"{self.view_type.capitalize()} Tools",
+        #         orientation=ToolbarOrientation.VERTICAL,
+        #         position=ToolbarPosition.LEFT,
+        #         tool_ids=("tool.log",),
+        #         visibility_mode=ToolbarVisibilityMode.ACTIVE_ONLY,
+        #     )
+        # ]
 
     def control_panel_specs(self) -> list[ToolbarSpec]:
-        """Display controls: LUT, ruler, crosshair."""
-        return [
-            ToolbarSpec(
-                toolbar_id=f"toolbar.{self.view_id}.display",
-                title=f"{self.view_type.capitalize()} Display",
-                orientation=ToolbarOrientation.VERTICAL,
-                position=ToolbarPosition.RIGHT,
-                tool_ids=("tool.toggle",),  # placeholder
-                visibility_mode=ToolbarVisibilityMode.ACTIVE_ONLY,
-            )
-        ]
+        """Return the View-level control panel specs.
+
+        Block 5.5: temporarily returns an empty list (see above).
+        """
+        return []
+
+        # Original specs (uncomment to re-enable):
+        # return [
+        #     ToolbarSpec(
+        #         toolbar_id=f"toolbar.{self.view_id}.display",
+        #         title=f"{self.view_type.capitalize()} Display",
+        #         orientation=ToolbarOrientation.VERTICAL,
+        #         position=ToolbarPosition.RIGHT,
+        #         tool_ids=("tool.toggle",),
+        #         visibility_mode=ToolbarVisibilityMode.ACTIVE_ONLY,
+        #     )
+        # ]
 
     # ----- Activation ----------------------------------------------
 
     def activation_widget(self) -> QWidget:
-        """Return the widget that receives activation events.
-
-        The ViewLayoutRenderer installs an event filter on this
-        widget to detect ``MouseButtonPress`` and ``FocusIn`` and
-        forward them to ``Editor.set_active_view``. The default is
-        ``content_widget()``, which is correct for Views whose
-        content widget is the interactive surface.
-
-        Views backed by a native ``QVTKRenderWindowInteractor`` MUST
-        override this method to return the interactor. Qt delivers
-        input events to the leaf widget under the cursor, so an
-        event filter installed on the container would never fire
-        for a click inside the VTK viewport.
-        """
+        """Return the widget that receives activation events."""
         return self.content_widget()

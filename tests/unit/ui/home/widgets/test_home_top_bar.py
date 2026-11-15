@@ -43,6 +43,7 @@ def test_settings_button_emits_signal(qtbot: QtBot, bar: HomeTopBar) -> None:
 def test_title_is_cranioz(bar: HomeTopBar) -> None:
     assert bar._title.text() == "CranioZ"
 
+
 @pytest.mark.qt
 def test_minimize_button_emits_signal(qtbot: QtBot, bar: HomeTopBar) -> None:
     with qtbot.waitSignal(bar.minimize_requested, timeout=1000):

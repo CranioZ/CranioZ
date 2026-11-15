@@ -157,6 +157,7 @@ def test_with_last_opened_sets_timestamp() -> None:
     assert new_md.last_opened_at == later
     assert md.last_opened_at is None
 
+
 def test_with_status_has_docstring() -> None:
     """The method's docstring must be reachable via __doc__.
 

@@ -280,6 +280,7 @@ def test_start_button_disables_when_search_filters_selected_project(
 
     assert page._start_button_widget().isEnabled() is False
 
+
 def test_top_bar_minimize_signal_is_forwarded(qtbot: QtBot) -> None:
     page, _, _ = _make_page()
     qtbot.addWidget(page)

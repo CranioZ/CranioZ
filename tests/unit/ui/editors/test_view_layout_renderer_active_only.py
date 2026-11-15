@@ -164,9 +164,7 @@ def test_hover_does_not_activate(qtbot: QtBot) -> None:
     container = renderer.render(spec, {"view.a": view_a})
     qtbot.addWidget(container)
 
-    QApplication.sendEvent(
-        view_a.activation_widget(), QEvent(QEvent.Type.Enter)
-    )
+    QApplication.sendEvent(view_a.activation_widget(), QEvent(QEvent.Type.Enter))
 
     assert editor.active_view_id is None
 

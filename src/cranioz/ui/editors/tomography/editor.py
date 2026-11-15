@@ -2,8 +2,7 @@
 
 The Editor coordinates the four Views of a tomography study in a 2x2
 grid: Axial (top-left), Coronal (top-right), Sagittal (bottom-left),
-and 3D (bottom-right). It also declares two Toolbars: one on the left
-(image tools) and one on the right (visibility).
+and 3D (bottom-right).
 
 The Editor receives an ``EditorContext`` at ``initialize``. When a
 ``Volume`` is available in the ``DomainObjectStore`` (via
@@ -16,10 +15,12 @@ publishes ``SceneObjectAdded`` events (ADR-0007), the Editor will
 subscribe and react to specific volumes. Until then, the Editor
 resolves on ``activate`` and ``content_widget``.
 
-The Editor-level Toolbars are declared by ``toolbar_specs()`` and
-materialized by ``_wrap_with_editor_toolbars()`` around the View grid.
-This is symmetric to what ``ViewLayoutRenderer`` does for View-level
-Toolbars: the Editor owns its Toolbars, the renderer owns the View's.
+Block 5.5 note: Editor-level Toolbars are temporarily disabled to
+reduce visual noise in the prototype. ``toolbar_specs()`` returns
+an empty list, so ``_wrap_with_editor_toolbars()`` short-circuits
+and returns the View grid unchanged. The Toolbar wiring is kept
+intact in the codebase; re-enabling them is a one-line change
+(return the specs list instead of ``[]``).
 
 See ADR-0013, scene.md, Medical Imaging Infrastructure §3.2.
 """
@@ -44,10 +45,8 @@ from cranioz.ui.editors.view_layout_spec import (
 from cranioz.ui.editors.viewport_3d.view import Viewport3DView
 from cranioz.ui.toolbars.base import Toolbar
 from cranioz.ui.toolbars.specification import (
-    ToolbarOrientation,
     ToolbarPosition,
     ToolbarSpec,
-    ToolbarVisibilityMode,
 )
 
 if TYPE_CHECKING:
@@ -57,14 +56,7 @@ _logger = logging.getLogger(__name__)
 
 
 class TomographyEditor(Editor):
-    """Tomography Editor with a 2x2 grid and Editor-level Toolbars."""
-
-    #: Fixed width for VERTICAL editor-level Toolbars. Matches the
-    #: ViewLayoutRenderer's _VERTICAL_TOOLBAR_WIDTH (ADR-0013).
-    #: Phase 4.5 (ViewerLayoutManager) will consolidate both into a
-    #: shared module; for now the value is duplicated locally to
-    #: avoid importing a private attribute from the renderer.
-    _EDITOR_VERTICAL_TOOLBAR_WIDTH: int = 96
+    """Tomography Editor with a 2x2 grid."""
 
     def __init__(
         self,
@@ -78,18 +70,10 @@ class TomographyEditor(Editor):
         self._sagittal = MPRView(view_id="view.sagittal", view_type="sagittal")
         self._viewport = Viewport3DView(view_id="view.3d")
 
-        # ViewLayoutRenderer needs its dependencies at construction.
-        # They are pulled from the EditorContext (ADR-0002 hybrid
-        # model): the shell injects tool_registry, theme_service and
-        # icon_provider through the context.
         self._view_layout_renderer: ViewLayoutRenderer | None = None
         self._content: QWidget | None = None
         self._context: EditorContext | None = None
         self._volume_applied = False
-        # Editor-level Toolbars (materialized in content_widget()).
-        # Used by dispose() to release references explicitly. The
-        # container deletion would suffice, but keeping the list
-        # makes the intent explicit and the tests straightforward.
         self._editor_toolbars: list[Toolbar] = []
 
     # ----- Lifecycle -------------------------------------------------
@@ -167,20 +151,16 @@ class TomographyEditor(Editor):
     def _wrap_with_editor_toolbars(self, views_widget: QWidget) -> QWidget:
         """Wrap the View grid with the Editor's own Toolbars.
 
-        Symmetric to what ViewLayoutRenderer does for View-level
-        Toolbars. Editor-level Toolbars are declared in
-        ``toolbar_specs()`` and rendered here, at the outer edge of
-        the Editor's content.
-
-        Returns ``views_widget`` unchanged when the Editor declares
-        no Toolbars (empty list from ``toolbar_specs()``) or when the
-        EditorContext is missing the dependencies needed to
-        materialize them.
+        Block 5.5: short-circuits when ``toolbar_specs()`` returns
+        an empty list. This is the current behavior: the Editor's
+        Toolbars are disabled to reduce visual noise in the
+        prototype.
         """
         specs = self.toolbar_specs()
         if not specs:
             return views_widget
 
+        # Original implementation (kept for future re-enabling):
         ctx = self._context
         if (
             ctx is None
@@ -188,9 +168,6 @@ class TomographyEditor(Editor):
             or ctx.theme_service is None
             or ctx.icon_provider is None
         ):
-            # Defensive: without the Toolbar's dependencies, we cannot
-            # materialize them. The Editor still shows its Views,
-            # just without Editor-level Toolbars.
             _logger.warning(
                 "TomographyEditor cannot materialize Editor-level Toolbars: "
                 "EditorContext is missing tool_registry, theme_service, or "
@@ -200,9 +177,6 @@ class TomographyEditor(Editor):
 
         container = QWidget()
         container.setObjectName(f"editor_container.{self.editor_id}")
-        # Block 5.5: the container must expand to fill the Area.
-        # Without this, the AreaLayoutRenderer's QSplitter gives it
-        # only its sizeHint, leaving the Central Area half-empty.
         container.setSizePolicy(
             QSizePolicy.Policy.Expanding,
             QSizePolicy.Policy.Expanding,
@@ -230,20 +204,22 @@ class TomographyEditor(Editor):
 
         for toolbar in by_position[ToolbarPosition.LEFT]:
             toolbar.setSizePolicy(
-                QSizePolicy.Policy.Fixed,
+                QSizePolicy.Policy.Preferred,
                 QSizePolicy.Policy.Expanding,
             )
-            toolbar.setFixedWidth(self._EDITOR_VERTICAL_TOOLBAR_WIDTH)
+            toolbar.setMinimumWidth(0)
+            toolbar.setMaximumWidth(96)
             outer.addWidget(toolbar, stretch=0)
 
         outer.addWidget(views_widget, stretch=1)
 
         for toolbar in by_position[ToolbarPosition.RIGHT]:
             toolbar.setSizePolicy(
-                QSizePolicy.Policy.Fixed,
+                QSizePolicy.Policy.Preferred,
                 QSizePolicy.Policy.Expanding,
             )
-            toolbar.setFixedWidth(self._EDITOR_VERTICAL_TOOLBAR_WIDTH)
+            toolbar.setMinimumWidth(0)
+            toolbar.setMaximumWidth(96)
             outer.addWidget(toolbar, stretch=0)
 
         return container
@@ -251,40 +227,39 @@ class TomographyEditor(Editor):
     # ----- Toolbars --------------------------------------------------
 
     def toolbar_specs(self) -> list[ToolbarSpec]:
-        return [
-            ToolbarSpec(
-                toolbar_id="toolbar.tomography.left",
-                title=self._tr("tomography.toolbar.image_tools", "Image Tools"),
-                orientation=ToolbarOrientation.VERTICAL,
-                position=ToolbarPosition.LEFT,
-                tool_ids=("tool.log",),
-                visibility_mode=ToolbarVisibilityMode.ALWAYS,
-            ),
-            ToolbarSpec(
-                toolbar_id="toolbar.tomography.right",
-                title=self._tr("tomography.toolbar.visibility", "Visibility"),
-                orientation=ToolbarOrientation.VERTICAL,
-                position=ToolbarPosition.RIGHT,
-                tool_ids=("tool.toggle",),
-                visibility_mode=ToolbarVisibilityMode.COLLAPSIBLE,
-            ),
-        ]
+        """Return the Editor-level Toolbar specs.
+
+        Block 5.5: temporarily returns an empty list to remove the
+        visual noise of the Log and Toggle buttons in the prototype.
+        The original specs (image tools + visibility) are kept as a
+        comment below so re-enabling them later is a copy-paste
+        change.
+        """
+        return []
+
+        # Original specs (uncomment to re-enable):
+        # return [
+        #     ToolbarSpec(
+        #         toolbar_id="toolbar.tomography.left",
+        #         title=self._tr("tomography.toolbar.image_tools", "Image Tools"),
+        #         orientation=ToolbarOrientation.VERTICAL,
+        #         position=ToolbarPosition.LEFT,
+        #         tool_ids=("tool.log",),
+        #         visibility_mode=ToolbarVisibilityMode.ALWAYS,
+        #     ),
+        #     ToolbarSpec(
+        #         toolbar_id="toolbar.tomography.right",
+        #         title=self._tr("tomography.toolbar.visibility", "Visibility"),
+        #         orientation=ToolbarOrientation.VERTICAL,
+        #         position=ToolbarPosition.RIGHT,
+        #         tool_ids=("tool.toggle",),
+        #         visibility_mode=ToolbarVisibilityMode.COLLAPSIBLE,
+        #     ),
+        # ]
 
     # ----- Volume resolution ----------------------------------------
 
     def _try_apply_volume(self) -> None:
-        """Resolve the first ``Volume`` from the DomainObjectStore and
-        pass it to the Views. Idempotent.
-
-        Each View converts the ``Volume`` to ``vtkImageData`` via
-        ``VtkImageAdapter`` internally (Medical Imaging Infrastructure
-        §3.2). The Editor does not touch ``vtkImageData`` directly.
-
-        This is a placeholder for the real mechanism: when the
-        CommandExecutor publishes ``SceneObjectAdded`` events
-        (ADR-0007), the Editor will subscribe and react to specific
-        volumes. Until then, the Editor resolves on first use.
-        """
         if self._volume_applied:
             return
         context = self._context
@@ -305,8 +280,6 @@ class TomographyEditor(Editor):
             self._sagittal.set_volume(volume)
             self._viewport.set_volume(volume)
         except RuntimeError:
-            # VTK is not installed (e.g., in a CI test environment).
-            # Leave the Views as empty containers.
             _logger.warning(
                 "VTK is not available; MPRView and Viewport3DView will remain empty (view_id=%s)",
                 self.editor_id,
@@ -319,7 +292,6 @@ class TomographyEditor(Editor):
         store: DomainObjectStore,
         scene_query: Any,
     ) -> Volume | None:
-        """Resolve the first ``Volume`` from the DomainObjectStore."""
         for object_id in scene_query.list_objects():
             if not store.contains(object_id):
                 continue
@@ -331,19 +303,9 @@ class TomographyEditor(Editor):
     # ----- Volume preset ---------------------------------------------
 
     def set_volume_preset(self, name: str) -> None:
-        """Change the 3D volume rendering preset."""
         self._viewport.set_preset(name)
 
     def reload_volume(self) -> None:
-        """Re-resolve the first ``Volume`` and pass it to the Views.
-
-        Called by ``Workspace.reload_volume()`` after a successful
-        DICOM import (Passo 8e). Idempotent: if the volume is
-        already applied and the store has not changed, it is a no-op
-        (the ``_volume_applied`` flag is reset, but
-        ``_try_apply_volume`` will only mark it True again if a
-        Volume is found).
-        """
         self._volume_applied = False
         self._try_apply_volume()
 
@@ -352,7 +314,7 @@ class TomographyEditor(Editor):
     def dispose(self) -> None:
         if self._content is None:
             return
-        super().dispose()  # disposes each View
+        super().dispose()
         renderer = self._view_layout_renderer
         if renderer is not None:
             renderer.clear_cache()

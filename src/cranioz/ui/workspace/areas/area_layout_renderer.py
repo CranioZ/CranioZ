@@ -22,9 +22,8 @@ See ADR-0013 §2.2, §2.7.
 from __future__ import annotations
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QSizePolicy, QSplitter, QWidget
+from PySide6.QtWidgets import QSizePolicy, QSplitter, QVBoxLayout, QWidget
 
-from cranioz.ui.editors.base_editor import Editor
 from cranioz.ui.workspace.areas.area import Area
 
 
@@ -69,36 +68,22 @@ class AreaLayoutRenderer:
             splitter.addWidget(self._build_editor_container(editor, area, content_widgets))
         return splitter
 
-    def _build_editor_container(
-            self,
-            editor: Editor,
-            area: Area,
-            content_widgets: dict[str, QWidget],
-    ) -> QWidget:
-        """Build the container widget for a single Editor.
-
-        The Editor's content_widget() is already self-contained
-        (e.g., TomographyEditor returns a widget with its View
-        Layout Tree and View-level Toolbars). The container only
-        namespaces it so that tests and the AreaWidget can identify
-        it.
-
-        Block 5.5: the container must expand to fill the Area.
-        Without this, the AreaLayoutRenderer's QSplitter gives it
-        only its sizeHint, leaving the Central Area half-empty.
-        The Expanding size policy is what lets the QSplitter
-        distribute the available space to the container instead of
-        collapsing it to the Editor's minimum.
-        """
+    def _build_editor_container(self, editor, area, content_widgets):
         container = QWidget()
         container.setObjectName(f"area_widget.{area.area_id}.editor.{editor.editor_id}")
-        container.setSizePolicy(
-            QSizePolicy.Policy.Expanding,
-            QSizePolicy.Policy.Expanding,
-        )
+        container.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        container.setMinimumSize(0, 0)  # <-- CRUCIAL
+
+        layout = QVBoxLayout(container)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
 
         content = editor.content_widget()
-        content.setParent(container)
-        content_widgets[editor.editor_id] = content
+        # Força o conteúdo a ignorar o sizeHint para não expandir o splitter
+        content.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
+        content.setMinimumSize(0, 0)  # <-- CRUCIAL
 
+        content.setParent(container)
+        layout.addWidget(content)
+        content_widgets[editor.editor_id] = content
         return container

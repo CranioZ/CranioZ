@@ -28,7 +28,6 @@ from pytestqt.qtbot import QtBot
 from cranioz.ui.editors.base_editor import Editor
 from cranioz.ui.editors.view import View
 
-
 # ----- Fixtures ------------------------------------------------------
 
 
@@ -138,9 +137,7 @@ def test_set_active_view_unknown_id_is_rejected_with_warning(
     received: list[str | None] = []
     editor.active_view_changed.connect(received.append)
 
-    with caplog.at_level(
-        logging.WARNING, logger="cranioz.ui.editors.base_editor"
-    ):
+    with caplog.at_level(logging.WARNING, logger="cranioz.ui.editors.base_editor"):
         editor.set_active_view("view.unknown")
 
     assert editor.active_view_id is None
@@ -227,9 +224,7 @@ def test_set_active_view_on_editor_with_no_views_is_rejected(
     received: list[str | None] = []
     editor.active_view_changed.connect(received.append)
 
-    with caplog.at_level(
-        logging.WARNING, logger="cranioz.ui.editors.base_editor"
-    ):
+    with caplog.at_level(logging.WARNING, logger="cranioz.ui.editors.base_editor"):
         editor.set_active_view("view.anything")
 
     assert editor.active_view_id is None

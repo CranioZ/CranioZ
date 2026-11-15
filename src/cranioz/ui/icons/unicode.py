@@ -37,14 +37,12 @@ _DEFAULT_GLYPHS: Final[dict[str, str]] = {
     "back": "←",
     "forward": "→",
     "sidebar_toggle": "▤",
-
     "window_minimize": "—",
     "window_maximize": "▢",
     "window_restore": "❐",
     "window_close": "✕",
     # Toolbar tool icons
     "toggle": "◉",
-
     # 6.2 Area Toggles (4)
     "toggle_left": "◧",
     "toggle_right": "◨",

@@ -116,9 +116,7 @@ class Toolbar(QWidget):
         self._root_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         self._item_layout = (
-            QHBoxLayout()
-            if spec.orientation is ToolbarOrientation.HORIZONTAL
-            else QVBoxLayout()
+            QHBoxLayout() if spec.orientation is ToolbarOrientation.HORIZONTAL else QVBoxLayout()
         )
         self._item_layout.setContentsMargins(0, 0, 0, 0)
         self._item_layout.setSpacing(4)

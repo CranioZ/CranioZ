@@ -1,0 +1,10 @@
+{
+    "root_dir": "",
+    "output_file": "",
+    "selected_dirs": [],
+    "extensions": [
+        ".py",
+        ".ui",
+        ".md"
+    ]
+}

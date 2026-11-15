@@ -77,10 +77,10 @@ class ProjectMetadata:
     # ----- Convenience mutators -------------------------------------
 
     def with_status(
-            self,
-            status: ProjectStatus,
-            *,
-            now: datetime,
+        self,
+        status: ProjectStatus,
+        *,
+        now: datetime,
     ) -> ProjectMetadata:
         """Return a new metadata with the given status.
 

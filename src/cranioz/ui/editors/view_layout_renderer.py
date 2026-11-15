@@ -90,9 +90,7 @@ class _ViewActivationFilter(QObject):
     only observes).
     """
 
-    _ACTIVATION_EVENTS = frozenset(
-        {QEvent.Type.MouseButtonPress, QEvent.Type.FocusIn}
-    )
+    _ACTIVATION_EVENTS = frozenset({QEvent.Type.MouseButtonPress, QEvent.Type.FocusIn})
 
     def __init__(self, view_id: str, callback: Callable[[str], None]) -> None:
         super().__init__()
@@ -376,9 +374,7 @@ class ViewLayoutRenderer:
         # is the leaf that receives MouseButtonPress.
         if self._editor is not None:
             activation_widget = view.activation_widget()
-            activation_filter = _ViewActivationFilter(
-                view.view_id, self._on_view_activated
-            )
+            activation_filter = _ViewActivationFilter(view.view_id, self._on_view_activated)
             activation_widget.installEventFilter(activation_filter)
             self._view_filters[view.view_id] = activation_filter
             self._view_filter_targets[view.view_id] = activation_widget

@@ -58,9 +58,7 @@ def test_button_order_matches_spec(segment: ExtrasSegment) -> None:
         "workspace.top_bar.extras_segment.maximize",
         "workspace.top_bar.extras_segment.close",
     ]
-    found = [
-        segment.findChild(QPushButton, name) is not None for name in names
-    ]
+    found = [segment.findChild(QPushButton, name) is not None for name in names]
     assert all(found), f"missing button(s) among {names}"
 
 
@@ -75,9 +73,7 @@ def test_buttons_have_fixed_width_28(segment: ExtrasSegment) -> None:
 # ----- Menu signals (existing) ---------------------------------------
 
 
-def test_settings_action_emits_signal(
-    qtbot: QtBot, segment: ExtrasSegment
-) -> None:
+def test_settings_action_emits_signal(qtbot: QtBot, segment: ExtrasSegment) -> None:
     action = next(
         a
         for a in segment._menu.actions()
@@ -87,9 +83,7 @@ def test_settings_action_emits_signal(
         action.trigger()
 
 
-def test_themes_action_emits_signal(
-    qtbot: QtBot, segment: ExtrasSegment
-) -> None:
+def test_themes_action_emits_signal(qtbot: QtBot, segment: ExtrasSegment) -> None:
     action = next(
         a
         for a in segment._menu.actions()
@@ -99,9 +93,7 @@ def test_themes_action_emits_signal(
         action.trigger()
 
 
-def test_help_action_emits_signal(
-    qtbot: QtBot, segment: ExtrasSegment
-) -> None:
+def test_help_action_emits_signal(qtbot: QtBot, segment: ExtrasSegment) -> None:
     action = next(
         a
         for a in segment._menu.actions()
@@ -111,9 +103,7 @@ def test_help_action_emits_signal(
         action.trigger()
 
 
-def test_updates_action_emits_signal(
-    qtbot: QtBot, segment: ExtrasSegment
-) -> None:
+def test_updates_action_emits_signal(qtbot: QtBot, segment: ExtrasSegment) -> None:
     action = next(
         a
         for a in segment._menu.actions()
@@ -123,9 +113,7 @@ def test_updates_action_emits_signal(
         action.trigger()
 
 
-def test_about_action_emits_signal(
-    qtbot: QtBot, segment: ExtrasSegment
-) -> None:
+def test_about_action_emits_signal(qtbot: QtBot, segment: ExtrasSegment) -> None:
     action = next(
         a
         for a in segment._menu.actions()
@@ -138,16 +126,12 @@ def test_about_action_emits_signal(
 # ----- Area toggles (existing) ---------------------------------------
 
 
-def test_toggle_bottom_button_emits_signal(
-    qtbot: QtBot, segment: ExtrasSegment
-) -> None:
+def test_toggle_bottom_button_emits_signal(qtbot: QtBot, segment: ExtrasSegment) -> None:
     with qtbot.waitSignal(segment.toggle_area_bottom_requested, timeout=1000):
         segment._toggle_bottom_button.click()  # noqa: SLF001
 
 
-def test_toggle_right_button_emits_signal(
-    qtbot: QtBot, segment: ExtrasSegment
-) -> None:
+def test_toggle_right_button_emits_signal(qtbot: QtBot, segment: ExtrasSegment) -> None:
     with qtbot.waitSignal(segment.toggle_area_right_requested, timeout=1000):
         segment._toggle_right_button.click()  # noqa: SLF001
 
@@ -155,23 +139,17 @@ def test_toggle_right_button_emits_signal(
 # ----- Window controls (Block 5.6) -----------------------------------
 
 
-def test_minimize_button_emits_signal(
-    qtbot: QtBot, segment: ExtrasSegment
-) -> None:
+def test_minimize_button_emits_signal(qtbot: QtBot, segment: ExtrasSegment) -> None:
     with qtbot.waitSignal(segment.minimize_requested, timeout=1000):
         segment._minimize_button.click()  # noqa: SLF001
 
 
-def test_maximize_button_emits_signal(
-    qtbot: QtBot, segment: ExtrasSegment
-) -> None:
+def test_maximize_button_emits_signal(qtbot: QtBot, segment: ExtrasSegment) -> None:
     with qtbot.waitSignal(segment.maximize_requested, timeout=1000):
         segment._maximize_button.click()  # noqa: SLF001
 
 
-def test_close_button_emits_signal(
-    qtbot: QtBot, segment: ExtrasSegment
-) -> None:
+def test_close_button_emits_signal(qtbot: QtBot, segment: ExtrasSegment) -> None:
     with qtbot.waitSignal(segment.close_requested, timeout=1000):
         segment._close_button.click()  # noqa: SLF001
 
@@ -202,16 +180,12 @@ def test_maximize_button_uses_window_maximize_icon(
 
 def test_all_buttons_have_tooltips(segment: ExtrasSegment) -> None:
     for button in segment.findChildren(QPushButton):
-        assert button.toolTip(), (
-            f"button {button.objectName()} has no tooltip"
-        )
+        assert button.toolTip(), f"button {button.objectName()} has no tooltip"
 
 
 def test_all_buttons_have_accessible_names(segment: ExtrasSegment) -> None:
     for button in segment.findChildren(QPushButton):
-        assert button.accessibleName(), (
-            f"button {button.objectName()} has no accessibleName"
-        )
+        assert button.accessibleName(), f"button {button.objectName()} has no accessibleName"
 
 
 def test_window_control_tooltips_are_specific(segment: ExtrasSegment) -> None:

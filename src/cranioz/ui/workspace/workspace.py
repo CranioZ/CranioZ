@@ -41,6 +41,23 @@ Non-responsibilities:
   materializes what the spec declares. An Area declared in the spec
   hosts at least one Editor (the placeholder or a real one), so the
   concept of an "empty Area" does not exist at this level.
+
+Block 5.5 fix (layout architecture):
+
+- A single QTimer (``_layout_update_timer``) with a 50 ms debounce
+  coalesces multiple layout requests (load_spec, set_area_visible,
+  resizeEvent, showEvent, Top Bar content change) into a single
+  ``_apply_default_splitter_sizes`` call. This avoids O(N) work on
+  every ``resizeEvent`` during a window drag and prevents the
+  "flash" of overlays repositioning with stale Bounds.
+- ``_is_applying_sizes`` guards against reentrancy: ``setSizes()``
+  emits ``splitterMoved``, which the renderer forwards to
+  ``_reposition_overlays``; without the guard, a resize could
+  cascade into another resize.
+- ``_apply_default_splitter_sizes`` reads ``self._root_widget``
+  width/height (the widget actually being split), not the top-level
+  window, so the 20% / 25% / 20% ratios are relative to the
+  available layout space, not to the OS window frame.
 """
 
 from __future__ import annotations
@@ -96,6 +113,11 @@ class Workspace(QWidget):
     _LEFT_RATIO: float = 0.20
     _RIGHT_RATIO: float = 0.25
     _BOTTOM_RATIO: float = 0.20
+
+    #: Debounce window for layout recalculation. 50 ms is enough
+    #: for Qt to settle a continuous resize and short enough that
+    #: the user does not perceive the delay.
+    _LAYOUT_DEBOUNCE_MS: int = 50
 
     def __init__(
         self,
@@ -165,6 +187,23 @@ class Workspace(QWidget):
         self._build_result: BuildResult | None = None
         self._root_widget: QWidget | None = None
 
+        # Block 5.5: single debounce timer for layout updates.
+        # Multiple events (load_spec, set_area_visible, resizeEvent,
+        # showEvent) coalesce into one _apply_default_splitter_sizes
+        # call. This avoids O(N) work on every resize event during a
+        # window drag.
+        self._layout_update_timer = QTimer(self)
+        self._layout_update_timer.setSingleShot(True)
+        self._layout_update_timer.setInterval(self._LAYOUT_DEBOUNCE_MS)
+        self._layout_update_timer.timeout.connect(self._apply_default_splitter_sizes)
+
+        # Block 5.5: reentrancy guard. setSizes() emits
+        # splitterMoved, which the renderer forwards to
+        # _reposition_overlays. Without the guard, that could
+        # cascade into another resize event and cause a feedback
+        # loop between sizing and repositioning.
+        self._is_applying_sizes: bool = False
+
         self._root_layout = QVBoxLayout(self)
         self._root_layout.setContentsMargins(0, 0, 0, 0)
         self._root_layout.setSpacing(0)
@@ -205,6 +244,14 @@ class Workspace(QWidget):
         After installation, Left, Right and Bottom are hidden (the
         Central Area is always visible). See
         ``_hide_lateral_areas_by_default`` for the rationale.
+
+        Block 5.5 fix: this method no longer calls ``raise_()`` or
+        ``_reposition_overlays()`` directly. Both are handled by
+        ``_schedule_layout_update`` (which debounces the size
+        computation and repositions the overlays after the sizes
+        have been applied). Removing the direct calls eliminates the
+        double ``_reposition_overlays`` that positioned the Top Bar
+        with stale Bounds during the first layout pass (Bug 2).
         """
         # 1. Build the new composition (validates the spec).
         new_result = self._layout_builder.build(
@@ -234,19 +281,11 @@ class Workspace(QWidget):
         self._root_widget = new_root
         self._root_layout.addWidget(new_root)
 
-        # 5. Ensure the TopOverlay floats above.
-        self._top_overlay.widget().raise_()
-
-        # 6. Hide Left, Right and Bottom (Central is always visible).
+        # 5. Hide Left, Right and Bottom (Central is always visible).
+        #    This schedules the layout update via debounce, which
+        #    applies the sizes and repositions the overlays once the
+        #    layout has settled.
         self._hide_lateral_areas_by_default()
-
-        # 7. Apply the default percentage-based sizes (Block 5.5).
-        #    Deferred to the next event loop so the widget tree has
-        #    real geometries.
-        QTimer.singleShot(0, self._apply_default_splitter_sizes)
-
-        # 8. Position overlays after the layout is computed.
-        QTimer.singleShot(0, self._reposition_overlays)
 
     def clear(self) -> None:
         """Tear down the current composition.
@@ -329,24 +368,9 @@ class Workspace(QWidget):
         return self._layout_state
 
     def set_area_visible(self, placement: Placement, visible: bool) -> None:
-        """Show or hide a toggleable Area.
-
-        Updates the layout state, hides or shows the matching
-        AreaWidget, redistributes the QSplitter sizes so the visible
-        Areas share the available space, and repositions the overlays.
-
-        The Area model and the AreaWidget are kept in sync: the model
-        reflects the intent, the widget is the presentation.
-
-        A hidden Area is excluded from the Region computation
-        (``LayoutRenderer.compute_region_bounds`` and
-        ``Workspace._regions_from_bounds``). This keeps the TopOverlay
-        positioned over the Central Region even after the user hides
-        a lateral Area.
-
-        Raises:
-            KeyError: if the Placement is not toggleable (CENTRAL).
-        """
+        _logger.info(
+            "DEBUG: set_area_visible(placement=%s, visible=%s) chamado.", placement, visible
+        )
         self._layout_state.set_visible(placement, visible)
 
         if self._build_result is None:
@@ -363,10 +387,7 @@ class Workspace(QWidget):
             if widget is not None:
                 widget.setVisible(visible)
 
-        # Block 5.5: reapply percentage-based sizes now that the
-        # visible set changed. Deferred so Qt has processed the
-        # visibility change before we distribute space.
-        QTimer.singleShot(0, self._apply_default_splitter_sizes)
+        self._schedule_layout_update()
         self._reposition_overlays()
 
     def reload_volume(self) -> None:
@@ -400,143 +421,190 @@ class Workspace(QWidget):
 
     def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802
         super().resizeEvent(event)
-        # Block 5.5: the percentages are relative to the current
-        # window size, so the splitter sizes must be recomputed on
-        # every resize. Deferred so Qt completes the layout pass
-        # before we query widget widths.
-        QTimer.singleShot(0, self._apply_default_splitter_sizes)
-        self._reposition_overlays()
+        # Block 5.5: percentages are relative to the current window
+        # size, so the splitter sizes must be recomputed on every
+        # resize. The debounce coalesces the continuous resize
+        # events fired during a window drag into a single call.
+        self._schedule_layout_update()
 
     def showEvent(self, event: QShowEvent) -> None:  # noqa: N802
-        """Reposition overlays after the workspace is shown."""
+        """Schedule a layout update after the workspace is shown."""
         super().showEvent(event)
-        QTimer.singleShot(0, self._apply_default_splitter_sizes)
-        QTimer.singleShot(0, self._reposition_overlays)
+        self._schedule_layout_update()
 
     # ----- Internals ------------------------------------------------
+
+    def _schedule_layout_update(self) -> None:
+        """Schedule a debounced layout update.
+
+        Multiple calls within the debounce window collapse into a
+        single ``_apply_default_splitter_sizes`` call. This is the
+        only public entry point for layout recalculation: all
+        triggers (load_spec, set_area_visible, resizeEvent,
+        showEvent, Top Bar content change) go through it.
+
+        The timer is restarted on every call, so a continuous stream
+        of resize events during a window drag does not trigger the
+        update until the user stops dragging.
+        """
+        self._layout_update_timer.start()
 
     def _apply_default_splitter_sizes(self) -> None:
         """Apply the default percentage-based sizes to the splitters.
 
-        Left = 20%, Right = 25%, Bottom = 20%. Central is the fill:
-        the remainder of the available space, computed as
-        ``total - left - right`` (horizontal) and
-        ``total - bottom`` (vertical). Central is never given a
-        percentage directly; it always fills what is left.
+        Block 5.5 fix (visibility): the percentages are computed only
+        for Areas that are actually visible. When a lateral Area is
+        hidden, its size is forced to 0 and its percentage is
+        redistributed to the Central Area.
 
-        The Central Area cannot be squeezed below the Top Bar's
-        dynamic minimum (``TopOverlay.minimum_width()``). If the
-        requested lateral sizes would leave less than that for
-        Central, the lateral sizes are scaled down proportionally.
+        Block 5.5 fix (minimum size): the AreaWidgets and their content
+        are forced to ``setMinimumSize(0, 0)`` and ``QSizePolicy.Ignored``
+        so the QSplitter respects the percentage-based sizes even when
+        the placeholder has a large sizeHint.
 
-        This method runs once per load_spec, on resize, and when the
-        Top Bar content changes (``ModulesSegment.modules_changed``).
-        It does not preserve user-dragged sizes; that is Phase 4.5
-        (ADR-0010).
+        Block 5.5 fix (post-toggle reapply): after ``setSizes``, the
+        method calls ``updateGeometry`` to force Qt to recalculate the
+        layout. This is necessary because Qt's layout pass may adjust the
+        splitter sizes after the visibility change.
         """
+        if self._is_applying_sizes:
+            _logger.info("DEBUG: _apply_default_splitter_sizes reentrante, ignorando.")
+            return
         if self._build_result is None or self._root_widget is None:
+            _logger.info("DEBUG: _apply_default_splitter_sizes sem build/root, ignorando.")
             return
 
-        total_w = self._root_widget.width()
-        total_h = self._root_widget.height()
-        if total_w <= 0 or total_h <= 0:
-            # Layout not ready yet; try again on the next event loop.
-            QTimer.singleShot(50, self._apply_default_splitter_sizes)
-            return
+        self._is_applying_sizes = True
+        try:
+            total_w = self._root_widget.width()
+            total_h = self._root_widget.height()
+            min_central = self._top_overlay.minimum_width()
 
-        min_central = self._top_overlay.minimum_width()
-
-        # ----- Horizontal splitters (Left | Central | Right) --------
-        for splitter in self._layout_renderer._split_widgets.values():  # noqa: SLF001
-            if splitter.orientation() != Qt.Orientation.Horizontal:
-                continue
-            count = splitter.count()
-            if count == 0:
-                continue
-
-            placements: list[str] = []
-            for i in range(count):
-                child = splitter.widget(i)
-                area = (
-                    getattr(child, "area", lambda: None)()
-                    if child is not None
-                    else None
-                )
-                placements.append(area.placement.value if area else "")
-
-            left_px = right_px = 0
-            central_indices: list[int] = []
-            for i, p in enumerate(placements):
-                if p == "left":
-                    left_px = int(total_w * self._LEFT_RATIO)
-                elif p == "right":
-                    right_px = int(total_w * self._RIGHT_RATIO)
-                elif p == "central":
-                    central_indices.append(i)
-
-            handle_px = splitter.handleWidth() * max(0, count - 1)
-            available_for_central = total_w - left_px - right_px - handle_px
-
-            # If the Top Bar minimum exceeds the available space for
-            # Central, shrink the lateral Areas proportionally.
-            if available_for_central < min_central and (left_px + right_px) > 0:
-                deficit = min_central - available_for_central
-                total_lateral = left_px + right_px
-                scale = max(0.0, (total_lateral - deficit) / total_lateral)
-                left_px = int(left_px * scale)
-                right_px = int(right_px * scale)
-                available_for_central = total_w - left_px - right_px - handle_px
-
-            sizes = [0] * count
-            if "left" in placements:
-                sizes[placements.index("left")] = left_px
-            if "right" in placements:
-                sizes[placements.index("right")] = right_px
-            if central_indices:
-                per_central = available_for_central // len(central_indices)
-                for i in central_indices:
-                    sizes[i] = per_central
-                # Distribute the rounding remainder into the last
-                # central area so the total is exact.
-                sizes[central_indices[-1]] += (
-                    available_for_central - per_central * len(central_indices)
-                )
-
-            splitter.setSizes(sizes)
-
-        # ----- Vertical splitter (Top row | Bottom) -----------------
-        for splitter in self._layout_renderer._split_widgets.values():  # noqa: SLF001
-            if splitter.orientation() != Qt.Orientation.Vertical:
-                continue
-            count = splitter.count()
-            if count == 0:
-                continue
-
-            placements: list[str] = []
-            for i in range(count):
-                child = splitter.widget(i)
-                if isinstance(child, QSplitter):
-                    # The top row (a QSplitter) contains the Central
-                    # Area. Treat it as Central for the vertical split.
-                    placements.append("central")
-                else:
-                    area = (
-                        getattr(child, "area", lambda: None)()
-                        if child is not None
-                        else None
-                    )
-                    placements.append(area.placement.value if area else "")
-
-            bottom_px = (
-                int(total_h * self._BOTTOM_RATIO) if "bottom" in placements else 0
+            _logger.info(
+                "DEBUG: _apply_default_splitter_sizes chamado. total_w=%d total_h=%d min_central=%d",
+                total_w,
+                total_h,
+                min_central,
             )
-            handle_px = splitter.handleWidth() * max(0, count - 1)
-            top_px = total_h - bottom_px - handle_px
-            sizes = [0] * count
-            if "bottom" in placements:
-                sizes[placements.index("bottom")] = bottom_px
-            sizes[0] = max(top_px, 0)
-            splitter.setSizes(sizes)
+
+            if total_w < min_central or total_h <= 0:
+                _logger.info("DEBUG: Layout não pronto (total_w < min_central), reagendando timer.")
+                self._layout_update_timer.start()
+                return
+
+            # ----- Horizontal splitters (Left | Central | Right) ----
+            for splitter in self._layout_renderer._split_widgets.values():
+                if splitter.orientation() != Qt.Orientation.Horizontal:
+                    continue
+                count = splitter.count()
+                if count == 0:
+                    continue
+
+                base_w = splitter.width() if splitter.width() > 0 else total_w
+
+                placements: list[str] = []
+                visible_flags: list[bool] = []
+                for i in range(count):
+                    child = splitter.widget(i)
+                    area = getattr(child, "area", lambda: None)() if child is not None else None
+                    placements.append(area.placement.value if area else "")
+                    visible_flags.append(area.visible if area else False)
+
+                # Compute lateral sizes ONLY for visible laterals.
+                left_px = 0
+                right_px = 0
+                central_indices: list[int] = []
+                for i, (p, v) in enumerate(zip(placements, visible_flags)):
+                    if p == "left":
+                        left_px = int(base_w * self._LEFT_RATIO) if v else 0
+                    elif p == "right":
+                        right_px = int(base_w * self._RIGHT_RATIO) if v else 0
+                    elif p == "central":
+                        central_indices.append(i)
+
+                handle_px = splitter.handleWidth() * max(0, count - 1)
+                available_for_central = base_w - left_px - right_px - handle_px
+
+                if available_for_central < min_central and (left_px + right_px) > 0:
+                    deficit = min_central - available_for_central
+                    total_lateral = left_px + right_px
+                    scale = max(0.0, (total_lateral - deficit) / total_lateral)
+                    left_px = int(left_px * scale)
+                    right_px = int(right_px * scale)
+                    available_for_central = base_w - left_px - right_px - handle_px
+
+                sizes = [0] * count
+                if "left" in placements:
+                    sizes[placements.index("left")] = left_px
+                if "right" in placements:
+                    sizes[placements.index("right")] = right_px
+                if central_indices:
+                    per_central = available_for_central // len(central_indices)
+                    for i in central_indices:
+                        sizes[i] = per_central
+                    sizes[central_indices[-1]] += available_for_central - per_central * len(
+                        central_indices
+                    )
+
+                _logger.info(
+                    "DEBUG: Horizontal splitter (count=%d, base_w=%d). placements=%s, visible=%s -> setSizes(%s)",
+                    count,
+                    base_w,
+                    placements,
+                    visible_flags,
+                    sizes,
+                )
+                splitter.setSizes(sizes)
+                splitter.updateGeometry()
+
+            # ----- Vertical splitter (Top row | Bottom) -------------
+            for splitter in self._layout_renderer._split_widgets.values():
+                if splitter.orientation() != Qt.Orientation.Vertical:
+                    continue
+                count = splitter.count()
+                if count == 0:
+                    continue
+
+                base_h = splitter.height() if splitter.height() > 0 else total_h
+
+                placements = []
+                visible_flags = []
+                for i in range(count):
+                    child = splitter.widget(i)
+                    if isinstance(child, QSplitter):
+                        placements.append("central")
+                        visible_flags.append(True)
+                    else:
+                        area = getattr(child, "area", lambda: None)() if child is not None else None
+                        placements.append(area.placement.value if area else "")
+                        visible_flags.append(area.visible if area else False)
+
+                bottom_px = 0
+                for i, (p, v) in enumerate(zip(placements, visible_flags)):
+                    if p == "bottom" and v:
+                        bottom_px = int(base_h * self._BOTTOM_RATIO)
+
+                handle_px = splitter.handleWidth() * max(0, count - 1)
+                top_px = base_h - bottom_px - handle_px
+                sizes = [0] * count
+                if "bottom" in placements:
+                    sizes[placements.index("bottom")] = bottom_px
+                sizes[0] = max(top_px, 0)
+
+                _logger.info(
+                    "DEBUG: Vertical splitter (count=%d, base_h=%d). placements=%s, visible=%s -> setSizes(%s)",
+                    count,
+                    base_h,
+                    placements,
+                    visible_flags,
+                    sizes,
+                )
+                splitter.setSizes(sizes)
+                splitter.updateGeometry()
+        finally:
+            self._is_applying_sizes = False
+
+        QTimer.singleShot(0, self._reposition_overlays)
 
     def _hide_lateral_areas_by_default(self) -> None:
         """Hide Left, Right and Bottom after a load_spec().
@@ -557,6 +625,22 @@ class Workspace(QWidget):
         after ``load_spec`` returns. The state and the presentation
         must always agree: the Top Bar toggles read the state, and
         the user sees the widgets.
+
+        Block 5.5 fix: the method no longer calls
+        ``_reposition_overlays()`` synchronously. The synchronous
+        call ran before Qt processed the ``setVisible(False)`` calls
+        and before the ``QSplitter`` redistributed the freed space
+        to the Central Area. As a result, ``compute_region_bounds``
+        read the OLD Central geometry (narrower than the post-toggle
+        geometry) and the TopOverlay was positioned with stale
+        Bounds, causing the visible "jump" from the old to the new
+        position (Bug 2).
+
+        ``_schedule_layout_update`` (called below) triggers the
+        debounced layout recalculation, which applies the new sizes
+        and then repositions the overlays with the FRESH Bounds.
+        That is the only correct moment to reposition after a
+        visibility change.
         """
         if self._build_result is None:
             return
@@ -570,18 +654,73 @@ class Workspace(QWidget):
             if widget is not None:
                 widget.setVisible(False)
 
-        # Block 5.5: the default sizes now reflect the visible set
-        # (Central only), so the layout is correct after load_spec.
-        # Deferred because load_spec itself is called during the
-        # widget tree's construction.
-        QTimer.singleShot(0, self._apply_default_splitter_sizes)
-        self._reposition_overlays()
+        # Block 5.5: schedule the layout update. The debounce timer
+        # will apply the sizes and reposition the overlays once the
+        # layout has settled.
+        self._schedule_layout_update()
 
     def _reposition_overlays(self) -> None:
+        """Reposition every registered Overlay according to the current Regions.
+
+        This method is called from several places:
+
+        - ``load_spec`` (via the debounced size recalculation);
+        - ``resizeEvent`` (via the debounced size recalculation);
+        - ``showEvent`` (via the debounced size recalculation);
+        - the ``on_splitter_moved`` callback when the user drags a
+          splitter handle;
+        - ``set_area_visible`` after a toggle;
+        - ``_apply_default_splitter_sizes`` at the end.
+
+        Because of that, it can run multiple times in a single event
+        loop cycle. The method is idempotent: it recomputes the Bounds
+        from the current widget geometries and repositions the overlays.
+        Overlays that receive a placeholder or invalid Bounds (width or
+        height <= 0) are skipped, which prevents the "Top Bar flash" at
+        (8, 8) with width 0 during the first layout pass.
+
+        Block 5.5 fix: the method now filters invalid Bounds before
+        calling ``reposition_all``, and only raises the TopOverlay when
+        it is actually visible and has a valid geometry. Both changes
+        prevent the Top Bar from being painted in the wrong position
+        during the first layout pass (Bug 2).
+        """
+        if self._build_result is None or self._root_widget is None:
+            return
+
         bounds_by_placement = self._layout_renderer.compute_region_bounds(self)
-        regions = self._regions_from_bounds(bounds_by_placement)
+        if not bounds_by_placement:
+            # No visible Area yet (e.g. load_spec has not run, or
+            # all Areas are hidden). Nothing to reposition.
+            return
+
+        # Filter out invalid Bounds (placeholder or zero-sized).
+        # These are transient states during the first layout pass:
+        # the QSplitter has not yet distributed space to the
+        # AreaWidgets. Repositioning an Overlay with such Bounds
+        # would paint it at (0, 0) with zero size, causing a
+        # visible flash.
+        valid_bounds: dict[Placement, Bounds] = {
+            placement: bounds
+            for placement, bounds in bounds_by_placement.items()
+            if not bounds.is_placeholder() and bounds.width > 0 and bounds.height > 0
+        }
+        if not valid_bounds:
+            return
+
+        regions = self._regions_from_bounds(valid_bounds)
+        if not regions:
+            return
+
         self._overlay_manager.reposition_all(regions)
-        self._top_overlay.widget().raise_()
+
+        # Raise the TopOverlay only when it has a valid geometry.
+        # The raise_() call is cheap, but skipping it when the
+        # geometry is invalid avoids an unnecessary Z-order change
+        # during the first layout pass (which can cause a repaint).
+        top_overlay = self._top_overlay
+        if top_overlay.is_visible() and not top_overlay.widget().geometry().isEmpty():
+            top_overlay.widget().raise_()
 
     def _regions_from_bounds(
         self,

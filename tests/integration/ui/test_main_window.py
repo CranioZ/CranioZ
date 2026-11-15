@@ -25,8 +25,6 @@ only proves the signal was emitted; it does not prove the wiring.
 
 from __future__ import annotations
 
-from unittest.mock import patch
-
 import pytest
 from PySide6.QtWidgets import QMessageBox, QStackedWidget
 from pytestqt.qtbot import QtBot
@@ -391,9 +389,7 @@ def test_close_event_confirms_when_project_open(
         QMessageBox,
         "question",
         staticmethod(
-            lambda *args, **kwargs: (
-                asked.append(args[1]) or QMessageBox.StandardButton.No
-            )
+            lambda *args, **kwargs: asked.append(args[1]) or QMessageBox.StandardButton.No
         ),
     )
 
@@ -436,15 +432,14 @@ def test_close_event_no_prompt_when_no_project(
         QMessageBox,
         "question",
         staticmethod(
-            lambda *args, **kwargs: (
-                asked.append(args[1]) or QMessageBox.StandardButton.Yes
-            )
+            lambda *args, **kwargs: asked.append(args[1]) or QMessageBox.StandardButton.Yes
         ),
     )
 
     window.close()
 
     assert asked == []
+
 
 def test_home_top_bar_minimize_button_calls_show_minimized(
     window: MainWindow,

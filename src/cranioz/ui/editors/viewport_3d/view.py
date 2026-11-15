@@ -14,6 +14,13 @@ replaces only its own actor (the volume actor or the last mesh actor).
 The View does not know about the Scene. The Editor resolves the
 ``Volume`` (via ``set_volume``) or the ``Mesh`` (via ``set_mesh``).
 
+Block 5.5 note: the View-level Toolbars (Tools on the LEFT,
+Display on the RIGHT) are temporarily disabled to reduce visual
+noise in the prototype. ``toolbar_specs()`` and
+``control_panel_specs()`` return empty lists, so
+``ViewLayoutRenderer`` short-circuits and does not materialize
+them.
+
 See ADR-0013 §2.3, scene.md §24, scene.md §27 (presentation state).
 """
 
@@ -51,12 +58,7 @@ from cranioz.ui.editors.viewport_3d.presets import (
     VolumePreset,
     get_preset,
 )
-from cranioz.ui.toolbars.specification import (
-    ToolbarOrientation,
-    ToolbarPosition,
-    ToolbarSpec,
-    ToolbarVisibilityMode,
-)
+from cranioz.ui.toolbars.specification import ToolbarSpec
 
 _DEFAULT_PRESET = "bone"
 _CBCT_PRESET = "cbct"
@@ -311,11 +313,6 @@ class Viewport3DView(View):
 
     def content_widget(self) -> QWidget:
         """Return the container widget for this view."""
-        # Create the VTK pipeline eagerly so that the
-        # QVTKRenderWindowInteractor exists before
-        # ViewLayoutRenderer.activation_widget() is called. The
-        # renderer installs its activation filter on the interactor,
-        # not on the container (see activation_widget below).
         self._ensure_pipeline()
         self._ensure_container()
         container = self._container
@@ -324,13 +321,7 @@ class Viewport3DView(View):
         return container
 
     def activation_widget(self) -> QWidget:
-        """Return the VTK interactor as the activation surface.
-
-        ``ViewLayoutRenderer`` installs its event filter here. The
-        interactor is the leaf widget under the cursor when the user
-        clicks inside the 3D viewport, so this is the only widget
-        that actually receives ``MouseButtonPress``.
-        """
+        """Return the VTK interactor as the activation surface."""
         self._ensure_pipeline()
         interactor = self._interactor
         if interactor is not None:
@@ -397,8 +388,6 @@ class Viewport3DView(View):
         volume_actor.SetProperty(volume_property)
         renderer.AddVolume(volume_actor)
 
-        # QTimer without a parent. The View is not a QObject, so it
-        # cannot be used as the parent. Cleanup is explicit in dispose().
         timer = QTimer()
         timer.setSingleShot(True)
         timer.timeout.connect(self._initial_render)
@@ -418,12 +407,6 @@ class Viewport3DView(View):
 
         container = QWidget()
         container.setObjectName(f"viewport_3d.view.{self.view_id}")
-        # A Viewport3DView without a Volume/Mesh does not initialize the
-        # VTK interactor, so the QVTKRenderWindowInteractor reports a
-        # sizeHint of 0x0. Without a minimum size, a parent QSplitter
-        # (e.g. a bare AreaWidget or a MeshDebugEditor) would collapse
-        # the container to 0. 200x150 is the same floor used by
-        # ViewLayoutRenderer._CONTENT_MIN_WIDTH/_HEIGHT.
         container.setMinimumSize(200, 150)
 
         container_layout = QVBoxLayout(container)
@@ -500,27 +483,40 @@ class Viewport3DView(View):
         volume_property.SetScalarOpacityUnitDistance(1.0)
 
     def toolbar_specs(self) -> list[ToolbarSpec]:
-        """Interaction tools: ROI, cut, paint, annotations."""
-        return [
-            ToolbarSpec(
-                toolbar_id=f"toolbar.{self.view_id}.tools",
-                title="3D Tools",
-                orientation=ToolbarOrientation.VERTICAL,
-                position=ToolbarPosition.LEFT,
-                tool_ids=("tool.log",),
-                visibility_mode=ToolbarVisibilityMode.ACTIVE_ONLY,
-            )
-        ]
+        """Return the View-level Toolbar specs.
+
+        Block 5.5: temporarily returns an empty list to remove the
+        visual noise of the Log/Toggle buttons in the prototype.
+        """
+        return []
+
+        # Original specs (uncomment to re-enable):
+        # return [
+        #     ToolbarSpec(
+        #         toolbar_id=f"toolbar.{self.view_id}.tools",
+        #         title="3D Tools",
+        #         orientation=ToolbarOrientation.VERTICAL,
+        #         position=ToolbarPosition.LEFT,
+        #         tool_ids=("tool.log",),
+        #         visibility_mode=ToolbarVisibilityMode.ACTIVE_ONLY,
+        #     )
+        # ]
 
     def control_panel_specs(self) -> list[ToolbarSpec]:
-        """Display controls: preset, orientation, background."""
-        return [
-            ToolbarSpec(
-                toolbar_id=f"toolbar.{self.view_id}.display",
-                title="3D Display",
-                orientation=ToolbarOrientation.VERTICAL,
-                position=ToolbarPosition.RIGHT,
-                tool_ids=("tool.toggle",),
-                visibility_mode=ToolbarVisibilityMode.ACTIVE_ONLY,
-            )
-        ]
+        """Return the View-level control panel specs.
+
+        Block 5.5: temporarily returns an empty list (see above).
+        """
+        return []
+
+        # Original specs (uncomment to re-enable):
+        # return [
+        #     ToolbarSpec(
+        #         toolbar_id=f"toolbar.{self.view_id}.display",
+        #         title="3D Display",
+        #         orientation=ToolbarOrientation.VERTICAL,
+        #         position=ToolbarPosition.RIGHT,
+        #         tool_ids=("tool.toggle",),
+        #         visibility_mode=ToolbarVisibilityMode.ACTIVE_ONLY,
+        #     )
+        # ]
