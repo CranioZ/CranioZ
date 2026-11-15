@@ -285,7 +285,7 @@ class Toolbar(QWidget):
     def _apply_opacity_effect(self) -> None:
         """Attach or remove the ``QGraphicsOpacityEffect``."""
         if self._active:
-            self.setGraphicsEffect(None) # type: ignore[arg-type]
+            self.setGraphicsEffect(None)  # type: ignore[arg-type]
         else:
             effect = QGraphicsOpacityEffect(self)
             effect.setOpacity(self.INACTIVE_OPACITY)

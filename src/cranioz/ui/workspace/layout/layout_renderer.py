@@ -304,9 +304,7 @@ class LayoutRenderer:
         single source of truth for splitter sizes, applied in
         ``_apply_default_splitter_sizes``.
         """
-        expected_widgets: list[QWidget] = [
-            self._render_node(child) for child in split.children
-        ]
+        expected_widgets: list[QWidget] = [self._render_node(child) for child in split.children]
 
         # Detach all current widgets. We re-add them below.
         while splitter.count():
@@ -324,10 +322,7 @@ class LayoutRenderer:
             child: QWidget | None = splitter.widget(index)
             if child is None:
                 continue
-            is_central = (
-                hasattr(child, "area")
-                and child.area().placement.value == "central"
-            )
+            is_central = hasattr(child, "area") and child.area().placement.value == "central"
             stretch = 2 if is_central else 1
             splitter.setStretchFactor(index, stretch)
 

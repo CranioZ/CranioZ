@@ -549,7 +549,6 @@ class Workspace(QWidget):
 
         return sizes
 
-
     def _compute_vertical_sizes(self, splitter: QSplitter, total_h: int) -> list[int] | None:
         """Compute the sizes for a vertical splitter."""
         count = splitter.count()
@@ -592,7 +591,6 @@ class Workspace(QWidget):
             sizes,
         )
         return sizes
-
 
     def _hide_lateral_areas_by_default(self) -> None:
         """Hide Left, Right and Bottom after a load_spec().

@@ -24,8 +24,8 @@ from __future__ import annotations
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QSizePolicy, QSplitter, QVBoxLayout, QWidget
 
-from cranioz.ui.workspace.areas.area import Area
 from cranioz.ui.editors.base_editor import Editor
+from cranioz.ui.workspace.areas.area import Area
 
 
 class AreaLayoutRenderer:
@@ -70,10 +70,10 @@ class AreaLayoutRenderer:
         return splitter
 
     def _build_editor_container(
-            self,
-            editor: Editor,
-            area: Area,
-            content_widgets: dict[str, QWidget],
+        self,
+        editor: Editor,
+        area: Area,
+        content_widgets: dict[str, QWidget],
     ) -> QWidget:
         """Build the container widget for a single Editor.
 

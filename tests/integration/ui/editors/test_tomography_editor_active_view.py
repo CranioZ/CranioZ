@@ -25,7 +25,6 @@ from cranioz.ui.editors.tomography.editor import TomographyEditor
 from cranioz.ui.toolbars.base import Toolbar
 from cranioz.ui.toolbars.specification import ToolbarSpec
 
-
 # ----- Fake Viewport3DView -----------------------------------------
 
 
@@ -120,9 +119,7 @@ def test_editor_materializes_four_views_and_no_editor_toolbars(qtbot) -> None:
     editor.dispose()
 
 
-@pytest.mark.skip(
-    reason="View-level Toolbars temporarily disabled (Block 5.5)"
-)
+@pytest.mark.skip(reason="View-level Toolbars temporarily disabled (Block 5.5)")
 @pytest.mark.qt
 @pytest.mark.integration
 def test_activating_view_emphasizes_its_view_level_toolbars(qtbot) -> None:
@@ -135,9 +132,7 @@ def test_activating_view_emphasizes_its_view_level_toolbars(qtbot) -> None:
     editor.set_active_view(axial_view.view_id)
 
     view_toolbars = [
-        tb
-        for tb in content.findChildren(Toolbar)
-        if tb.spec.toolbar_id.startswith("toolbar.view.")
+        tb for tb in content.findChildren(Toolbar) if tb.spec.toolbar_id.startswith("toolbar.view.")
     ]
     by_id = {tb.spec.toolbar_id: tb for tb in view_toolbars}
 
@@ -147,9 +142,7 @@ def test_activating_view_emphasizes_its_view_level_toolbars(qtbot) -> None:
     editor.dispose()
 
 
-@pytest.mark.skip(
-    reason="Editor-level Toolbars temporarily disabled (Block 5.5)"
-)
+@pytest.mark.skip(reason="Editor-level Toolbars temporarily disabled (Block 5.5)")
 @pytest.mark.qt
 @pytest.mark.integration
 def test_editor_level_always_toolbar_unaffected(qtbot) -> None:

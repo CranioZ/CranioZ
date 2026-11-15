@@ -1,8 +1,7 @@
 """Shared pytest fixtures for CranioZ tests."""
 
-from __future__ import annotations
-
 # Standard Library
+import contextlib
 import logging
 import os
 from collections.abc import Callable, Iterator
@@ -155,20 +154,16 @@ class _FakeRenderer:
         self._view_props.append(actor)
 
     def RemoveActor(self, actor: object) -> None:  # noqa: N802 - VTK naming
-        try:
+        # VTK silently ignores unknown actors; mirror that.
+        with contextlib.suppress(ValueError):
             self._view_props.remove(actor)
-        except ValueError:
-            # VTK silently ignores unknown actors; mirror that.
-            pass
 
     def AddVolume(self, volume: object) -> None:  # noqa: N802 - VTK naming
         self._view_props.append(volume)
 
     def RemoveVolume(self, volume: object) -> None:  # noqa: N802 - VTK naming
-        try:
+        with contextlib.suppress(ValueError):
             self._view_props.remove(volume)
-        except ValueError:
-            pass
 
     def AddViewProp(self, prop: object) -> None:  # noqa: N802 - VTK naming
         self._view_props.append(prop)
@@ -217,8 +212,14 @@ def _patch_viewport_3d_view(monkeypatch: pytest.MonkeyPatch) -> None:
     that the real ``dispose``, ``set_mesh`` and ``set_volume`` call,
     so those methods can run unpatched against the fake.
     """
-    from cranioz.ui.editors.viewport_3d.presets import get_preset
-    from cranioz.ui.editors.viewport_3d.view import Viewport3DView
+    # Imported here, not at module level: ``view.py`` imports VTK at
+    # the top of the module. Importing it during conftest collection
+    # would initialize VTK before QApplication, which on Windows
+    # produces a wrong QSurfaceFormat and breaks the boot sequence.
+    # The fixture runs after ``qapp`` thanks to pytest-qt's autouse
+    # ordering.
+    from cranioz.ui.editors.viewport_3d.presets import get_preset  # noqa: PLC0415
+    from cranioz.ui.editors.viewport_3d.view import Viewport3DView  # noqa: PLC0415
 
     def _fake_ensure_pipeline(self) -> None:
         """Simulate the real _ensure_pipeline without VTK.
@@ -273,9 +274,7 @@ def _patch_viewport_3d_view(monkeypatch: pytest.MonkeyPatch) -> None:
         - ``set_mesh(None)`` raises ``ValueError`` like production.
         """
         if mesh is None:
-            raise ValueError(
-                "Viewport3DView.set_mesh requires a non-None Mesh"
-            )
+            raise ValueError("Viewport3DView.set_mesh requires a non-None Mesh")
         self._mesh = mesh
         if getattr(self, "_mesh_actor", None) is None:
             self._mesh_actor = object()
