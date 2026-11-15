@@ -16,10 +16,12 @@ from cranioz.ui.editors.builtin.test_editor import DummyEditor
 from cranioz.ui.toolbars.base import Toolbar
 from cranioz.ui.workspace.areas.area import Area
 from cranioz.ui.workspace.areas.area_layout_renderer import AreaLayoutRenderer
-from cranioz.ui.workspace.areas.area_layout_spec import (
-    AreaLayoutSpec,
-    AreaLayoutType,
+from cranioz.ui.workspace.areas.editor_layout_spec import (
+    EditorLayoutSpec,
+    EditorStackOrientation,
+    SplitDirection,
 )
+from cranioz.ui.workspace.areas.editor_stack import EditorStack
 from cranioz.ui.workspace.areas.placement import Placement
 
 
@@ -120,25 +122,32 @@ def test_empty_area_raises(renderer: AreaLayoutRenderer) -> None:
         renderer.render(area, content_widgets)
 
 
-def test_stack_spec_is_not_yet_materialized(
+def test_stack_spec_materializes_editor_stack(
     qtbot: QtBot,
     renderer: AreaLayoutRenderer,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """STACK is reserved for Sprint H. The renderer must fail loudly
-    instead of silently falling back to a splitter."""
+    """STACK materializes an EditorStack."""
     area = _area()
     area.add_editor(DummyEditor(editor_id="editor.a"))
     area.add_editor(DummyEditor(editor_id="editor.b"))
     content_widgets: dict[str, QWidget] = {}
 
-    def _force_stack(target: Area) -> AreaLayoutSpec:
-        return AreaLayoutSpec(
-            AreaLayoutType.STACK,
-            tuple(e.editor_id for e in target.editors()),
+    # Set a fake EditorLayoutSpec on the Area to trigger STACK materialization.
+    area.set_editor_layout_spec(
+        EditorLayoutSpec.stack(
+            children=(
+                EditorLayoutSpec.leaf("editor.a"),
+                EditorLayoutSpec.leaf("editor.b"),
+            ),
+            direction=SplitDirection.HORIZONTAL,
+            orientation=EditorStackOrientation.BOTTOM,
         )
+    )
 
-    monkeypatch.setattr(renderer, "_resolve_spec", _force_stack)
+    result = renderer.render(area, content_widgets)
+    qtbot.addWidget(result)
 
-    with pytest.raises(NotImplementedError, match="Sprint H"):
-        renderer.render(area, content_widgets)
+    assert isinstance(result, EditorStack)
+    assert "__editor_stack__" in content_widgets
+    assert content_widgets["__editor_stack__"] is result

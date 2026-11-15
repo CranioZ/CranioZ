@@ -6,6 +6,8 @@ TomographyEditor (axial, coronal, sagittal, 3D Views). The lateral
 Areas are declared but hidden by default; the user toggles them
 from the Top Bar. When Bloco 9 delivers the Flow Catalog, the
 Workspace will receive the Flow's ModuleUISpec instead.
+
+Sprint H adds DEBUG_STACK to validate the EditorStack visually.
 """
 
 from __future__ import annotations
@@ -16,9 +18,15 @@ from PySide6.QtWidgets import QLabel, QWidget
 from cranioz.infrastructure.i18n import tr
 from cranioz.ui.editors.base_editor import Editor
 from cranioz.ui.editors.editor_context import EditorContext
+
+# Sprint H: Importação corrigida para a pasta "areas"
+from cranioz.ui.workspace.areas.editor_layout_spec import (
+    EditorLayoutSpec,
+    EditorStackOrientation,
+    SplitDirection,
+)
 from cranioz.ui.workspace.areas.placement import Placement
 from cranioz.ui.workspace.specs.area_spec import AreaSpec
-from cranioz.ui.workspace.specs.editor_layout_spec import EditorLayoutSpec
 from cranioz.ui.workspace.specs.module_ui_spec import ModuleUISpec
 
 
@@ -122,6 +130,29 @@ DEBUG_MESH: ModuleUISpec = ModuleUISpec(
             title="Mesh Debug",
             placement=Placement.CENTRAL,
             editor_layout=EditorLayoutSpec.leaf("editor.mesh_debug"),
+        ),
+    ),
+)
+
+
+# Sprint H: Spec de debug para validar o EditorStack visualmente.
+# Empilha o TomographyEditor com o PlaceholderEditor.
+DEBUG_STACK: ModuleUISpec = ModuleUISpec(
+    areas=(
+        AreaSpec(
+            area_id="area.central",
+            title="Central - Stack",
+            placement=Placement.CENTRAL,
+            # O nó STACK agrupa dois ou mais editores.
+            # O 'direction=HORIZONTAL' coloca os botões de seleção embaixo.
+            editor_layout=EditorLayoutSpec.stack(
+                children=(
+                    EditorLayoutSpec.leaf("editor.tomography"),
+                    EditorLayoutSpec.leaf(PLACEHOLDER_EDITOR_ID),
+                ),
+                direction=SplitDirection.HORIZONTAL,
+                orientation=EditorStackOrientation.BOTTOM,
+            ),
         ),
     ),
 )

@@ -1,43 +1,4 @@
-"""AreaWidget.
-
-Qt widget that materializes a single Area.
-
-The Area is a pure domain model (no Qt). The AreaWidget is the
-presentation layer for one Area: it renders the Editor Layout Tree
-via the AreaLayoutRenderer (intra-Area layout) and a placeholder
-when the Area is empty.
-
-The AreaWidget is responsible for:
-
-- The empty placeholder.
-- Caching the content widgets so they can be detached before a
-  rebuild (``_content_widgets``).
-- The optional debug label and background.
-- Scheduling the VTK first-frame render.
-
-The AreaLayoutRenderer is responsible for:
-
-- Materializing the Editor containers and their Toolbars.
-- Building the QSplitter when there are multiple Editors.
-
-Block 5.5: the AreaWidget exposes a dynamic property
-``area_placement`` (values: ``"central"``, ``"left"``, ``"right"``,
-``"bottom"``) consumed by the global QSS to paint the Area with the
-correct background and rounded corners. The property is set in
-``__init__`` before ``refresh()``; ``unpolish/polish`` is called to
-force the QSS to match immediately.
-
-Block 5.5: ``refresh()`` returns early when the Area model says it
-is hidden. This prevents the placeholder label from appearing in an
-Area that the Workspace has just hidden via ``set_area_visible``.
-
-Block 5.5: the widget uses ``QSizePolicy.Expanding`` on both axes.
-The parent QSplitter respects the policy when distributing space;
-without it, the AreaWidget is limited to its ``sizeHint``, which
-leaves the Central Area half-empty.
-
-See ADR-0013 (Editor Layout Tree), ADR-0002 (Toolbars inside Editors).
-"""
+"""AreaWidget."""
 
 from __future__ import annotations
 
@@ -57,6 +18,7 @@ from cranioz.ui.theme.service import ThemeService
 from cranioz.ui.tools.registry.tool_registry import ToolRegistry
 from cranioz.ui.workspace.areas.area import Area
 from cranioz.ui.workspace.areas.area_layout_renderer import AreaLayoutRenderer
+from cranioz.ui.workspace.areas.editor_stack import EditorStack
 from cranioz.ui.workspace.areas.placement import Placement
 
 _logger = logging.getLogger(__name__)
@@ -81,44 +43,23 @@ class AreaWidget(QWidget):
     ) -> None:
         super().__init__(parent)
 
-        # ADR-0013 §2.6: Toolbar materialization moved to the
-        # ViewLayoutRenderer (View-level Toolbars) inside each Editor.
-        # The AreaLayoutRenderer no longer materializes Toolbars and
-        # no longer needs these services. The parameters are kept on
-        # the signature for compatibility with LayoutRenderer; they
-        # will be removed in Sprint H, when the LayoutRenderer is
-        # updated to construct AreaWidget with only ``area`` +
-        # ``debug_colors``.
-        del tool_registry, theme_service, icon_provider
-
+        # Sprint H: Repassar o IconProvider para o renderer
+        self._icon_provider = icon_provider
         self._area = area
         self._debug_colors = debug_colors
         self._content_widgets: dict[str, QWidget] = {}
 
-        self._area_layout_renderer = AreaLayoutRenderer()
+        self._area_layout_renderer = AreaLayoutRenderer(icon_provider=icon_provider)
 
         self.setObjectName(f"area_widget.{area.area_id}")
 
-        # Block 5.5: the AreaWidget must expand to fill the space the
-        # LayoutRenderer gives it. Without Expanding, the parent
-        # QSplitter gives the AreaWidget only its sizeHint, which
-        # makes the Central Area half-empty (the grid inside it is
-        # then squeezed).
         self.setSizePolicy(
             QSizePolicy.Policy.Expanding,
             QSizePolicy.Policy.Expanding,
         )
 
-        # Block 5.5: expose the placement as a dynamic property so
-        # the global QSS (QWidget[area_placement="..."]) can paint
-        # the Area with the correct background and rounded corners.
-        # The property MUST be set before WA_StyledBackground and
-        # before refresh() so the QSS matches on the first paint.
         self.setProperty("area_placement", self._area.placement.value)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        # Force the QSS to apply now that the property is set. Without
-        # this, the QSS set on the QApplication before this widget was
-        # created does not match the property-based selector.
         self.style().unpolish(self)
         self.style().polish(self)
 
@@ -141,37 +82,34 @@ class AreaWidget(QWidget):
         return self._area.placement
 
     def area(self) -> Area:
-        """Return the Area this widget materializes."""
         return self._area
 
     def refresh(self) -> None:
-        # Block 5.5: if the Area model says it is hidden, do not
-        # render the placeholder or the content. The Workspace also
-        # calls setVisible(False) on the widget, but refresh() may
-        # run while the widget is still visible during a transition.
+        print(f"\n[DEBUG AreaWidget] refresh({self._area.area_id})")
+        print(f"[DEBUG AreaWidget] Editores na Area: {len(self._area.editors())}")
+        print(f"[DEBUG AreaWidget] Layout Spec: {self._area.editor_layout_spec}")
+
         if not self._area.visible:
+            print("[DEBUG AreaWidget] Área invisível, abortando refresh.")
             return
 
-        # 1. Dispose the Editors' internal resources before rebuilding.
-        for editor in self._area.editors():
-            try:
-                editor.dispose()
-            except Exception:
-                _logger.exception("Editor.dispose() failed for %r", editor.editor_id)
+        # O ERRO ESTAVA AQUI! Não podemos chamar dispose nos editores
+        # que vamos usar logo em seguida no renderer!
+        # for editor in self._area.editors():
+        #     try:
+        #         editor.dispose()
+        #     except Exception:
+        #         _logger.exception("Editor.dispose() failed for %r", editor.editor_id)
 
-        # 2. Clear the layout (detach content widgets, delete containers).
         self._clear_layout()
 
-        # 3. Build the empty placeholder if there are no Editors.
         if self._area.is_empty():
+            print("[DEBUG AreaWidget] Área vazia -> renderizando placeholder.")
             self._root_layout.addWidget(self._build_empty_placeholder())
-            # Re-polish after adding the placeholder, so the QSS
-            # applies to the new child.
             self.style().unpolish(self)
             self.style().polish(self)
             return
 
-        # 4. Optional debug label.
         if self._debug_colors:
             debug_label = QLabel(f"[{self._area.area_id}]")
             debug_label.setStyleSheet(
@@ -179,23 +117,22 @@ class AreaWidget(QWidget):
             )
             self._root_layout.addWidget(debug_label)
 
-        # 5. Delegate the intra-Area composition to the renderer.
+        # Chama o renderer (que deve ler o editor_layout_spec)
+        print("[DEBUG AreaWidget] Chamando AreaLayoutRenderer.render()")
         content = self._area_layout_renderer.render(self._area, self._content_widgets)
+
+        print(f"[DEBUG AreaWidget] Renderer retornou: {type(content)}")
         self._root_layout.addWidget(content)
 
-        # 6. Force VTK to render its first frame.
         QTimer.singleShot(0, self._force_vtk_render)
         QTimer.singleShot(100, self._force_vtk_render)
 
-        # 7. Re-polish after the refresh, so the QSS applies to the
-        # newly created children (the container, its labels, etc.).
         self.style().unpolish(self)
         self.style().polish(self)
 
     # ----- Internals ------------------------------------------------
 
     def _force_vtk_render(self) -> None:
-        """Ask every QVTKRenderWindowInteractor under this Area to render."""
         found = 0
         for child in self.findChildren(QWidget):
             render_window = getattr(child, "GetRenderWindow", None)
@@ -208,18 +145,6 @@ class AreaWidget(QWidget):
                     rw.Render()
             except Exception:
                 _logger.exception("VTK first-frame render failed for %r", child)
-
-        if found == 0:
-            _logger.debug(
-                "_force_vtk_render(%r): no QVTKRenderWindowInteractor found",
-                self.area_id,
-            )
-        else:
-            _logger.debug(
-                "_force_vtk_render(%r): rendered %d interactor(s)",
-                self.area_id,
-                found,
-            )
 
     def _apply_debug_background(self) -> None:
         palette = {
@@ -240,7 +165,14 @@ class AreaWidget(QWidget):
         self.setStyleSheet(f"QWidget#{self.objectName()} {{ background-color: {color}; }}")
 
     def _clear_layout(self) -> None:
-        # 1. Detach every Editor's content_widget() from its container.
+        # Sprint H: Se houver um EditorStack, descarte-o primeiro.
+        stack = self._content_widgets.pop("__editor_stack__", None)
+        if isinstance(stack, EditorStack):
+            try:
+                stack.dispose()
+            except Exception:
+                _logger.exception("EditorStack.dispose() failed in AreaWidget")
+
         for editor in self._area.editors():
             content = self._content_widgets.pop(editor.editor_id, None)
             if content is None:
@@ -253,7 +185,6 @@ class AreaWidget(QWidget):
                     editor.editor_id,
                 )
 
-        # 2. Clear the root layout.
         while self._root_layout.count():
             item = self._root_layout.takeAt(0)
             widget = item.widget() if item is not None else None
@@ -265,6 +196,5 @@ class AreaWidget(QWidget):
         label = QLabel(f"{self._area.title} (empty)")
         label.setObjectName(f"area_widget.{self._area.area_id}.placeholder")
         label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        # Transparent so the Area background (via QSS) shows through.
         label.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         return label

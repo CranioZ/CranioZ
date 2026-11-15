@@ -11,27 +11,13 @@ It builds a Workspace with:
 - A synthetic Volume (sphere shell, ~2000 HU) injected in the
   DomainObjectStore and in the SceneQuery, so the four Views have
   something to render (2D MPR slices + 3D volume).
-- A ModuleUISpec with a single Central Area hosting the
-  TomographyEditor (editor.tomography).
+- A ModuleUISpec with a single Central Area hosting a STACK of
+  TomographyEditor and PlaceholderEditor.
 
-What you should see (G2 / ADR-0013 §2.6):
-
-- The Top Bar floating over the Central Area.
-- A 2x2 grid of Views inside the TomographyEditor:
-    Axial (top-left) | Coronal (top-right)
-    Sagittal (bottom-left) | 3D (bottom-right)
-- Each View wrapped in its own container with:
-    - A vertical Toolbar on the LEFT (Tools).
-    - A vertical Toolbar on the RIGHT (Display).
-- 2D Views show the synthetic volume's slices (a circular shell).
-- The 3D View shows the shell rendered with the "bone" preset,
-  on the dark blue VTK background.
-- No QTabWidget at the bottom of the Area.
-- No Editor-level Toolbar wrapping the grid.
-
-The Toolbars are declared with ACTIVE_ONLY, but the visibility
-behavior is not implemented yet (Sprint H). All four pairs are
-visible simultaneously here — that is expected for G2.
+Sprint H: To validate the EditorStack, this script uses a STACK
+layout instead of a single leaf. You should see the TomographyEditor
+rendering normally, and a row of buttons at the bottom to switch to
+the PlaceholderEditor.
 
 Run with:
 
@@ -48,10 +34,6 @@ from datetime import UTC, datetime
 # ---------------------------------------------------------------------
 # VTK / OpenGL configuration (must run before the first QApplication)
 # ---------------------------------------------------------------------
-# Mirrors src/cranioz/__main__.py. If AA_ShareOpenGLContexts and the
-# Core-profile QSurfaceFormat are not set before QApplication is
-# created, QVTKRenderWindowInteractor fails to render (white or black
-# 3D viewport). Qt freezes these settings at construction time.
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QSurfaceFormat
 from PySide6.QtWidgets import QApplication, QMainWindow, QSplitter, QWidget
@@ -97,7 +79,14 @@ from cranioz.ui.tools.builtin.toggle_tool import ToggleTool
 from cranioz.ui.tools.registry.tool_registry import ToolRegistry
 from cranioz.ui.workspace.areas.placement import Placement
 from cranioz.ui.workspace.specs.area_spec import AreaSpec
-from cranioz.ui.workspace.specs.editor_layout_spec import EditorLayoutSpec
+# CORREÇÃO: Importar da pasta correta (areas)
+from cranioz.ui.workspace.areas.editor_layout_spec import (
+    EditorLayoutSpec,
+    SplitDirection,
+    EditorStackOrientation,
+)
+# Importar o PlaceholderEditor
+from cranioz.ui.workspace.workspace_spec import PLACEHOLDER_EDITOR_ID, _PlaceholderEditor
 from cranioz.ui.workspace.specs.module_ui_spec import ModuleUISpec
 from cranioz.ui.workspace.workspace import Workspace
 
@@ -135,13 +124,7 @@ def build_project_context() -> ProjectContext:
 
 
 def build_synthetic_volume() -> Volume:
-    """Build a small volume with a shell so the 3D View has something to show.
-
-    The shell is a sphere of radius 20-30 voxels at ~2000 HU (bone-like
-    intensity), embedded in air (-1000 HU). The 2D MPR Views render
-    the slice through the middle; the 3D View renders the shell with
-    the "bone" preset (HU-calibrated volume).
-    """
+    """Build a small volume with a shell so the 3D View has something to show."""
     nz, ny, nx = 64, 64, 64
     grid = np.indices((nz, ny, nx))
     cz, cy, cx = nz / 2, ny / 2, nx / 2
@@ -176,9 +159,11 @@ def build_synthetic_volume() -> Volume:
 
 
 def build_editor_registry() -> EditorRegistry:
-    """Register the real TomographyEditor."""
+    """Register the real TomographyEditor and the PlaceholderEditor."""
     registry = EditorRegistry()
     registry.register("editor.tomography", TomographyEditor)
+    # Sprint H: Registrar o PlaceholderEditor para o stack
+    registry.register(PLACEHOLDER_EDITOR_ID, _PlaceholderEditor)
     return registry
 
 
@@ -196,14 +181,22 @@ def build_tool_registry() -> ToolRegistry:
 
 
 def build_spec() -> ModuleUISpec:
-    """Build a ModuleUISpec with a single Central Area hosting TomographyEditor."""
+    """Build a ModuleUISpec with a Central Area hosting a STACK of Editors."""
     return ModuleUISpec(
         areas=(
             AreaSpec(
                 area_id="area.central",
-                title="Tomography",
+                title="Tomography Stack",
                 placement=Placement.CENTRAL,
-                editor_layout=EditorLayoutSpec.leaf("editor.tomography"),
+                # Sprint H: Usar EditorLayoutSpec.stack em vez de leaf
+                editor_layout=EditorLayoutSpec.stack(
+                    children=(
+                        EditorLayoutSpec.leaf("editor.tomography"),
+                        EditorLayoutSpec.leaf(PLACEHOLDER_EDITOR_ID),
+                    ),
+                    direction=SplitDirection.HORIZONTAL,
+                    orientation=EditorStackOrientation.BOTTOM,
+                ),
             ),
         ),
     )
@@ -213,13 +206,7 @@ def build_spec() -> ModuleUISpec:
 
 
 def _dump_visual_state(workspace: Workspace) -> None:
-    """Print the geometry of the AreaWidget, its QSplitters, and its Views.
-
-    Helps diagnose visual regressions that structural tests cannot
-    catch: a splitter whose children collapsed to zero, an overlay
-    positioned before the window had geometry, a View whose 3D
-    content is not initialized, etc.
-    """
+    """Print the geometry of the AreaWidget, its QSplitters, and its Views."""
     print("\n=== Visual state dump ===")
     areas = workspace.areas()
     if not areas:
@@ -263,9 +250,6 @@ def _dump_visual_state(workspace: Workspace) -> None:
             )
 
         # The 3D View, if present
-        viewports = widget.findChildren(Viewport3DView.__mro__[1])  # QWidget
-        # (findChildren by base class would be noisy; instead look
-        #  up the specific interactor name in the object tree.)
         interactors = widget.findChildren(QWidget, "viewport_3d.view.view.3d")
         for interactor in interactors:
             print(f"    viewport_3d.view.view.3d geometry={interactor.geometry()}")
@@ -290,16 +274,7 @@ def _dump_visual_state(workspace: Workspace) -> None:
 
 
 def _force_splitter_sizes(workspace: Workspace) -> None:
-    """Give every QSplitter equal sizes now that the window is shown.
-
-    The QSplitter.setSizes() calls inside ``_render_2x2_grid`` run
-    while the parent container has zero total size, so they are
-    silently ignored. Once the window is shown and Qt has assigned
-    real geometry, re-applying equal sizes makes the four quadrants
-    actually visible. The View containers now have
-    ``sizePolicy(Expanding, Expanding)``, so the splitter distributes
-    the available space instead of limiting to the minimum.
-    """
+    """Give every QSplitter equal sizes now that the window is shown."""
     for area in workspace.areas():
         widget = workspace._layout_renderer.cached_area_widget(area.area_id)  # noqa: SLF001
         if widget is None:
@@ -312,13 +287,7 @@ def _force_splitter_sizes(workspace: Workspace) -> None:
 
 
 def _force_reposition_overlays(workspace: Workspace) -> None:
-    """Reposition overlays once the AreaWidgets have real geometry.
-
-    ``compute_region_bounds`` returns a placeholder (zero) rectangle
-    if the AreaWidgets are not yet laid out. Calling this after
-    ``show()`` (with a small delay) positions the Top Bar over the
-    Central Area correctly.
-    """
+    """Reposition overlays once the AreaWidgets have real geometry."""
     workspace._reposition_overlays()  # noqa: SLF001
 
 
@@ -329,23 +298,17 @@ def main() -> int:
     app = QApplication.instance() or QApplication([])
     app.setStyle("Fusion")
 
-    # ThemeService needs in-memory settings (Sprint E). Applying the
-    # compiled QSS makes the Toolbars and labels look like the real
-    # application instead of Fusion's defaults.
+    # ThemeService needs in-memory settings (Sprint E).
     theme_service = ThemeService(
         settings=InMemorySettingsService(),
         default_mode=ThemeMode.DARK,
     )
     theme_service.compiler().apply(theme_service.compiled())
 
-    # The UnicodeIconProvider resolves the ``log``/``toggle`` icon
-    # names declared by the built-in tools. It is bound to the same
-    # ThemeService so icon colors follow the active theme.
+    # The UnicodeIconProvider resolves the ``log``/``toggle`` icon names.
     icon_provider: IconProvider = UnicodeIconProvider(theme_service)
 
-    # Synthetic Volume: the 2D Views render its slices, the 3D View
-    # renders its shell. Without this, the Viewport3DView never calls
-    # set_volume() and stays blank (white/cinza).
+    # Synthetic Volume.
     domain_object_store = DomainObjectStore()
     scene_query = InMemorySceneQuery()
     volume = build_synthetic_volume()
@@ -360,35 +323,22 @@ def main() -> int:
         project_context=build_project_context(),
         domain_object_store=domain_object_store,
         scene_query=scene_query,
-        # debug_colors=True would paint the Area background with a
-        # distinct color per Placement. Useful to inspect Area
-        # boundaries, but it obscures the View-level Toolbars, so it
-        # is off here. Turn it on only when you need to check Area
-        # placement.
         debug_colors=False,
     )
     workspace.load_spec(build_spec())
 
     window = QMainWindow()
-    window.setWindowTitle("CranioZ — TomographyEditor debug (G2)")
+    window.setWindowTitle("CranioZ — EditorStack Debug (Sprint H)")
     window.setCentralWidget(workspace)
     window.resize(1280, 800)
     window.show()
 
-    # Defer layout fixes to the next event loop iterations. When the
-    # widgets were created, the QSplitters had zero total size, and
-    # the overlays had no Region bounds to anchor to. Qt needs at
-    # least one iteration after show() to assign real geometry. The
-    # VTK pipeline inside the 3D View may take longer to initialize,
-    # so we schedule a third pass.
+    # Defer layout fixes to the next event loop iterations.
     for delay_ms in (0, 100, 300):
         QTimer.singleShot(delay_ms, lambda: _force_splitter_sizes(workspace))
         QTimer.singleShot(delay_ms, lambda: _force_reposition_overlays(workspace))
 
-    # Print a snapshot after the layout has settled and VTK had time
-    # to initialize. A second dump at 800 ms catches any late layout
-    # adjustment (e.g. when the VTK interactor's first render changes
-    # its sizeHint).
+    # Print a snapshot after the layout has settled.
     QTimer.singleShot(300, lambda: _dump_visual_state(workspace))
     QTimer.singleShot(800, lambda: _dump_visual_state(workspace))
 

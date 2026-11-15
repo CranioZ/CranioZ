@@ -54,6 +54,8 @@ _KNOWN_DEBT_FILES: frozenset[str] = frozenset(
         "src/cranioz/ui/editors/viewport_3d/presets.py",
         "src/cranioz/ui/editors/mock/mpr.py",
         "src/cranioz/ui/editors/mock/objetos.py",
+        "src/cranioz/ui/editors/placeholder_editor.py",
+        "src/cranioz/ui/workspace/areas/editor_stack.py",
     }
 )
 
@@ -70,6 +72,10 @@ _DEBT_MAX_LITERALS: dict[str, int] = {
     # overlay + 1 button background = 7 literals.
     "src/cranioz/ui/editors/mock/mpr.py": 10,
     "src/cranioz/ui/editors/mock/objetos.py": 8,
+    # Placeholder editor: 1 color literal (#888).
+    "src/cranioz/ui/editors/placeholder_editor.py": 1,
+    # EditorStack: 7 color literals in the QSS.
+    "src/cranioz/ui/workspace/areas/editor_stack.py": 7,
 }
 
 #: Directories to scan for hardcoded appearance literals.

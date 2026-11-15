@@ -23,14 +23,24 @@ Rules:
   especially for the CENTRAL Area, which must always exist as a
   container even when it hosts nothing.
 
+Sprint H: The Area carries the EditorLayoutSpec that describes how
+its Editors are organized (SINGLE, SPLIT, or STACK). This spec is
+injected by the Workspace after the LayoutBuilder creates the Area.
+
 This is a pure UI container. It has no Qt dependency at this level;
 the widget materialization is the LayoutRenderer's job.
 """
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from cranioz.ui.editors.base_editor import Editor
 from cranioz.ui.workspace.areas.placement import Placement
+
+if TYPE_CHECKING:
+    # Sprint H: Importação condicional para evitar dependência circular
+    from cranioz.ui.workspace.areas.editor_layout_spec import EditorLayoutSpec
 
 
 class AreaError(ValueError):
@@ -57,6 +67,8 @@ class Area:
         self._editors: list[Editor] = []
         self._active_editor_id: str | None = None
         self._visible = True
+        # Sprint H: The Editor Layout Tree spec (optional).
+        self._editor_layout_spec: EditorLayoutSpec | None = None
 
     # ----- Identity ---------------------------------------------------
 
@@ -159,6 +171,22 @@ class Area:
         if not self.contains(editor_id):
             raise AreaError(f"editor_id is not hosted by this Area: {editor_id}")
         self._active_editor_id = editor_id
+
+    # ----- Sprint H: Editor Layout Spec ------------------------------
+
+    @property
+    def editor_layout_spec(self) -> EditorLayoutSpec | None:
+        """Return the Editor Layout Tree spec for this Area, if set."""
+        return self._editor_layout_spec
+
+    def set_editor_layout_spec(self, spec: EditorLayoutSpec) -> None:
+        """Set the Editor Layout Tree spec for this Area.
+
+        Called by the Workspace after the LayoutBuilder creates the Area.
+        The AreaLayoutRenderer consumes this spec to materialize the
+        Editor composition (SINGLE, SPLIT, or STACK).
+        """
+        self._editor_layout_spec = spec
 
     # ----- Representation --------------------------------------------
 
