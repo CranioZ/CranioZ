@@ -18,6 +18,13 @@ The tests verify:
   destroying it.
 - Custom parameters: non-default height and margins work.
 - content_layout(): exposes a QLayout for future content.
+
+Block 5.5:
+- ``minimum_width()`` is dynamic (sum of the three segments'
+  sizeHints plus the layout margins/spacings).
+- ``reposition()`` respects the Bounds it receives, even if
+  narrower than ``minimum_width()``. The Workspace is responsible
+  for keeping the Central Area wide enough.
 """
 
 from __future__ import annotations
@@ -118,27 +125,26 @@ def test_reposition_with_origin_bounds(overlay: TopOverlay) -> None:
     assert geom.height() == 40
 
 
-def test_reposition_uses_minimum_width_when_bounds_is_narrower(
+def test_reposition_respects_bounds_when_narrower_than_minimum(
     overlay: TopOverlay,
 ) -> None:
-    """Block 5.5: the Top Bar never shrinks below its minimum width.
+    """Block 5.5: the Top Bar respects the Region bounds, even if
+    narrower than ``minimum_width()``.
 
-    The minimum is the sum of the three segments' sizeHints plus
-    the internal margins/spacings. If the Region is narrower than
-    that, the Top Bar overflows the Region (the Workspace is
-    responsible for preventing it by keeping the Central Area
-    wide enough).
+    The previous behavior was to overflow the Region when narrower
+    than ``minimum_width()``. The new behavior is to respect the
+    bounds. The Workspace is responsible for keeping the Central Area
+    wide enough (``_apply_default_splitter_sizes`` reserves at least
+    ``minimum_width()`` for the Central Area).
     """
     bounds = Bounds(x=0.0, y=0.0, width=10.0, height=100.0)
     overlay.reposition(bounds)
 
     geom = overlay.widget().geometry()
-    min_width = overlay.minimum_width()
-    assert geom.width() == min_width, (
-        f"Expected width={min_width} (minimum), got {geom.width()}"
-    )
-    assert geom.width() > 0
+    # 10 - 2 * 8 (margins) = -6 → clamped to 0.
+    assert geom.width() == 0
     assert geom.height() == 40
+
 
 def test_reposition_uses_bounds_width_when_above_minimum(
     overlay: TopOverlay,
@@ -162,7 +168,7 @@ def test_minimum_width_is_zero_when_segments_empty(overlay: TopOverlay) -> None:
     assert overlay.minimum_width() == 16
 
 
-def test_minimum_width_grows_with_content(qtbot) -> None:
+def test_minimum_width_grows_with_content(qtbot: QtBot) -> None:
     """Adding content to the segments increases the minimum width."""
     overlay = TopOverlay()
     qtbot.addWidget(overlay.widget())
@@ -170,8 +176,6 @@ def test_minimum_width_grows_with_content(qtbot) -> None:
     before = overlay.minimum_width()
 
     # Add a 200x30 widget to the center segment.
-    from PySide6.QtWidgets import QLabel
-
     content = QLabel("x" * 20)
     content.setFixedWidth(200)
     content.setFixedHeight(30)

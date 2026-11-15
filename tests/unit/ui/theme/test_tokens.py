@@ -1,4 +1,18 @@
-"""Tests for the canonical design tokens."""
+"""Tests for the canonical design tokens.
+
+These tests verify the *structure* and *validation rules* of the
+design tokens (enums, categories, counts, validation rejections,
+immutability). They do NOT assert specific color values.
+
+Why: the token values are expected to evolve (see the Dark Graphite
+refinement, Block 5.7). Tests that assert specific hex values are
+brittle and belong in the specific tests that consume them
+(test_compiler.py, test_service.py, test_contrast.py), where the
+context justifies the expectation. Here we only verify that the
+canonical set is structurally sound and passes validation.
+
+Spec: docs/architecture/appearance/themes-and-design-tokens.md
+"""
 
 from __future__ import annotations
 

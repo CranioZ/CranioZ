@@ -31,6 +31,11 @@ Block 5.5: ``refresh()`` returns early when the Area model says it
 is hidden. This prevents the placeholder label from appearing in an
 Area that the Workspace has just hidden via ``set_area_visible``.
 
+Block 5.5: the widget uses ``QSizePolicy.Expanding`` on both axes.
+The parent QSplitter respects the policy when distributing space;
+without it, the AreaWidget is limited to its ``sizeHint``, which
+leaves the Central Area half-empty.
+
 See ADR-0013 (Editor Layout Tree), ADR-0002 (Toolbars inside Editors).
 """
 
@@ -42,6 +47,7 @@ from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import (
     QLabel,
+    QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
@@ -92,6 +98,16 @@ class AreaWidget(QWidget):
         self._area_layout_renderer = AreaLayoutRenderer()
 
         self.setObjectName(f"area_widget.{area.area_id}")
+
+        # Block 5.5: the AreaWidget must expand to fill the space the
+        # LayoutRenderer gives it. Without Expanding, the parent
+        # QSplitter gives the AreaWidget only its sizeHint, which
+        # makes the Central Area half-empty (the grid inside it is
+        # then squeezed).
+        self.setSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Expanding,
+        )
 
         # Block 5.5: expose the placement as a dynamic property so
         # the global QSS (QWidget[area_placement="..."]) can paint
@@ -225,14 +241,6 @@ class AreaWidget(QWidget):
 
     def _clear_layout(self) -> None:
         # 1. Detach every Editor's content_widget() from its container.
-        #    The Editor owns the content_widget() and reuses it across
-        #    refreshes (e.g. DummyEditor caches its QLabel, the
-        #    TomographyEditor caches its QSplitter). If we let Qt delete
-        #    the content_widget() together with its parent container, the
-        #    Editor's cached reference becomes a dangling pointer and the
-        #    next content_widget() call returns an already-deleted object.
-        #    Detaching (setParent(None)) is enough: the container is
-        #    destroyed, the Editor's content survives.
         for editor in self._area.editors():
             content = self._content_widgets.pop(editor.editor_id, None)
             if content is None:

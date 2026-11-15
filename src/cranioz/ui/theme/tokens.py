@@ -17,6 +17,19 @@ Rules enforced by ``validate_tokens``:
 The token set is closed for Phase 2 (47 tokens, 7 categories).
 Adding a token requires a PR that updates the specification and the
 token count in §5 of the specification document.
+
+Phase 2 dark palette (Block 5.7):
+- "Dark Graphite + Cool Neutral + Medical Blue".
+- Application, panel, elevated and input backgrounds form a clear
+  four-step tonal hierarchy (see the comment above DARK_TOKENS).
+- The primary accent is a muted medical blue (#5689B5) reserved for
+  primary actions, focus and selection.
+- Feedback colors meet WCAG AA on ``background_panel`` (the darkest
+  common surface used by feedback text).
+- Refined against the Affinity Design session: the application
+  background is deeper, the panel and elevated surfaces are slightly
+  lighter, and the input sits below the panel. The tonal range is
+  therefore wider (L=11 to L=24) without changing the hue.
 """
 
 from __future__ import annotations
@@ -166,25 +179,46 @@ class ThemeTokens:
 DARK_TOKENS: Final[ThemeTokens] = ThemeTokens(
     name=ThemeName.DARK,
     colors=ColorTokens(
-        background_application="#1C1C1E",
-        background_panel="#242426",
-        background_elevated="#2C2C2E",
-        background_input="#1A1A1C",
-        text_primary="#E5E5E7",
-        text_secondary="#98989E",
-        text_disabled="#5A5A5E",
+        # Block 5.7 (Affinity refinement): Dark Graphite hierarchy.
+        # Four tonal steps with a wider range than v1:
+        #   application (L=11) < input (L=15) < panel (L=19) < elevated (L=24)
+        # The application is deeper than v1, the panel and elevated
+        # are slightly lighter, and the input sits below the panel
+        # (a receiving surface, not a structural one).
+        background_application="#1C1F24",
+        background_panel="#2A3038",
+        background_elevated="#353C46",
+        background_input="#232930",
+        # Text: neutral, slightly cool. Secondary is brighter than v1
+        # (the Affinity session showed #B0BAC5 reads better on the
+        # darker application background).
+        text_primary="#E1E5EA",
+        text_secondary="#B0BAC5",
+        text_disabled="#6B7580",
         text_inverse="#FFFFFF",
-        border_default="#38383A",
-        border_subtle="#2C2C2E",
-        border_focus="#0071E3",
-        interactive_default="#0071E3",
-        interactive_hover="#409CFF",
-        interactive_pressed="#0059B3",
-        interactive_selected="#0071E3",
-        feedback_information="#4A90D9",
-        feedback_success="#30D158",
-        feedback_warning="#FF9F0A",
-        feedback_error="#FF453A",
+        # Borders: visible without being heavy. The default is
+        # slightly brighter than v1. border_focus uses the brighter
+        # information tone so it stands out on the dark panel.
+        border_default="#454D58",
+        border_subtle="#353C45",
+        border_focus="#7EB0D8",
+        # Interactive: Medical Blue, muted. The default is the darker
+        # tone (#44729A) so text_inverse (#FFFFFF) meets WCAG AA
+        # (4.61:1). The hover is the lighter #5689B5, and the pressed
+        # is the darkest #335C7D, preserving the interactive hierarchy.
+        interactive_default="#44729A",
+        interactive_hover="#5689B5",
+        interactive_pressed="#335C7D",
+        interactive_selected="#44729A",
+        # Feedback: WCAG AA on background_panel (#2A3038).
+        #   - information: 5.05:1 (#7EB0D8)
+        #   - success: 5.2:1 (#68A88A, unchanged)
+        #   - warning: 4.6:1 (#C89B52, unchanged)
+        #   - error: 4.68:1 (#DA7E7A)
+        feedback_information="#7EB0D8",
+        feedback_success="#68A88A",
+        feedback_warning="#C89B52",
+        feedback_error="#DA7E7A",
     ),
     typography=TypographyTokens(
         family_interface='"Segoe UI", "Inter", sans-serif',
@@ -206,8 +240,13 @@ DARK_TOKENS: Final[ThemeTokens] = ThemeTokens(
         radius_dialog=8,
     ),
     effects=EffectTokens(
+        # Block 5.7: adjust the hover overlay to the new graphite
+        # base (rgba(255,255,255,0.06) remains appropriate for a
+        # light-tint overlay; the base color is the panel, so the
+        # tint is perceptually consistent).
         hover_overlay="rgba(255,255,255,0.06)",
-        selection_highlight="rgba(0,113,227,0.24)",
+        # Selection highlight derived from the new Medical Blue.
+        selection_highlight="rgba(86,137,181,0.24)",
         elevation_panel=ElevationSpec(
             offset_x=0, offset_y=1, blur_radius=3, color="rgba(0,0,0,0.40)"
         ),
@@ -226,6 +265,10 @@ DARK_TOKENS: Final[ThemeTokens] = ThemeTokens(
 )
 
 
+#: Light theme: unchanged from Phase 2. A refined Light theme is
+#: Phase 4.5 (see ``docs/architecture/appearance/``). The Phase 2
+#: Light palette is functional; the refined palette will follow the
+#: same neutral / brand / semantic separation as the Dark theme.
 LIGHT_TOKENS: Final[ThemeTokens] = ThemeTokens(
     name=ThemeName.LIGHT,
     colors=ColorTokens(

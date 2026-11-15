@@ -272,7 +272,13 @@ class LayoutRenderer:
         raise LayoutRendererError(f"unknown layout node type: {type(node).__name__}")
 
     def _render_leaf(self, leaf: Leaf) -> AreaWidget:
-        """Return (or create) an AreaWidget for the leaf's Area."""
+        """Return (or create) an AreaWidget for the leaf's Area.
+
+        Block 5.5: the widget uses ``QSizePolicy.Expanding`` so the
+        parent QSplitter gives it the full available space. Without
+        it, the AreaWidget is limited to its ``sizeHint``, which
+        makes the Central Area half-empty.
+        """
         area = leaf.area
         widget = self._area_widgets.get(area.area_id)
         if widget is None:

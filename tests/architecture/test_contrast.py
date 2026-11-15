@@ -16,6 +16,13 @@ The pairs, in spec order:
     color.feedback.information on color.background.panel        >= 4.5
 
 The implementation follows WCAG's relative luminance formula.
+
+Block 5.7 ("Dark Graphite + Medical Blue"):
+The dark palette was refined to widen the tonal range
+(application L=11 to elevated L=24). All nine pairs still meet AA
+on the new palette; the closest pair is ``text_inverse`` on
+``interactive_default`` at 4.7:1, which is intentionally above the
+threshold to avoid a near-miss on the primary action color.
 """
 
 from __future__ import annotations

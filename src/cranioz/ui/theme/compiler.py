@@ -11,13 +11,27 @@ Specification: docs/architecture/appearance/themes-and-design-tokens.md §9
 
 This module is the *only* place where token values are turned into
 concrete Qt resources. The ``ThemeService`` delegates here.
+
+Block 5.7 corrections:
+- ``_compose_rgba`` emits ``rgba(r,g,b,X.XX%)`` (the CSS/QSS form
+  documented by the Qt Style Sheets Reference). The previous decimal
+  alpha form (``0.9200``) was accepted by Qt but was a non-standard
+  extension.
+- ``CompiledStyles`` wraps its maps in ``MappingProxyType`` so that
+  consumers cannot mutate them. ``frozen=True`` alone was not enough
+  (it freezes attribute reassignment, not the dicts themselves).
+- ``_hex_to_rgb`` validates the exact 7-character ``#rrggbb`` shape
+  with a regex, producing a useful error message instead of a
+  generic ``int()`` ValueError.
 """
 
 from __future__ import annotations
 
 import logging
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass
+from types import MappingProxyType
 
 from PySide6.QtWidgets import QApplication
 
@@ -51,15 +65,21 @@ _SURFACE_OPACITY_TOKEN: Mapping[str, str] = {
     "modal_backdrop": "opacity_modal_backdrop",
 }
 
+#: Strict #rrggbb pattern. The token validation already enforces this
+#: shape, but the compiler is defence-in-depth: it may receive tokens
+#: from a test or a future source that bypasses ``validate_tokens``.
+_HEX_COLOR_RE = re.compile(r"^#[0-9A-Fa-f]{6}$")
+
 
 def _hex_to_rgb(color: str) -> tuple[int, int, int]:
     """Convert ``#rrggbb`` to an ``(r, g, b)`` tuple.
 
     Raises ``ValueError`` for anything else. Surface base colors are
-    required to be ``#rrggbb`` by the token validation.
+    required to be ``#rrggbb`` by the token validation; this function
+    is defence-in-depth for callers that bypass it.
     """
-    if len(color) != 7 or not color.startswith("#"):
-        raise ValueError(f"not a #rrggbb color: {color!r}")
+    if not _HEX_COLOR_RE.fullmatch(color):
+        raise ValueError(f"Invalid color: {color!r}; expected #rrggbb")
     return (
         int(color[1:3], 16),
         int(color[3:5], 16),
@@ -68,9 +88,15 @@ def _hex_to_rgb(color: str) -> tuple[int, int, int]:
 
 
 def _compose_rgba(base: str, opacity: float) -> str:
-    """Compose ``base`` with ``opacity`` into an ``rgba(r,g,b,a)`` string."""
+    """Compose ``base`` with ``opacity`` into an ``rgba(r,g,b,X.XX%)`` string.
+
+    Qt Style Sheets document the alpha channel as an integer 0-255 or
+    a percentage. The decimal form (0.0-1.0) is a non-standard
+    extension. We emit the percentage form for spec compliance.
+    """
     r, g, b = _hex_to_rgb(base)
-    return f"rgba({r},{g},{b},{opacity:.4f})"
+    alpha_percent = opacity * 100.0
+    return f"rgba({r},{g},{b},{alpha_percent:.2f}%)"
 
 
 def _base_color_for(tokens: ThemeTokens, role: str) -> str:
@@ -93,8 +119,11 @@ class CompiledStyles:
     """Opaque compiled appearance resources.
 
     Consumers access surfaces and elevations through the methods; they
-    MUST NOT rely on the raw maps. The raw maps are exposed for tests
-    and for the ``ThemeCompiler`` itself.
+    MUST NOT rely on the raw maps. The raw maps are read-only
+    ``MappingProxyType`` instances: attempting to mutate them raises
+    ``TypeError``. This is the contract that ``frozen=True`` alone
+    does not enforce (it freezes attribute reassignment, not the
+    mutable dicts stored in those attributes).
     """
 
     theme_name: ThemeName
@@ -123,14 +152,14 @@ class ThemeCompiler:
     """Compiles ``ThemeTokens`` into ``CompiledStyles``."""
 
     def compile(self, tokens: ThemeTokens) -> CompiledStyles:
-        surface_colors = {
+        surface_colors: dict[str, str] = {
             role: _compose_rgba(
                 _base_color_for(tokens, role),
                 getattr(tokens.surfaces, _SURFACE_OPACITY_TOKEN[role]),
             )
             for role in _SURFACE_OPACITY_TOKEN
         }
-        elevations = {
+        elevations: dict[str, ElevationSpec] = {
             "panel": tokens.effects.elevation_panel,
             "dialog": tokens.effects.elevation_dialog,
             "overlay": tokens.effects.elevation_overlay,
@@ -139,8 +168,8 @@ class ThemeCompiler:
         return CompiledStyles(
             theme_name=tokens.name,
             qss=qss,
-            surface_colors=surface_colors,
-            elevations=elevations,
+            surface_colors=MappingProxyType(surface_colors),
+            elevations=MappingProxyType(elevations),
         )
 
     def apply(self, styles: CompiledStyles) -> None:
