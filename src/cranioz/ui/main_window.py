@@ -1,24 +1,4 @@
-"""MainWindow — the application shell.
-
-MainWindow is the top-level application window. It hosts the Home
-Page and the Workspace, and it is the sole orchestrator of navigation
-between them (ADR-0006).
-
-Block 5.5 fix: _ensure_builtin_tools() now explicitly registers the
-TomographyEditor under "editor.tomography", overwriting any previous
-registration. This guarantees the Workspace uses the corrected
-Editor (no Editor-level Toolbars) regardless of where the Editor was
-registered before.
-
-Non-responsibilities (see main_window.md §9 and ADR-0006):
-
-- MainWindow does not implement project lifecycle rules.
-- MainWindow does not implement workflow rules.
-- MainWindow does not manage long-running operations.
-- MainWindow does not persist state.
-- MainWindow does not read DICOM or assemble volumes; that is the
-  ImportDicomSeriesHandler's responsibility.
-"""
+"""MainWindow — the application shell."""
 
 from __future__ import annotations
 
@@ -27,12 +7,15 @@ import os
 import uuid
 from typing import TYPE_CHECKING
 
+from PySide6.QtCore import QEvent, QObject, QPoint, Qt
 from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import (
     QFileDialog,
     QMainWindow,
     QMessageBox,
+    QPushButton,
     QStackedWidget,
+    QVBoxLayout,
     QWidget,
 )
 
@@ -88,6 +71,40 @@ if TYPE_CHECKING:
 
 _logger = logging.getLogger(__name__)
 
+BORDER_WIDTH = 8
+CONTAINER_MARGIN = 4
+
+
+class WindowDragFilter(QObject):
+    """Filtro que permite arrastar a janela clicando nos widgets filhos."""
+
+    def __init__(self, window: QMainWindow) -> None:
+        super().__init__(window)
+        self._window = window
+        self._drag_pos: QPoint | None = None
+
+    def eventFilter(self, obj: QObject, event: QEvent) -> bool:
+        if isinstance(obj, QPushButton):
+            return super().eventFilter(obj, event)
+
+        if event.type() == QEvent.Type.MouseButtonPress:
+            if event.button() == Qt.MouseButton.LeftButton:  # type: ignore[attr-defined]
+                self._drag_pos = (
+                    event.globalPosition().toPoint()  # type: ignore[attr-defined]
+                    - self._window.frameGeometry().topLeft()
+                )
+                return False
+        elif event.type() == QEvent.Type.MouseMove:
+            if self._drag_pos is not None and event.buttons() == Qt.MouseButton.LeftButton:  # type: ignore[attr-defined]
+                self._window.move(
+                    event.globalPosition().toPoint() - self._drag_pos  # type: ignore[attr-defined]
+                )
+                return True
+        elif event.type() == QEvent.Type.MouseButtonRelease:
+            self._drag_pos = None
+
+        return super().eventFilter(obj, event)
+
 
 class MainWindow(QMainWindow):
     """Application shell: hosts HomePage and Workspace."""
@@ -131,13 +148,19 @@ class MainWindow(QMainWindow):
 
         self._current_project_id: ProjectId | None = None
         self._workspace: Workspace | None = None
-
         self._debug_mesh = os.environ.get("CRANIOZ_DEBUG_MESH") == "1"
 
-        # Block 5.5 fix: register the TomographyEditor *before* the
-        # HomePage is created. This guarantees that when the
-        # Workspace materializes the WORKSPACE_SPEC_DEFAULT, it uses
-        # the corrected Editor (no Log/Toggle Toolbars).
+        self.setWindowFlags(
+            Qt.WindowType.Window
+            | Qt.WindowType.FramelessWindowHint
+            | Qt.WindowType.WindowMinimizeButtonHint
+            | Qt.WindowType.WindowMaximizeButtonHint
+        )
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, False)
+        self.setMouseTracking(True)
+
+        self._drag_filter = WindowDragFilter(self)
+
         self._ensure_builtin_tools()
         self._editor_registry.register(PLACEHOLDER_EDITOR_ID, PLACEHOLDER_EDITOR_CLASS)
         if self._debug_mesh:
@@ -151,25 +174,101 @@ class MainWindow(QMainWindow):
         )
         self._stack = QStackedWidget(self)
         self._stack.addWidget(self._home)
-        self.setCentralWidget(self._stack)
+
+        self._central_container = QWidget(self)
+        container_layout = QVBoxLayout(self._central_container)
+        container_layout.setContentsMargins(
+            CONTAINER_MARGIN, CONTAINER_MARGIN, CONTAINER_MARGIN, CONTAINER_MARGIN
+        )
+        container_layout.setSpacing(0)
+        container_layout.addWidget(self._stack)
+
+        self.setCentralWidget(self._central_container)
+
+        # Importante: aplica o mouse tracking também no container central
+        # para que os eventos de mouse cheguem na MainWindow
+        self._central_container.setMouseTracking(True)
+
+        self._home._top_bar_widget().installEventFilter(self._drag_filter)  # noqa: SLF001
+        if hasattr(self._home._top_bar_widget(), "_title"):  # noqa: SLF001
+            self._home._top_bar_widget()._title.installEventFilter(self._drag_filter)  # noqa: SLF001
 
         self._connect_home_signals()
         self._populate_flow_list()
 
         self.setWindowTitle(self._tr("core.app.name", "CranioZ"))
         self.resize(1000, 650)
+        self._update_maximize_icon(restore=False)
+
+    # ----- Redimensionamento Nativo (Qt 6) ---------------------------
+
+    def mouseMoveEvent(self, event) -> None:  # noqa: N802
+        """Detecta a borda e muda o cursor para redimensionamento."""
+        pos = event.position().toPoint()
+        edges = Qt.Edge(0)
+
+        if pos.x() < BORDER_WIDTH:
+            edges |= Qt.Edge.LeftEdge
+        elif pos.x() > self.width() - BORDER_WIDTH:
+            edges |= Qt.Edge.RightEdge
+
+        if pos.y() < BORDER_WIDTH:
+            edges |= Qt.Edge.TopEdge
+        elif pos.y() > self.height() - BORDER_WIDTH:
+            edges |= Qt.Edge.BottomEdge
+
+        if edges:
+            self.setCursor(self._cursor_for_edges(edges))
+        else:
+            self.unsetCursor()
+
+        super().mouseMoveEvent(event)
+
+    def mousePressEvent(self, event) -> None:  # noqa: N802
+        """Inicia o redimensionamento nativo se o clique for na borda."""
+        if event.button() == Qt.MouseButton.LeftButton:
+            pos = event.position().toPoint()
+            edges = Qt.Edge(0)
+
+            if pos.x() < BORDER_WIDTH:
+                edges |= Qt.Edge.LeftEdge
+            elif pos.x() > self.width() - BORDER_WIDTH:
+                edges |= Qt.Edge.RightEdge
+
+            if pos.y() < BORDER_WIDTH:
+                edges |= Qt.Edge.TopEdge
+            elif pos.y() > self.height() - BORDER_WIDTH:
+                edges |= Qt.Edge.BottomEdge
+
+            if edges:
+                # startSystemResize é a API nativa do Qt 6 para redimensionar
+                self.windowHandle().startSystemResize(edges)
+                event.accept()
+                return
+
+        super().mousePressEvent(event)
+
+    def _cursor_for_edges(self, edges: Qt.Edge) -> Qt.CursorShape:
+        """Retorna o cursor correto para a borda."""
+        has_left = bool(edges & Qt.Edge.LeftEdge)
+        has_right = bool(edges & Qt.Edge.RightEdge)
+        has_top = bool(edges & Qt.Edge.TopEdge)
+        has_bottom = bool(edges & Qt.Edge.BottomEdge)
+
+        if (has_left and has_top) or (has_right and has_bottom):
+            return Qt.CursorShape.SizeFDiagCursor
+        if (has_right and has_top) or (has_left and has_bottom):
+            return Qt.CursorShape.SizeBDiagCursor
+        if has_left or has_right:
+            return Qt.CursorShape.SizeHorCursor
+        if has_top or has_bottom:
+            return Qt.CursorShape.SizeVerCursor
+        return Qt.CursorShape.ArrowCursor
 
     # ----- Built-in registration -------------------------------------
 
     def _ensure_builtin_tools(self) -> None:
-        """Register the built-in tools and the TomographyEditor.
-
-        Block 5.5 fix: the TomographyEditor is registered HERE,
-        explicitly, under "editor.tomography", with the corrected
-        class. Any previous registration (from bootstrap, main.py,
-        or another module) is overwritten. This is the only way to
-        guarantee the Workspace uses the corrected Editor.
-        """
+        """Register the built-in tools and the TomographyEditor."""
         from cranioz.ui.tools.builtin.log_tool import LogTool  # noqa: PLC0415
         from cranioz.ui.tools.builtin.toggle_tool import ToggleTool  # noqa: PLC0415
 
@@ -181,12 +280,8 @@ class MainWindow(QMainWindow):
             if not self._tool_registry.contains(tool_id):
                 self._tool_registry.register(tool_id, factory)
 
-        # Register the corrected TomographyEditor. The import path
-        # MUST point to the file where toolbar_specs() returns [].
         from cranioz.ui.editors.tomography.editor import TomographyEditor  # noqa: PLC0415
 
-        # Overwrite unconditionally: if a stale registration exists,
-        # the corrected class replaces it.
         self._editor_registry.register("editor.tomography", TomographyEditor)
         _logger.debug(
             "MainWindow registered editor.tomography -> %s",
@@ -220,7 +315,7 @@ class MainWindow(QMainWindow):
         except Exception:
             _logger.exception("cannot load flows into the Home Page")
             return
-        self._home._flow_list_widget().set_flows(definitions)
+        self._home._flow_list_widget().set_flows(definitions)  # noqa: SLF001
 
     # ----- Project navigation ----------------------------------------
 
@@ -287,6 +382,8 @@ class MainWindow(QMainWindow):
         workspace.top_overlay().set_center_content(modules_segment)
         workspace.top_overlay().set_right_content(extras_segment)
 
+        workspace.top_overlay().widget().installEventFilter(self._drag_filter)
+
         spec = WORKSPACE_SPEC_DEBUG_MESH if self._debug_mesh else WORKSPACE_SPEC_DEFAULT
         workspace.load_spec(spec)
 
@@ -329,8 +426,24 @@ class MainWindow(QMainWindow):
     def _on_window_maximize_requested(self) -> None:
         if self.isMaximized():
             self.showNormal()
+            self._update_maximize_icon(restore=False)
         else:
             self.showMaximized()
+            self._update_maximize_icon(restore=True)
+
+    def _update_maximize_icon(self, restore: bool) -> None:
+        icon_name = "window_restore" if restore else "window_maximize"
+        icon = self._icon_provider.icon(icon_name)
+
+        tb = self._home._top_bar_widget()  # noqa: SLF001
+        if hasattr(tb, "_maximize_button"):
+            tb._maximize_button.setIcon(icon)  # noqa: SLF001
+
+        if self._workspace is not None:
+            right_segment = self._workspace.top_overlay().right_segment()
+            extras = right_segment.findChild(ExtrasSegment)
+            if extras and hasattr(extras, "_maximize_button"):
+                extras._maximize_button.setIcon(icon)  # noqa: SLF001
 
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802
         if self._current_project_id is not None:
@@ -353,7 +466,7 @@ class MainWindow(QMainWindow):
 
     def _on_top_bar_content_changed(self) -> None:
         if self._workspace is not None:
-            self._workspace._schedule_layout_update()
+            self._workspace._schedule_layout_update()  # noqa: SLF001
 
     def _toggle_area(self, workspace: Workspace, placement: Placement) -> None:
         current = workspace.layout_state().is_visible(placement)
@@ -381,10 +494,6 @@ class MainWindow(QMainWindow):
             return
         if self._scene_provider is None or self._domain_object_store is None:
             return
-
-        from cranioz.application.scene.handlers.scene_handlers import (  # noqa: PLC0415
-            ImportDicomSeriesHandler,
-        )
 
         handler = ImportDicomSeriesHandler(
             scene=self._scene_provider.get_scene(),
