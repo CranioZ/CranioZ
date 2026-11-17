@@ -69,9 +69,6 @@ from cranioz.infrastructure.settings.in_memory_settings_service import (
     InMemorySettingsService,
 )
 
-# --- User Interface: Editors ---
-from cranioz.ui.editors.builtin.test_editor import DummyEditor
-
 # --- User Interface: Icons ---
 from cranioz.ui.icons.provider import IconProvider
 from cranioz.ui.icons.unicode import UnicodeIconProvider
@@ -98,6 +95,9 @@ from cranioz.ui.workspace.workspace_spec import (
     PLACEHOLDER_EDITOR_CLASS,
     PLACEHOLDER_EDITOR_ID,
 )
+
+# --- User Interface: Editors ---
+from tests.fixtures.editors.test_editor import DummyEditor
 
 _logger = logging.getLogger(__name__)
 

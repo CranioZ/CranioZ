@@ -6,8 +6,8 @@
 from __future__ import annotations
 
 import pytest
+from tests.fixtures.editors.test_editor import DummyEditor
 
-from cranioz.ui.editors.builtin.test_editor import DummyEditor
 from cranioz.ui.workspace.areas.area import Area, AreaError
 from cranioz.ui.workspace.areas.placement import Placement
 

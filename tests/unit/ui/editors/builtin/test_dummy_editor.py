@@ -7,9 +7,9 @@ from __future__ import annotations
 
 from PySide6.QtWidgets import QLabel
 from pytestqt.qtbot import QtBot
+from tests.fixtures.editors.test_editor import DummyEditor
 
 from cranioz.editors.core.editor.editor_context import EditorContext
-from cranioz.ui.editors.builtin.test_editor import DummyEditor
 from cranioz.ui.toolbars.specification import ToolbarOrientation
 
 # ----- Metadata ----------------------------------------------------

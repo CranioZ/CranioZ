@@ -25,8 +25,8 @@ from __future__ import annotations
 import pytest
 from PySide6.QtWidgets import QLabel, QSplitter, QTabWidget, QWidget
 from tests.conftest import make_icon_provider, make_theme_service
+from tests.fixtures.editors.test_editor import DummyEditor
 
-from cranioz.ui.editors.builtin.test_editor import DummyEditor
 from cranioz.ui.icons.provider import IconProvider
 from cranioz.ui.theme.service import ThemeService
 from cranioz.ui.theme.tokens import ThemeMode

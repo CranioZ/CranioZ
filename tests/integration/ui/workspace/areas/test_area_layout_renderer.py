@@ -11,8 +11,8 @@ from __future__ import annotations
 import pytest
 from PySide6.QtWidgets import QSplitter, QWidget
 from pytestqt.qtbot import QtBot
+from tests.fixtures.editors.test_editor import DummyEditor
 
-from cranioz.ui.editors.builtin.test_editor import DummyEditor
 from cranioz.ui.toolbars.base import Toolbar
 from cranioz.ui.workspace.areas.area import Area
 from cranioz.ui.workspace.areas.area_layout_renderer import AreaLayoutRenderer

@@ -53,6 +53,7 @@ import pytest
 from PySide6.QtWidgets import QWidget
 from pytestqt.qtbot import QtBot
 from tests.conftest import make_icon_provider, make_theme_service
+from tests.fixtures.editors.test_editor import DummyEditor
 
 from cranioz.application.project.context import ProjectContext
 from cranioz.application.scene.scene_query import InMemorySceneQuery
@@ -63,7 +64,6 @@ from cranioz.domain.project.project_id import ProjectId
 from cranioz.domain.project.project_metadata import ProjectMetadata
 from cranioz.domain.project.project_status import ProjectStatus
 from cranioz.editors.core.editor.editor_registry import EditorRegistry
-from cranioz.ui.editors.builtin.test_editor import DummyEditor
 from cranioz.ui.theme.service import ThemeService
 from cranioz.ui.theme.tokens import ThemeMode
 from cranioz.ui.tools.builtin.log_tool import LogTool

@@ -17,6 +17,7 @@ from pytestqt.qtbot import QtBot
 
 # Local Imports (tests)
 from tests.conftest import make_icon_provider, make_theme_service
+from tests.fixtures.editors.test_editor import DummyEditor
 
 # Local Imports (cranioz.*)
 from cranioz.application.commands.executor import CommandExecutor
@@ -41,7 +42,6 @@ from cranioz.editors.core.editor.editor_registry import EditorRegistry
 from cranioz.infrastructure.i18n.translation_service import (
     IdentityTranslationService,
 )
-from cranioz.ui.editors.builtin.test_editor import DummyEditor
 from cranioz.ui.theme.tokens import ThemeMode
 from cranioz.ui.tools.registry.tool_registry import ToolRegistry
 from cranioz.ui.workspace.areas.placement import Placement

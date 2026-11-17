@@ -7,13 +7,13 @@ from __future__ import annotations
 
 import pytest
 from pytestqt.qtbot import QtBot
+from tests.fixtures.editors.test_editor import DummyEditor
 
 from cranioz.editors.core.editor.base_editor import Editor
 from cranioz.editors.core.editor.editor_registry import (
     EditorRegistry,
     EditorRegistryError,
 )
-from cranioz.ui.editors.builtin.test_editor import DummyEditor
 
 
 class OtherEditor(Editor):
