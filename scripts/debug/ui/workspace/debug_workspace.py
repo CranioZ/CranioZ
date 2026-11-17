@@ -69,7 +69,7 @@ from cranioz.infrastructure.settings.in_memory_settings_service import (
 )
 from cranioz.ui.editors.editor_registry import EditorRegistry
 from cranioz.ui.editors.tomography.editor import TomographyEditor
-from cranioz.ui.editors.viewport_3d.view import Viewport3DView
+from cranioz.editors.views.viewport_3d.view import Viewport3DView
 from cranioz.ui.icons.provider import IconProvider
 from cranioz.ui.icons.unicode import UnicodeIconProvider
 from cranioz.ui.theme.service import ThemeService

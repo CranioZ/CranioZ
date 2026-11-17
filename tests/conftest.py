@@ -218,8 +218,8 @@ def _patch_viewport_3d_view(monkeypatch: pytest.MonkeyPatch) -> None:
     # produces a wrong QSurfaceFormat and breaks the boot sequence.
     # The fixture runs after ``qapp`` thanks to pytest-qt's autouse
     # ordering.
-    from cranioz.ui.editors.viewport_3d.presets import get_preset  # noqa: PLC0415
-    from cranioz.ui.editors.viewport_3d.view import Viewport3DView  # noqa: PLC0415
+    from cranioz.editors.views.viewport_3d.presets import get_preset  # noqa: PLC0415
+    from cranioz.editors.views.viewport_3d.view import Viewport3DView  # noqa: PLC0415
 
     def _fake_ensure_pipeline(self) -> None:
         """Simulate the real _ensure_pipeline without VTK.

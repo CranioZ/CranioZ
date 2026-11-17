@@ -37,10 +37,10 @@ from cranioz.domain.imaging.volume_geometry import VolumeGeometry
 from cranioz.domain.imaging.volume_provenance import VolumeProvenance
 from cranioz.domain.scene.domain_object_store import DomainObjectStore
 from cranioz.editors.core.editor.editor_context import EditorContext
-from cranioz.ui.editors.mpr_viewer.view import MPRView
+from cranioz.editors.views.mpr_viewer.view import MPRView
+from cranioz.editors.views.viewport_3d.presets import get_preset
+from cranioz.editors.views.viewport_3d.view import Viewport3DView
 from cranioz.ui.editors.tomography.editor import TomographyEditor
-from cranioz.ui.editors.viewport_3d.presets import get_preset
-from cranioz.ui.editors.viewport_3d.view import Viewport3DView
 from cranioz.ui.theme.tokens import ThemeMode
 from cranioz.ui.tools.builtin.log_tool import LogTool
 from cranioz.ui.tools.builtin.toggle_tool import ToggleTool

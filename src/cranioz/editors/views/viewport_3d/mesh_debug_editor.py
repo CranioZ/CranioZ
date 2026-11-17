@@ -10,7 +10,7 @@ from PySide6.QtWidgets import QWidget
 
 from cranioz.editors.core.editor.base_editor import Editor
 from cranioz.editors.core.view.view import View
-from cranioz.ui.editors.viewport_3d.view import Viewport3DView
+from cranioz.editors.views.viewport_3d.view import Viewport3DView
 
 MESH_DEBUG_EDITOR_ID = "editor.mesh_debug"
 

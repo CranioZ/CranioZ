@@ -39,7 +39,7 @@ from cranioz.infrastructure.imaging.dicom.dicom_series_reader import (
     DicomSeriesReader,
     DicomSeriesReaderError,
 )
-from cranioz.ui.editors.mpr_viewer.view import MPRView
+from cranioz.editors.views.mpr_viewer.view import MPRView
 
 print(">>> PySide6 + VTK configurados para Compatibility Profile", flush=True)
 

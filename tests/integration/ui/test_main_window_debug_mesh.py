@@ -17,12 +17,12 @@ from cranioz.application.project.manager import ProjectManager
 from cranioz.domain.patient.value_objects.patient_id import PatientId
 from cranioz.domain.project.project_id import ProjectId
 from cranioz.editors.core.editor.editor_registry import EditorRegistry
-from cranioz.ui.editors.tomography.editor import TomographyEditor
-from cranioz.ui.editors.viewport_3d.mesh_debug_editor import (
+from cranioz.editors.views.viewport_3d.mesh_debug_editor import (
     MESH_DEBUG_EDITOR_ID,
     MeshDebugEditor,
 )
-from cranioz.ui.editors.viewport_3d.view import Viewport3DView
+from cranioz.editors.views.viewport_3d.view import Viewport3DView
+from cranioz.ui.editors.tomography.editor import TomographyEditor
 from cranioz.ui.main_window import MainWindow
 from cranioz.ui.theme.tokens import ThemeMode
 from cranioz.ui.tools.registry.tool_registry import ToolRegistry

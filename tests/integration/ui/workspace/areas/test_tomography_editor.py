@@ -34,9 +34,9 @@ from cranioz.editors.core.view.view_layout_spec import (
     ViewLayoutSpec,
     ViewLayoutType,
 )
-from cranioz.ui.editors.mpr_viewer.view import MPRView
+from cranioz.editors.views.mpr_viewer.view import MPRView
+from cranioz.editors.views.viewport_3d.view import Viewport3DView
 from cranioz.ui.editors.tomography.editor import TomographyEditor
-from cranioz.ui.editors.viewport_3d.view import Viewport3DView
 from cranioz.ui.theme.tokens import ThemeMode
 from cranioz.ui.tools.builtin.log_tool import LogTool
 from cranioz.ui.tools.builtin.toggle_tool import ToggleTool

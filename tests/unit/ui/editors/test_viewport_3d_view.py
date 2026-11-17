@@ -17,10 +17,10 @@ from cranioz.domain.imaging.image_metadata import (
 from cranioz.domain.imaging.volume import IntensityScale, Volume
 from cranioz.domain.imaging.volume_geometry import VolumeGeometry
 from cranioz.domain.imaging.volume_provenance import VolumeProvenance
-from cranioz.ui.editors.viewport_3d.presets import (
+from cranioz.editors.views.viewport_3d.presets import (
     get_preset,
 )
-from cranioz.ui.editors.viewport_3d.view import Viewport3DView
+from cranioz.editors.views.viewport_3d.view import Viewport3DView
 
 
 def _make_volume() -> Volume:

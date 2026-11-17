@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from cranioz.ui.editors.viewport_3d.presets import (
+from cranioz.editors.views.viewport_3d.presets import (
     BONE,
     CBCT,
     CT_ANGIO,

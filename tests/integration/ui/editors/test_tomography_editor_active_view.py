@@ -20,7 +20,7 @@ import pytest
 from PySide6.QtWidgets import QWidget
 
 from cranioz.editors.core.editor.editor_context import EditorContext
-from cranioz.ui.editors.mpr_viewer.view import MPRView
+from cranioz.editors.views.mpr_viewer.view import MPRView
 from cranioz.ui.editors.tomography.editor import TomographyEditor
 from cranioz.ui.toolbars.base import Toolbar
 from cranioz.ui.toolbars.specification import ToolbarSpec

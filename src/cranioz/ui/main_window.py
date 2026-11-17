@@ -33,12 +33,12 @@ from cranioz.application.scene.handlers.scene_handlers import (
 )
 from cranioz.domain.project.project_id import ProjectId
 from cranioz.editors.core.editor.editor_registry import EditorRegistry
-from cranioz.infrastructure.i18n.translation_service import TranslationService
-from cranioz.infrastructure.scene.scene_query_adapter import SceneQueryAdapter
-from cranioz.ui.editors.viewport_3d.mesh_debug_editor import (
+from cranioz.editors.views.viewport_3d.mesh_debug_editor import (
     MESH_DEBUG_EDITOR_ID,
     MeshDebugEditor,
 )
+from cranioz.infrastructure.i18n.translation_service import TranslationService
+from cranioz.infrastructure.scene.scene_query_adapter import SceneQueryAdapter
 from cranioz.ui.home.home_page import HomePage
 from cranioz.ui.icons.provider import IconProvider
 from cranioz.ui.theme.service import ThemeService

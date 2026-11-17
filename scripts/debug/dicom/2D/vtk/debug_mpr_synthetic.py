@@ -28,7 +28,7 @@ from cranioz.domain.imaging.image_metadata import ImageMetadata
 from cranioz.domain.imaging.volume import IntensityScale, Volume
 from cranioz.domain.imaging.volume_geometry import VolumeGeometry
 from cranioz.domain.imaging.volume_provenance import VolumeProvenance
-from cranioz.ui.editors.mpr_viewer.view import MPRView
+from cranioz.editors.views.mpr_viewer.view import MPRView
 
 
 def _make_synthetic_volume() -> Volume:

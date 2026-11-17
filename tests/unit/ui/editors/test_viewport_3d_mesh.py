@@ -10,8 +10,8 @@ import pytest
 pytest.importorskip("vtk")
 pytest.importorskip("vtkmodules.qt")
 
+from cranioz.editors.views.viewport_3d.view import Viewport3DView
 from cranioz.infrastructure.geometry.io.stl import read_stl
-from cranioz.ui.editors.viewport_3d.view import Viewport3DView
 
 
 def _write_minimal_stl(path: Path) -> None:

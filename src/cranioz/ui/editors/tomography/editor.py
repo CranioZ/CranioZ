@@ -41,8 +41,8 @@ from cranioz.editors.core.view.view_layout_spec import (
     SplitDirection,
     ViewLayoutSpec,
 )
-from cranioz.ui.editors.mpr_viewer.view import MPRView
-from cranioz.ui.editors.viewport_3d.view import Viewport3DView
+from cranioz.editors.views.mpr_viewer.view import MPRView
+from cranioz.editors.views.viewport_3d.view import Viewport3DView
 from cranioz.ui.toolbars.base import Toolbar
 from cranioz.ui.toolbars.specification import (
     ToolbarPosition,

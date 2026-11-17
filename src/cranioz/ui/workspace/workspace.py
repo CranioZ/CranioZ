@@ -99,8 +99,8 @@ if TYPE_CHECKING:
     from cranioz.application.tasks.base import TaskManager
     from cranioz.application.telemetry.base import TelemetrySink
     from cranioz.domain.scene.domain_object_store import DomainObjectStore
+    from cranioz.editors.views.viewport_3d.view import Viewport3DView
     from cranioz.infrastructure.i18n.translation_service import TranslationService
-    from cranioz.ui.editors.viewport_3d.view import Viewport3DView
 
 _logger = logging.getLogger(__name__)
 
@@ -315,7 +315,7 @@ class Workspace(QWidget):
         if self._build_result is None:
             return None
 
-        from cranioz.ui.editors.viewport_3d.view import Viewport3DView  # noqa: PLC0415
+        from cranioz.editors.views.viewport_3d.view import Viewport3DView  # noqa: PLC0415
 
         for area in self._build_result.areas:
             for editor in area.editors():
