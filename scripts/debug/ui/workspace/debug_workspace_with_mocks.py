@@ -44,7 +44,7 @@ from cranioz.infrastructure.settings.in_memory_settings_service import (
     InMemorySettingsService,
 )
 from cranioz.ui.editors.editor_registry import EditorRegistry
-from cranioz.ui.editors.tomography.editor import TomographyEditor
+from cranioz.editors.builtin.tomography.editor import TomographyEditor
 from cranioz.ui.icons.unicode import UnicodeIconProvider
 from cranioz.ui.theme.service import ThemeService
 from cranioz.ui.theme.tokens import ThemeMode

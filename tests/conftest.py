@@ -61,6 +61,7 @@ from cranioz.application.scene.scene_provider import InMemorySceneProvider
 from cranioz.domain.patient.value_objects.patient_id import PatientId
 from cranioz.domain.project.project_id import ProjectId
 from cranioz.domain.scene.domain_object_store import DomainObjectStore
+from cranioz.editors.builtin.tomography.editor import TomographyEditor
 from cranioz.editors.core.editor.editor_registry import EditorRegistry
 
 # --- Infrastructure & Configuration (Settings, Workspace, Themes, etc.) ---
@@ -70,7 +71,6 @@ from cranioz.infrastructure.settings.in_memory_settings_service import (
 
 # --- User Interface: Editors ---
 from cranioz.ui.editors.builtin.test_editor import DummyEditor
-from cranioz.ui.editors.tomography.editor import TomographyEditor
 
 # --- User Interface: Icons ---
 from cranioz.ui.icons.provider import IconProvider

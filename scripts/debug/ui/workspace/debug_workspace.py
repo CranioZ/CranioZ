@@ -68,7 +68,7 @@ from cranioz.infrastructure.settings.in_memory_settings_service import (
     InMemorySettingsService,
 )
 from cranioz.ui.editors.editor_registry import EditorRegistry
-from cranioz.ui.editors.tomography.editor import TomographyEditor
+from cranioz.editors.builtin.tomography.editor import TomographyEditor
 from cranioz.editors.views.viewport_3d.view import Viewport3DView
 from cranioz.ui.icons.provider import IconProvider
 from cranioz.ui.icons.unicode import UnicodeIconProvider
@@ -347,3 +347,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+

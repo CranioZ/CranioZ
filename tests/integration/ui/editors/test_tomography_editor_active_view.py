@@ -19,9 +19,9 @@ from unittest.mock import MagicMock, patch
 import pytest
 from PySide6.QtWidgets import QWidget
 
+from cranioz.editors.builtin.tomography.editor import TomographyEditor
 from cranioz.editors.core.editor.editor_context import EditorContext
 from cranioz.editors.views.mpr_viewer.view import MPRView
-from cranioz.ui.editors.tomography.editor import TomographyEditor
 from cranioz.ui.toolbars.base import Toolbar
 from cranioz.ui.toolbars.specification import ToolbarSpec
 
@@ -74,7 +74,7 @@ def _make_editor_with_context() -> TomographyEditor:
     creation that hangs in headless CI.
     """
     with patch(
-        "cranioz.ui.editors.tomography.editor.Viewport3DView",
+        "cranioz.editors.builtin.tomography.editor.Viewport3DView",
         _FakeViewport3DView,
     ):
         editor = TomographyEditor()

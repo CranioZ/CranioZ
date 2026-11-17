@@ -24,8 +24,6 @@ _KNOWN_DEBT_FILES: frozenset[str] = frozenset(
         "src/cranioz/ui/workspace/areas/area_widget.py",
         "src/cranioz/ui/workspace/workspace.py",
         "src/cranioz/editors/views/viewport_3d/presets.py",
-        "src/cranioz/ui/editors/mock/mpr.py",
-        "src/cranioz/ui/editors/mock/objetos.py",
         "src/cranioz/editors/core/editor/placeholder_editor.py",
         "src/cranioz/ui/workspace/areas/editor_stack.py",
     }
@@ -35,8 +33,6 @@ _DEBT_MAX_LITERALS: dict[str, int] = {
     "src/cranioz/ui/workspace/areas/area_widget.py": 5,
     "src/cranioz/ui/workspace/workspace.py": 3,
     "src/cranioz/editors/views/viewport_3d/presets.py": 3,
-    "src/cranioz/ui/editors/mock/mpr.py": 10,
-    "src/cranioz/ui/editors/mock/objetos.py": 8,
     "src/cranioz/editors/core/editor/placeholder_editor.py": 1,
     "src/cranioz/ui/workspace/areas/editor_stack.py": 7,
 }

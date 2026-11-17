@@ -76,6 +76,7 @@ from cranioz.config.schema import Config  # noqa: E402
 
 # --- Domain Layer ---
 from cranioz.domain.scene.domain_object_store import DomainObjectStore  # noqa: E402
+from cranioz.editors.builtin.tomography.editor import TomographyEditor  # noqa: E402
 
 # --- User Interface: Editors ---
 from cranioz.editors.core.editor.editor_registry import EditorRegistry  # noqa: E402
@@ -117,7 +118,6 @@ from cranioz.modules.builtin import BUILTIN_MANIFESTS  # noqa: E402
 from cranioz.modules.core.registry import (  # noqa: E402
     InMemoryModuleRegistry,
 )
-from cranioz.ui.editors.tomography.editor import TomographyEditor  # noqa: E402
 
 # --- Icons ---
 from cranioz.ui.icons import UnicodeIconProvider  # noqa: E402

@@ -280,7 +280,7 @@ class MainWindow(QMainWindow):
             if not self._tool_registry.contains(tool_id):
                 self._tool_registry.register(tool_id, factory)
 
-        from cranioz.ui.editors.tomography.editor import TomographyEditor  # noqa: PLC0415
+        from cranioz.editors.builtin.tomography.editor import TomographyEditor  # noqa: PLC0415
 
         self._editor_registry.register("editor.tomography", TomographyEditor)
         _logger.debug(

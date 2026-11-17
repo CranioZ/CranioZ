@@ -28,6 +28,7 @@ from PySide6.QtWidgets import QSplitter
 from pytestqt.qtbot import QtBot
 from tests.conftest import make_icon_provider, make_theme_service
 
+from cranioz.editors.builtin.tomography.editor import TomographyEditor
 from cranioz.editors.core.editor.editor_context import EditorContext
 from cranioz.editors.core.view.view_layout_spec import (
     SplitDirection,
@@ -36,7 +37,6 @@ from cranioz.editors.core.view.view_layout_spec import (
 )
 from cranioz.editors.views.mpr_viewer.view import MPRView
 from cranioz.editors.views.viewport_3d.view import Viewport3DView
-from cranioz.ui.editors.tomography.editor import TomographyEditor
 from cranioz.ui.theme.tokens import ThemeMode
 from cranioz.ui.tools.builtin.log_tool import LogTool
 from cranioz.ui.tools.builtin.toggle_tool import ToggleTool
