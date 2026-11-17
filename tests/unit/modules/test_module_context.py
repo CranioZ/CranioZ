@@ -12,7 +12,7 @@ from cranioz.application.events import EventBusAdapter
 from cranioz.application.services import EmptyServiceContainer
 from cranioz.application.tasks.noop_task_manager import NoOpTaskManager
 from cranioz.application.telemetry.noop_sink import NoOpTelemetrySink
-from cranioz.modules.base.module_context import ModuleContext
+from cranioz.modules.core import ModuleContext
 
 
 def _make_context(

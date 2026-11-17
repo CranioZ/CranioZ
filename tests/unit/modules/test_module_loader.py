@@ -9,23 +9,23 @@ import pytest
 from cranioz.application.commands.base import Command
 from cranioz.application.commands.in_memory_bus import InMemoryCommandBus
 from cranioz.application.telemetry.noop_sink import NoOpTelemetrySink
-from cranioz.modules.base.module import Module, ModuleBase
-from cranioz.modules.base.module_context import ModuleContext
-from cranioz.modules.base.module_manifest import (
+from cranioz.modules.core import (
+    ModuleContext,
     ModuleDependency,
     ModuleManifest,
 )
-from cranioz.modules.base.module_state import ModuleState
-from cranioz.modules.errors import (
+from cranioz.modules.core.errors import (
     ModuleInUse,
     ModuleLoadFailed,
     ModuleNotFound,
 )
-from cranioz.modules.loader.module_loader import (
+from cranioz.modules.core.loader.module_loader import (
     InMemoryModuleLoader,
     ModuleLoader,
 )
-from cranioz.modules.registry.module_registry import InMemoryModuleRegistry
+from cranioz.modules.core.module import Module, ModuleBase
+from cranioz.modules.core.module_state import ModuleState
+from cranioz.modules.core.registry import InMemoryModuleRegistry
 
 
 @dataclass(frozen=True)

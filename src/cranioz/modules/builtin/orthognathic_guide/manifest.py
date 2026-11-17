@@ -14,7 +14,7 @@ declare a dependency on it. The module cannot be loaded until its
 
 from __future__ import annotations
 
-from cranioz.modules.base.module_manifest import (
+from cranioz.modules.core import (
     ModuleDependency,
     ModuleManifest,
 )

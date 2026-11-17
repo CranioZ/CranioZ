@@ -111,7 +111,7 @@ from cranioz.infrastructure.telemetry.logging_sink import (  # noqa: E402
 
 # --- Modules ---
 from cranioz.modules.builtin import BUILTIN_MANIFESTS  # noqa: E402
-from cranioz.modules.registry.module_registry import (  # noqa: E402
+from cranioz.modules.core.registry import (  # noqa: E402
     InMemoryModuleRegistry,
 )
 

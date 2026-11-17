@@ -1,6 +1,6 @@
 """Module registry."""
 
-from cranioz.modules.registry.module_registry import (
+from cranioz.modules.core.registry.module_registry import (
     InMemoryModuleRegistry,
     ModuleRegistry,
 )

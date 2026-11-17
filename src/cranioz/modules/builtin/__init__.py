@@ -7,7 +7,7 @@ corresponding subpackage's manifest.py.
 
 from __future__ import annotations
 
-from cranioz.modules.base.module_manifest import ModuleManifest
+from cranioz.modules.core import ModuleManifest
 
 # Populated as each module's manifest is implemented.
 BUILTIN_MANIFESTS: tuple[ModuleManifest, ...] = ()

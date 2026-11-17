@@ -29,19 +29,20 @@ from cranioz.application.events.base import (
 )
 from cranioz.application.services import EmptyServiceContainer
 from cranioz.application.tasks.base import TaskManager
+from cranioz.application.tasks.noop_task_manager import NoOpTaskManager
 from cranioz.application.telemetry.base import TelemetrySink
-from cranioz.modules.base.module import Module
-from cranioz.modules.base.module_context import ModuleContext
-from cranioz.modules.base.module_state import ModuleState
-from cranioz.modules.errors import (
+from cranioz.modules.core.errors import (
     ModuleInUse,
     ModuleLoadFailed,
     ModuleNotFound,
 )
-from cranioz.modules.loader._null_task_manager import _NULL_TASK_MANAGER
-from cranioz.modules.registry.module_registry import ModuleRegistry
+from cranioz.modules.core.module import Module
+from cranioz.modules.core.module_context import ModuleContext
+from cranioz.modules.core.module_state import ModuleState
+from cranioz.modules.core.registry.module_registry import ModuleRegistry
 
 _logger = logging.getLogger(__name__)
+_NOOP_TASK_MANAGER = NoOpTaskManager()
 
 
 @runtime_checkable
@@ -206,7 +207,7 @@ class InMemoryModuleLoader:
             event_subscription=subscription,
             event_publisher=publisher,
             command_bus=self._command_bus,
-            task_manager=cast(TaskManager, _NULL_TASK_MANAGER),
+            task_manager=cast(TaskManager, _NOOP_TASK_MANAGER),
             project_provider=lambda: None,
             services=EmptyServiceContainer(),
             telemetry=self._telemetry,

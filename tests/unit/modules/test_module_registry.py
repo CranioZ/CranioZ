@@ -4,16 +4,16 @@ from __future__ import annotations
 
 import pytest
 
-from cranioz.modules.base.module_manifest import (
+from cranioz.modules.core import (
     ModuleManifest,
 )
-from cranioz.modules.base.module_state import ModuleState
-from cranioz.modules.errors import (
+from cranioz.modules.core.errors import (
     ModuleAlreadyRegistered,
     ModuleNotFound,
     ModuleStillLoaded,
 )
-from cranioz.modules.registry.module_registry import (
+from cranioz.modules.core.module_state import ModuleState
+from cranioz.modules.core.registry import (
     InMemoryModuleRegistry,
     ModuleRegistry,
 )
