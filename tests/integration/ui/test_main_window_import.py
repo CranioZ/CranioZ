@@ -53,7 +53,7 @@ from cranioz.domain.imaging.volume import Volume
 from cranioz.domain.patient.value_objects.patient_id import PatientId
 from cranioz.domain.project.project_id import ProjectId
 from cranioz.domain.scene.domain_object_store import DomainObjectStore
-from cranioz.ui.editors.editor_registry import EditorRegistry
+from cranioz.editors.core.editor.editor_registry import EditorRegistry
 from cranioz.ui.editors.tomography.editor import TomographyEditor
 from cranioz.ui.main_window import MainWindow
 from cranioz.ui.theme.tokens import ThemeMode

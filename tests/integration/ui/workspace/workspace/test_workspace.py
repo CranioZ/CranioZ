@@ -62,8 +62,8 @@ from cranioz.domain.patient.value_objects.patient_id import PatientId
 from cranioz.domain.project.project_id import ProjectId
 from cranioz.domain.project.project_metadata import ProjectMetadata
 from cranioz.domain.project.project_status import ProjectStatus
+from cranioz.editors.core.editor.editor_registry import EditorRegistry
 from cranioz.ui.editors.builtin.test_editor import DummyEditor
-from cranioz.ui.editors.editor_registry import EditorRegistry
 from cranioz.ui.theme.service import ThemeService
 from cranioz.ui.theme.tokens import ThemeMode
 from cranioz.ui.tools.builtin.log_tool import LogTool

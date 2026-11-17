@@ -25,7 +25,7 @@ import pytest
 from PySide6.QtWidgets import QLabel, QWidget
 from pytestqt.qtbot import QtBot
 
-from cranioz.ui.editors.base_editor import Editor
+from cranioz.editors.core.editor.base_editor import Editor
 from cranioz.ui.editors.view import View
 
 # ----- Fixtures ------------------------------------------------------

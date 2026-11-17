@@ -6,9 +6,9 @@ import logging  # <-- Adicionado
 from dataclasses import dataclass, field
 from typing import Any
 
-from cranioz.ui.editors.base_editor import Editor
-from cranioz.ui.editors.editor_context import EditorContext
-from cranioz.ui.editors.editor_registry import EditorRegistry
+from cranioz.editors.core.editor.base_editor import Editor
+from cranioz.editors.core.editor.editor_context import EditorContext
+from cranioz.editors.core.editor.editor_registry import EditorRegistry
 from cranioz.ui.workspace.areas.area import Area
 from cranioz.ui.workspace.areas.area_manager import AreaManager
 from cranioz.ui.workspace.areas.editor_layout_spec import (

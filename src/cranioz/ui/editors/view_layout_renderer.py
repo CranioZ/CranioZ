@@ -58,7 +58,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from cranioz.ui.editors.base_editor import Editor
+from cranioz.editors.core.editor.base_editor import Editor
 from cranioz.ui.editors.view import View
 from cranioz.ui.editors.view_layout_spec import (
     SplitDirection,

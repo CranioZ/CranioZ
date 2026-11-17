@@ -8,12 +8,12 @@ from __future__ import annotations
 import pytest
 from pytestqt.qtbot import QtBot
 
-from cranioz.ui.editors.base_editor import Editor
-from cranioz.ui.editors.builtin.test_editor import DummyEditor
-from cranioz.ui.editors.editor_registry import (
+from cranioz.editors.core.editor.base_editor import Editor
+from cranioz.editors.core.editor.editor_registry import (
     EditorRegistry,
     EditorRegistryError,
 )
+from cranioz.ui.editors.builtin.test_editor import DummyEditor
 
 
 class OtherEditor(Editor):

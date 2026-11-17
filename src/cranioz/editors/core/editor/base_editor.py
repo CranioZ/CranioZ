@@ -34,7 +34,7 @@ from PySide6.QtCore import QObject, Signal
 from cranioz.ui.tools.registry.tool_definition import ToolContext
 
 if TYPE_CHECKING:
-    from cranioz.ui.editors.editor_context import EditorContext
+    from cranioz.editors.core.editor.editor_context import EditorContext
     from cranioz.ui.editors.view import View
     from cranioz.ui.editors.view_layout_spec import ViewLayoutSpec
     from cranioz.ui.toolbars.specification import ToolbarSpec

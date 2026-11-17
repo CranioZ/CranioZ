@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QSizePolicy, QSplitter, QVBoxLayout, QWidget
 
-from cranioz.ui.editors.base_editor import Editor
+from cranioz.editors.core.editor.base_editor import Editor
 from cranioz.ui.workspace.areas.area import Area
 from cranioz.ui.workspace.areas.area_layout_spec import (
     AreaLayoutSpec,

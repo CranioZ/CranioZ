@@ -52,9 +52,9 @@ import re
 
 import pytest
 
+from cranioz.editors.core.editor.editor_registry import EditorRegistry
 from cranioz.infrastructure.i18n.translation_service import IdentityTranslationService
 from cranioz.ui.editors.builtin.test_editor import DummyEditor
-from cranioz.ui.editors.editor_registry import EditorRegistry
 from cranioz.ui.workspace.areas.area import AreaError
 from cranioz.ui.workspace.areas.placement import Placement
 from cranioz.ui.workspace.layout.layout_builder import (

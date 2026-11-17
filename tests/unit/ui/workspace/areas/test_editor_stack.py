@@ -1,7 +1,7 @@
 import pytest
 from PySide6.QtWidgets import QLabel, QTabWidget
 
-from cranioz.ui.editors.base_editor import Editor
+from cranioz.editors.core.editor.base_editor import Editor
 from cranioz.ui.workspace.areas.editor_stack import (
     EditorStack,
     EditorStackOrientation,

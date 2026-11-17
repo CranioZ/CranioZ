@@ -15,7 +15,7 @@ from cranioz.application.project.in_memory_repository import (
 from cranioz.application.project.manager import ProjectManager
 from cranioz.domain.patient.value_objects.patient_id import PatientId
 from cranioz.domain.project.project_id import ProjectId
-from cranioz.ui.editors.editor_registry import EditorRegistry
+from cranioz.editors.core.editor.editor_registry import EditorRegistry
 from cranioz.ui.main_window import MainWindow
 from cranioz.ui.theme.tokens import ThemeMode
 from cranioz.ui.tools.registry.tool_registry import ToolRegistry

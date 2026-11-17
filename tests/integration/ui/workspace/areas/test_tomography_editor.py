@@ -28,7 +28,7 @@ from PySide6.QtWidgets import QSplitter
 from pytestqt.qtbot import QtBot
 from tests.conftest import make_icon_provider, make_theme_service
 
-from cranioz.ui.editors.editor_context import EditorContext
+from cranioz.editors.core.editor.editor_context import EditorContext
 from cranioz.ui.editors.mpr_viewer.view import MPRView
 from cranioz.ui.editors.tomography.editor import TomographyEditor
 from cranioz.ui.editors.view_layout_spec import (

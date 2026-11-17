@@ -9,9 +9,9 @@ from __future__ import annotations
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QLabel, QWidget
 
+from cranioz.editors.core.editor.base_editor import Editor
+from cranioz.editors.core.editor.editor_context import EditorContext
 from cranioz.infrastructure.i18n import tr
-from cranioz.ui.editors.base_editor import Editor
-from cranioz.ui.editors.editor_context import EditorContext
 
 
 class PlaceholderEditor(Editor):

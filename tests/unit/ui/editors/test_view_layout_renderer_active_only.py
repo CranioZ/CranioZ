@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
 from pytestqt.qtbot import QtBot
 from tests.conftest import make_icon_provider, make_theme_service
 
-from cranioz.ui.editors.base_editor import Editor
+from cranioz.editors.core.editor.base_editor import Editor
 from cranioz.ui.editors.view import View
 from cranioz.ui.editors.view_layout_renderer import (
     ViewLayoutRenderer,

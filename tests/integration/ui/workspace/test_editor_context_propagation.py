@@ -36,12 +36,12 @@ from cranioz.domain.patient.value_objects.patient_id import PatientId
 from cranioz.domain.project.project_id import ProjectId
 from cranioz.domain.project.project_metadata import ProjectMetadata
 from cranioz.domain.project.project_status import ProjectStatus
+from cranioz.editors.core.editor.editor_context import EditorContext
+from cranioz.editors.core.editor.editor_registry import EditorRegistry
 from cranioz.infrastructure.i18n.translation_service import (
     IdentityTranslationService,
 )
 from cranioz.ui.editors.builtin.test_editor import DummyEditor
-from cranioz.ui.editors.editor_context import EditorContext
-from cranioz.ui.editors.editor_registry import EditorRegistry
 from cranioz.ui.theme.tokens import ThemeMode
 from cranioz.ui.tools.registry.tool_registry import ToolRegistry
 from cranioz.ui.workspace.areas.placement import Placement

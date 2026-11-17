@@ -74,7 +74,7 @@ from PySide6.QtGui import QResizeEvent, QShowEvent
 from PySide6.QtWidgets import QSplitter, QVBoxLayout, QWidget
 
 from cranioz.application.project.context import ProjectContext
-from cranioz.ui.editors.editor_registry import EditorRegistry
+from cranioz.editors.core.editor.editor_registry import EditorRegistry
 from cranioz.ui.icons.provider import IconProvider
 from cranioz.ui.theme.service import ThemeService
 from cranioz.ui.tools.registry.tool_registry import ToolRegistry

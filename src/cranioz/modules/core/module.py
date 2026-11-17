@@ -17,8 +17,8 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
     from cranioz.application.commands.base import Command
+    from cranioz.editors.core.editor.base_editor import Editor
     from cranioz.modules.core import ModuleContext, ModuleManifest
-    from cranioz.ui.editors.base_editor import Editor
     from cranioz.ui.tools.registry.tool_definition import Tool
     from cranioz.ui.workspace.specs.module_ui_spec import ModuleUISpec
 

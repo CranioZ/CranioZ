@@ -20,7 +20,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from cranioz.ui.editors.base_editor import Editor
+from cranioz.editors.core.editor.base_editor import Editor
 
 
 class EditorRegistryError(ValueError):

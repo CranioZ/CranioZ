@@ -22,8 +22,8 @@ from typing import Any
 
 from PySide6.QtWidgets import QLabel, QWidget
 
-from cranioz.ui.editors.base_editor import Editor
-from cranioz.ui.editors.editor_context import EditorContext
+from cranioz.editors.core.editor.base_editor import Editor
+from cranioz.editors.core.editor.editor_context import EditorContext
 from cranioz.ui.toolbars.specification import (
     ToolbarOrientation,
     ToolbarSpec,

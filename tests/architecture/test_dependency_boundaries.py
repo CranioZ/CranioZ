@@ -8,14 +8,16 @@ that they can enforce boundaries on packages that are not yet imported
 by any test, and so that they fail loudly when a rule stops being
 checked (for example, when a package path is moved and the test
 silently inspects an empty directory).
+
+Imports inside ``if TYPE_CHECKING:`` blocks are skipped: they exist
+only for static type checking and do not create a runtime dependency.
+The architecture tests enforce runtime dependencies.
 """
 
 from __future__ import annotations
 
 import ast
 from pathlib import Path
-
-import pytest
 
 SRC_ROOT = Path(__file__).parent.parent.parent / "src" / "cranioz"
 
@@ -25,13 +27,25 @@ SRC_ROOT = Path(__file__).parent.parent.parent / "src" / "cranioz"
 # ---------------------------------------------------------------------------
 
 
+def _is_type_checking_test(test: ast.expr) -> bool:
+    if isinstance(test, ast.Name) and test.id == "TYPE_CHECKING":
+        return True
+    return (
+        isinstance(test, ast.Attribute)
+        and isinstance(test.value, ast.Name)
+        and test.value.id == "typing"
+        and test.attr == "TYPE_CHECKING"
+    )
+
 def _get_imports(file_path: Path) -> set[str]:
-    """Return the set of module paths imported by ``file_path``.
+    """Return the set of runtime module paths imported by ``file_path``.
 
     Covers ``import x``, ``import x.y as z``, ``from x import y`` and
     ``from x.y import z``. Relative imports (``from . import x``) are
     ignored because they cannot cross package boundaries in the way
     the rules care about.
+
+    Imports inside ``if TYPE_CHECKING:`` blocks are skipped.
     """
     if not file_path.exists():
         return set()
@@ -39,21 +53,25 @@ def _get_imports(file_path: Path) -> set[str]:
     tree = ast.parse(file_path.read_text(encoding="utf-8"))
     imports: set[str] = set()
 
-    for node in ast.walk(tree):
+    def _visit(node: ast.AST) -> None:
+        if isinstance(node, ast.If) and _is_type_checking_test(node.test):
+            # Skip the TYPE_CHECKING body; visit only the else branch if present.
+            for child in node.orelse:
+                _visit(child)
+            return
+
         if isinstance(node, ast.Import):
             for alias in node.names:
                 imports.add(alias.name)
-        elif isinstance(node, ast.ImportFrom):
-            if node.module:
-                imports.add(node.module)
-                # ``from cranioz.modules.core import module`` imports the
-                # submodule ``cranioz.modules.core.module`` too, so record
-                # the fully-qualified name of each imported name as well.
-                # This catches ``from cranioz.editors import builtin`` and
-                # similar re-export paths.
-                for alias in node.names:
-                    imports.add(f"{node.module}.{alias.name}")
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            imports.add(node.module)
+            for alias in node.names:
+                imports.add(f"{node.module}.{alias.name}")
 
+        for child in ast.iter_child_nodes(node):
+            _visit(child)
+
+    _visit(tree)
     return imports
 
 
@@ -107,9 +125,6 @@ def test_modules_builtin_does_not_import_editors_or_workspace() -> None:
 
 
 def test_editors_core_does_not_import_modules_or_workspace() -> None:
-    # The editor package does not exist yet; until Step 4 populates it, the
-    # pre-migration location (ui/editors) is the baseline. Both paths are
-    # inspected so that the rule fails loudly if neither contains .py files.
     candidates = [
         SRC_ROOT / "editors" / "core",
         SRC_ROOT / "ui" / "editors",

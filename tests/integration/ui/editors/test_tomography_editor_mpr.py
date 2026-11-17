@@ -36,7 +36,7 @@ from cranioz.domain.imaging.volume import IntensityScale, Volume
 from cranioz.domain.imaging.volume_geometry import VolumeGeometry
 from cranioz.domain.imaging.volume_provenance import VolumeProvenance
 from cranioz.domain.scene.domain_object_store import DomainObjectStore
-from cranioz.ui.editors.editor_context import EditorContext
+from cranioz.editors.core.editor.editor_context import EditorContext
 from cranioz.ui.editors.mpr_viewer.view import MPRView
 from cranioz.ui.editors.tomography.editor import TomographyEditor
 from cranioz.ui.editors.viewport_3d.presets import get_preset

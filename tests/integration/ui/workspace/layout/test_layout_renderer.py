@@ -14,8 +14,8 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QSplitter
 from tests.conftest import make_icon_provider, make_theme_service
 
+from cranioz.editors.core.editor.editor_registry import EditorRegistry
 from cranioz.ui.editors.builtin.test_editor import DummyEditor
-from cranioz.ui.editors.editor_registry import EditorRegistry
 from cranioz.ui.theme.service import ThemeService
 from cranioz.ui.tools.builtin.log_tool import LogTool
 from cranioz.ui.tools.builtin.toggle_tool import ToggleTool

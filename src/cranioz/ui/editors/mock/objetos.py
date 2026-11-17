@@ -22,8 +22,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from cranioz.ui.editors.base_editor import Editor
-from cranioz.ui.editors.editor_context import EditorContext
+from cranioz.editors.core.editor.base_editor import Editor
+from cranioz.editors.core.editor.editor_context import EditorContext
 
 _SWATCH_COLORS = (
     "#3B82F6",  # blue

@@ -33,8 +33,8 @@ from typing import TYPE_CHECKING, Any
 from PySide6.QtWidgets import QHBoxLayout, QSizePolicy, QWidget
 
 from cranioz.domain.imaging.volume import Volume
-from cranioz.ui.editors.base_editor import Editor
-from cranioz.ui.editors.editor_context import EditorContext
+from cranioz.editors.core.editor.base_editor import Editor
+from cranioz.editors.core.editor.editor_context import EditorContext
 from cranioz.ui.editors.mpr_viewer.view import MPRView
 from cranioz.ui.editors.view import View
 from cranioz.ui.editors.view_layout_renderer import ViewLayoutRenderer

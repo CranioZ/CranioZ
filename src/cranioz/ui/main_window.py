@@ -32,9 +32,9 @@ from cranioz.application.scene.handlers.scene_handlers import (
     ImportDicomSeriesHandler,
 )
 from cranioz.domain.project.project_id import ProjectId
+from cranioz.editors.core.editor.editor_registry import EditorRegistry
 from cranioz.infrastructure.i18n.translation_service import TranslationService
 from cranioz.infrastructure.scene.scene_query_adapter import SceneQueryAdapter
-from cranioz.ui.editors.editor_registry import EditorRegistry
 from cranioz.ui.editors.viewport_3d.mesh_debug_editor import (
     MESH_DEBUG_EDITOR_ID,
     MeshDebugEditor,

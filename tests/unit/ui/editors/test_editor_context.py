@@ -6,8 +6,8 @@ import dataclasses
 
 import pytest
 
+from cranioz.editors.core.editor.editor_context import EditorContext
 from cranioz.infrastructure.i18n.translation_service import IdentityTranslationService
-from cranioz.ui.editors.editor_context import EditorContext
 
 
 def test_editor_context_holds_editor_id() -> None:
