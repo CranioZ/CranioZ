@@ -17,9 +17,9 @@ from pytestqt.qtbot import QtBot
 from tests.conftest import make_icon_provider, make_theme_service
 
 from cranioz.editors.core.editor.base_editor import Editor
-from cranioz.ui.editors.view import View
-from cranioz.ui.editors.view_layout_renderer import ViewLayoutRenderer
-from cranioz.ui.editors.view_layout_spec import ViewLayoutSpec
+from cranioz.editors.core.view.view import View
+from cranioz.editors.core.view.view_layout_renderer import ViewLayoutRenderer
+from cranioz.editors.core.view.view_layout_spec import ViewLayoutSpec
 from cranioz.ui.icons.provider import IconProvider
 from cranioz.ui.theme.service import ThemeService
 from cranioz.ui.toolbars.base import Toolbar

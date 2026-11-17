@@ -35,13 +35,13 @@ from PySide6.QtWidgets import QHBoxLayout, QSizePolicy, QWidget
 from cranioz.domain.imaging.volume import Volume
 from cranioz.editors.core.editor.base_editor import Editor
 from cranioz.editors.core.editor.editor_context import EditorContext
-from cranioz.ui.editors.mpr_viewer.view import MPRView
-from cranioz.ui.editors.view import View
-from cranioz.ui.editors.view_layout_renderer import ViewLayoutRenderer
-from cranioz.ui.editors.view_layout_spec import (
+from cranioz.editors.core.view.view import View
+from cranioz.editors.core.view.view_layout_renderer import ViewLayoutRenderer
+from cranioz.editors.core.view.view_layout_spec import (
     SplitDirection,
     ViewLayoutSpec,
 )
+from cranioz.ui.editors.mpr_viewer.view import MPRView
 from cranioz.ui.editors.viewport_3d.view import Viewport3DView
 from cranioz.ui.toolbars.base import Toolbar
 from cranioz.ui.toolbars.specification import (

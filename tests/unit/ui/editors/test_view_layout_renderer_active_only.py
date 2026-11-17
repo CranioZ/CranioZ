@@ -14,12 +14,12 @@ from pytestqt.qtbot import QtBot
 from tests.conftest import make_icon_provider, make_theme_service
 
 from cranioz.editors.core.editor.base_editor import Editor
-from cranioz.ui.editors.view import View
-from cranioz.ui.editors.view_layout_renderer import (
+from cranioz.editors.core.view.view import View
+from cranioz.editors.core.view.view_layout_renderer import (
     ViewLayoutRenderer,
     _ViewActivationFilter,
 )
-from cranioz.ui.editors.view_layout_spec import (
+from cranioz.editors.core.view.view_layout_spec import (
     SplitDirection,
     ViewLayoutSpec,
 )

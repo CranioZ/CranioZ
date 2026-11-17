@@ -21,11 +21,6 @@ close) are wired end-to-end via the MainWindow. These tests use
 ``unittest.mock.patch.object`` with ``autospec=True`` to verify that
 the MainWindow calls the corresponding Qt slot. ``qtbot.waitSignal``
 only proves the signal was emitted; it does not prove the wiring.
-
-Blocking dialogs: an autouse fixture (``_no_blocking_dialogs``) replaces
-``QMessageBox.question`` so the real confirmation dialog never appears
-when ``qtbot`` closes the window at teardown. Tests that need a specific
-answer override it with their own ``monkeypatch``.
 """
 
 from __future__ import annotations
@@ -63,21 +58,6 @@ _ACTOR = "test"
 # ----- Fixtures -----------------------------------------------------
 
 
-@pytest.fixture(autouse=True)
-def _no_blocking_dialogs(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Prevent QMessageBox.question from blocking the test run.
-
-    The default answer is Yes, so ``closeEvent`` tears the project down
-    and the window closes cleanly when ``qtbot`` cleans up. Individual
-    tests may override this with their own ``monkeypatch.setattr``.
-    """
-    monkeypatch.setattr(
-        QMessageBox,
-        "question",
-        staticmethod(lambda *args, **kwargs: QMessageBox.StandardButton.Yes),
-    )
-
-
 @pytest.fixture
 def manager_and_catalog() -> tuple[ProjectManager, ProjectCatalog]:
     repo = InMemoryProjectRepository()
@@ -94,11 +74,7 @@ def manager_and_catalog() -> tuple[ProjectManager, ProjectCatalog]:
 def window(
     qtbot: QtBot,
     manager_and_catalog: tuple[ProjectManager, ProjectCatalog],
-    _no_blocking_dialogs: None,
 ) -> MainWindow:
-    # ``_no_blocking_dialogs`` is requested explicitly so the patch is
-    # guaranteed to outlive the window: pytest tears fixtures down in
-    # reverse order, and qtbot closes the widget during its teardown.
     manager, catalog = manager_and_catalog
 
     editor_registry = EditorRegistry()
@@ -426,13 +402,6 @@ def test_close_event_confirms_when_project_open(
     assert len(asked) == 1
     # Project still open because the user said No.
     assert window.current_project_id() == ProjectId("p-001")
-
-    # Let the window close cleanly during the qtbot teardown.
-    monkeypatch.setattr(
-        QMessageBox,
-        "question",
-        staticmethod(lambda *args, **kwargs: QMessageBox.StandardButton.Yes),
-    )
 
 
 def test_close_event_tears_down_project_on_confirm(

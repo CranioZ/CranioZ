@@ -49,11 +49,11 @@ from vtkmodules.vtkRenderingVolumeOpenGL2 import vtkSmartVolumeMapper
 
 from cranioz.domain.geometry.mesh import Mesh
 from cranioz.domain.imaging.volume import Volume
+from cranioz.editors.core.view.view import View
 from cranioz.infrastructure.geometry.adapters.vtk.polydata import (
     mesh_to_polydata,
 )
 from cranioz.infrastructure.visualization.vtk_image_adapter import VtkImageAdapter
-from cranioz.ui.editors.view import View
 from cranioz.ui.editors.viewport_3d.presets import (
     VolumePreset,
     get_preset,

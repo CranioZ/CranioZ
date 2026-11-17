@@ -53,7 +53,7 @@ from PySide6.QtWidgets import (
 )
 
 from cranioz.domain.imaging.volume import Volume
-from cranioz.ui.editors.view import View
+from cranioz.editors.core.view.view import View
 from cranioz.ui.toolbars.specification import ToolbarSpec
 
 _logger = logging.getLogger(__name__)

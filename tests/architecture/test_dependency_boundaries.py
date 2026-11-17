@@ -22,31 +22,19 @@ from pathlib import Path
 SRC_ROOT = Path(__file__).parent.parent.parent / "src" / "cranioz"
 
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-
 def _is_type_checking_test(test: ast.expr) -> bool:
     if isinstance(test, ast.Name) and test.id == "TYPE_CHECKING":
         return True
-    return (
+    return bool(
         isinstance(test, ast.Attribute)
         and isinstance(test.value, ast.Name)
         and test.value.id == "typing"
         and test.attr == "TYPE_CHECKING"
     )
 
+
 def _get_imports(file_path: Path) -> set[str]:
-    """Return the set of runtime module paths imported by ``file_path``.
-
-    Covers ``import x``, ``import x.y as z``, ``from x import y`` and
-    ``from x.y import z``. Relative imports (``from . import x``) are
-    ignored because they cannot cross package boundaries in the way
-    the rules care about.
-
-    Imports inside ``if TYPE_CHECKING:`` blocks are skipped.
-    """
+    """Return the set of runtime module paths imported by ``file_path``."""
     if not file_path.exists():
         return set()
 
@@ -55,7 +43,6 @@ def _get_imports(file_path: Path) -> set[str]:
 
     def _visit(node: ast.AST) -> None:
         if isinstance(node, ast.If) and _is_type_checking_test(node.test):
-            # Skip the TYPE_CHECKING body; visit only the else branch if present.
             for child in node.orelse:
                 _visit(child)
             return
@@ -87,11 +74,6 @@ def _iter_imports(files: list[Path]) -> list[tuple[Path, str]]:
             yield f, imp
 
 
-# ---------------------------------------------------------------------------
-# Rule 4.1.1 — modules.core must not import editors
-# ---------------------------------------------------------------------------
-
-
 def test_modules_core_does_not_import_editors() -> None:
     files = _get_all_py_files(SRC_ROOT / "modules" / "core")
     for py_file, imp in _iter_imports(files):
@@ -99,11 +81,6 @@ def test_modules_core_does_not_import_editors() -> None:
             f"{py_file.relative_to(SRC_ROOT)} imports '{imp}'. "
             f"Rule 4.1.1: modules.core must not import editors."
         )
-
-
-# ---------------------------------------------------------------------------
-# Rule 4.1.2 — modules.builtin must not import editors or workspace
-# ---------------------------------------------------------------------------
 
 
 def test_modules_builtin_does_not_import_editors_or_workspace() -> None:
@@ -117,11 +94,6 @@ def test_modules_builtin_does_not_import_editors_or_workspace() -> None:
             f"{py_file.relative_to(SRC_ROOT)} imports '{imp}'. "
             f"Rule 4.1.2: modules.builtin must not import Workspace components."
         )
-
-
-# ---------------------------------------------------------------------------
-# Rule 4.1.4 — editors.core.* must not import Modules or Workspace
-# ---------------------------------------------------------------------------
 
 
 def test_editors_core_does_not_import_modules_or_workspace() -> None:
@@ -149,11 +121,6 @@ def test_editors_core_does_not_import_modules_or_workspace() -> None:
         )
 
 
-# ---------------------------------------------------------------------------
-# Rule 4.1.11 — editors.core.* must not import ui.theme.compiler
-# ---------------------------------------------------------------------------
-
-
 def test_editors_core_does_not_import_theme_compiler() -> None:
     candidates = [
         SRC_ROOT / "editors" / "core",
@@ -166,14 +133,8 @@ def test_editors_core_does_not_import_theme_compiler() -> None:
     for py_file, imp in _iter_imports(files):
         assert "ui.theme.compiler" not in imp, (
             f"{py_file.relative_to(SRC_ROOT)} imports '{imp}'. "
-            f"Rule 4.1.11: editors.core must not import ui.theme.compiler "
-            f"(QSS application is shell-only)."
+            f"Rule 4.1.11: editors.core must not import ui.theme.compiler."
         )
-
-
-# ---------------------------------------------------------------------------
-# Domain isolation — nothing below domain may import higher layers
-# ---------------------------------------------------------------------------
 
 
 def test_domain_imports_no_higher_layers() -> None:
