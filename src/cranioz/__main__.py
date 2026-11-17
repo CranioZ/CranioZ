@@ -63,11 +63,11 @@ from cranioz.application.commands.transaction import (  # noqa: E402
 from cranioz.application.event_bus import EventBus  # noqa: E402
 from cranioz.application.events import EventBusAdapter  # noqa: E402
 from cranioz.application.flows.catalog import FlowCatalog  # noqa: E402
-from cranioz.application.project.project_access_policy import (  # noqa: E402
+from cranioz.application.project.access_policy import (  # noqa: E402
     AllowAllProjectAccessPolicy,
 )
-from cranioz.application.project.project_catalog import ProjectCatalog  # noqa: E402
-from cranioz.application.project.project_manager import ProjectManager  # noqa: E402
+from cranioz.application.project.catalog import ProjectCatalog  # noqa: E402
+from cranioz.application.project.manager import ProjectManager  # noqa: E402
 from cranioz.application.scene.scene_provider import (  # noqa: E402
     InMemorySceneProvider,
 )

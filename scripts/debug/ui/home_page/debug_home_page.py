@@ -25,10 +25,10 @@ from datetime import UTC, datetime
 
 from PySide6.QtWidgets import QApplication, QMainWindow
 
-from cranioz.application.project.in_memory_project_repository import (
+from cranioz.application.project.in_memory_repository import (
     InMemoryProjectRepository,
 )
-from cranioz.application.project.project_catalog import ProjectCatalog
+from cranioz.application.project.catalog import ProjectCatalog
 from cranioz.domain.project.project import Project
 from cranioz.domain.project.project_id import ProjectId
 from cranioz.domain.project.project_metadata import ProjectMetadata

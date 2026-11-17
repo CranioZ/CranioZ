@@ -8,14 +8,14 @@ from datetime import UTC, datetime
 from PySide6.QtWidgets import QApplication
 
 from cranioz.application.event_bus import EventBus
-from cranioz.application.project.in_memory_project_repository import (
+from cranioz.application.project.in_memory_repository import (
     InMemoryProjectRepository,
 )
-from cranioz.application.project.project_access_policy import (
+from cranioz.application.project.access_policy import (
     AllowAllProjectAccessPolicy,
 )
-from cranioz.application.project.project_catalog import ProjectCatalog
-from cranioz.application.project.project_manager import ProjectManager
+from cranioz.application.project.catalog import ProjectCatalog
+from cranioz.application.project.manager import ProjectManager
 from cranioz.domain.project.project import Project
 from cranioz.domain.project.project_id import ProjectId
 from cranioz.domain.project.project_metadata import ProjectMetadata

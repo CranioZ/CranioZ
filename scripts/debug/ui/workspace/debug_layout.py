@@ -16,13 +16,13 @@ import sys
 from PySide6.QtWidgets import QApplication, QMainWindow
 
 from cranioz.application.event_bus import EventBus
-from cranioz.application.project.in_memory_project_repository import (
+from cranioz.application.project.in_memory_repository import (
     InMemoryProjectRepository,
 )
-from cranioz.application.project.project_access_policy import (
+from cranioz.application.project.access_policy import (
     AllowAllProjectAccessPolicy,
 )
-from cranioz.application.project.project_manager import ProjectManager
+from cranioz.application.project.manager import ProjectManager
 from cranioz.domain.patient.value_objects.patient_id import PatientId
 from cranioz.domain.project.project_id import ProjectId
 from cranioz.infrastructure.settings.in_memory_settings_service import (

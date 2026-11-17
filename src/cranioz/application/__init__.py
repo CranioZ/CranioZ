@@ -11,10 +11,7 @@ Infrastructure adapters (e.g. `FilesystemProjectRepository`) live in
 not by this package.
 """
 
-from cranioz.application.project.in_memory_project_repository import (
-    InMemoryProjectRepository,
-)
-from cranioz.application.project.project_errors import (
+from cranioz.application.project.errors import (
     ProjectAlreadyExists,
     ProjectCorrupted,
     ProjectError,
@@ -22,7 +19,10 @@ from cranioz.application.project.project_errors import (
     ProjectRepositoryError,
     ProjectStorageError,
 )
-from cranioz.application.project.project_repository import ProjectRepository
+from cranioz.application.project.in_memory_repository import (
+    InMemoryProjectRepository,
+)
+from cranioz.application.project.repository import ProjectRepository
 
 __all__ = [
     "InMemoryProjectRepository",

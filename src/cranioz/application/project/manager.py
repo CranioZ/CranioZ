@@ -61,16 +61,16 @@ from datetime import UTC, datetime
 from typing import Any
 
 from cranioz.application.event_bus import EventBus
-from cranioz.application.project.project_access_policy import (
+from cranioz.application.project.access_policy import (
     Actor,
     ProjectAccessPolicy,
 )
-from cranioz.application.project.project_context import ProjectContext
-from cranioz.application.project.project_errors import (
+from cranioz.application.project.context import ProjectContext
+from cranioz.application.project.errors import (
     ProjectAccessDenied,
     ProjectInUse,
 )
-from cranioz.application.project.project_events import (
+from cranioz.application.project.events import (
     ProjectClosed,
     ProjectClosing,
     ProjectCreated,
@@ -78,7 +78,7 @@ from cranioz.application.project.project_events import (
     ProjectOpened,
     ProjectUpdated,
 )
-from cranioz.application.project.project_repository import ProjectRepository
+from cranioz.application.project.repository import ProjectRepository
 from cranioz.domain.patient.patient_summary import PatientSummary
 from cranioz.domain.patient.value_objects.patient_id import PatientId
 from cranioz.domain.project.project import Project

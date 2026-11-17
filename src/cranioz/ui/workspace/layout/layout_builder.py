@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging  # <-- Adicionado
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -16,6 +17,8 @@ from cranioz.ui.workspace.areas.editor_layout_spec import (
 from cranioz.ui.workspace.layout.layout_tree import LayoutTree
 from cranioz.ui.workspace.specs.area_spec import AreaSpec
 from cranioz.ui.workspace.specs.module_ui_spec import ModuleUISpec
+
+_logger = logging.getLogger(__name__)  # <-- Adicionado
 
 
 class LayoutBuilderError(ValueError):
@@ -103,13 +106,12 @@ class LayoutBuilder:
     ) -> list[Editor]:
         editor_ids = self._collect_editor_ids(area_spec.editor_layout)
 
-        print(f"\n[DEBUG LayoutBuilder] Área: {area_spec.area_id}")
-        print(f"[DEBUG LayoutBuilder] IDs encontrados na spec: {editor_ids}")
+        _logger.debug("LayoutBuilder: Área %s, IDs encontrados: %s", area_spec.area_id, editor_ids)
 
         editors: list[Editor] = []
 
         for editor_id in editor_ids:
-            print(f"[DEBUG LayoutBuilder] Criando instância do editor: {editor_id}")
+            _logger.debug("LayoutBuilder: Criando instância do editor: %s", editor_id)
             editor = self._registry.create(
                 editor_id,
                 editor_id=editor_id,
@@ -123,7 +125,11 @@ class LayoutBuilder:
             editor.initialize(context)
             editors.append(editor)
 
-        print(f"[DEBUG LayoutBuilder] Total de editores criados: {len(editors)}")
+        _logger.debug(
+            "LayoutBuilder: Total de editores criados na área %s: %d",
+            area_spec.area_id,
+            len(editors),
+        )
         return editors
 
     @staticmethod

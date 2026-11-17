@@ -19,8 +19,8 @@ from datetime import UTC, datetime
 
 import pytest
 
-from cranioz.application.project.project_context import ProjectContext
-from cranioz.application.project.project_events import (
+from cranioz.application.project.context import ProjectContext
+from cranioz.application.project.events import (
     ProjectClosed,
     ProjectClosing,
     ProjectCreated,

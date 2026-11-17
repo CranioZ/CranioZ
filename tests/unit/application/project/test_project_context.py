@@ -21,7 +21,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from cranioz.application.project.project_context import (
+from cranioz.application.project.context import (
     ObjectReference,
     ProjectContext,
 )

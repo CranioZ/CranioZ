@@ -3,7 +3,7 @@
 **Document type:** Roadmap and execution plan
 **Status:** Living document
 **Scope:** Phased implementation of the CranioZ platform, from foundation to release
-**Last updated:** 2026-11-15
+**Last updated:** 2026-11-09
 
 ---
 
@@ -38,7 +38,7 @@ A deliverable marked as implemented must exist in the codebase and have passing 
 ## 3. External Dependencies & Tech Stack
 
 - **Language:** Python 3.12+
-- **UI Framework:** PySide6 / Qt 6 (minimum 6.9 for `QImage.flipped()`; `QStyleHints.colorScheme()` requires 6.5+, but the project pins `>=6.9,<7.0`)
+- **UI Framework:** PySide6 / Qt 6 (minimum 6.5.0 for `QStyleHints.colorScheme()`)
 - **Medical Visualization:** VTK
 - **DICOM Parsing:** pydicom
 - **Scientific Computing:** NumPy, SciPy
@@ -51,8 +51,6 @@ A deliverable marked as implemented must exist in the codebase and have passing 
 
 Dependencies must be introduced when required by an implementation task. Their presence in this list does not imply that every library must be integrated during the foundation phases.
 
-**Note on `uv sync`:** the project uses **extras** (not `dependency-groups`). To restore the full development environment, run `uv sync --extra dev`. Plain `uv sync` removes dev tools (pytest, mypy, ruff) from the active `.venv`. See `Next Steps.md` §8.
-
 ---
 
 ## 4. Phase Overview
@@ -62,10 +60,10 @@ The implementation is divided into 11 phases. The sequence establishes the platf
 | Phase | Name | Status | Main Pending Work |
 |---|---|---|---|
 | **Phase 0** | Foundation & Boot | ✅ Implemented | Startup performance improvements |
-| **Phase 1** | Contracts, Core Domain & i18n | ✅ Implemented | — |
-| **Phase 2** | Workspace Engine & Icons | ✅ Implemented | — |
+| **Phase 1** | Contracts, Core Domain & i18n | 🚧 In Progress | `EditorContext` propagation (Sprint C) |
+| **Phase 2** | Workspace Engine & Icons | 🚧 In Progress | `AreaLayoutRenderer`, `EditorStack` |
 | **Phase 3** | Project, Home Page & Professional Module | 🚧 In Progress | `ProjectIndex`, coordinated deletion, async loading, Professional module |
-| **Phase 4** | Scene & Visualization | ⏳ Planned | Import Dialog, Viewer Layout Manager, 2D/3D Tools, LUTs |
+| **Phase 4** | Scene & Visualization | ⏳ Planned | Import Dialog, RenderingAdapter, Viewer Layout Manager, 2D/3D Tools, LUTs |
 | **Phase 5** | Clinical Flows & Panel Widget Registry | ⏳ Planned | WorkflowEngine, WorkflowBreadcrumb, Panel Registry |
 | **Phase 6** | Clinical Pipeline | ⏳ Planned | Tomography, Segmentation, Cephalometry, Osteotomy, Guides, Animation |
 | **Phase 7** | Scientific Validation | ⏳ Planned | Geometric, clinical and usability validation |
@@ -89,42 +87,28 @@ The implementation is divided into 11 phases. The sequence establishes the platf
 
 **Phases 1, 2, and 3** are being closed formally before deeper investment in Phase 4. This prevents silent debt from accumulating as the clinical pipeline grows.
 
-**Phase 1 is closed.** **Phase 2 is now closed** (Sprint H was the last deliverable). Phase 3 remains in progress. Phase 4 begins only after Phase 3 is marked `✅ Implemented` in this document.
+Phase 4 remains the next major implementation phase. It begins only after Phases 1–3 are marked `✅ Implemented` in this document.
 
 ### 5.1 Immediate Priorities
 
-The work order below respects dependencies between Phases 2–3. Blocks 1–6 completed the Toolbar/Editor active-View foundation; Sprint G completed the intra-Area split; Sprint H completed the multi-Editor Area composition and closed Phase 2.
+The sprint order below respects dependencies between Phases 1–3.
 
 | Sprint | Phase | Deliverable | Status | Depends on |
 |---|---|---|---|---|
 | **B** | 1 | i18n contract and catalogs | ✅ Complete | — |
-| **C** | 1 | `EditorContext` propagation | ✅ Complete | B, E, F |
+| **C** | 1 | `EditorContext` propagation | 🚧 Pending | B, E (`theme_service` ✅), F (`icon_provider` ✅) |
 | **E** | 2 | `ThemeService`, `ThemeCompiler`, tokens | ✅ Complete | — |
 | **F** | 2 | `IconProvider`, `UnicodeIconProvider`, glyph migration | ✅ Complete | E |
-| — | — | **2026-11-13 cleanup** (dead code, `QImage.flipped`, PySide6 bump) | ✅ Complete | — |
-| **M** | 2 | **Frameless window, drag support, native resize** (UI Shell polish) | ✅ Complete | E, F |
-| **1** | 2 | **Toolbar polish** (`AlignTop`, fixed width, `Expanding` grid) | ✅ Complete | — |
-| **2** | 2 | **`Toolbar.set_active` / `set_expanded` / chevron** | ✅ Complete | 1 |
-| **3** | 2 | **`Editor._EditorSignals` + `Editor.set_active_view`** | ✅ Complete | — |
-| **4** | 2 | **`ViewLayoutRenderer` event filter + `ACTIVE_ONLY`** | ✅ Complete | 3 |
-| **5** | 2 | **`TomographyEditor` wires the active-View flow** | ✅ Complete | 4 |
-| **5.5** | 2 | **Percentage-based Area layout, QSS Areas, TopOverlay minimum width** | ✅ Complete | 4, 5 |
-| **5.6** | 2 | **Window controls in ExtrasSegment; `closeEvent` with confirmation** | ✅ Complete | 5.5 |
-| **5.6.1** | 2 | **Window controls in HomeTopBar; end-to-end tests** | ✅ Complete | 5.6 |
-| **6** | 2 | **`debug_workspace.py` final visual validation** | ✅ Complete | 5, 5.5, 5.6, 5.6.1, M |
-| **G** | 2 | **`AreaLayoutRenderer` (inter-Area vs intra-Area split)** | ✅ Complete | 6 |
-| **H** | 2 | **`EditorStack`** | ✅ Complete | G |
+| **G** | 2 | `AreaLayoutRenderer` | 🚧 Pending | — |
+| **H** | 2 | `EditorStack` | 🚧 Pending | G |
 | **I** | 3 | `ProjectIndex` | 🚧 Pending | — |
 | **J** | 3 | Coordinated deletion | 🚧 Pending | I |
 | **K** | 3 | Async loading | 🚧 Pending | I, J |
 | **L** | 3 | Professional module | 🚧 Pending | C, E, F |
 
-**Next work item:** Phase 3 begins. The user must choose between:
+**Next sprint:** Sprint C — `EditorContext` propagation (unblocked by Sprint F).
 
-- **Refactor the Editor package layout** (`ui/editors/central`, `ui/editors/left`, etc.) to prepare the "Add Editor" catalog (Imagem 3).
-- **Sprint I (`ProjectIndex`)** — start Phase 3.
-
-**Note on ordering:** Blocks 4–6, 5.5–5.6.1, Sprint M, Sprint G, and Sprint H are complete. Phase 2 is closed. Sprints I–L belong to Phase 3 and can be executed in any order once the editor package refactor decision is made.
+**Note on ordering:** Sprint C depends on Sprints E and F because `EditorContext` will carry `theme_service` and `icon_provider`. Sprints E and F are now complete; Sprint C is unblocked and is the next deliverable. Alternatively, Sprint C can propagate only services that exist at that time, with a follow-up PR adding the remaining services. The first approach is cleaner and is the recommended one.
 
 ---
 
@@ -154,7 +138,7 @@ The work order below respects dependencies between Phases 2–3. Blocks 1–6 co
 
 ### Phase 1: Contracts, Core Domain & i18n
 
-**Goal:** Close Phase 1 formally.
+**Goal:** Close Phase 1 formally. Blocker: `EditorContext` propagation (Sprint C).
 
 **Deliverables:**
 
@@ -174,13 +158,12 @@ The work order below respects dependencies between Phases 2–3. Blocks 1–6 co
   - Removal of `MainWindow._humanize_translation_key`.
   - Contract test: every `name_key` in every `flow.json` resolves in `en_US`.
   - `tests/architecture/test_no_hardcoded_strings_in_shell_widgets.py`: shell widgets must route user-facing strings through `tr(...)`.
-- ✅ **Sprint C (`EditorContext` propagation):**
-  - `EditorContext` carries nine fields: `task_manager`, `telemetry`, `correlation_id`, `command_dispatcher`, `scene_query`, `domain_object_store`, `event_subscription`, `translation_service`, `theme_service`, `icon_provider`.
-  - `theme_service` and `icon_provider` added to `EditorContext` (Sprint C).
-  - `Workspace.load_spec` passes the complete set through `LayoutBuilder`'s `shared_context`.
-  - `LayoutBuilder` propagates via `EditorContext(**shared)`, no closed key list.
-  - `TomographyEditor.initialize` and `MeshDebugEditor.initialize` receive the full context.
-  - Contract test: `tests/integration/ui/workspace/test_editor_context_propagation.py` asserts every Editor receives all fields.
+- 🚧 **Sprint C (`EditorContext` propagation):**
+  - Depends on Sprints E (`theme_service`, complete) and F (`icon_provider`, complete).
+  - Propagate `task_manager`, `telemetry`, `correlation_id`, `command_dispatcher`, `scene_query`, `event_subscription`, `translation_service`, `theme_service`, `icon_provider`.
+  - `Workspace._create_editor` and `MainWindow._create_workspace` pass the complete set.
+  - `TomographyEditor.initialize` and `MeshDebugEditor.initialize` accept the complete set.
+  - Contract test: every Editor registered in `EditorRegistry` receives all required fields.
 
 **Tests:**
 
@@ -190,15 +173,15 @@ The work order below respects dependencies between Phases 2–3. Blocks 1–6 co
 - Domain invariant and error-case tests.
 - ✅ i18n contract tests.
 - ✅ `test_no_hardcoded_strings_in_shell_widgets.py`.
-- ✅ `EditorContext` propagation tests (Sprint C).
+- 🚧 `EditorContext` propagation tests (pending Sprint C).
 
-**Status:** ✅ Implemented.
+**Status:** 🚧 In Progress. Blocker: Sprint C.
 
 ---
 
 ### Phase 2: Workspace Engine & Icons
 
-**Goal:** Close Phase 2 formally.
+**Goal:** Close Phase 2 formally. Blockers: `AreaLayoutRenderer`, `EditorStack`.
 
 **Deliverables:**
 
@@ -224,84 +207,21 @@ The work order below respects dependencies between Phases 2–3. Blocks 1–6 co
 - ✅ **Sprint F (`IconProvider` + `UnicodeIconProvider`):**
   - `IconState` enum (`DEFAULT`, `HOVER`, `PRESSED`, `SELECTED`, `DISABLED`).
   - `IconProvider` Protocol (`icon(name, size, state) -> QIcon`, `text_glyph(name) -> str`, `invalidate_cache() -> None`).
-  - `UnicodeIconProvider` with the closed 70-icon catalog (60 canonical + 6 shell + 4 window controls).
+  - `UnicodeIconProvider` with the closed 60-icon catalog from `docs/architecture/appearance/icons/icons_and_icon_manager.md` §6.
   - Injection into `MainWindow`, `Workspace`, `HomePage`, `TopBar` segments, `Toolbar`, `StartButton`, `FlowRow`.
   - Migration of hardcoded glyphs in `TopBar`, `HomeSegment`, `ModulesSegment`, `ExtrasSegment`, `HomePage`, `Toolbar`, `StartButton`, `FlowRow`.
   - `_WHITELIST` in `test_no_hardcoded_strings_in_shell_widgets.py` emptied (Sprint B debt paid).
   - Contract tests: `test_icon_catalog.py`, `test_icon_fallback.py`, `test_icon_theme.py`, `test_icon_widget_contract.py`, `test_icon_accessibility.py`.
-- ✅ **Sprint M (Frameless Window & Native Chrome):** *(2026-11-15)*
-  - `MainWindow` now uses `Qt.FramelessWindowHint`; the native Windows title bar is removed.
-  - `WindowDragFilter`: allows dragging the window by clicking and dragging on the custom top bars (HomePage and Workspace TopOverlay).
-  - `_central_container` wraps the `QStackedWidget` with a 4px margin, creating a dead zone where native resize is detected.
-  - Native resizing via `windowHandle().startSystemResize(edges)` in `mousePressEvent`, with dynamic cursor feedback in `mouseMoveEvent` (Qt 6 API, cross-platform).
-  - Maximize/restore icon sync between `HomeTopBar` and `ExtrasSegment` via `_update_maximize_icon`.
-  - Integration tests: `test_main_window_is_frameless`, `test_main_window_drag_filter_is_installed`, `test_main_window_central_container_has_margins`.
-- ✅ **Toolbar and Editor active-View foundation (Blocks 1–3, 2026-11-13):**
-  - **Block 1 — Toolbar polish.** `Toolbar._root_layout.setAlignment(Qt.AlignmentFlag.AlignTop)`; `ViewLayoutRenderer._VERTICAL_TOOLBAR_WIDTH = 96` with `setFixedWidth(96)` for LEFT/RIGHT toolbars (fits "Toggle" without truncation); grid container and outer splitter use `QSizePolicy.Expanding`; vertical toolbars get `(Fixed, Expanding)` and horizontal toolbars get `(Expanding, Fixed)`. 8 tests.
-  - **Block 2 — `Toolbar.set_active` / `set_expanded` / chevron.** `set_active(bool)` attenuates via `QGraphicsOpacityEffect(0.5)` without hiding; `set_expanded(bool)` compresses to a chevron; `expanded_changed` signal. Chevron flips automatically; persistence deferred. 11 tests.
-  - **Block 3 — `Editor._EditorSignals` + `Editor.set_active_view`.** `active_view_changed = Signal(object)` (str | None); `set_active_view` validates `view_id` against the Editor's Views (unknown → WARNING, no signal); idempotent for the same id; `None` clears. `dispose()` resets without emitting. 12 tests in `tests/unit/ui/editors/test_editor_active_view.py`.
-- ✅ **Block 4 (`ViewLayoutRenderer` event filter + `ACTIVE_ONLY`):**
-  - Installs `QObject` event filter on each View's `activation_widget()` (Viewport3DView returns the `QVTKRenderWindowInteractor`; other Views return `content_widget()`).
-  - Filter detects `QEvent.MouseButtonPress` and `QEvent.FocusIn`; calls `editor.set_active_view(view_id)`. Hover is not used.
-  - Connects `editor.active_view_changed` to a slot that applies `toolbar.set_active(...)` per `ACTIVE_ONLY` toolbar.
-  - `clear_cache()` removes filters from the correct target widget.
-  - Toolbars `ACTIVE_ONLY` start inactive; `editor.set_active_view(None)` after rendering.
-  - Regression test: rendering the same View Layout twice does not duplicate event filters.
-  - 12 tests in `tests/unit/ui/editors/test_view_layout_renderer_active_only.py`.
-- ✅ **Block 5 (`TomographyEditor` wires the active-View flow):**
-  - `TomographyEditor.content_widget()` wraps the View grid with the Editor-level Toolbars via `_wrap_with_editor_toolbars` (LEFT `ALWAYS` + RIGHT `COLLAPSIBLE`).
-  - `_editor_toolbars` list; `dispose()` clears it.
-  - 7 tests in `tests/integration/ui/editors/test_tomography_editor_active_view.py`.
-- ✅ **Block 5.5 (Workspace percentage-based Area layout):**
-  - `Workspace._LEFT_RATIO = 0.20`, `_RIGHT_RATIO = 0.25`, `_BOTTOM_RATIO = 0.20`.
-  - `Workspace._apply_default_splitter_sizes()` computes sizes as percentages (Central = fill), never letting the Central Area drop below `TopOverlay.minimum_width()`.
-  - `AreaWidget.refresh()` returns early when the Area model is hidden, preventing placeholder rendering in hidden Areas.
-  - `_build_empty_placeholder()` uses `WA_TranslucentBackground` so the QSS background shows through.
-  - Debug Editors `MockPosicaoEditor`, `MockObjetosEditor`, `MockConsoleEditor`, `MockMPREditor` added under `src/cranioz/ui/editors/mock/`.
-- ✅ **Block 5.6 (Window controls in ExtrasSegment):**
-  - `ExtrasSegment.minimize_requested`, `maximize_requested`, `close_requested`.
-  - 3 new buttons, 28px wide, icons via `IconProvider`.
-  - `MainWindow._wire_top_bar_segments` connects the 3 signals.
-  - `MainWindow._on_window_maximize_requested` toggles `showMaximized`/`showNormal`.
-  - `MainWindow.closeEvent` asks for confirmation when a project is open, then tears it down via `_close_active_project`.
-  - `test_extras_segment.py` — 19 tests.
-  - `test_main_window.py` — 3 tests for `closeEvent`.
-- ✅ **Block 5.6.1 (Window controls in HomeTopBar):**
-  - `HomeTopBar.minimize_requested`, `maximize_requested`, `close_requested`.
-  - `HomePage` forwards the 3 new signals.
-  - `MainWindow._connect_home_signals` connects them.
-  - `test_home_top_bar.py` +5 tests, `test_home_page.py` +3 tests, `test_main_window.py` +3 end-to-end tests.
-- ✅ **Block 6 (`debug_workspace.py` final visual validation):**
-  - The script `scripts/debug/ui/workspace/debug_workspace.py` was run end-to-end with Blocks 4–6, 5.5–5.6.1, and Sprint M applied.
-  - The visual matches the Prototipagem_UI_17 reference with the frameless window (drag, resize, maximize, minimize, close).
-  - Committed.
-- ✅ **Sprint G (`AreaLayoutRenderer`):** *(2026-11-15)*
-  - `AreaLayoutSpec` introduced in `src/cranioz/ui/workspace/areas/area_layout_spec.py` with `SINGLE`, `SPLIT`, and `STACK` types, validated structurally in `__post_init__`.
-  - `AreaLayoutRenderer._resolve_spec()` returns `SINGLE` for one Editor and `SPLIT` for multiple (current behavior preserved).
-  - `STACK` is declared and raises `NotImplementedError` until Sprint H; the point of extension is explicit and testable.
-  - `AreaLayoutRenderer._materialize()` validates that `spec.editor_ids` matches the Area's Editors, guarding against future drift between spec and instances.
-  - `_render_split()` extracted from the previous `else` branch; `_build_editor_container()` unchanged (preserves the `Expanding`/`Ignored` policy that Block 5.5 corrected).
-  - 6 unit tests for `AreaLayoutSpec` in `tests/unit/ui/workspace/areas/test_area_layout_spec.py`.
-  - 1 integration test for the `STACK` failure mode in `tests/integration/ui/workspace/areas/test_area_layout_renderer.py`.
-  - `stl.py` reverted to `GetData()` with `# TODO(vtk-10)` (the `ExportLegacyFormat()` migration requires a `vtkIdTypeArray` destination, not a `vtkCellArray`; deferred to Phase 4.5).
-  - `main_window.py` `mouseMoveEvent` and `mousePressEvent` annotated with `QMouseEvent` (mypy `no-untyped-def` resolved).
-  - `ruff check .` clean; `mypy src` clean; `pytest` 1632 passing, 2 skipped.
-- ✅ **Sprint H (`EditorStack`):** *(2026-11-15)*
-  - `EditorLayoutSpec` introduced with `LEAF`, `SPLIT`, and `STACK` (via `stacked=True`) node types, plus `EditorStackOrientation` (`TOP`, `BOTTOM`, `LEFT`, `RIGHT`).
-  - `EditorStack` widget is a `QStackedWidget` + `EditorStackSwitcher` (compact row/column of buttons), **not a `QTabWidget`** (ADR-0013 §2.5).
-  - Lazy materialization: only the active Editor's `content_widget()` is materialized eagerly; inactive Editors are materialized on first activation.
-  - Lifecycle: `activate()`/`deactivate()` fire on tab switch; `dispose()` fires exactly once per Editor.
-  - `AreaLayoutRenderer` extended with `_materialize_tree()`, `_materialize_split()`, and `_materialize_stack()`. The flat `_resolve_spec()` path is kept for backward compatibility.
-  - `LayoutBuilder` collects `editor_ids` recursively via `_collect_editor_ids()` (handles `LEAF`, `SPLIT`, and `STACK`) and propagates the spec to the `Area` via `set_editor_layout_spec()`.
-  - `Area` exposes `editor_layout_spec` (property) and `set_editor_layout_spec()`.
-  - `AreaWidget` forwards `IconProvider` to `AreaLayoutRenderer` and disposes the `EditorStack` before detaching content widgets (`_clear_layout`).
-  - `PlaceholderEditor` moved to `src/cranioz/ui/editors/placeholder_editor.py` (public).
-  - Backward-compatibility shim at `specs/editor_layout_spec.py` (re-exports the canonical implementation in `areas/`).
-  - `debug_workspace.py` updated to use a `STACK` `ModuleUISpec`; visual validation confirmed (TomographyEditor + Placeholder tabs).
-  - 6 `EditorLayoutSpec` tests, 4 `EditorStack` tests, 1 `STACK` integration test.
-  - `tests/unit/ui/workspace/specs/test_editor_layout_spec.py` removed (redundant with the canonical test under `areas/`).
-  - `test_no_hardcoded_appearance.py` updated with `placeholder_editor.py` (1 literal) and `editor_stack.py` (7 literals) in `_KNOWN_DEBT_FILES` and `_DEBT_MAX_LITERALS`.
-  - `ruff check .` clean; `ruff format` clean; `mypy src` clean; `pytest` 1633 passing, 2 skipped.
+- 🚧 **Sprint G (`AreaLayoutRenderer`):**
+  - Separates inter-Area from intra-Area layout.
+  - `AreaWidget` delegates to `AreaLayoutRenderer`.
+  - No visible behavior change for the single-Editor case.
+  - Regression tests.
+- 🚧 **Sprint H (`EditorStack`):**
+  - `EditorLayoutSpec.stack([...])`.
+  - `EditorStack` widget (tabs per Leaf).
+  - Single-Editor case remains unchanged.
+  - Tests for tab switching, editor lifecycle, dispose.
 
 **Tests:**
 
@@ -315,22 +235,8 @@ The work order below respects dependencies between Phases 2–3. Blocks 1–6 co
 - ✅ Token and theme completeness tests (Sprint E).
 - ✅ Settings persistence round-trip and fallback tests (Sprint E).
 - ✅ Icon catalog, fallback, theme integration, widget contract, and accessibility tests (Sprint F).
-- ✅ Frameless window, drag filter and native resize tests (Sprint M).
-- ✅ Toolbar polish tests (Block 1).
-- ✅ `Toolbar.set_active` / `set_expanded` / chevron tests (Block 2).
-- ✅ `Editor.set_active_view` contract tests (Block 3).
-- ✅ `ACTIVE_ONLY` wiring tests (Block 4).
-- ✅ `TomographyEditor` active-View flow tests (Block 5).
-- ✅ Percentage-based Area layout tests (Block 5.5).
-- ✅ Window controls tests (Blocks 5.6, 5.6.1).
-- ✅ `debug_workspace.py` visual validation (Block 6).
-- ✅ `AreaLayoutSpec` structural tests (Sprint G).
-- ✅ `STACK` failure-mode integration test (Sprint G).
-- ✅ `EditorLayoutSpec` structural tests (Sprint H).
-- ✅ `EditorStack` lifecycle, lazy materialization, and switcher tests (Sprint H).
-- ✅ `STACK` materialization integration test (Sprint H).
 
-**Status:** ✅ Implemented. Phase 2 is closed.
+**Status:** 🚧 In Progress. Blockers: Sprints G, H.
 
 ---
 
@@ -365,9 +271,6 @@ The work order below respects dependencies between Phases 2–3. Blocks 1–6 co
   - `ModuleUISpec` for the Professional module.
   - Settings integration (`professional.*` keys).
   - Tests.
-- 🚧 **Test stub documentation (2026-11-13 cleanup follow-up):**
-  - `tests/infrastructure/i18n/` (4 stubs) and `tests/infrastructure/scene/test_scene_query_adapter.py` are intentionally empty. They reserve the contract for the missing granular unit tests of `infrastructure/i18n/` and `infrastructure/scene/`. End-to-end coverage already exists in `tests/integration/i18n/`.
-  - Add `README.md` to `tests/infrastructure/i18n/` explaining the contract, and a `# TODO(sprint-i18n)` line to each stub. Same for `tests/infrastructure/scene/`.
 
 **Deferred to Phase 8:**
 
@@ -384,7 +287,7 @@ The work order below respects dependencies between Phases 2–3. Blocks 1–6 co
 - ProjectIndex consistency tests.
 - Professional module integration tests.
 
-**Status:** 🚧 In Progress. Blockers: Sprints I, J, K, L, and stub documentation.
+**Status:** 🚧 In Progress. Blockers: Sprints I, J, K, L.
 
 ---
 
@@ -435,4 +338,350 @@ The work order below respects dependencies between Phases 2–3. Blocks 1–6 co
 
 **4.3.4 Unified Import Dialog (required)**
 
-- `ImportManager` with categories (Volume, Radiographs
+- `ImportManager` with categories (Volume, Radiographs, Scans, Photographs, Meshes, Dental Implants, Facial Implants), sources (project, file, sample data), preview, auto-tagging.
+- `ImportDialog` with tab bar, source selector, asset grid/list, preview panel, add/remove/select actions.
+- Per-category importers.
+- Scene and DomainObjectStore integration.
+- TaskManager progress, cancellation, error reporting.
+
+**4.3.5 Storage and export**
+
+- ⏳ External Reference and Managed Copy storage modes.
+- ⏳ Preserve source DICOM as canonical.
+- ⏳ VTI export with round-trip validation.
+- ⏳ Project deletion never removes external source data.
+
+#### 4.4 Geometry Infrastructure
+
+**Implemented:** `Mesh`, `CoordinateFrame`, STL I/O, VTK adapter, `MeshDebugEditor`.
+
+**Deferred:** `GeometryRevision`, content-hash deduplication, persistent asset storage, `ValidationProfile`, `GeometryOperation`, booleans, welding, benchmarks.
+
+#### 4.5 Visualization Infrastructure
+
+**Implemented:**
+
+- ✅ `MPRView` (manual `vtkImageReslice` pipeline).
+- ✅ `Viewport3DView` (`vtkSmartVolumeMapper`, `VTK_SHORT`).
+- ✅ Axial, coronal, sagittal, 3D orientations.
+- ✅ Volume rendering presets.
+- ✅ `set_volume(Volume)`, `set_mesh(Mesh)`.
+- ✅ DICOM volume path validated in MPR and 3D.
+
+**Pending:**
+
+- ⏳ `RenderingAdapter` between Scene and VTK.
+- ⏳ **ViewerLayoutManager** (dynamic grids: 1×1, 2×2, 3×3, editable up to 6×4, panoramic, ATM).
+- ⏳ **2D Tools** (brightness/contrast, pan, zoom, HU probe, ROI, nerve drawing, distance/angle, crosshair, ruler, LUT selection, LUT inversion, background color, animation, thumbnail).
+- ⏳ **3D Tools** (ROI, cut, paint, annotations, distance/angle, preset selection, orthographic/perspective, background color, lock rotation, thumbnail).
+- ⏳ **Clinical transfer functions** (HU-based presets: `bone_cortical`, `bone_trabecular`, `soft_tissue`, `air`, `metal`, `cbct_percentile`).
+- ⏳ **Viewer status indicators** (active view badge, orientation badge, inactive state).
+- ⏳ Remove the debug bounding box from `Viewport3DView`.
+- ⏳ VTK resource lifecycle under repeated open/close.
+- ⏳ Headless and Windows rendering tests.
+
+**Architectural constraints:**
+
+- Domain data must not depend on VTK.
+- VTK actors, mappers, and render windows are presentation objects.
+- Rendering adapters translate semantic Scene objects into renderable representations.
+- Rendering updates must not mutate clinical source data.
+- VTK render-window and actor lifecycle operations remain on the GUI thread (ADR-0011).
+
+#### 4.6 Module Integration
+
+- 🚧 `InMemoryModuleLoader` with dependency resolution.
+- 🚧 Entry-point imports.
+- 🚧 Tools, Editors, Services, Flows registration.
+- 🚧 `BUILTIN_MANIFESTS`.
+- 🚧 Shared EventBus across ModuleContexts.
+- ⏳ First functional built-in module.
+
+#### 4.7 Tests
+
+- DICOM import tests.
+- Geometry and coordinate conversion tests.
+- Slice ordering and spacing validation.
+- Intensity calibration tests.
+- NumPy/VTK interoperability tests.
+- Geometry Infrastructure tests.
+- VTI round-trip tests.
+- Scene lifecycle and persistence tests.
+- ✅ Voxel ordering regression tests.
+- ✅ `int16` fidelity test.
+- ✅ `spacing_z` test.
+- ⏳ Import Dialog end-to-end tests.
+- ⏳ ViewerLayoutManager tests.
+- ⏳ Tool behavior tests.
+- ⏳ LUT selection and inversion tests.
+- ⏳ Preset selection tests.
+- ⏳ Performance tests.
+
+---
+
+### Phase 5: Clinical Flows & Panel Widget Registry
+
+**Goal:** Implement workflow execution, panel composition per Area, and layout persistence.
+
+**Deliverables:**
+
+- ⏳ `WorkflowEngine` (evaluates requirements, transitions).
+- ⏳ JSON flow loading and requirement evaluation.
+- ⏳ Step-state computation.
+- ⏳ **`WorkflowBreadcrumb` in the Top Bar** (replaces the removed `steps_panel`).
+- ⏳ Flow state persistence.
+- ⏳ **`PanelRegistry`:** panels registered by ID, addressable by Area.
+- ⏳ Area panel management: Left, Right, Bottom support zero or more registered panels.
+- ⏳ Built-in panels:
+  - **Left:** Objects, Volumes, Cephalometric Points, Masks, Measurements.
+  - **Right:** Registry, Scene, History, Material, Osteotomy Patterns, Object Properties, Tomography, Segmentation.
+  - **Bottom:** Console, History, Animation, AI Assistant, Nodes.
+- ⏳ Layout State Persistence (ADR-0010).
+- ⏳ Real ModuleRegistry and ModuleLoader integration.
+- ✅ Flow Catalog and repositories.
+
+**Status:** ⏳ Planned.
+
+---
+
+### Phase 6: Clinical Pipeline
+
+**Goal:** Implement the clinical tools required for the initial orthognathic surgery workflow.
+
+#### Phase 6A — Tomography & Segmentation
+
+- ⏳ Tomography Editor clinical workflow.
+- ⏳ Synchronized axial, coronal, sagittal navigation.
+- ⏳ Physical-coordinate crosshair and slice positioning.
+- ⏳ Slice distance, count, range controls.
+- ⏳ Window/Level and intensity display controls.
+- ⏳ Intensity probing.
+- ⏳ ROI tools (display ROI vs processing ROI).
+- ⏳ Threshold-based segmentation.
+- ⏳ Mask creation and editing.
+- ⏳ Segmentation paint/erase/close holes/small-segment removal.
+- ⏳ AI-assisted segmentation (deferred to Phase 10 if not ready).
+- ⏳ Curved MPR and panoramic reconstruction.
+- ⏳ Surface generation from segmentation masks.
+- ⏳ Clinical workflow integration.
+
+#### Phase 6B — Registration & Cephalometry
+
+- ⏳ Image and surface registration.
+- ⏳ Reference-based alignment.
+- ⏳ Cephalometric template system.
+- ⏳ Cephalometric capture strategies (manual, thirds cube, facial fifths, dental cusps, AI-assisted).
+- ⏳ Primary vs secondary point distinction.
+- ⏳ Point connectivity.
+- ⏳ Landmark refinement and verification.
+- ⏳ Cephalometric measurements and reports.
+- ⏳ Registration and landmark validation.
+
+#### Phase 6C — Osteotomy
+
+- ⏳ Le Fort I, BSSO, genioplasty.
+- ⏳ Osteotomy pattern library.
+- ⏳ Boolean operations and fragment separation.
+- ⏳ Fragment movement and transform management.
+- ⏳ Pre-op vs post-op comparison and animation.
+- ⏳ Soft-tissue thickness map and color map.
+- ⏳ Surgical plan persistence.
+
+#### Phase 6D — Surgical Guides
+
+- ⏳ Parametric guide generation.
+- ⏳ Guide-to-anatomy fit validation.
+- ⏳ Manufacturing constraints.
+- ⏳ Export for additive manufacturing.
+
+#### Phase 6E — Integrated Validation
+
+- ⏳ End-to-end orthognathic workflow.
+- ⏳ Data integrity and reproducibility tests.
+- ⏳ Geometric validation.
+- ⏳ Clinical workflow usability tests.
+
+**Status:** ⏳ Planned.
+
+---
+
+### Phase 7: Scientific Validation
+
+**Goal:** Execute the scientific validation protocols defined in the doctoral research project.
+
+**Deliverables:**
+
+- Geometric validation reports.
+- Reproducibility studies.
+- Inter- and intra-examiner reliability.
+- ICC and measurement error analysis.
+- Usability evaluation.
+- Performance evaluation on reference hardware.
+- Documentation of validation methodology.
+
+**Status:** ⏳ Planned.
+
+---
+
+### Phase 8: Scientific Product (Release 1.0)
+
+**Goal:** Consolidate the validated clinical core into a stable, distributable scientific product.
+
+**Deliverables:**
+
+- Windows installer.
+- Autosave and crash recovery.
+- PDF report generation (localized).
+- Final user and developer documentation.
+- **Recent Projects** on the Home Page.
+- **SQLite ProjectIndex** (backend for the Phase 3 contract).
+- **IconManager complete:** `SvgIconProvider`, SVG assets, cache by (name, size, theme), SVG recoloring.
+- **Complete migration of every widget** to `ThemeService.color(...)` + `IconProvider.icon(...)`.
+- **Locale selector UI.**
+- **Complete `pt_BR` and `en_US` catalogs.**
+- **Locale-aware formatting.**
+- **Custom volume-rendering preset editor.**
+- **High-contrast theme** (as `ThemeName.HIGH_CONTRAST`).
+- Performance profiling and optimization.
+- Release packaging and versioning.
+- Scientific publication.
+- DOI registration and public release.
+
+**Status:** ⏳ Planned.
+
+---
+
+### Phase 9: Extensibility (Release 2.0)
+
+**Goal:** Open the platform to external development and community contributions.
+
+**Deliverables:**
+
+- Stable Module API.
+- Plugin API.
+- Plugin loader and permission boundaries.
+- External plugin catalog.
+- Module-owned persisted state.
+- State migration contract.
+- Compatibility and versioning policies.
+
+**Status:** ⏳ Planned.
+
+---
+
+### Phase 10: AI and Nodes (Release 3.0)
+
+**Goal:** Introduce advanced automation and procedural workflows.
+
+**Deliverables:**
+
+- Non-destructive Node System.
+- Graph evaluation and execution.
+- AI Assistant Editor.
+- AI-assisted clinical operations.
+- MCP Server integration.
+- Command parity between UI and automated execution.
+
+**Status:** ⏳ Planned.
+
+---
+
+## 7. Testing Strategy & Metrics
+
+Testing is a clinical requirement. Metrics must be reproducible and contextualized.
+
+### 7.1 Coverage
+
+- **Domain:** Critical invariants and error cases.
+- **Application:** Command execution, transaction rollback, event publication, task lifecycle, i18n contract, settings round-trip.
+- **Infrastructure:** DICOM parsing, geometry, calibration, persistence, interoperability, settings persistence and migration.
+- **UI:** Widget behavior, Editor lifecycle, Workspace integration, tool behavior, import dialog.
+- **Appearance:** Token completeness, theme completeness, contrast, no hardcoded values, icon catalog, surface composition.
+- **End-to-End:** Complete clinical workflows using synthetic or approved datasets.
+
+### 7.2 Performance Metrics
+
+All performance targets must be measured using a defined Reference Dataset and Reference Hardware.
+
+Initial targets:
+
+- **DICOM Import:** 500-slice reference dataset in under 10 seconds, including indexing and readiness for first visualization.
+- **Surface Rendering:** 30+ FPS for a mesh of 1,000,000 polygons on reference hardware.
+- **Memory:** Below 4 GB RAM during standard facial CT processing.
+
+### 7.3 CPU and GPU Responsibilities
+
+- Clinical data and semantic objects remain in main memory and the Domain Scene.
+- GPU memory stores renderable representations and rendering resources.
+- GPU acceleration is optional for core clinical workflows.
+- CPU-based fallback must remain available for essential operations.
+
+### 7.4 Concurrency
+
+- `TaskManager` is the only application mechanism for off-thread work (ADR-0011).
+- Long-running DICOM parsing, segmentation, registration, and mesh processing execute as Tasks.
+- GUI and VTK render-window operations remain on the GUI thread.
+- Cancellation is cooperative.
+- Do not use `QTimer` as a substitute for background execution.
+
+### 7.5 Telemetry
+
+Long-running operations must emit telemetry events through `TelemetrySink`, using correlation IDs (ADR-0012). Telemetry must not contain PHI.
+
+---
+
+## 8. Release Criteria (Definition of Done)
+
+A phase is complete when:
+
+1. Code follows the accepted architecture and relevant ADRs.
+2. Unit, contract, integration and UI tests are passing as applicable.
+3. New Protocols have contract tests.
+4. CI is green.
+5. Documentation is updated.
+6. The feature is usable through its intended UI workflow.
+7. No unresolved `TODO` remains without a linked issue.
+8. No production `NoOp*` placeholder remains for a service the phase claims to deliver.
+9. Known debt affecting the phase is fixed or explicitly tracked with a linked issue.
+10. Data integrity, failure handling and recovery behavior are tested where relevant.
+11. Every user-facing string resolves through `TranslationService`.
+12. Every shared visual property resolves through `ThemeService`; no hardcoded color, size, spacing, radius, opacity or font weight in the Qt presentation layer, except for the files explicitly listed in `_KNOWN_DEBT_FILES` (widget migration sprint).
+
+### 8.1 Release 1.0 Scope
+
+Release 1.0 delivers the validated clinical core defined by the doctoral research scope.
+
+It does not include:
+
+- External Plugins.
+- Node System.
+- AI/MCP platform integration.
+- Multi-monitor support as a required feature.
+
+These capabilities belong to Releases 2.0 and 3.0.
+
+---
+
+## 9. Implementation Summary
+
+The foundation, core domain, workspace, project lifecycle, imaging pipeline, and DICOM visualization are implemented. The voxel-ordering bug that blocked Phase 4 was resolved on 2026-11-06. The appearance architecture is decided (ADR-0014, `docs/architecture/appearance/`).
+
+Sprint B (i18n) is complete: the shell — `MainWindow`, the Home Page tree, the three Top Bar segments, and the Workspace placeholder editor — resolves user-facing strings through the `TranslationService`. The architecture guard `tests/architecture/test_no_hardcoded_strings_in_shell_widgets.py` prevents regressions.
+
+Sprint E (appearance foundation) is complete: `ThemeService` and `ThemeCompiler` are implemented, the 47 canonical design tokens are defined for `DARK` and `LIGHT`, the `cranioz.infrastructure.settings` package provides typed, versioned, and atomically written user settings, and `AppPathResolver.user_settings_path()` resolves the user settings file. The Modern Dark palette is applied, the QSS covers tables, headers, scrollbars, buttons, inputs, labels, cards, `StartButton`, and `FlowRow`, and the two Home Page widgets (`StartButton`, `FlowRow`) are migrated from inline `setStyleSheet` to `setProperty` + the global QSS.
+
+Sprint F (icons) is complete: `IconState`, `IconProvider` Protocol and `UnicodeIconProvider` are implemented with the closed 60-icon catalog; the provider is injected into `MainWindow`, `Workspace`, `HomePage`, the three Top Bar segments, `Toolbar`, `StartButton`, and `FlowRow`; the hardcoded glyphs in those widgets are migrated to `provider.icon(...)`; and the `_WHITELIST` in `test_no_hardcoded_strings_in_shell_widgets.py` is empty, meaning the Sprint B debt is paid. The five contract tests (`test_icon_catalog.py`, `test_icon_fallback.py`, `test_icon_theme.py`, `test_icon_widget_contract.py`, `test_icon_accessibility.py`) pass.
+
+The test suite is at **1527 passing, 0 failed, 0 errors, 0 skipped, with 88% coverage**. `tests/architecture/test_no_hardcoded_appearance.py` guards against new hardcoded colors and freezes the remaining debt for the widget migration sprint.
+
+The immediate focus is closing Phases 1, 2, and 3 formally through Sprints C, G, H, I, J, K, L. Sprints B, E, and F are closed; Sprint C is the remaining Phase 1 blocker and is unblocked; Sprint G is the next Phase 2 deliverable.
+
+Phase 4 begins after Phases 1–3 are marked `✅ Implemented`. Its first deliverables are the Unified Import Dialog, the `RenderingAdapter`, the `ViewerLayoutManager`, the 2D/3D tools, and the clinical transfer function presets.
+
+The geometry infrastructure initial subset is validated. Full geometry infrastructure is deferred.
+
+---
+
+## 10. Known Issues and Resolutions
+
+### 10.1 ADR-0014 (Widget Toolkit Selection)

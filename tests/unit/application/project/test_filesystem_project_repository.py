@@ -27,12 +27,12 @@ from pathlib import Path
 
 import pytest
 
-from cranioz.application.project.project_errors import (
+from cranioz.application.project.errors import (
     ProjectAlreadyExists,
     ProjectCorrupted,
     ProjectNotFound,
 )
-from cranioz.application.project.project_repository import ProjectRepository
+from cranioz.application.project.repository import ProjectRepository
 from cranioz.domain.project.project import Project
 from cranioz.domain.project.project_id import ProjectId
 from cranioz.domain.project.project_metadata import ProjectMetadata

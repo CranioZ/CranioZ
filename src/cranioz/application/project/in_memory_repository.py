@@ -17,7 +17,7 @@ Protocol, including `ProjectAlreadyExists`, `ProjectNotFound`,
 
 from __future__ import annotations
 
-from cranioz.application.project.project_errors import (
+from cranioz.application.project.errors import (
     ProjectAlreadyExists,
     ProjectCorrupted,
     ProjectNotFound,

@@ -21,10 +21,10 @@ from PySide6.QtWidgets import (
 
 from cranioz.application.commands.base import CommandDispatchError
 from cranioz.application.flows.catalog import FlowCatalog
-from cranioz.application.project.project_catalog import ProjectCatalog
-from cranioz.application.project.project_context import ProjectContext
-from cranioz.application.project.project_errors import ProjectError
-from cranioz.application.project.project_manager import ProjectManager
+from cranioz.application.project.catalog import ProjectCatalog
+from cranioz.application.project.context import ProjectContext
+from cranioz.application.project.errors import ProjectError
+from cranioz.application.project.manager import ProjectManager
 from cranioz.application.scene.commands.scene_commands import (
     ImportDicomSeriesCommand,
 )

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from cranioz.application.project.project_access_policy import (
+from cranioz.application.project.access_policy import (
     AllowAllProjectAccessPolicy,
     ProjectAccessPolicy,
 )

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging  # <-- Adicionado
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import Qt
@@ -24,6 +25,8 @@ from cranioz.ui.workspace.areas.editor_stack import EditorStack
 if TYPE_CHECKING:
     from cranioz.ui.icons.provider import IconProvider
 
+_logger = logging.getLogger(__name__)  # <-- Adicionado
+
 
 class AreaLayoutRenderer:
     """Materializes the intra-Area layout (Editors only)."""
@@ -37,18 +40,18 @@ class AreaLayoutRenderer:
         content_widgets: dict[str, QWidget],
     ) -> QWidget:
         editors = area.editors()
-        print(f"[DEBUG Renderer] render({area.area_id}) - Editores: {len(editors)}")
+        _logger.debug("Renderer: render(%s) - Editores: %d", area.area_id, len(editors))
 
         if not editors:
             raise ValueError("AreaLayoutRenderer.render() requires a non-empty Area.")
 
         layout_spec: EditorLayoutSpec | None = getattr(area, "editor_layout_spec", None)
-        print(f"[DEBUG Renderer] Layout Spec: {layout_spec}")
+        _logger.debug("Renderer: Layout Spec: %s", layout_spec)
 
         if layout_spec is not None:
             return self._materialize_tree(layout_spec, editors, area, content_widgets)
 
-        print("[DEBUG Renderer] Sem layout_spec -> Fallback para flat")
+        _logger.debug("Renderer: Sem layout_spec -> Fallback para flat")
         spec = self._resolve_spec(area)
         return self._materialize_flat(spec, editors, area, content_widgets)
 
@@ -72,9 +75,9 @@ class AreaLayoutRenderer:
 
         if node.type is LayoutType.SPLIT:
             if node.stacked:
-                print(f"[DEBUG Renderer] Materializando STACK com {len(node.children)} filhos.")
+                _logger.debug("Renderer: Materializando STACK com %d filhos.", len(node.children))
                 return self._materialize_stack(node, by_id, area, content_widgets)
-            print(f"[DEBUG Renderer] Materializando SPLIT com {len(node.children)} filhos.")
+            _logger.debug("Renderer: Materializando SPLIT com %d filhos.", len(node.children))
             return self._materialize_split(node, by_id, area, content_widgets)
 
         raise ValueError(f"Unknown EditorLayoutSpec type: {node.type!r}")

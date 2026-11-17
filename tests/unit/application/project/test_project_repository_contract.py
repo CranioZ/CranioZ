@@ -21,16 +21,16 @@ from datetime import UTC, datetime
 
 import pytest
 
-from cranioz.application.project.in_memory_project_repository import (
-    InMemoryProjectRepository,
-)
-from cranioz.application.project.project_errors import (
+from cranioz.application.project.errors import (
     ProjectAlreadyExists,
     ProjectCorrupted,
     ProjectNotFound,
     ProjectRepositoryError,
 )
-from cranioz.application.project.project_repository import ProjectRepository
+from cranioz.application.project.in_memory_repository import (
+    InMemoryProjectRepository,
+)
+from cranioz.application.project.repository import ProjectRepository
 from cranioz.domain.project.project import Project
 from cranioz.domain.project.project_id import ProjectId
 from cranioz.domain.project.project_metadata import ProjectMetadata

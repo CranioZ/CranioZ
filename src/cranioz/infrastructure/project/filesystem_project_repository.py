@@ -45,7 +45,7 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from cranioz.application.project.project_errors import (
+from cranioz.application.project.errors import (
     ProjectAlreadyExists,
     ProjectCorrupted,
     ProjectNotFound,

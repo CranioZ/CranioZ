@@ -37,7 +37,7 @@ invalidated by subscribing to `ProjectCreated` / `ProjectUpdated` /
 
 from __future__ import annotations
 
-from cranioz.application.project.project_repository import ProjectRepository
+from cranioz.application.project.repository import ProjectRepository
 from cranioz.domain.project.project_id import ProjectId
 from cranioz.domain.project.project_summary import ProjectSummary
 

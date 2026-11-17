@@ -48,7 +48,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from cranioz.application.project.project_catalog import ProjectCatalog
+from cranioz.application.project.catalog import ProjectCatalog
 from cranioz.domain.project.project_id import ProjectId
 from cranioz.domain.project.project_summary import ProjectSummary
 from cranioz.infrastructure.i18n import tr

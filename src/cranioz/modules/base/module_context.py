@@ -24,7 +24,7 @@ if TYPE_CHECKING:
         EventPublisher,
         EventSubscription,
     )
-    from cranioz.application.project.project_context import ProjectContext
+    from cranioz.application.project.context import ProjectContext
     from cranioz.application.services.container import ServiceContainer
     from cranioz.application.tasks.base import TaskManager
     from cranioz.application.telemetry.base import TelemetrySink

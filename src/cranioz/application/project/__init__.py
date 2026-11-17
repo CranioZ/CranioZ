@@ -1,19 +1,16 @@
 """Project subsystem — application layer."""
 
-from cranioz.application.project.in_memory_project_repository import (
-    InMemoryProjectRepository,
-)
-from cranioz.application.project.project_access_policy import (
+from cranioz.application.project.access_policy import (
     Actor,
     AllowAllProjectAccessPolicy,
     ProjectAccessPolicy,
 )
-from cranioz.application.project.project_catalog import ProjectCatalog
-from cranioz.application.project.project_context import (
+from cranioz.application.project.catalog import ProjectCatalog
+from cranioz.application.project.context import (
     ObjectReference,
     ProjectContext,
 )
-from cranioz.application.project.project_errors import (
+from cranioz.application.project.errors import (
     ProjectAccessDenied,
     ProjectAlreadyExists,
     ProjectCorrupted,
@@ -23,7 +20,7 @@ from cranioz.application.project.project_errors import (
     ProjectRepositoryError,
     ProjectStorageError,
 )
-from cranioz.application.project.project_events import (
+from cranioz.application.project.events import (
     ProjectClosed,
     ProjectClosing,
     ProjectCreated,
@@ -31,8 +28,11 @@ from cranioz.application.project.project_events import (
     ProjectOpened,
     ProjectUpdated,
 )
-from cranioz.application.project.project_manager import ProjectManager
-from cranioz.application.project.project_repository import ProjectRepository
+from cranioz.application.project.in_memory_repository import (
+    InMemoryProjectRepository,
+)
+from cranioz.application.project.manager import ProjectManager
+from cranioz.application.project.repository import ProjectRepository
 
 __all__ = [
     "Actor",

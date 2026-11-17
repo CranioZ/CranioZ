@@ -18,16 +18,16 @@ from __future__ import annotations
 import sys
 
 from cranioz.application.event_bus import EventBus
-from cranioz.application.project.project_access_policy import (
+from cranioz.application.project.access_policy import (
     AllowAllProjectAccessPolicy,
 )
-from cranioz.application.project.project_catalog import ProjectCatalog
-from cranioz.application.project.project_events import (
+from cranioz.application.project.catalog import ProjectCatalog
+from cranioz.application.project.events import (
     ProjectClosed,
     ProjectClosing,
     ProjectOpened,
 )
-from cranioz.application.project.project_manager import ProjectManager
+from cranioz.application.project.manager import ProjectManager
 from cranioz.config.loader import ConfigurationLoader
 from cranioz.infrastructure.app.app_path_resolver import AppPathResolver
 from cranioz.infrastructure.project.filesystem_project_repository import (

@@ -54,7 +54,7 @@ from PySide6.QtWidgets import QWidget
 from pytestqt.qtbot import QtBot
 from tests.conftest import make_icon_provider, make_theme_service
 
-from cranioz.application.project.project_context import ProjectContext
+from cranioz.application.project.context import ProjectContext
 from cranioz.application.scene.scene_query import InMemorySceneQuery
 from cranioz.domain.patient.enums.patient_sex import PatientSex
 from cranioz.domain.patient.patient_summary import PatientSummary

@@ -39,7 +39,7 @@ class ProjectRepository(Protocol):
     """Persistence port for the Project subsystem.
 
     Implementations must raise the errors from
-    `cranioz.application.project.project_errors` for every documented
+    `cranioz.application.project.errors` for every documented
     failure mode. They must not raise `KeyError`, `ValueError`, or any
     `OSError` to the caller.
     """

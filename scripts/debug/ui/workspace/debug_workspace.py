@@ -51,7 +51,7 @@ QSurfaceFormat.setDefaultFormat(_fmt)
 # ---------------------------------------------------------------------
 import numpy as np
 
-from cranioz.application.project.project_context import ProjectContext
+from cranioz.application.project.context import ProjectContext
 from cranioz.application.scene.scene_query import InMemorySceneQuery
 from cranioz.domain.imaging.image_metadata import ImageMetadata
 from cranioz.domain.imaging.volume import IntensityScale, Volume

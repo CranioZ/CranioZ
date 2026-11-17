@@ -31,22 +31,19 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from cranioz.application.event_bus import EventBus
-from cranioz.application.project.in_memory_project_repository import (
-    InMemoryProjectRepository,
-)
-from cranioz.application.project.project_access_policy import (
+from cranioz.application.project.access_policy import (
     Actor,
     AllowAllProjectAccessPolicy,
     ProjectAccessPolicy,
 )
-from cranioz.application.project.project_context import ProjectContext
-from cranioz.application.project.project_errors import (
+from cranioz.application.project.context import ProjectContext
+from cranioz.application.project.errors import (
     ProjectAccessDenied,
     ProjectAlreadyExists,
     ProjectInUse,
     ProjectNotFound,
 )
-from cranioz.application.project.project_events import (
+from cranioz.application.project.events import (
     ProjectClosed,
     ProjectClosing,
     ProjectCreated,
@@ -54,7 +51,10 @@ from cranioz.application.project.project_events import (
     ProjectOpened,
     ProjectUpdated,
 )
-from cranioz.application.project.project_manager import ProjectManager
+from cranioz.application.project.in_memory_repository import (
+    InMemoryProjectRepository,
+)
+from cranioz.application.project.manager import ProjectManager
 from cranioz.domain.patient.value_objects.patient_id import PatientId
 from cranioz.domain.project.project import Project
 from cranioz.domain.project.project_id import ProjectId

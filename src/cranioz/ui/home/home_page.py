@@ -53,7 +53,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from cranioz.application.project.project_catalog import ProjectCatalog
+from cranioz.application.project.catalog import ProjectCatalog
 from cranioz.domain.project.project_id import ProjectId
 from cranioz.infrastructure.i18n.translation_service import TranslationService
 from cranioz.ui.home.widgets.community_sidebar import CommunitySidebar

@@ -6,13 +6,13 @@ import pytest
 from tests.conftest import make_icon_provider, make_theme_service
 
 from cranioz.application.event_bus import EventBus
-from cranioz.application.project.in_memory_project_repository import (
-    InMemoryProjectRepository,
-)
-from cranioz.application.project.project_access_policy import (
+from cranioz.application.project.access_policy import (
     AllowAllProjectAccessPolicy,
 )
-from cranioz.application.project.project_manager import ProjectManager
+from cranioz.application.project.in_memory_repository import (
+    InMemoryProjectRepository,
+)
+from cranioz.application.project.manager import ProjectManager
 from cranioz.domain.patient.value_objects.patient_id import PatientId
 from cranioz.domain.project.project_id import ProjectId
 from cranioz.ui.editors.editor_registry import EditorRegistry

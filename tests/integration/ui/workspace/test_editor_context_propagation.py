@@ -26,7 +26,7 @@ from cranioz.application.commands.transaction import (
     InMemoryTransactionManager,
 )
 from cranioz.application.event_bus import EventBus
-from cranioz.application.project.project_context import ProjectContext
+from cranioz.application.project.context import ProjectContext
 from cranioz.application.scene.scene_query import InMemorySceneQuery
 from cranioz.application.tasks.noop_task_manager import NoOpTaskManager
 from cranioz.application.telemetry.noop_sink import NoOpTelemetrySink

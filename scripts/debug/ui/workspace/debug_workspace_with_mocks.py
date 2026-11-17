@@ -34,7 +34,7 @@ from cranioz.domain.patient.enums.patient_sex import PatientSex
 from cranioz.domain.patient.patient_summary import PatientSummary
 from cranioz.domain.patient.value_objects.patient_id import PatientId
 
-from cranioz.application.project.project_context import ProjectContext
+from cranioz.application.project.context import ProjectContext
 from cranioz.application.scene.scene_query import InMemorySceneQuery
 from cranioz.domain.project.project_id import ProjectId
 from cranioz.domain.project.project_metadata import ProjectMetadata

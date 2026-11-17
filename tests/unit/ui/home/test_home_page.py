@@ -10,14 +10,14 @@ from cranioz.application.flows.definition import (
     FlowDefinition,
     FlowStep,
 )
-from cranioz.application.project.in_memory_project_repository import (
-    InMemoryProjectRepository,
-)
-from cranioz.application.project.project_access_policy import (
+from cranioz.application.project.access_policy import (
     AllowAllProjectAccessPolicy,
 )
-from cranioz.application.project.project_catalog import ProjectCatalog
-from cranioz.application.project.project_manager import ProjectManager
+from cranioz.application.project.catalog import ProjectCatalog
+from cranioz.application.project.in_memory_repository import (
+    InMemoryProjectRepository,
+)
+from cranioz.application.project.manager import ProjectManager
 from cranioz.domain.patient.value_objects.patient_id import PatientId
 from cranioz.domain.project.project_id import ProjectId
 from cranioz.ui.home.home_page import HomePage
