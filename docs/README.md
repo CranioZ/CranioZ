@@ -12,31 +12,51 @@ that resolved the conflict wins, and the losing document is corrected.
 
 ## 1. Structure
 
-```
-docs/
-├── README.md                  (this file)
-├── PRINCIPLES.md              Founding principles of the project
-├── GLOSSARY.md                Canonical definitions of all terms
-├── adr/                       Architecture Decision Records (ADR-0001 … ADR-0012)
-├── architecture/              Architecture contracts and specifications
-│   ├── overview.md            High-level system architecture
-│   ├── implementation.md      Phased execution plan and status
-│   ├── commands/              Command mechanism (ADR-0007)
-│   ├── scene/                 Scene and DomainObjectStore (ADR-0008)
-│   ├── modules/               Module contract and lifecycle
-│   ├── clinical_workflows/    Flows, steps_panel, orthognathic reference
-│   ├── domain/                Patient and Project domain specifications
-│   ├── objects/               Object model and Datatypes
-│   ├── ui/                    Workspace, Areas, Editors, Toolbars, Tools
-│   ├── appearance/            Themes, tokens, surfaces, overlays, widgets
-│   ├── internationalization/  i18n contract and catalog format
-│   ├── main_window/           MainWindow responsibilities
-│   ├── home_page/             HomePage responsibilities
-│   └── config/                Configuration and folder structure
-├── developer/                 Contributor-facing guides
-│   └── testing.md             Testing strategy and conventions
-└── adr/startup_project_opening_workflow.md    Boot-to-Workspace flow
-```
+    docs/
+    ├── README.md (this file)
+    ├── PRINCIPLES.md Founding principles of the project
+    ├── GLOSSARY.md Canonical definitions of all terms
+    ├── adr/ Architecture Decision Records
+    │ ├── ADR-0001_Area_and_Editor.md
+    │ ├── ADR-0002_EditorContext_and_Toolbar_Materialization.md
+    │ ├── ADR-0003_UI_Widgets_and_Editor_Overlays.md
+    │ ├── ADR-0004_Patient_Domain.md
+    │ ├── ADR-0005_TopBar_Structural_and_Floating.md
+    │ ├── ADR-0006_MainWindow_Navigation_and_Window-Lifecycl_Orchestrator.md
+    │ ├── ADR-0007_Commands_and_Transactions.md
+    │ ├── ADR-0008_Scene_and_DomainObjectStore.md
+    │ ├── ADR-0009_Project_Persistence_Format.md
+    │ ├── ADR-0010_Layout_Persistence.md
+    │ ├── ADR-0011_Threading_and_Task_Execution.md
+    │ ├── ADR-0012—Telemetry_and_Observability.md
+    │ ├── ADR-0013_Editor_Layout_Tree_View_Layout_Tree_and_Toolbar_Placement.md
+    │ ├── ADR-0014-widget-toolkit-selection.md
+    │ ├── ADR-0015_Editor_and_Module_Package_Reorganization.md
+    │ ├── startup_project_opening_workflow.md
+    │ └── startup_project_opening_workflow_pt.md
+    ├── architecture/ Architecture contracts and specifications
+    │ ├── README.md
+    │ ├── overview.md High-level system architecture
+    │ ├── implementation_plan.md Phased execution plan and status
+    │ ├── next_steps.md Immediate priorities and handoff
+    │ ├── refactoring_plan.md Structural refactoring execution plan
+    │ ├── architectural_consolidation_plan.md
+    │ ├── commands/ Command mechanism (ADR-0007)
+    │ ├── scene/ Scene and DomainObjectStore (ADR-0008)
+    │ ├── modules/ Module contract and lifecycle
+    │ ├── clinical_workflows/ Flows, steps_panel, orthognathic reference
+    │ ├── domain/ Patient and Project domain specifications
+    │ ├── objects/ Object model and Datatypes
+    │ ├── ui/ Workspace, Areas, Editors, Toolbars, Tools
+    │ ├── appearance/ Themes, tokens, surfaces, overlays, widgets
+    │ ├── internationalization/ i18n contract and catalog format
+    │ ├── main_window/ MainWindow responsibilities
+    │ ├── home_page/ HomePage responsibilities
+    │ └── config/ Configuration and folder structure
+    ├── developer/ Contributor-facing guides
+    │ └── testing.md Testing strategy and conventions
+    └── adr/startup_project_opening_workflow.md Boot-to-Workspace flow
+
 
 ## 2. Where to start
 
@@ -45,11 +65,12 @@ docs/
     Understand what a term means	                    GLOSSARY.md
     Understand the layers and boundaries	            architecture/overview.md
     Understand why a decision was made	                adr/ (start at ADR-0001)
-    Understand the current implementation status	    architecture/implementation.md
+    Understand the current implementation status	    architecture/implementation_plan.md
     Work on the Workspace or Editors	                architecture/ui/workspace/workspace.md, architecture/ui/editors/editors.md
     Work on Commands, Tasks, or Telemetry	            adr/ADR-0007, adr/ADR-0011, adr/ADR-0012
     Work on the Scene	                                adr/ADR-0008, architecture/scene/scene.md
     Work on the Patient or Project domain	            architecture/domain/patient/patient.md, architecture/domain/project/project.md
+    Work on Editor and Module package boundaries        adr/ADR-0015
     Write or review tests	                            developer/testing.md
 
 ## 3. Document types
@@ -61,7 +82,7 @@ Every document declares its type in its header. The types are:
 * **ADR** — a recorded architectural decision with context, rationale, and consequences. ADRs are immutable after acceptance; new decisions are recorded as new ADRs, not by editing old ones.
 * Architecture specification — a detailed contract for a subsystem (commands.md, scene.md, modules.md, workspace.md, editors.md, …).
 * **Domain specification** — the conceptual model of a domain entity (patient.md, project.md).
-* **Roadmap** — an execution plan and status record (implementation.md).
+* **Roadmap** — an execution plan and status record (implementation_plan.md, next_steps.md, refactoring_plan.md, architectural_consolidation_plan.md).
 * **Developer guide** — practical guidance for contributors (testing.md).
 
 ## 4. Conventions
@@ -75,7 +96,7 @@ Every document declares its type in its header. The types are:
 ## 5. Keeping documentation in sync
 Documentation is part of the code. A change that alters a contract must update
 the documents in the same commit. The Definition of Done in
-architecture/implementation.md §8 makes this explicit:
+architecture/implementation_plan.md §8 makes this explicit:
 
 Documentation is updated (including ADRs if a new decision was made).
 
@@ -95,7 +116,7 @@ A document is reviewable when:
 * It distinguishes what is a contract from what is an implementation.
 
 ## 7. Known gaps
-The following are tracked in architecture/implementation.md §10:
+The following are tracked in architecture/implementation_plan.md §10:
 
 * ADR-0003 is Proposed, not Accepted.
 * Some documents still reference EditorHost, which ADR-0001 removed.
