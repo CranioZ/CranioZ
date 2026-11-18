@@ -1,12 +1,12 @@
 # CranioZ — Architectural Consolidation Plan
 
-**Document Type:** Technical Planning Document  
-**Scope:** Architecture, infrastructure, medical imaging, visualization, user interface, and code quality  
-**Version:** 2.3  
-**Date:** November 15, 2026  
-**Status:** Proposed for Implementation  
-**Project:** CranioZ  
-**Companion documents:** `Next Steps.md` (immediate work items), `Implementation Plan.md` (11-phase roadmap), `docs/adr/` (architectural decisions)
+**Document Type:** Technical Planning Document
+**Scope:** Architecture, infrastructure, medical imaging, visualization, user interface, and code quality
+**Version:** 2.4
+**Date:** November 18, 2026
+**Status:** Proposed for Implementation
+**Project:** CranioZ
+**Companion documents:** `Next Steps.md` (immediate work items), `Implementation Plan.md` (11-phase roadmap), `docs/adr/` (architectural decisions), `refactoring_plan.md` (structural refactoring execution)
 
 ---
 
@@ -76,8 +76,8 @@ different categories with different evidence requirements.
 
 ### 3.1. MPR Spatial Geometry and Anatomical Orientation
 
-**Priority:** P0  
-**Category:** Correction  
+**Priority:** P0
+**Category:** Correction
 **Subsystem:** Infrastructure / Imaging / Visualization
 
 #### Identified Issue
@@ -151,8 +151,8 @@ axis spacing and anatomical orientation.
 
 ### 3.2. DICOM Pixel Data Decoding Validation
 
-**Priority:** P0  
-**Category:** Correction  
+**Priority:** P0
+**Category:** Correction
 **Subsystem:** Infrastructure / Imaging / DICOM
 
 #### Identified Issue
@@ -211,8 +211,8 @@ representation that can be directly interpreted by NumPy.
 
 ### 3.3. DICOM Geometry Validation
 
-**Priority:** P1  
-**Category:** Correction (for the items listed as missing)  
+**Priority:** P1
+**Category:** Correction (for the items listed as missing)
 **Subsystem:** Infrastructure / Imaging / DICOM
 
 #### Classification Note
@@ -256,8 +256,8 @@ rather than ERROR. This document classifies the remaining work as P1
 
 ### 3.4. Intensity Calibration and Interpretation
 
-**Priority:** P1  
-**Category:** Consolidation  
+**Priority:** P1
+**Category:** Consolidation
 **Subsystem:** Domain / Imaging / Infrastructure
 
 #### Identified Issue
@@ -295,8 +295,8 @@ but its consumers are not uniformly documented. Two consumers are known:
 
 ### 3.5. MPR Performance
 
-**Priority:** P2  
-**Category:** Optimization  
+**Priority:** P2
+**Category:** Optimization
 **Subsystem:** UI / Visualization
 
 #### Identified Issue
@@ -329,14 +329,37 @@ large.
 - If optimization is not implemented, the decision is documented with the
   measurement that justified it.
 
+### 3.6. Imaging Pipeline Consolidations — 2026-11-18 Reference
+
+**Priority:** N/A
+**Category:** Consolidation (closed)
+**Subsystem:** Infrastructure / Imaging
+**Status:** Resolved by the Editor Architecture Refactoring (ADR-0015).
+
+The Editor Architecture Refactoring closed several imaging-pipeline
+consolidations that were previously tracked as open items in this
+document. The following were confirmed and resolved on 2026-11-18:
+
+- **`DicomSeriesReader` remains the single canonical pixel decoder.**
+  No parallel implementation was reintroduced. `dicom_loader.py` was
+  removed on 2026-11-13 (§7.1).
+- **`SceneQueryAdapter` has a single implementation** in
+  `infrastructure/scene/`. The duplicate in
+  `application/scene/` was removed on 2026-11-13 (§7.2).
+- **No new parallel implementations were introduced** during the
+  refactoring, per the standing task in §7.3.
+
+The P0/P1 imaging items in §3.1–§3.5 remain **open** — they are
+independent of the structural refactoring.
+
 ---
 
 ## 4. Application Architecture and Composition
 
 ### 4.1. Composition Root / Bootstrap
 
-**Priority:** P3  
-**Category:** Reorganization (deferred)  
+**Priority:** P3
+**Category:** Reorganization (deferred)
 **Subsystem:** Bootstrap / Application / Infrastructure
 
 #### Identified Issue
@@ -434,8 +457,8 @@ Reopen this decision when any of the following occurs:
 
 ### 4.2. MainWindow Refactoring
 
-**Priority:** P1  
-**Category:** Correction  
+**Priority:** P1
+**Category:** Correction
 **Subsystem:** UI / Application
 
 #### Identified Issue
@@ -478,8 +501,8 @@ two controllers in the same pull request.
 
 ### 4.3. DICOM Import Layer Violation
 
-**Priority:** P1  
-**Category:** Correction  
+**Priority:** P1
+**Category:** Correction
 **Subsystem:** Application / Infrastructure
 
 #### Identified Issue
@@ -515,8 +538,8 @@ Conceptual structure:
 
 ### 4.4. Command Handler Registration
 
-**Priority:** P1  
-**Category:** Correction  
+**Priority:** P1
+**Category:** Correction
 **Subsystem:** Application / Modules / Commands
 
 #### Identified Issue
@@ -550,8 +573,8 @@ introduce a new registry.
 
 ### 4.5. ProjectManager Lifecycle
 
-**Priority:** P1  
-**Category:** Correction  
+**Priority:** P1
+**Category:** Correction
 **Subsystem:** Application / Projects
 
 #### Identified Issue
@@ -590,8 +613,8 @@ closes with projects still open, the `TaskManager` is shut down but the
 
 ### 5.1. DICOM Import Through TaskManager
 
-**Priority:** P1  
-**Category:** Correction  
+**Priority:** P1
+**Category:** Correction
 **Subsystem:** Application / Infrastructure / UI
 
 #### Identified Issue
@@ -641,8 +664,8 @@ remain on the GUI thread; the `QtTaskManager` already guarantees this via
 
 ### 6.1. WorkspaceSpec and Module System Integration
 
-**Priority:** P2  
-**Category:** Consolidation  
+**Priority:** P2
+**Category:** Consolidation
 **Subsystem:** Application / Modules / UI / Workspace
 
 #### Identified Issue
@@ -690,8 +713,8 @@ becomes a Correction only when the second workflow is added.
 
 ### 7.1. Removal of `dicom_loader.py` — Completed 2026-11-13
 
-**Priority:** P1  
-**Category:** Correction  
+**Priority:** P1
+**Category:** Correction
 **Status:** Resolved 2026-11-13
 
 `infrastructure/imaging/dicom_loader.py` maintained an implementation
@@ -704,8 +727,8 @@ path.
 
 ### 7.2. Removal of Duplicated Components — Completed 2026-11-13
 
-**Priority:** P2  
-**Category:** Consolidation  
+**Priority:** P2
+**Category:** Consolidation
 **Status:** Resolved 2026-11-13
 
 The following components were removed on 2026-11-13:
@@ -723,7 +746,7 @@ The following components were removed on 2026-11-13:
 
 ### 7.3. Standing Task: Prevent New Parallel Implementations
 
-**Priority:** P2  
+**Priority:** P2
 **Category:** Consolidation
 
 Verify, at each future phase, that no new parallel implementation has
@@ -732,9 +755,9 @@ standing task, not a one-off correction.
 
 ### 7.4. Phase 2 Toolbar/Editor Foundation (Blocks 1–6, 5.5–5.6.1, Sprint M, Sprint G, Sprint H) — Completed 2026-11-15
 
-**Priority:** P1  
-**Category:** Consolidation  
-**Status:** Resolved 2026-11-15 (Blocks 4–6, 5.5–5.6.1, Sprint M, Sprint G, Sprint H); 2026-11-13 (Blocks 1–3)  
+**Priority:** P1
+**Category:** Consolidation
+**Status:** Resolved 2026-11-15 (Blocks 4–6, 5.5–5.6.1, Sprint M, Sprint G, Sprint H); 2026-11-13 (Blocks 1–3)
 **Refs:** `Next Steps.md` §2.2, `Implementation Plan.md` §5.1
 
 Delivered:
@@ -825,3 +848,108 @@ Delivered:
   `debug_workspace.py` validated visually with a `STACK`
   `ModuleUISpec`. 6 `EditorLayoutSpec` tests, 4 `EditorStack` tests,
   1 `STACK` integration test. `test_no_hardc
+
+<!-- TRUNCATION NOTICE (2026-11-18):
+The v2.3 source you provided was truncated at this point.
+The remaining content of §7.4 and any later sections of v2.3
+(e.g., §8, §9, §10, §11, §12) that existed in the original file
+must be restored from your local copy. The sections below (§7.5,
+§7.6, §8, §13) are the new additions introduced by this update.
+-->
+
+### 7.5. Editor and Module Package Consolidations — Completed 2026-11-18
+
+**Priority:** N/A
+**Category:** Consolidation (closed)
+**Subsystem:** Editors / Modules / Workspace
+**Status:** Resolved by the Editor Architecture Refactoring (ADR-0015).
+
+The Editor Architecture Refactoring (2026-11-18) closed the following
+consolidations that were previously listed as open or anticipated in
+this document and in `refactoring_plan.md` §7:
+
+- **`_PlaceholderEditor` duplication.** The private copy in
+  `ui/workspace/workspace_spec.py` was consolidated into the canonical
+  `PlaceholderEditor` in `editors/core/editor/placeholder_editor.py`.
+- **`_null_task_manager.py` duplication.** Removed. `module_loader.py`
+  now uses `NoopTaskManager` from `cranioz.application.tasks`.
+- **`editor_manifest.py` and `editor_catalog.py`** (both empty). Removed.
+  If a contract is needed for Sprint L, it will be introduced with a
+  real implementation.
+- **`ui/editors/mock/`** (debug-only production components). Removed.
+- **`DummyEditor` / `DebugEditor`** moved from
+  `ui/editors/builtin/test_editor.py` to
+  `tests/fixtures/editors/test_editor.py`.
+- **`MeshDebugEditor`** moved to `editors/builtin/mesh_debug/editor.py`
+  and the composition-root import in `main_window.py` was updated.
+- **`_KNOWN_DEBT_FILES`** reduced from 8 to 5 files; the corresponding
+  `_DEBT_MAX_LITERALS` budget was reduced by the same count.
+
+The final validation is recorded in `refactoring_plan.md` §11:
+**1635 passing tests, 0 failed, 0 errors, 2 skipped; `ruff check`,
+`ruff format --check`, and `mypy src` clean; 85% overall coverage.**
+
+### 7.6. Deferred by the Refactoring — 2026-11-18
+
+**Priority:** Tracked separately
+**Category:** Correction / Consolidation (open)
+**Status:** Deferred to a future PR.
+
+The following items were identified during the refactoring but were
+explicitly deferred to a separate PR to keep scopes clean:
+
+- **`application/event_bus.py` → `application/events/bus.py`**
+  (Step 6.1 of `refactoring_plan.md`). The migration is mechanical and
+  independent of the Editor reorganization.
+- **`editors/view_overlays/`** (Step 4.4 of `refactoring_plan.md`).
+  Skipped because `ui/editors/overlays/gizmos/` and
+  `ui/editors/overlays/rulers/` contain only empty `__init__.py` files.
+  The package will be created when a concrete overlay implementation
+  exists.
+- **`Workspace.find_viewport_3d()` regression test.** Documented as an
+  approved exception to §4.1 rule 8 (see `refactoring_plan.md` §7,
+  decision #9). The test remains a follow-up.
+- **Implicit handler resolution** in `InMemoryModuleLoader`
+  (`command_type._handler`). Tracked in §4.4 above.
+
+These items do not block Phase 3 or Sprint L.
+
+---
+
+## 8. Document Authority and Relationships
+
+*[Restore from your local v2.3 copy. This section was not included in
+the excerpt you provided.]*
+
+---
+
+## 9. ... 
+
+*[Restore from your local v2.3 copy.]*
+
+---
+
+## 13. Post-Refactoring Cross-Reference (2026-11-18)
+
+This section links the open items in this document to the structural
+refactoring that was completed on 2026-11-18.
+
+| Item in this document | Resolution / Status | Reference |
+|---|---|---|
+| §3.6 Imaging pipeline consolidations | Closed by the refactoring | ADR-0015; `refactoring_plan.md` §11 |
+| §4.1 Composition root | Deferred (P3) — revisit criteria unchanged | §4.1 above |
+| §4.2 MainWindow refactoring | Open (P1) — unchanged scope | `next_steps.md` §5.1 |
+| §4.3 DICOM import layer violation | Open (P1) — unchanged scope | §4.3 above |
+| §4.4 Command handler registration | Open (P1) — `_handler` resolution remains | `refactoring_plan.md` §5.10 |
+| §4.5 ProjectManager lifecycle | Open (P1) — unchanged scope | §4.5 above |
+| §5.1 Async DICOM import | Open (P1) — unchanged scope | §5.1 above |
+| §6.1 WorkspaceSpec integration | Open (P2) — prerequisite for Phase 5 | §6.1 above |
+| §7.5 Editor and Module consolidations | Closed by the refactoring | ADR-0015; `refactoring_plan.md` §11 |
+| §7.6 Deferred items | Tracked separately | `refactoring_plan.md` §11; §4.4 above |
+
+The structural refactoring resolved the **Editor and Module package
+reorganization** items but did **not** absorb the imaging-pipeline
+corrections (§3.1–§3.5), the MainWindow refactoring (§4.2), the DICOM
+import layer violation (§4.3), or the async import pipeline (§5.1).
+Those items remain open and are governed by this document, not by
+`refactoring_plan.md`.

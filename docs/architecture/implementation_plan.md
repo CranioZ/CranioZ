@@ -3,7 +3,7 @@
 **Document type:** Roadmap and execution plan
 **Status:** Living document
 **Scope:** Phased implementation of the CranioZ platform, from foundation to release
-**Last updated:** 2026-11-09
+**Last updated:** 2026-11-18
 
 ---
 
@@ -60,8 +60,8 @@ The implementation is divided into 11 phases. The sequence establishes the platf
 | Phase | Name | Status | Main Pending Work |
 |---|---|---|---|
 | **Phase 0** | Foundation & Boot | ✅ Implemented | Startup performance improvements |
-| **Phase 1** | Contracts, Core Domain & i18n | 🚧 In Progress | `EditorContext` propagation (Sprint C) |
-| **Phase 2** | Workspace Engine & Icons | 🚧 In Progress | `AreaLayoutRenderer`, `EditorStack` |
+| **Phase 1** | Contracts, Core Domain & i18n | ✅ Implemented | — |
+| **Phase 2** | Workspace Engine & Icons | ✅ Implemented | — |
 | **Phase 3** | Project, Home Page & Professional Module | 🚧 In Progress | `ProjectIndex`, coordinated deletion, async loading, Professional module |
 | **Phase 4** | Scene & Visualization | ⏳ Planned | Import Dialog, RenderingAdapter, Viewer Layout Manager, 2D/3D Tools, LUTs |
 | **Phase 5** | Clinical Flows & Panel Widget Registry | ⏳ Planned | WorkflowEngine, WorkflowBreadcrumb, Panel Registry |
@@ -77,7 +77,7 @@ The implementation is divided into 11 phases. The sequence establishes the platf
 - 🚧 **In Progress:** A contract, partial implementation, or reference implementation exists, but the deliverable is incomplete or not fully integrated.
 - ⏳ **Planned:** Not implemented or not yet started.
 
-**Contracts layer:** ADR-0001, ADR-0002, ADR-0004–0014 are Accepted. **ADR-0014 (Widget Toolkit Selection)** is Accepted: Qt Widgets + QSS modular + Design Tokens in Python, not QML. The appearance architecture is specified in `docs/architecture/appearance/`.
+**Contracts layer:** ADR-0001, ADR-0002, ADR-0004–0015 are Accepted. **ADR-0014 (Widget Toolkit Selection)** is Accepted: Qt Widgets + QSS modular + Design Tokens in Python, not QML. **ADR-0015 (Editor and Module Package Reorganization)** is Accepted and records the structural refactoring that closed in Phase 3. The appearance architecture is specified in `docs/architecture/appearance/`.
 
 **Application layer:** Commands, Tasks, Telemetry, Events and Flows have contracts and reference implementations with contract tests. This does not imply that all production services, module loading, or application workflows are complete.
 
@@ -85,30 +85,33 @@ The implementation is divided into 11 phases. The sequence establishes the platf
 
 ## 5. Current Focus
 
-**Phases 1, 2, and 3** are being closed formally before deeper investment in Phase 4. This prevents silent debt from accumulating as the clinical pipeline grows.
+**Phases 1 and 2 are now closed.** The **Editor Architecture Refactoring** (see ADR-0015 and `refactoring_plan.md`) is complete, and its structural prerequisites for Sprint L (Professional module) are met.
 
-Phase 4 remains the next major implementation phase. It begins only after Phases 1–3 are marked `✅ Implemented` in this document.
+**Phase 3** remains the active phase. Its remaining functional deliverables are Sprints I, J, K, and L.
+
+Phase 4 remains the next major implementation phase. It begins only after Phase 3 is marked `✅ Implemented` in this document.
 
 ### 5.1 Immediate Priorities
 
-The sprint order below respects dependencies between Phases 1–3.
+The sprint order below respects dependencies within Phase 3.
 
 | Sprint | Phase | Deliverable | Status | Depends on |
 |---|---|---|---|---|
 | **B** | 1 | i18n contract and catalogs | ✅ Complete | — |
-| **C** | 1 | `EditorContext` propagation | 🚧 Pending | B, E (`theme_service` ✅), F (`icon_provider` ✅) |
+| **C** | 1 | `EditorContext` propagation | ✅ Complete | B, E, F |
 | **E** | 2 | `ThemeService`, `ThemeCompiler`, tokens | ✅ Complete | — |
 | **F** | 2 | `IconProvider`, `UnicodeIconProvider`, glyph migration | ✅ Complete | E |
-| **G** | 2 | `AreaLayoutRenderer` | 🚧 Pending | — |
-| **H** | 2 | `EditorStack` | 🚧 Pending | G |
+| **G** | 2 | `AreaLayoutRenderer` | ✅ Complete | — |
+| **H** | 2 | `EditorStack` | ✅ Complete | G |
+| **Editor Refactoring** | 3 | Editor/Module package reorganization (ADR-0015) | ✅ Complete | — |
 | **I** | 3 | `ProjectIndex` | 🚧 Pending | — |
 | **J** | 3 | Coordinated deletion | 🚧 Pending | I |
 | **K** | 3 | Async loading | 🚧 Pending | I, J |
-| **L** | 3 | Professional module | 🚧 Pending | C, E, F |
+| **L** | 3 | Professional module | 🚧 Pending | Editor Refactoring ✅, C ✅, E ✅, F ✅ |
 
-**Next sprint:** Sprint C — `EditorContext` propagation (unblocked by Sprint F).
+**Next sprint:** Sprint I — `ProjectIndex` (unblocked).
 
-**Note on ordering:** Sprint C depends on Sprints E and F because `EditorContext` will carry `theme_service` and `icon_provider`. Sprints E and F are now complete; Sprint C is unblocked and is the next deliverable. Alternatively, Sprint C can propagate only services that exist at that time, with a follow-up PR adding the remaining services. The first approach is cleaner and is the recommended one.
+**Note on ordering:** Sprint L is unblocked by the completed Editor Refactoring (ADR-0015) and by the completed Sprints C, E, and F. The functional dependency chain for Phase 3 is **I → J → K**, then **L** (Sprint L is now independent of Sprints I–K, as planned in `next_steps.md` §6.1).
 
 ---
 
@@ -138,7 +141,7 @@ The sprint order below respects dependencies between Phases 1–3.
 
 ### Phase 1: Contracts, Core Domain & i18n
 
-**Goal:** Close Phase 1 formally. Blocker: `EditorContext` propagation (Sprint C).
+**Goal:** Formally closed on 2026-11-18.
 
 **Deliverables:**
 
@@ -147,7 +150,7 @@ The sprint order below respects dependencies between Phases 1–3.
 - ✅ UI contracts: `Area`, `Editor`, `EditorRegistry`, `ToolbarSpec`, `ToolSpec`, `LayoutBuilder`, `LayoutRenderer`.
 - ✅ `ProjectRepository` and reference implementations.
 - ✅ `ProjectContext`, `ProjectAccessPolicy`, `ProjectCatalog`.
-- ✅ ADRs 0001, 0002, 0004–0014.
+- ✅ ADRs 0001, 0002, 0004–0015.
 - ✅ **Sprint B (i18n):**
   - `Locale` value object (`pt_BR`, `en_US`).
   - `TranslationService` Protocol (`tr`, `locale`, `set_locale`).
@@ -158,9 +161,8 @@ The sprint order below respects dependencies between Phases 1–3.
   - Removal of `MainWindow._humanize_translation_key`.
   - Contract test: every `name_key` in every `flow.json` resolves in `en_US`.
   - `tests/architecture/test_no_hardcoded_strings_in_shell_widgets.py`: shell widgets must route user-facing strings through `tr(...)`.
-- 🚧 **Sprint C (`EditorContext` propagation):**
-  - Depends on Sprints E (`theme_service`, complete) and F (`icon_provider`, complete).
-  - Propagate `task_manager`, `telemetry`, `correlation_id`, `command_dispatcher`, `scene_query`, `event_subscription`, `translation_service`, `theme_service`, `icon_provider`.
+- ✅ **Sprint C (`EditorContext` propagation):**
+  - `task_manager`, `telemetry`, `correlation_id`, `command_dispatcher`, `scene_query`, `event_subscription`, `translation_service`, `theme_service`, `icon_provider` propagated to every Editor.
   - `Workspace._create_editor` and `MainWindow._create_workspace` pass the complete set.
   - `TomographyEditor.initialize` and `MeshDebugEditor.initialize` accept the complete set.
   - Contract test: every Editor registered in `EditorRegistry` receives all required fields.
@@ -173,15 +175,15 @@ The sprint order below respects dependencies between Phases 1–3.
 - Domain invariant and error-case tests.
 - ✅ i18n contract tests.
 - ✅ `test_no_hardcoded_strings_in_shell_widgets.py`.
-- 🚧 `EditorContext` propagation tests (pending Sprint C).
+- ✅ `EditorContext` propagation tests.
 
-**Status:** 🚧 In Progress. Blocker: Sprint C.
+**Status:** ✅ Implemented.
 
 ---
 
 ### Phase 2: Workspace Engine & Icons
 
-**Goal:** Close Phase 2 formally. Blockers: `AreaLayoutRenderer`, `EditorStack`.
+**Goal:** Formally closed on 2026-11-18.
 
 **Deliverables:**
 
@@ -190,38 +192,10 @@ The sprint order below respects dependencies between Phases 1–3.
 - ✅ Three-segment Top Bar.
 - ✅ Area toggles (Left, Right, Bottom).
 - ✅ Atomic `Workspace.load_spec()`.
-- ✅ **Sprint E (`ThemeService` + `ThemeCompiler` + tokens):**
-  - `ThemeMode` (`DARK`, `LIGHT`, `SYSTEM`) and `ThemeName` (`DARK`, `LIGHT`) as `StrEnum`.
-  - `ThemeTokens` + 7 dataclasses (Colors, Typography, Spacing, Dimensions, Borders, Effects, Surfaces).
-  - 47 tokens as specified in `docs/architecture/appearance/themes/themes_and_design_tokens.md`.
-  - `ThemeService`: `mode()`, `set_mode()`, `theme()`, `tokens()`, `color()`, `dimension()`, `surface_color()`, `icon_name()`, `theme_changed` signal, `SYSTEM` resolution via `QStyleHints.colorScheme()`.
-  - `ThemeCompiler`: `compile()`, `apply()`, surface composition (toolbar, popover, modal_backdrop), QSS emission. `modal_backdrop` uses a fixed `#000000` base per spec §6.2.
-  - Modern Dark palette applied to `DARK_TOKENS` (neutral greys + iOS system colors). `feedback_information` kept at `#4A90D9` (spec value) to pass WCAG AA against `background_panel`.
-  - `cranioz.infrastructure.settings` package: `SettingsService` protocol, `InMemorySettingsService`, `FilesystemSettingsService`, `SettingsStore`, `SettingsMigrator`, `KNOWN_KEYS`, `SettingsError`, `SettingsMigrationError`.
-  - `AppPathResolver.user_settings_path()` and `PathsConfig.settings_root` (default `~/.cranioz/Settings/settings.json`).
-  - Boot integration: read `appearance.theme_mode` from `SettingsService` before `MainWindow`; invalid → `DARK` + `WARNING`; apply theme before the first window.
-  - Expanded `_build_qss`: tables + headers + scrollbars, `QLineEdit` placeholder and focus, `QComboBox` dropdown, `QLabel` roles (`title`/`subtitle`/`caption`/`arrow`), `QFrame` cards, `QMenu`, `QToolTip`, `StartButton` states, and `FlowRow` checked/step/separator/arrow.
-  - `StartButton` and `FlowRow` migrated from inline `setStyleSheet` to `setProperty` + the global QSS.
-  - Contract tests: `test_no_hardcoded_appearance.py`, `test_tokens_used.py`, `test_tokens_present.py`, `test_theme_completeness.py`, `test_theme_values.py`, `test_contrast.py`.
-  - Unit tests: `test_service.py`, `test_tokens.py`, `test_compiler.py`, `test_settings_service.py`.
-- ✅ **Sprint F (`IconProvider` + `UnicodeIconProvider`):**
-  - `IconState` enum (`DEFAULT`, `HOVER`, `PRESSED`, `SELECTED`, `DISABLED`).
-  - `IconProvider` Protocol (`icon(name, size, state) -> QIcon`, `text_glyph(name) -> str`, `invalidate_cache() -> None`).
-  - `UnicodeIconProvider` with the closed 60-icon catalog from `docs/architecture/appearance/icons/icons_and_icon_manager.md` §6.
-  - Injection into `MainWindow`, `Workspace`, `HomePage`, `TopBar` segments, `Toolbar`, `StartButton`, `FlowRow`.
-  - Migration of hardcoded glyphs in `TopBar`, `HomeSegment`, `ModulesSegment`, `ExtrasSegment`, `HomePage`, `Toolbar`, `StartButton`, `FlowRow`.
-  - `_WHITELIST` in `test_no_hardcoded_strings_in_shell_widgets.py` emptied (Sprint B debt paid).
-  - Contract tests: `test_icon_catalog.py`, `test_icon_fallback.py`, `test_icon_theme.py`, `test_icon_widget_contract.py`, `test_icon_accessibility.py`.
-- 🚧 **Sprint G (`AreaLayoutRenderer`):**
-  - Separates inter-Area from intra-Area layout.
-  - `AreaWidget` delegates to `AreaLayoutRenderer`.
-  - No visible behavior change for the single-Editor case.
-  - Regression tests.
-- 🚧 **Sprint H (`EditorStack`):**
-  - `EditorLayoutSpec.stack([...])`.
-  - `EditorStack` widget (tabs per Leaf).
-  - Single-Editor case remains unchanged.
-  - Tests for tab switching, editor lifecycle, dispose.
+- ✅ **Sprint E (`ThemeService` + `ThemeCompiler` + tokens):** 47 canonical tokens; `ThemeService`; `ThemeCompiler`; `cranioz.infrastructure.settings` package; boot integration; expanded `_build_qss`; `StartButton` and `FlowRow` migrated to `setProperty` + global QSS; contract and unit tests.
+- ✅ **Sprint F (`IconProvider` + `UnicodeIconProvider`):** 60-icon catalog; injected into `MainWindow`, `Workspace`, `HomePage`, `TopBar` segments, `Toolbar`, `StartButton`, `FlowRow`; hardcoded glyphs migrated; `_WHITELIST` emptied; 5 contract tests.
+- ✅ **Sprint G (`AreaLayoutRenderer`):** separates inter-Area from intra-Area layout; `AreaWidget` delegates; no visible behavior change; regression tests.
+- ✅ **Sprint H (`EditorStack`):** `EditorLayoutSpec.stack([...])`; `EditorStack` widget; single-Editor case unchanged; tests for tab switching, editor lifecycle, dispose.
 
 **Tests:**
 
@@ -236,7 +210,7 @@ The sprint order below respects dependencies between Phases 1–3.
 - ✅ Settings persistence round-trip and fallback tests (Sprint E).
 - ✅ Icon catalog, fallback, theme integration, widget contract, and accessibility tests (Sprint F).
 
-**Status:** 🚧 In Progress. Blockers: Sprints G, H.
+**Status:** ✅ Implemented.
 
 ---
 
@@ -249,6 +223,7 @@ The sprint order below respects dependencies between Phases 1–3.
 - ✅ `ProjectManager`, `ProjectCatalog`, `HomePage`, `MainWindow`.
 - ✅ Project selection lifecycle.
 - ✅ `FlowCatalog` and Flow repositories.
+- ✅ **Editor Architecture Refactoring:** see ADR-0015 and `refactoring_plan.md` §11. Completed on 2026-11-18.
 - 🚧 **Sprint I (`ProjectIndex`):**
   - `ProjectIndex` interface (`add`, `remove`, `lookup`, `list`).
   - `InMemoryProjectIndex`.
@@ -271,6 +246,7 @@ The sprint order below respects dependencies between Phases 1–3.
   - `ModuleUISpec` for the Professional module.
   - Settings integration (`professional.*` keys).
   - Tests.
+  - **Sprint L is now unblocked** by the completed Editor Architecture Refactoring, Sprint C, Sprint E, and Sprint F.
 
 **Deferred to Phase 8:**
 
@@ -293,7 +269,7 @@ The sprint order below respects dependencies between Phases 1–3.
 
 ### Phase 4: Scene & Visualization
 
-**Status:** ⏳ Planned. Begins after Phases 1–3 are marked `✅ Implemented`.
+**Status:** ⏳ Planned. Begins after Phase 3 is marked `✅ Implemented`.
 
 **Goal:** Complete the integration between the Application layer, Scene, imaging infrastructure, rendering adapters, and Editors.
 
@@ -666,17 +642,21 @@ These capabilities belong to Releases 2.0 and 3.0.
 
 The foundation, core domain, workspace, project lifecycle, imaging pipeline, and DICOM visualization are implemented. The voxel-ordering bug that blocked Phase 4 was resolved on 2026-11-06. The appearance architecture is decided (ADR-0014, `docs/architecture/appearance/`).
 
+**The Editor Architecture Refactoring closed on 2026-11-18.** It moved Editor implementations out of `ui/` into a top-level `cranioz/editors/` package, separated Editor contracts from concrete implementations, separated reusable Views from concrete Editors, and enforced the dependency boundaries through AST-based architecture tests. See ADR-0015 (`docs/adr/ADR-0015_Editor_and_Module_Package_Reorganization.md`) and `refactoring_plan.md` §11. Final validation: **1635 passing tests, 0 failed, 0 errors, 2 skipped, ruff check clean, ruff format --check clean, mypy src clean (281 files), 85% overall coverage.**
+
 Sprint B (i18n) is complete: the shell — `MainWindow`, the Home Page tree, the three Top Bar segments, and the Workspace placeholder editor — resolves user-facing strings through the `TranslationService`. The architecture guard `tests/architecture/test_no_hardcoded_strings_in_shell_widgets.py` prevents regressions.
 
 Sprint E (appearance foundation) is complete: `ThemeService` and `ThemeCompiler` are implemented, the 47 canonical design tokens are defined for `DARK` and `LIGHT`, the `cranioz.infrastructure.settings` package provides typed, versioned, and atomically written user settings, and `AppPathResolver.user_settings_path()` resolves the user settings file. The Modern Dark palette is applied, the QSS covers tables, headers, scrollbars, buttons, inputs, labels, cards, `StartButton`, and `FlowRow`, and the two Home Page widgets (`StartButton`, `FlowRow`) are migrated from inline `setStyleSheet` to `setProperty` + the global QSS.
 
 Sprint F (icons) is complete: `IconState`, `IconProvider` Protocol and `UnicodeIconProvider` are implemented with the closed 60-icon catalog; the provider is injected into `MainWindow`, `Workspace`, `HomePage`, the three Top Bar segments, `Toolbar`, `StartButton`, and `FlowRow`; the hardcoded glyphs in those widgets are migrated to `provider.icon(...)`; and the `_WHITELIST` in `test_no_hardcoded_strings_in_shell_widgets.py` is empty, meaning the Sprint B debt is paid. The five contract tests (`test_icon_catalog.py`, `test_icon_fallback.py`, `test_icon_theme.py`, `test_icon_widget_contract.py`, `test_icon_accessibility.py`) pass.
 
-The test suite is at **1527 passing, 0 failed, 0 errors, 0 skipped, with 88% coverage**. `tests/architecture/test_no_hardcoded_appearance.py` guards against new hardcoded colors and freezes the remaining debt for the widget migration sprint.
+Sprint G (`AreaLayoutRenderer`) and Sprint H (`EditorStack`) are complete. Phase 2 is closed.
 
-The immediate focus is closing Phases 1, 2, and 3 formally through Sprints C, G, H, I, J, K, L. Sprints B, E, and F are closed; Sprint C is the remaining Phase 1 blocker and is unblocked; Sprint G is the next Phase 2 deliverable.
+Sprint C (`EditorContext` propagation) is complete. Phase 1 is closed.
 
-Phase 4 begins after Phases 1–3 are marked `✅ Implemented`. Its first deliverables are the Unified Import Dialog, the `RenderingAdapter`, the `ViewerLayoutManager`, the 2D/3D tools, and the clinical transfer function presets.
+The immediate focus is **Phase 3**, whose remaining functional deliverables are **Sprint I (`ProjectIndex`)**, **Sprint J (coordinated deletion)**, **Sprint K (async loading)**, and **Sprint L (Professional module)**. Sprint I is the next priority. Sprints I, J, and K form a functional chain; Sprint L is now unblocked by the completed Editor Architecture Refactoring.
+
+Phase 4 begins after Phase 3 is marked `✅ Implemented`. Its first deliverables are the Unified Import Dialog, the `RenderingAdapter`, the `ViewerLayoutManager`, the 2D/3D tools, and the clinical transfer function presets.
 
 The geometry infrastructure initial subset is validated. Full geometry infrastructure is deferred.
 
@@ -685,3 +665,23 @@ The geometry infrastructure initial subset is validated. Full geometry infrastru
 ## 10. Known Issues and Resolutions
 
 ### 10.1 ADR-0014 (Widget Toolkit Selection)
+
+...
+
+### 10.2 Editor and Module Package Reorganization (ADR-0015)
+
+Completed 2026-11-18. Resolved items:
+
+- The duplicated `_PlaceholderEditor` was consolidated into the canonical `PlaceholderEditor`.
+- The duplicate `_null_task_manager.py` was removed; `module_loader.py` uses `NoopTaskManager` from `cranioz.application.tasks`.
+- `ui/editors/mock/` was removed.
+- `DummyEditor` and `DebugEditor` moved to `tests/fixtures/editors/test_editor.py`.
+- `editor_manifest.py` and `editor_catalog.py` were removed (deferred to Sprint L if a contract is needed).
+- `MeshDebugEditor` moved to `editors/builtin/mesh_debug/editor.py`.
+- `_KNOWN_DEBT_FILES` reduced from 8 to 5 files.
+- `Workspace.find_viewport_3d()` is documented as an approved exception to §4.1 rule 8. A regression test is tracked as follow-up.
+
+### 10.3 Deferred to a Future PR
+
+- `application/event_bus.py` → `application/events/bus.py` (Step 6.1 of `refactoring_plan.md`). Deferred per `refactoring_plan.md` §5.10.
+- `editors/view_overlays/` (Step 4.4 of `refactoring_plan.md`). Skipped because the current `ui/editors/overlays/gizmos/` and `ui/editors/overlays/rulers/` directories contain only empty `__init__.py` files.

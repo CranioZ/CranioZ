@@ -1,13 +1,14 @@
 # CranioZ Refactoring Plan
 
 **Document type:** Technical refactoring and execution plan
-**Status:** Planned
+**Status:** Completed (2026-11-18)
 **Parent plan:** implementation_plan.md
 **Related handoff:** next_steps.md
 **Related architectural review:** architectural_consolidation_plan.md
 **Scope:** Structural reorganization of the Module and Editor packages, with associated dependency-boundary corrections
-**Baseline:** 1633 passing tests, 0 failed, 0 errors, 2 skipped; ruff check, ruff format --check, and mypy src clean
-**Last updated:** 2026-11-16
+**Baseline (pre-refactoring):** 1633 passing tests, 0 failed, 0 errors, 2 skipped; ruff check, ruff format --check, and mypy src clean
+**Baseline (post-refactoring):** 1635 passing tests, 0 failed, 0 errors, 2 skipped; ruff check, ruff format --check, and mypy src clean; 85% overall test coverage
+**Last updated:** 2026-11-18
 
 ---
 
@@ -977,29 +978,29 @@ No decision should be made solely to match the proposed directory tree.
 
 The refactoring is complete when:
 
-- [ ] Debug print statements removed from LayoutBuilder and AreaLayoutRenderer (Step 0).
-- [ ] modules/core/ and modules/builtin/ are correctly separated.
-- [ ] cranioz/editors/ exists as the canonical Editor package.
-- [ ] Editor contracts and View contracts have distinct responsibilities.
-- [ ] Reusable Views are separated from concrete Editors.
-- [ ] View overlays are separated from concrete Editors.
-- [ ] Concrete Editors are organized by functional responsibility.
-- [ ] Editor identity is independent of Workspace position.
-- [ ] Area, AreaLayoutRenderer, EditorLayoutSpec, EditorStack, EditorStackOrientation, and EditorStackSwitcher remain in ui/workspace/areas/.
-- [ ] Modules remain declarative and independent of concrete Editors.
-- [ ] Workspace resolves functional Editor IDs through approved contracts.
-- [ ] cranioz.__main__ and ui.main_window are documented as the composition root exception.
-- [ ] Test-only Modules and debug-only production components are handled correctly.
-- [ ] DummyEditor and DebugEditor moved to tests/fixtures/editors/.
-- [ ] PlaceholderEditor duplicate consolidated (or divergence documented).
-- [ ] Obsolete and duplicated components are removed after verification.
-- [ ] _KNOWN_DEBT_FILES and _DEBT_MAX_LITERALS reflect the post-migration file set.
-- [ ] Relevant application naming cleanup is complete or explicitly deferred.
-- [ ] Architecture tests enforce the intended dependency boundaries.
-- [ ] ADR and package documentation reflect the final architecture.
-- [ ] Existing functional behavior and lifecycle contracts are preserved.
-- [ ] pytest, ruff check, ruff format --check, and mypy src pass.
-- [ ] All changes are committed independently and the final state is validated.
+- [x] Debug print statements removed from LayoutBuilder and AreaLayoutRenderer (Step 0).
+- [x] modules/core/ and modules/builtin/ are correctly separated.
+- [x] cranioz/editors/ exists as the canonical Editor package.
+- [x] Editor contracts and View contracts have distinct responsibilities.
+- [x] Reusable Views are separated from concrete Editors.
+- [x] View overlays are separated from concrete Editors.
+- [x] Concrete Editors are organized by functional responsibility.
+- [x] Editor identity is independent of Workspace position.
+- [x] Area, AreaLayoutRenderer, EditorLayoutSpec, EditorStack, EditorStackOrientation, and EditorStackSwitcher remain in ui/workspace/areas/.
+- [x] Modules remain declarative and independent of concrete Editors.
+- [x] Workspace resolves functional Editor IDs through approved contracts.
+- [x] cranioz.__main__ and ui.main_window are documented as the composition root exception.
+- [x] Test-only Modules and debug-only production components are handled correctly.
+- [x] DummyEditor and DebugEditor moved to tests/fixtures/editors/.
+- [x] PlaceholderEditor duplicate consolidated (or divergence documented).
+- [x] Obsolete and duplicated components are removed after verification.
+- [x] _KNOWN_DEBT_FILES and _DEBT_MAX_LITERALS reflect the post-migration file set.
+- [x] Relevant application naming cleanup is complete or explicitly deferred.
+- [x] Architecture tests enforce the intended dependency boundaries.
+- [x] ADR and package documentation reflect the final architecture.
+- [x] Existing functional behavior and lifecycle contracts are preserved.
+- [x] pytest, ruff check, ruff format --check, and mypy src pass.
+- [x] All changes are committed independently and the final state is validated.
 
 ---
 
@@ -1043,3 +1044,37 @@ When a conflict exists:
 4. refactoring_plan.md governs the technical execution of the structural refactoring within its approved scope.
 
 The four documents must remain consistent, but each must preserve its own purpose.
+
+---
+
+## 11. Post-Refactoring Notes
+
+The refactoring was completed on 2026-11-18.
+
+**Deviations from the original plan:**
+
+- **Step 6.1** (`application/event_bus.py` → `application/events/bus.py`) was explicitly deferred to a separate PR, per the recommendation in §5.10. It is independent of the structural refactoring.
+- **Step 4.4** (`editors/view_overlays/`) was skipped because `ui/editors/overlays/gizmos/` and `ui/editors/overlays/rulers/` contained only empty `__init__.py` files. No content was migrated; the package will be created when a concrete overlay implementation exists.
+
+**Resolved open decisions (§7):**
+
+- **#1 / #2:** `editor_manifest.py` and `editor_catalog.py` were removed. If a contract is needed for Sprint L, it will be introduced with a real implementation.
+- **#9:** `Workspace.find_viewport_3d()` was kept as a documented exception to §4.1 rule 8. A regression test is tracked as follow-up.
+- **#15:** `MeshDebugEditor` was kept and migrated to `editors/builtin/mesh_debug/editor.py`.
+- **#19:** The `_PlaceholderEditor` duplicate was consolidated into the canonical `PlaceholderEditor`. `_KNOWN_DEBT_FILES` was reduced from 8 to 5 files.
+
+**Final validation:**
+
+- `pytest`: 1635 passed, 0 failed, 0 errors, 2 skipped.
+- `ruff check`: clean.
+- `ruff format --check`: clean.
+- `mypy src`: clean (281 files).
+- `coverage report`: 85% overall.
+
+**Architectural outcome:**
+
+See ADR-0015 (`docs/adr/ADR-0015_Editor_and_Module_Package_Reorganization.md`) for the recorded architecture.
+
+**Next work item:**
+
+Sprint I (ProjectIndex), per `next_steps.md` §5.1.
