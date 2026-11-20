@@ -2,7 +2,7 @@
 
 **Document Type:** Technical Planning Document
 **Scope:** Architecture, infrastructure, medical imaging, visualization, user interface, and code quality
-**Version:** 2.4
+**Version:** 2.5
 **Date:** November 18, 2026
 **Status:** Proposed for Implementation
 **Project:** CranioZ
@@ -69,6 +69,37 @@ This distinction is not pedantic. A reorganization that presents itself
 as a correction consumes development effort that would otherwise address
 data integrity, geometry, or stability. This document treats the two as
 different categories with different evidence requirements.
+
+#### 2.1.1 Satisfied Evidence — Sprint I (Project Catalog Synchronization)
+
+Sprint I (ProjectIndex, specified by ADR-0016) is classified as an
+**Optimization** under this section. The required evidence for an
+Optimization is "a benchmark showing that the current behavior is below
+the documented target".
+
+The structural cost of the pre-Sprint-I behavior is documented in
+ADR-0016 §1: `FilesystemProjectRepository.list_metadata()` performs N
+filesystem reads and N JSON decodes per invocation, and `ProjectCatalog`
+invokes it multiple times per logical operation, with the Home Page's
+search field triggering one invocation per keystroke. The structural
+inefficiency is O(N·K) per search query on a network path.
+
+ADR-0016 §7 and §8 define the benchmark that satisfies this requirement:
+
+- 100 / 300 / 1000 projects in `tmp_path`;
+- `search_projects()` latency and `repository.list_metadata` call count
+  compared between baseline (direct repository) and new (indexed);
+- recorded in the ADR's implementation notes as a Sprint I acceptance
+  criterion.
+
+The benchmark is **not a CI gate**, because it is time-based and depends
+on the reference machine. The deterministic structural proof — "no
+`repository.list_metadata` call during catalog queries" — is a CI gate
+(`test_project_catalog_uses_index.py`), and is the primary evidence.
+
+This entry documents that the ADR-0016 decision satisfies §2.1's
+requirement for Optimization evidence; the benchmark itself is tracked
+in ADR-0016 and is not duplicated here.
 
 ---
 
@@ -443,6 +474,13 @@ Cost: about 2 hours. Does not move the wiring; does not introduce builders.
 It solves the 15-argument signature and makes the dependency set explicit
 and type-checkable.
 
+**Note (ADR-0016):** If Sprint I is implemented as specified, the
+`ProjectCatalog` will be constructed with a `SynchronizedProjectIndex`
+rather than the `ProjectRepository` directly. The `ProjectIndexSynchronizer`
+is a composition-root concern and does not change the `ApplicationContainer`
+field set (it still exposes `catalog: ProjectCatalog`); only its construction
+in `__main__.py` changes.
+
 #### Revisit Criteria
 
 Reopen this decision when any of the following occurs:
@@ -606,6 +644,53 @@ closes with projects still open, the `TaskManager` is shut down but the
 - Associated resources are released.
 - Closing failures are logged and the shutdown continues.
 - The concurrency policy is documented in the `ProjectManager` docstring.
+
+### 4.6. Project Catalog Synchronization — Specified by ADR-0016
+
+**Priority:** P2
+**Category:** Optimization
+**Subsystem:** Application / Projects / Catalog
+**Status:** Specified by ADR-0016 (Accepted 2026-11-18); implemented by Sprint I.
+
+#### Context
+
+ADR-0016 fixes the synchronization mechanism between the Project
+subsystem and the `ProjectCatalog`: an in-memory `ProjectIndex`
+populated by a `ProjectIndexSynchronizer` and invalidated by the
+`ProjectCreated`, `ProjectUpdated`, and `ProjectDeleted` events. The
+`ProjectRepository` remains the authoritative source. TTL and polling
+are prohibited. SQLite and background reconciliation remain deferred to
+Phase 8.
+
+This section records the classification of Sprint I under §2.1 and
+points to the ADR as the authoritative specification. It does not
+restate ADR-0016.
+
+#### Evidence for Optimization (§2.1)
+
+The evidence required by §2.1 for an Optimization is defined by ADR-0016
+§7 and §8: a benchmark of `search_projects()` latency and
+`repository.list_metadata` call count on 100 / 300 / 1000 projects, plus
+the deterministic CI-gated test
+(`test_project_catalog_uses_index.py`) that asserts no
+`repository.list_metadata` call during catalog queries.
+
+The benchmark is recorded in ADR-0016 implementation notes and is not
+duplicated here. The deterministic test is a CI gate.
+
+#### Relationship to Other Items
+
+- §4.1 (Composition Root): the `SynchronizedProjectIndex` and
+  `ProjectIndexSynchronizer` are constructed at the composition root;
+  the `ApplicationContainer` field set is unchanged.
+- §4.5 (ProjectManager lifecycle): the `ProjectIndexSynchronizer`
+  subscribes to `ProjectCreated` / `ProjectUpdated` / `ProjectDeleted`
+  and is not affected by project opening/closing. `close_all()` does not
+  interact with the index.
+- §5.1 (Async DICOM import): unrelated.
+- §6.1 (WorkspaceSpec): unrelated.
+
+The full specification is ADR-0016.
 
 ---
 

@@ -41,8 +41,13 @@ from cranioz.application.project.access_policy import (
     AllowAllProjectAccessPolicy,
 )
 from cranioz.application.project.catalog import ProjectCatalog
+from cranioz.application.project.in_memory_index import InMemoryProjectIndex
 from cranioz.application.project.in_memory_repository import (
     InMemoryProjectRepository,
+)
+from cranioz.application.project.index_synchronizer import (
+    ProjectIndexSynchronizer,
+    SynchronizedProjectIndex,
 )
 from cranioz.application.project.manager import ProjectManager
 from cranioz.application.scene.commands.scene_commands import (
@@ -133,10 +138,24 @@ def window(qtbot) -> MainWindow:
     is registered by ``MainWindow._on_project_open_requested``, after
     the Workspace is created. This mirrors the production boot path:
     the handler must not be loaded during the boot critical path.
+
+    The catalog is built through the composition-root wiring
+    (ADR-0016): repository → ProjectIndexSynchronizer →
+    InMemoryProjectIndex → SynchronizedProjectIndex → ProjectCatalog.
+    ``ProjectCatalog(repository=...)`` is the pre-ADR-0016 API and is
+    no longer valid. The order is deliberate: ``synchronizer.start()``
+    must run before ``manager.create_project(...)`` so the
+    ``ProjectCreated`` event reaches the synchronizer and the index is
+    populated before the catalog is first read.
     """
     repository = InMemoryProjectRepository()
     event_bus = EventBus()
-    catalog = ProjectCatalog(repository=repository)
+
+    raw_index = InMemoryProjectIndex()
+    synchronizer = ProjectIndexSynchronizer(raw_index, repository, event_bus)
+    synchronizer.start()
+    catalog = ProjectCatalog(SynchronizedProjectIndex(raw_index, synchronizer))
+
     manager = ProjectManager(
         repository=repository,
         event_bus=event_bus,

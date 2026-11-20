@@ -10,8 +10,13 @@ from cranioz.application.project.access_policy import (
     AllowAllProjectAccessPolicy,
 )
 from cranioz.application.project.catalog import ProjectCatalog
+from cranioz.application.project.in_memory_index import InMemoryProjectIndex
 from cranioz.application.project.in_memory_repository import (
     InMemoryProjectRepository,
+)
+from cranioz.application.project.index_synchronizer import (
+    ProjectIndexSynchronizer,
+    SynchronizedProjectIndex,
 )
 from cranioz.application.project.manager import ProjectManager
 from cranioz.domain.patient.value_objects.patient_id import PatientId
@@ -39,12 +44,18 @@ def window_with_debug_mesh(qtbot, monkeypatch) -> MainWindow:
 
     repository = InMemoryProjectRepository()
     event_bus = EventBus()
-    catalog = ProjectCatalog(repository=repository)
+
+    index = InMemoryProjectIndex()
+    synchronizer = ProjectIndexSynchronizer(index, repository, event_bus)
+    synchronizer.start()
+    catalog = ProjectCatalog(SynchronizedProjectIndex(index, synchronizer))
+
     manager = ProjectManager(
         repository=repository,
         event_bus=event_bus,
         access_policy=AllowAllProjectAccessPolicy(),
     )
+
     project_id = ProjectId("p-001")
     manager.create_project(
         "test-actor",
@@ -57,6 +68,7 @@ def window_with_debug_mesh(qtbot, monkeypatch) -> MainWindow:
 
     editor_registry = EditorRegistry()
     editor_registry.register(PLACEHOLDER_EDITOR_ID, PLACEHOLDER_EDITOR_CLASS)
+    editor_registry.register(MESH_DEBUG_EDITOR_ID, MeshDebugEditor)
 
     theme_service = make_theme_service(ThemeMode.DARK)
     icon_provider = make_icon_provider(theme_service)
@@ -133,10 +145,16 @@ def test_workspace_default_spec_is_used_without_env_var(qtbot, monkeypatch) -> N
     monkeypatch.delenv("CRANIOZ_DEBUG_MESH", raising=False)
 
     repository = InMemoryProjectRepository()
-    catalog = ProjectCatalog(repository=repository)
+    event_bus = EventBus()
+
+    index = InMemoryProjectIndex()
+    synchronizer = ProjectIndexSynchronizer(index, repository, event_bus)
+    synchronizer.start()
+    catalog = ProjectCatalog(SynchronizedProjectIndex(index, synchronizer))
+
     manager = ProjectManager(
         repository=repository,
-        event_bus=EventBus(),
+        event_bus=event_bus,
         access_policy=AllowAllProjectAccessPolicy(),
     )
     project_id = ProjectId("p-001")

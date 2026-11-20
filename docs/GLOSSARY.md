@@ -303,32 +303,32 @@ The persistent clinical container associated with a patient and one or more clin
 
 **Distinguish from:** *Patient* (the person referenced by the Project), *ProjectContext* (the runtime representation of an opened Project).
 
-**See:** `docs/architecture/domain/project/project.md`
+**See:** `architecture/project`
 
 ### Project Catalog
 A read-only discovery projection of available projects. It allows the Home Page to efficiently display and search existing projects without loading complete clinical data.
 
-**See:** `docs/architecture/domain/project/project.md` §5`
+**See:** `architecture/project` §5`
 
 ### Project Manager
 The single application-level authority for the lifecycle of a project: creation, opening, updating, closing, deletion, archival, restoration, validation, access checks, persistence coordination, and lifecycle events.
 
-**See:** `docs/architecture/domain/project/project.md` §4`
+**See:** `architecture/project` §4`
 
 ### Project Repository
 The persistence abstraction through which the Project Manager loads and stores project state. It does not decide whether a project should be created, updated, opened, or deleted.
 
-**See:** `docs/architecture/domain/project/project.md` §12`
+**See:** `architecture/project` §12`
 
 ### Project Storage
 The infrastructure responsible for the physical representation of a project (filesystem, database, institutional storage, remote storage, etc.).
 
-**See:** `docs/architecture/domain/project/project.md` §11`
+**See:** `architecture/project` §11`
 
 ### ProjectContext
 A runtime initialization snapshot created when a project is opened. It is immutable for the Workspace, contains no physical paths, and does not own the project lifecycle.
 
-**See:** `docs/architecture/domain/project/project.md` §17`
+**See:** `architecture/project` §17`
 
 ### Scene (Domain)
 See *Scene* in §3.

@@ -77,7 +77,7 @@ The implementation is divided into 11 phases. The sequence establishes the platf
 - 🚧 **In Progress:** A contract, partial implementation, or reference implementation exists, but the deliverable is incomplete or not fully integrated.
 - ⏳ **Planned:** Not implemented or not yet started.
 
-**Contracts layer:** ADR-0001, ADR-0002, ADR-0004–0015 are Accepted. **ADR-0014 (Widget Toolkit Selection)** is Accepted: Qt Widgets + QSS modular + Design Tokens in Python, not QML. **ADR-0015 (Editor and Module Package Reorganization)** is Accepted and records the structural refactoring that closed in Phase 3. The appearance architecture is specified in `docs/architecture/appearance/`.
+**Contracts layer:** ADR-0001, ADR-0002, ADR-0004–0016 are Accepted. **ADR-0014 (Widget Toolkit Selection)** is Accepted: Qt Widgets + QSS modular + Design Tokens in Python, not QML. **ADR-0015 (Editor and Module Package Reorganization)** is Accepted and records the structural refactoring that closed in Phase 3. **ADR-0016 (Project Catalog Synchronization)** is Accepted and specifies the synchronization mechanism between the Project subsystem and the Project Catalog. The appearance architecture is specified in `docs/architecture/appearance/`.
 
 **Application layer:** Commands, Tasks, Telemetry, Events and Flows have contracts and reference implementations with contract tests. This does not imply that all production services, module loading, or application workflows are complete.
 
@@ -87,7 +87,7 @@ The implementation is divided into 11 phases. The sequence establishes the platf
 
 **Phases 1 and 2 are now closed.** The **Editor Architecture Refactoring** (see ADR-0015 and `refactoring_plan.md`) is complete, and its structural prerequisites for Sprint L (Professional module) are met.
 
-**Phase 3** remains the active phase. Its remaining functional deliverables are Sprints I, J, K, and L.
+**Phase 3** remains the active phase. Its remaining functional deliverables are Sprints I, J, K, and L. Sprint I is now specified by ADR-0016.
 
 Phase 4 remains the next major implementation phase. It begins only after Phase 3 is marked `✅ Implemented` in this document.
 
@@ -104,14 +104,16 @@ The sprint order below respects dependencies within Phase 3.
 | **G** | 2 | `AreaLayoutRenderer` | ✅ Complete | — |
 | **H** | 2 | `EditorStack` | ✅ Complete | G |
 | **Editor Refactoring** | 3 | Editor/Module package reorganization (ADR-0015) | ✅ Complete | — |
-| **I** | 3 | `ProjectIndex` | 🚧 Pending | — |
+| **I** | 3 | `ProjectIndex` (ADR-0016) | 🚧 In Progress | — |
 | **J** | 3 | Coordinated deletion | 🚧 Pending | I |
 | **K** | 3 | Async loading | 🚧 Pending | I, J |
 | **L** | 3 | Professional module | 🚧 Pending | Editor Refactoring ✅, C ✅, E ✅, F ✅ |
 
-**Next sprint:** Sprint I — `ProjectIndex` (unblocked).
+**Current sprint:** Sprint I — `ProjectIndex` (unblocked, specified by ADR-0016).
 
 **Note on ordering:** Sprint L is unblocked by the completed Editor Refactoring (ADR-0015) and by the completed Sprints C, E, and F. The functional dependency chain for Phase 3 is **I → J → K**, then **L** (Sprint L is now independent of Sprints I–K, as planned in `next_steps.md` §6.1).
+
+**Note on ADR-0016 and Sprint K:** ADR-0016 §4.1 records that the bootstrap-ordering guarantee holds only while the `ProjectIndex` bootstrap is synchronous. Sprint K (Async loading) makes `HomePage` load projects via `TaskManager`; if the bootstrap becomes asynchronous, ADR-0016 §4.1 must be revisited before Sprint K is closed.
 
 ---
 
@@ -150,7 +152,7 @@ The sprint order below respects dependencies within Phase 3.
 - ✅ UI contracts: `Area`, `Editor`, `EditorRegistry`, `ToolbarSpec`, `ToolSpec`, `LayoutBuilder`, `LayoutRenderer`.
 - ✅ `ProjectRepository` and reference implementations.
 - ✅ `ProjectContext`, `ProjectAccessPolicy`, `ProjectCatalog`.
-- ✅ ADRs 0001, 0002, 0004–0015.
+- ✅ ADRs 0001, 0002, 0004–0016.
 - ✅ **Sprint B (i18n):**
   - `Locale` value object (`pt_BR`, `en_US`).
   - `TranslationService` Protocol (`tr`, `locale`, `set_locale`).
@@ -224,12 +226,18 @@ The sprint order below respects dependencies within Phase 3.
 - ✅ Project selection lifecycle.
 - ✅ `FlowCatalog` and Flow repositories.
 - ✅ **Editor Architecture Refactoring:** see ADR-0015 and `refactoring_plan.md` §11. Completed on 2026-11-18.
-- 🚧 **Sprint I (`ProjectIndex`):**
-  - `ProjectIndex` interface (`add`, `remove`, `lookup`, `list`).
-  - `InMemoryProjectIndex`.
-  - `FilesystemProjectIndex`.
-  - `ProjectCatalog` consumes `ProjectIndex` instead of scanning the filesystem directly.
-  - Contract tests: add/remove/lookup/list, concurrent access, cache invalidation.
+- 🚧 **Sprint I (`ProjectIndex`):** specified by ADR-0016.
+  - `ProjectIndex` Protocol in `application/project/index.py`: `add`, `remove`, `lookup`, `list_summaries`, `list_ids`, `count`, `contains`, `replace_all`. Includes `ProjectIndexStaleError`. The Protocol is a pure read model and does not know about the repository, the event bus, or the filesystem.
+  - `InMemoryProjectIndex` in `application/project/in_memory_index.py`.
+  - `ProjectIndexSynchronizer` and `SynchronizedProjectIndex` in `application/project/index_synchronizer.py`.
+  - `ProjectCatalog` consumes a `ProjectIndex` instead of querying the `ProjectRepository` directly; `ProjectCatalog.refresh()` is removed (freshness is automatic).
+  - Event-driven invalidation via `ProjectCreated`, `ProjectUpdated`, `ProjectDeleted`.
+  - Bootstrap ordering guarantee per ADR-0016 §4: `subscribe` → `repository.list_metadata()` → `replace_all`, on the same synchronous call stack. No event queue while the bootstrap is synchronous (see §5.1 note on Sprint K).
+  - Staleness rule per ADR-0016 §3.3: a query never silently returns data from a stale index; `ProjectIndexStaleError` is raised when a rebuild after a detected staleness fails.
+  - Handler error containment per ADR-0016 §3.4: handlers never propagate to the `EventBus`; failures log with `project_id` and operation name only (no PHI) and mark the index as possibly stale.
+  - Contract tests: `add`/`remove`/`lookup`/`list`/`count`/`contains`/`replace_all`; bootstrap ordering; handler error containment; staleness propagation; catalog reads via `ProjectIndex` only; end-to-end integration with `ProjectManager`.
+  - Benchmark documented in ADR-0016's implementation notes (not a CI gate): 100/300/1000 projects in `tmp_path`, comparing `search_projects()` latency and `repository.list_metadata` call count between baseline (direct repository) and new (indexed).
+  - **Not** part of Sprint I: `FilesystemProjectIndex` does not exist. A persisted index and a SQLite implementation remain deferred to Phase 8.
 - 🚧 **Sprint J (Coordinated deletion):**
   - `ProjectManager.delete_project` coordinates `ProjectCatalog` → `ProjectIndex` → `FilesystemProjectRepository`.
   - Rollback when any step fails.
@@ -241,6 +249,7 @@ The sprint order below respects dependencies within Phase 3.
   - `HomePage.refresh()` does not block the GUI thread.
   - Rollback if `Workspace` creation fails after project open.
   - Regression tests.
+  - **If the index bootstrap becomes asynchronous, ADR-0016 §4.1 must be revisited before Sprint K is closed.**
 - 🚧 **Sprint L (Professional module):**
   - `ProfessionalEditor` registered in `EditorRegistry`.
   - `ModuleUISpec` for the Professional module.
@@ -250,7 +259,7 @@ The sprint order below respects dependencies within Phase 3.
 
 **Deferred to Phase 8:**
 
-- SQLite `ProjectIndex` backend.
+- SQLite `ProjectIndex` backend (`SqliteProjectIndex`, same `ProjectIndex` Protocol).
 - Recent Projects.
 - Background disk reconciliation.
 
@@ -260,7 +269,8 @@ The sprint order below respects dependencies within Phase 3.
 - Filesystem repository integration tests.
 - HomePage selection and refresh regression tests.
 - Project opening and rollback tests.
-- ProjectIndex consistency tests.
+- ProjectIndex contract tests (index), synchronizer tests (bootstrap, events, error containment, `rebuild`, `ensure_fresh`), catalog-via-index tests, and end-to-end `ProjectManager` sync tests (Sprint I, ADR-0016).
+- `ProjectIndexStaleError` propagation and `MainWindow` handling tests (Sprint I, ADR-0016).
 - Professional module integration tests.
 
 **Status:** 🚧 In Progress. Blockers: Sprints I, J, K, L.
@@ -510,7 +520,8 @@ The sprint order below respects dependencies within Phase 3.
 - PDF report generation (localized).
 - Final user and developer documentation.
 - **Recent Projects** on the Home Page.
-- **SQLite ProjectIndex** (backend for the Phase 3 contract).
+- **SQLite ProjectIndex** (`SqliteProjectIndex`, same `ProjectIndex` Protocol as ADR-0016).
+- **Background disk reconciliation** for the Project Catalog (ADR-0016 §3.2).
 - **IconManager complete:** `SvgIconProvider`, SVG assets, cache by (name, size, theme), SVG recoloring.
 - **Complete migration of every widget** to `ThemeService.color(...)` + `IconProvider.icon(...)`.
 - **Locale selector UI.**
@@ -569,7 +580,7 @@ Testing is a clinical requirement. Metrics must be reproducible and contextualiz
 ### 7.1 Coverage
 
 - **Domain:** Critical invariants and error cases.
-- **Application:** Command execution, transaction rollback, event publication, task lifecycle, i18n contract, settings round-trip.
+- **Application:** Command execution, transaction rollback, event publication, task lifecycle, i18n contract, settings round-trip, project catalog synchronization (ADR-0016).
 - **Infrastructure:** DICOM parsing, geometry, calibration, persistence, interoperability, settings persistence and migration.
 - **UI:** Widget behavior, Editor lifecycle, Workspace integration, tool behavior, import dialog.
 - **Appearance:** Token completeness, theme completeness, contrast, no hardcoded values, icon catalog, surface composition.
@@ -584,6 +595,7 @@ Initial targets:
 - **DICOM Import:** 500-slice reference dataset in under 10 seconds, including indexing and readiness for first visualization.
 - **Surface Rendering:** 30+ FPS for a mesh of 1,000,000 polygons on reference hardware.
 - **Memory:** Below 4 GB RAM during standard facial CT processing.
+- **Project Catalog Queries (ADR-0016):** after bootstrap, `search_projects()` must not perform filesystem I/O per keystroke. Verified by call-count test; latency benchmark documented in ADR-0016 implementation notes.
 
 ### 7.3 CPU and GPU Responsibilities
 
@@ -599,10 +611,13 @@ Initial targets:
 - GUI and VTK render-window operations remain on the GUI thread.
 - Cancellation is cooperative.
 - Do not use `QTimer` as a substitute for background execution.
+- The `ProjectIndexSynchronizer` (ADR-0016) assumes single-threaded execution on the main thread, consistent with the `EventBus` and `ProjectManager`. If the bootstrap becomes asynchronous (Sprint K), ADR-0016 §4.1 must be revisited.
 
 ### 7.5 Telemetry
 
 Long-running operations must emit telemetry events through `TelemetrySink`, using correlation IDs (ADR-0012). Telemetry must not contain PHI.
+
+The `ProjectIndexSynchronizer` (ADR-0016) must log failures using `project_id` and operation name only, never `project_name` or `patient_display_name`.
 
 ---
 
@@ -654,7 +669,9 @@ Sprint G (`AreaLayoutRenderer`) and Sprint H (`EditorStack`) are complete. Phase
 
 Sprint C (`EditorContext` propagation) is complete. Phase 1 is closed.
 
-The immediate focus is **Phase 3**, whose remaining functional deliverables are **Sprint I (`ProjectIndex`)**, **Sprint J (coordinated deletion)**, **Sprint K (async loading)**, and **Sprint L (Professional module)**. Sprint I is the next priority. Sprints I, J, and K form a functional chain; Sprint L is now unblocked by the completed Editor Architecture Refactoring.
+**ADR-0016 (Project Catalog Synchronization) is Accepted on 2026-11-18.** It specifies the mechanism by which the `ProjectCatalog` remains consistent with the `ProjectManager`: an in-memory `ProjectIndex` populated by a `ProjectIndexSynchronizer` and invalidated by `ProjectCreated`, `ProjectUpdated`, and `ProjectDeleted`. The repository remains the authoritative source; the index is a read-optimized projection. External mutations are not detected automatically and require an explicit rebuild or restart. SQLite and background reconciliation remain deferred to Phase 8.
+
+The immediate focus is **Phase 3**, whose remaining functional deliverables are **Sprint I (`ProjectIndex`, specified by ADR-0016)**, **Sprint J (coordinated deletion)**, **Sprint K (async loading)**, and **Sprint L (Professional module)**. Sprint I is the next priority. Sprints I, J, and K form a functional chain; Sprint L is now unblocked by the completed Editor Architecture Refactoring.
 
 Phase 4 begins after Phase 3 is marked `✅ Implemented`. Its first deliverables are the Unified Import Dialog, the `RenderingAdapter`, the `ViewerLayoutManager`, the 2D/3D tools, and the clinical transfer function presets.
 
@@ -681,7 +698,21 @@ Completed 2026-11-18. Resolved items:
 - `_KNOWN_DEBT_FILES` reduced from 8 to 5 files.
 - `Workspace.find_viewport_3d()` is documented as an approved exception to §4.1 rule 8. A regression test is tracked as follow-up.
 
-### 10.3 Deferred to a Future PR
+### 10.3 Project Catalog Synchronization (ADR-0016)
+
+Accepted 2026-11-18. Recorded decisions:
+
+- The `ProjectIndex` Protocol is a pure read model; `InMemoryProjectIndex` is the reference implementation.
+- `ProjectIndexSynchronizer` and `SynchronizedProjectIndex` maintain and decorate the index.
+- `ProjectCatalog.refresh()` is removed; freshness is automatic via `SynchronizedProjectIndex`.
+- Bootstrap uses direct ordering (`subscribe` → `repository.list_metadata()` → `replace_all`) on the same synchronous call stack; no event queue while the bootstrap is synchronous.
+- `FilesystemProjectIndex` does not exist as a class name; a persisted or SQLite-backed index is deferred to Phase 8.
+- Handler failures are logged with `project_id` and operation name only (no PHI), and mark the index as possibly stale.
+- A query never silently returns data from a stale index; `ProjectIndexStaleError` is raised when a rebuild after a detected staleness fails.
+- External mutations are not detected automatically; explicit rebuild or restart is required, and background reconciliation is deferred to Phase 8.
+- Sprint K (Async loading) must revisit the bootstrap-ordering decision if the index bootstrap becomes asynchronous.
+
+### 10.4 Deferred to a Future PR
 
 - `application/event_bus.py` → `application/events/bus.py` (Step 6.1 of `refactoring_plan.md`). Deferred per `refactoring_plan.md` §5.10.
 - `editors/view_overlays/` (Step 4.4 of `refactoring_plan.md`). Skipped because the current `ui/editors/overlays/gizmos/` and `ui/editors/overlays/rulers/` directories contain only empty `__init__.py` files.

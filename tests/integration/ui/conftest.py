@@ -10,8 +10,13 @@ from cranioz.application.project.access_policy import (
     AllowAllProjectAccessPolicy,
 )
 from cranioz.application.project.catalog import ProjectCatalog
+from cranioz.application.project.in_memory_index import InMemoryProjectIndex
 from cranioz.application.project.in_memory_repository import (
     InMemoryProjectRepository,
+)
+from cranioz.application.project.index_synchronizer import (
+    ProjectIndexSynchronizer,
+    SynchronizedProjectIndex,
 )
 from cranioz.application.project.manager import ProjectManager
 from cranioz.application.scene.scene_provider import InMemorySceneProvider
@@ -32,7 +37,12 @@ from cranioz.ui.workspace.workspace_spec import (
 def window(qtbot) -> MainWindow:
     repository = InMemoryProjectRepository()
     event_bus = EventBus()
-    catalog = ProjectCatalog(repository=repository)
+
+    index = InMemoryProjectIndex()
+    synchronizer = ProjectIndexSynchronizer(index, repository, event_bus)
+    synchronizer.start()
+    catalog = ProjectCatalog(SynchronizedProjectIndex(index, synchronizer))
+
     manager = ProjectManager(
         repository=repository,
         event_bus=event_bus,

@@ -36,8 +36,13 @@ from cranioz.application.project.access_policy import (
     AllowAllProjectAccessPolicy,
 )
 from cranioz.application.project.catalog import ProjectCatalog
+from cranioz.application.project.in_memory_index import InMemoryProjectIndex
 from cranioz.application.project.in_memory_repository import (
     InMemoryProjectRepository,
+)
+from cranioz.application.project.index_synchronizer import (
+    ProjectIndexSynchronizer,
+    SynchronizedProjectIndex,
 )
 from cranioz.application.project.manager import ProjectManager
 from cranioz.domain.patient.value_objects.patient_id import PatientId
@@ -61,10 +66,16 @@ _ACTOR = "test"
 @pytest.fixture
 def manager_and_catalog() -> tuple[ProjectManager, ProjectCatalog]:
     repo = InMemoryProjectRepository()
-    catalog = ProjectCatalog(repository=repo)
+    event_bus = EventBus()
+
+    index = InMemoryProjectIndex()
+    synchronizer = ProjectIndexSynchronizer(index, repo, event_bus)
+    synchronizer.start()
+    catalog = ProjectCatalog(SynchronizedProjectIndex(index, synchronizer))
+
     manager = ProjectManager(
         repository=repo,
-        event_bus=EventBus(),
+        event_bus=event_bus,
         access_policy=AllowAllProjectAccessPolicy(),
     )
     return manager, catalog

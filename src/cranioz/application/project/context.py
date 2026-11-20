@@ -5,7 +5,7 @@ project (Peça 7.5). It is the runtime representation handed to the
 Workspace: everything the Workspace needs to know about the active
 project, and nothing more.
 
-Design rules (see `project.md` §17, `startup_project_opening_workflow.md` §9):
+Design rules (see `project.md` §17, `ADR-0017_startup_project_opening_workflow.md` §9):
 
 - The context is **frozen**. The Workspace must never mutate it.
 - The context is **not** the Project. It does not own the project's
@@ -20,7 +20,7 @@ Design rules (see `project.md` §17, `startup_project_opening_workflow.md` §9):
   `ProjectPathResolver` at the infrastructure boundary.
 - `workflow_id` and `workflow_config` are optional. A project may be
   opened before a clinical workflow is selected
-  (`startup_project_opening_workflow.md` §10: "If no flow is resolved,
+  (`ADR-0017_startup_project_opening_workflow.md` §10: "If no flow is resolved,
   the Workspace opens in flow selection mode"). The two are either
   both set or both `None` — a workflow id without a config is
   meaningless.

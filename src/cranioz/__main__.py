@@ -51,8 +51,11 @@ QSurfaceFormat.setDefaultFormat(_fmt)
 # =====================================================================
 # Local Imports (cranioz.*)
 # =====================================================================
+# The `# noqa: E402` comments are required: these imports intentionally
+# appear after the QSurfaceFormat configuration above, which must run
+# before any Qt object is created. Do not move them above that block.
 
-# --- Application Layer (Commands, Events, Flows, and Projects) ---
+# --- Application Layer (Commands, Events, Flows, Projects, Scene) ---
 from cranioz import __version__  # noqa: E402
 from cranioz.application.commands.executor import CommandExecutor  # noqa: E402
 from cranioz.application.commands.in_memory_bus import InMemoryCommandBus  # noqa: E402
@@ -67,6 +70,11 @@ from cranioz.application.project.access_policy import (  # noqa: E402
     AllowAllProjectAccessPolicy,
 )
 from cranioz.application.project.catalog import ProjectCatalog  # noqa: E402
+from cranioz.application.project.in_memory_index import InMemoryProjectIndex  # noqa: E402
+from cranioz.application.project.index_synchronizer import (  # noqa: E402
+    ProjectIndexSynchronizer,
+    SynchronizedProjectIndex,
+)
 from cranioz.application.project.manager import ProjectManager  # noqa: E402
 from cranioz.application.scene.scene_provider import (  # noqa: E402
     InMemorySceneProvider,
@@ -76,9 +84,9 @@ from cranioz.config.schema import Config  # noqa: E402
 
 # --- Domain Layer ---
 from cranioz.domain.scene.domain_object_store import DomainObjectStore  # noqa: E402
-from cranioz.editors.builtin.tomography.editor import TomographyEditor  # noqa: E402
 
-# --- User Interface: Editors ---
+# --- Editors ---
+from cranioz.editors.builtin.tomography.editor import TomographyEditor  # noqa: E402
 from cranioz.editors.core.editor.editor_registry import EditorRegistry  # noqa: E402
 
 # --- Infrastructure: Application paths, settings, flows, i18n ---
@@ -119,14 +127,10 @@ from cranioz.modules.core.registry import (  # noqa: E402
     InMemoryModuleRegistry,
 )
 
-# --- Icons ---
+# --- UI: Icons, Main Window, Theme, Tools ---
 from cranioz.ui.icons import UnicodeIconProvider  # noqa: E402
-
-# --- User Interface: Main Window ---
 from cranioz.ui.main_window import MainWindow  # noqa: E402
 from cranioz.ui.theme import ThemeMode, ThemeService  # noqa: E402
-
-# --- User Interface: Tools ---
 from cranioz.ui.tools.builtin.log_tool import LogTool  # noqa: E402
 from cranioz.ui.tools.builtin.toggle_tool import ToggleTool  # noqa: E402
 from cranioz.ui.tools.registry.tool_registry import ToolRegistry  # noqa: E402
@@ -205,11 +209,22 @@ def _build_project_subsystem(
     app_paths: AppPathResolver,
     event_bus: EventBus,
 ) -> tuple[ProjectCatalog, ProjectManager]:
-    """Build the project subsystem (repository, catalog, manager)."""
+    """Build the project subsystem (repository, index, catalog, manager).
+
+    ADR-0016: the catalog reads via a synchronized index. The index
+    is bootstrapped here, on the synchronous call stack, before the
+    catalog (and therefore the Home Page) can query it.
+    """
     repository = FilesystemProjectRepository(
         projects_root=app_paths.projects_root,
     )
-    catalog = ProjectCatalog(repository=repository)
+
+    raw_index = InMemoryProjectIndex()
+    synchronizer = ProjectIndexSynchronizer(raw_index, repository, event_bus)
+    synchronizer.start()
+    index = SynchronizedProjectIndex(raw_index, synchronizer)
+
+    catalog = ProjectCatalog(index=index)
     manager = ProjectManager(
         repository=repository,
         event_bus=event_bus,

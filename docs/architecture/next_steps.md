@@ -41,7 +41,7 @@ The latest confirmed baseline is:
 - `mypy src` clean
 - **85% overall test coverage**
 
-This is the baseline recorded on 2026-11-18, after the completion of the Editor Architecture Refactoring. It must be revalidated after subsequent changes.
+This is the baseline recorded on 2026-11-18, after the completion of the Editor Architecture Refactoring. It must be revalidated after subsequent changes. Sprint I is expected to add tests without altering the existing baseline's pass/fail structure; the new baseline will be recorded when Sprint I closes.
 
 ### 1.3 Current architectural state
 
@@ -62,6 +62,8 @@ Completed capabilities include:
 - Editor and Module packages reorganized into `cranioz/editors/` and `cranioz/modules/core/`, with dependency boundaries enforced by AST-based architecture tests (ADR-0015).
 
 The DICOM import and visualization pipeline has foundational implementations and integration work documented in `implementation_plan.md`.
+
+The Project Catalog synchronization mechanism is specified by **ADR-0016** (Accepted 2026-11-18). Its implementation is Sprint I.
 
 ---
 
@@ -84,12 +86,14 @@ The DICOM import and visualization pipeline has foundational implementations and
 | Blocks 1–6 | Complete | Toolbar, active View, TomographyEditor integration, and visual validation |
 | Blocks 5.5–5.6.1 | Complete | Area sizing and window controls |
 | **Editor Architecture Refactoring** | **Complete** | **See ADR-0015 and `refactoring_plan.md` §11. Closed on 2026-11-18.** |
+| **ADR-0016 — Project Catalog Synchronization** | **Accepted** | **Specifies Sprint I. See `docs/adr/ADR-0016_Project_Catalog_Synchronization.md`.** |
 
 ### 2.2 Important architectural decisions
 
 - **ADR-0013:** Editor Layout Tree, View Layout Tree, and Toolbar Placement.
 - **ADR-0014:** Qt Widgets + modular QSS + Python Design Tokens.
 - **ADR-0015:** Editor and Module Package Reorganization. Editors are now a top-level package (`cranioz/editors/`) independent of `ui/`. Modules are split into `modules/core/` and `modules/builtin/`. Dependency boundaries are enforced by `tests/architecture/test_dependency_boundaries.py`.
+- **ADR-0016:** Project Catalog Synchronization. The `ProjectCatalog` consumes a `ProjectIndex` populated by a `ProjectIndexSynchronizer` and invalidated by `ProjectCreated`, `ProjectUpdated`, and `ProjectDeleted`. The repository remains the authoritative source. The strategy is fixed by the ADR and is not open for independent redefinition by the Home Page or the Catalog.
 - `EditorStack` uses `QStackedWidget` and `EditorStackSwitcher`, not `QTabWidget`.
 - Workspace composition remains responsible for Areas and Editor placement.
 - `AreaLayoutRenderer` handles intra-Area composition.
@@ -130,15 +134,15 @@ The Editor Architecture Refactoring is a structural activity within Phase 3. It 
 | Work item | Type | Status | Dependencies |
 |---|---|---|---|
 | Editor Architecture Refactoring | Structural activity | ✅ Complete | Phase 2 complete |
-| Sprint I — ProjectIndex | Functional sprint | Pending | None within Phase 3 |
+| Sprint I — ProjectIndex | Functional sprint | 🚧 In Progress | None within Phase 3 |
 | Sprint J — Coordinated deletion | Functional sprint | Pending | Sprint I |
 | Sprint K — Async loading | Functional sprint | Pending | Sprints I and J |
 | Sprint L — Professional module | Functional sprint | Pending | Refactoring ✅, C ✅, E ✅, F ✅ |
 | Test stub documentation | Cleanup follow-up | Pending | None |
 
-Sprints I–K may progress independently.
+Sprints I–K form a functional chain. Sprint L may proceed in parallel once its prerequisites are met.
 
-Sprint L is now unblocked by the completed Editor Architecture Refactoring and its other prerequisites.
+Sprint L is unblocked by the completed Editor Architecture Refactoring and its other prerequisites.
 
 ---
 
@@ -175,7 +179,7 @@ The refactoring covered:
 The following were explicitly outside the refactoring and remain out of scope:
 
 - Professional module implementation (Sprint L).
-- ProjectIndex (Sprint I).
+- ProjectIndex (Sprint I). Now specified by ADR-0016.
 - Coordinated deletion (Sprint J).
 - Async Home Page loading (Sprint K).
 - New clinical workflows and Phase 4 visualization features.
@@ -204,20 +208,38 @@ The functional workstream is independent of the structural refactoring except wh
 
 ### 5.1 Sprint I — ProjectIndex
 
-**Status:** Pending (next priority)
+**Status:** 🚧 In Progress
 **Dependency:** None within Phase 3.
+**Architectural authority:** ADR-0016 (`docs/adr/ADR-0016_Project_Catalog_Synchronization.md`).
 
 Deliverables:
 
-- `ProjectIndex` interface:
-  - `add`
-  - `remove`
-  - `lookup`
-  - `list`
-- `InMemoryProjectIndex`.
-- `FilesystemProjectIndex`.
-- `ProjectCatalog` consumes `ProjectIndex` instead of scanning the filesystem directly.
-- Contract tests for add/remove/lookup/list, concurrent access, and cache invalidation.
+- `ProjectIndex` Protocol in `application/project/index.py`:
+  - `add`, `remove`, `lookup`, `list_summaries`, `list_ids`, `count`, `contains`, `replace_all`.
+  - `ProjectIndexStaleError` raised by the synchronized decorator when a rebuild after detected staleness fails.
+  - The Protocol is a pure read model; it knows nothing about the repository, the event bus, or the filesystem.
+- `InMemoryProjectIndex` in `application/project/in_memory_index.py` — the reference implementation.
+- `ProjectIndexSynchronizer` and `SynchronizedProjectIndex` in `application/project/index_synchronizer.py`:
+  - `start()` subscribes to `ProjectCreated`, `ProjectUpdated`, `ProjectDeleted`, then bootstraps via `repository.list_metadata()` and `index.replace_all(...)`, on the same synchronous call stack.
+  - Handlers update the index synchronously; they never propagate exceptions to the `EventBus`. On failure they log with `project_id` and operation name only (no PHI) and mark `_possibly_stale = True`.
+  - `rebuild()` re-populates the index from the repository.
+  - `ensure_fresh()` is called by `SynchronizedProjectIndex` before every read; it is a no-op when not stale, rebuilds when stale, and propagates `ProjectIndexStaleError` if the rebuild fails.
+- `ProjectCatalog` refactored to consume a `ProjectIndex`:
+  - `ProjectCatalog.refresh()` is removed; freshness is automatic via `SynchronizedProjectIndex`.
+  - The catalog does not know about the synchronizer or the repository.
+- Bootstrap ordering guarantee per ADR-0016 §4. The ordering guarantee holds only while the bootstrap is synchronous; Sprint K must revisit ADR-0016 §4.1 if the bootstrap becomes asynchronous.
+- **Not** part of Sprint I: `FilesystemProjectIndex` does not exist as a class name. A persisted or SQLite-backed index remains deferred to Phase 8 (see §7).
+
+Contract tests (per ADR-0016 §8):
+
+- `test_project_index_contract.py` — `InMemoryProjectIndex` behavior; parametrizable for future `SqliteProjectIndex`.
+- `test_project_index_synchronizer.py` — bootstrap, event handlers, error containment, `rebuild`, `ensure_fresh`.
+- `test_project_index_sync_bootstrap.py` — bootstrap window; verifies consistency under a synchronous `EventBus`.
+- `test_project_catalog_uses_index.py` — the catalog reads via `ProjectIndex`; `repository.list_metadata` is not called during queries (mock fails if invoked).
+- `test_project_catalog_sync.py` — end-to-end integration with `ProjectManager`.
+- `test_project_index_stale_propagation.py` — `ProjectIndexStaleError` propagation and `MainWindow` handling.
+
+Benchmark (documented in ADR-0016 implementation notes, not run in CI): 100/300/1000 projects in `tmp_path`, comparing `search_projects()` latency and `repository.list_metadata` call count between baseline (direct repository) and new (indexed).
 
 The SQLite implementation remains deferred to Phase 8.
 
@@ -236,6 +258,8 @@ Deliverables:
 - External source data in External Reference mode must never be removed by project deletion.
 - Contract and failure-path tests.
 
+Sprint J must preserve the single-lifecycle-writer invariant (`project.md` §25). Deletion reflects into the catalog through the `ProjectDeleted` event; the `ProjectManager` does not call the catalog directly.
+
 ### 5.3 Sprint K — Async loading
 
 **Status:** Pending
@@ -248,6 +272,7 @@ Deliverables:
 - `HomePage.refresh()` does not block the GUI thread.
 - Rollback if Workspace creation fails after project opening.
 - Regression tests for loading, cancellation, failure, and recovery.
+- **Bootstrap-ordering re-evaluation:** if the `ProjectIndexSynchronizer` bootstrap becomes asynchronous in Sprint K, ADR-0016 §4.1 must be revisited before Sprint K is closed. The options at that time include a bootstrap-time event queue or a transactional `replace_all` that preserves concurrent `add` operations. The ADR does not pre-commit to a solution; it records that the decision must be reopened.
 
 ### 5.4 Sprint L — Professional module
 
@@ -284,7 +309,7 @@ Do not interpret these empty files as completed unit-test coverage.
 
 ## 6. Execution Strategy and Parallelism
 
-The structural refactoring is complete. The remaining work is the functional chain I → J → K, followed by L.
+The structural refactoring is complete. The remaining work is the functional chain I → J → K, with L proceeding in parallel subject to its prerequisites.
 
 ### 6.1 Dependency overview
 
@@ -299,9 +324,9 @@ The structural refactoring is complete. The remaining work is the functional cha
 
 **Current cycle:**
 
-1. Start Sprint I (ProjectIndex) immediately. It is unblocked.
+1. Sprint I is in progress (specified by ADR-0016).
 2. Start Sprint J after Sprint I is complete.
-3. Start Sprint K after Sprints I and J are complete.
+3. Start Sprint K after Sprints I and J are complete. Before closing Sprint K, revisit ADR-0016 §4.1 if the index bootstrap becomes asynchronous.
 4. Sprint L may begin in parallel with Sprints I–K, but its integration tests may benefit from the ProjectIndex contract delivered by Sprint I.
 
 The sequence may be adjusted when necessary, but the declared dependencies must be preserved.
@@ -325,9 +350,10 @@ The sequence may be adjusted when necessary, but the declared dependencies must 
 | `pyproject.toml` unused `ignore_missing_imports` entries | Cleanup task; no functional impact | `pyproject.toml` |
 | Implicit handler resolution in `InMemoryModuleLoader` | Not included in refactoring | `architectural_consolidation_plan.md` §4.4 |
 | `application/event_bus.py` → `application/events/bus.py` | Deferred to a separate PR | `refactoring_plan.md` §5.10 |
-| SQLite `ProjectIndex` backend | Deferred to Phase 8 | `implementation_plan.md` |
+| SQLite `ProjectIndex` backend | Deferred to Phase 8 | `implementation_plan.md`, ADR-0016 §2.1 |
+| Persisted filesystem index (`index.json`) | Deferred to Phase 8; rejected for Sprint I per ADR-0016 §5 | ADR-0016 §5 |
+| External mutation detection / background disk reconciliation | Deferred to Phase 8 | ADR-0016 §3.2, `implementation_plan.md` |
 | Recent Projects | Deferred to Phase 8 | `implementation_plan.md` |
-| Background disk reconciliation | Deferred to Phase 8 | `implementation_plan.md` |
 
 The project must not silently absorb unrelated items from this list into future sprints.
 

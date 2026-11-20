@@ -29,7 +29,7 @@ CranioZ separates project management into distinct responsibilities:
 | **Home Page** | Discovers, displays, and selects projects | No |
 | **Workspace** | Executes clinical workflows using an opened project | No |
 
-\\* The repository performs persistence operations requested by the Project Manager. It is not the authority that decides whether a project should be created, updated, opened, or deleted.
+\* The repository performs persistence operations requested by the Project Manager. It is not the authority that decides whether a project should be created, updated, opened, or deleted.
 
 The architecture is intentionally asymmetric:
 
@@ -191,37 +191,27 @@ The Catalog is a read model, not the project lifecycle owner.
 
 6. Project Catalog Consistency
 
-The Project Catalog may be implemented as a repository query, indexed metadata store, cached projection, filesystem index, database view, or another read-optimized mechanism.
+The synchronization mechanism is defined by **ADR-0016 (Project Catalog Synchronization)**.
 
-Regardless of implementation, the following contract applies:
+The chosen mechanism is event-driven invalidation of an in-memory `ProjectIndex`, populated by a `ProjectIndexSynchronizer` that performs a repository-backed bootstrap and subscribes to `ProjectCreated`, `ProjectUpdated`, and `ProjectDeleted`.
 
 The Project Catalog must represent the project set managed by the Project Management subsystem and must not become an independent authoritative project store.
 
-When a project is created, updated, or deleted, the Project Management subsystem is responsible for ensuring that the Catalog can eventually reflect the new state.
+The Project Catalog may consume a `ProjectIndex` (for example, `InMemoryProjectIndex` behind a `SynchronizedProjectIndex`) rather than querying the `ProjectRepository` directly. The Catalog must not know about the synchronizer; it depends only on the read contract.
 
-The synchronization mechanism is intentionally not fixed by this document.
+When a project is created, updated, or deleted, the Project Management subsystem is responsible for ensuring that the Catalog reflects the new state. Under the mechanism defined by ADR-0016, this guarantee holds after the corresponding lifecycle event has been dispatched synchronously.
 
-Possible mechanisms include:
+Polling or TTL-based caching must not be introduced by the Home Page itself as an independent consistency mechanism. This restriction remains in force under ADR-0016.
 
-application/domain events;
-explicit catalog invalidation;
-repository-backed refresh;
-controlled cache invalidation;
-other deterministic synchronization mechanisms.
+Mutations external to the Project Management subsystem (manual edits to `project.json`, another process modifying the projects directory, restoring a backup) are not detected automatically. They require an explicit rebuild or an application restart. Background disk reconciliation is deferred to Phase 8.
 
-Polling or TTL-based caching must not be introduced by the Home Page itself as an independent consistency mechanism.
-
-The precise synchronization strategy should be defined in a dedicated ADR, such as:
-
-adr/project-catalog-synchronization.md
-
-Relevant lifecycle events may include:
+Relevant lifecycle events observed under ADR-0016:
 
 ProjectCreated
 ProjectUpdated
 ProjectDeleted
 
-The Catalog may subscribe to these events or use another approved synchronization mechanism.
+The synchronization strategy is fixed by ADR-0016 and is not open for independent redefinition by the Home Page or the Catalog.
 
 7. Home Page
 
@@ -246,7 +236,8 @@ access project storage directly;
 maintain the authoritative project list;
 maintain patient records;
 implement project persistence;
-implement project lifecycle policy.
+implement project lifecycle policy;
+implement catalog synchronization.
 
 The Home Page may initiate a project lifecycle command through the Project Manager, but it must never implement the operation itself.
 
@@ -331,6 +322,8 @@ The Home Page must never delete project folders or files directly.
 
 The Repository and Storage layers perform the physical deletion requested by the Project Manager.
 
+The Catalog reflects the deletion through the synchronization mechanism defined by ADR-0016. Under the current implementation, the Catalog does not need to be informed explicitly by the Project Manager; the `ProjectDeleted` event published after a successful deletion updates the in-memory projection.
+
 11. Project Storage
 
 Project Storage represents the infrastructure responsible for the physical representation of a project.
@@ -377,6 +370,8 @@ class ProjectRepository(Protocol):
     def update(self, project: Project) -> None: ...
     def delete(self, project_id: ProjectId) -> None: ...
     def exists(self, project_id: ProjectId) -> bool: ...
+    def list_metadata(self) -> tuple[ProjectSummary, ...]: ...
+    def list_ids(self) -> tuple[ProjectId, ...]: ...
 
 The repository does not decide:
 
@@ -388,6 +383,8 @@ Which workflow should be selected?
 Those are Project Management/application concerns.
 
 The repository provides persistence capabilities to the lifecycle authority.
+
+The repository is also the authoritative source consulted by the `ProjectIndexSynchronizer` during bootstrap and rebuild (ADR-0016). It remains the only component that reads the filesystem for project metadata.
 
 13. Persistence Representation
 
@@ -511,16 +508,14 @@ It is not required to be serialized as the project's canonical representation.
 Its purpose is to provide the Workspace with the information necessary to operate on an opened project.
 
 Conceptually:
+    ProjectContext
+    ├── project_id
+    ├── metadata
+    ├── patient_summary
+    ├── workflow_id (optional)
+    ├── workflow_config (optional)
+    └── object_references (tuple)
 
-```
-ProjectContext
-├── project_id
-├── metadata
-├── patient_summary
-├── workflow_id              (optional)
-├── workflow_config          (optional)
-└── object_references        (tuple)
-```
 
 The two workflow fields are either both set or both None. A workflow id without a configuration is meaningless, and a configuration without an id cannot be resolved. object_references is a tuple, not a list: immutability is structural, not merely by convention.
 
@@ -695,6 +690,8 @@ For example:
 
 The Workspace may react to ProjectOpened or ProjectClosed, but it does not become the lifecycle authority.
 
+Under ADR-0016, the `ProjectIndexSynchronizer` subscribes to `ProjectCreated`, `ProjectUpdated`, and `ProjectDeleted` to maintain the Catalog's in-memory projection. It does not subscribe to `ProjectOpened`, `ProjectClosing`, or `ProjectClosed`, because those events do not change the set of discoverable projects.
+
 The exact event semantics belong to the application/event documentation.
 
 ## 23. Who Reads the Project?
@@ -706,17 +703,22 @@ Project Catalog
 Reads lightweight project metadata for discovery:
 
     ProjectSummary
-    Project Manager
+
+Under ADR-0016, the Catalog reads these summaries from a `ProjectIndex` rather than from the `ProjectRepository` on every query. The index is a read-optimized projection maintained by the `ProjectIndexSynchronizer`; the repository remains the authoritative source.
+
+Project Manager
 
 Reads the authoritative project state when opening or managing a project:
 
     Project
-    Workspace
+
+Workspace
 
 Receives the active runtime representation through:
 
     ProjectContext
-    Clinical Modules
+
+Clinical Modules
 
 Consume project/domain data through their defined application contracts.
 
@@ -730,13 +732,16 @@ The responsibilities are deliberately separated:
         = lifecycle authority and coordinator
     
     Project Repository
-        = persistence abstraction
+        = persistence abstraction, authoritative source of project metadata
     
     Project Storage
         = physical storage infrastructure
     
     Project Catalog
         = read-only discovery projection
+    
+    Project Index (ADR-0016)
+        = in-memory read model of ProjectSummary, maintained by the synchronizer
     
     Project Context
         = active runtime context
@@ -776,6 +781,7 @@ The following components must not independently implement project lifecycle beha
     Clinical Modules
     Plugins
     Project Catalog
+    Project Index
     Project Repository
     Project Storage
 
@@ -803,6 +809,8 @@ adr/project-concurrency.md
 
 The eventual implementation should ensure that concurrent project modifications cannot silently corrupt persistent clinical data.
 
+The `ProjectIndexSynchronizer` defined by ADR-0016 assumes single-threaded execution on the main thread, consistent with the `EventBus` and `ProjectManager`. It does not introduce locks. If the bootstrap becomes asynchronous (Phase 3 Sprint K), the ordering guarantees of ADR-0016 §4.1 must be revisited.
+
 ## 27. Error Handling
 
 Project lifecycle failures should be represented by application-level errors.
@@ -818,6 +826,12 @@ Examples include:
     ProjectInUse
     ProjectDeletionError
     ProjectConcurrencyError
+
+Under ADR-0016, the Catalog adds one application-level error specific to the read projection:
+
+    ProjectIndexStaleError
+
+This error is raised when the catalog cannot guarantee that the `ProjectIndex` is fresh (a failed rebuild after a detected staleness). It signals that the query cannot safely return data, rather than returning silently stale data.
 
 The Home Page should present appropriate user-facing feedback but should not interpret infrastructure-specific exceptions.
 
@@ -843,6 +857,8 @@ Authorization is represented by ProjectAccessPolicy.
 Audit logging should consume application/project events rather than being implemented by the Home Page or Workspace.
 
 The initial implementation may use permissive access and minimal auditing, but the extension points should exist from the beginning.
+
+Under ADR-0016, the `ProjectIndexSynchronizer` logs failures using `project_id` and operation name only. It must never log `project_name` or `patient_display_name`, to avoid leaking patient-identifying information through operational logs.
 
 ## 29. Project Lifecycle
 
@@ -904,10 +920,13 @@ The following rules are mandatory:
 18. The authoritative project list is not maintained by the Home Page.
 19. Plugins and modules must not bypass the Project Management/application API.
 20. Project lifecycle changes may be communicated through application events.
-21. Catalog synchronization must not be implemented independently by the Home Page.
+21. Catalog synchronization must not be implemented independently by the Home Page. The synchronization mechanism is defined by ADR-0016 and is owned by the Project Management boundary.
 22. Authorization is evaluated at the Project Management boundary.
 23. Physical storage paths are infrastructure concerns.
 24. Clinical workflow execution belongs to the Workspace/Flow/Module architecture, not to Project Management.
+25. The Project Catalog depends only on the read contract of the `ProjectIndex`. It does not depend on the `ProjectIndexSynchronizer` nor on the `ProjectRepository`.
+26. The `ProjectIndex` is a pure read model. It does not know about the repository, the event bus, or the filesystem.
+27. A catalog query must never silently return data from a stale index. If freshness cannot be guaranteed, `ProjectIndexStaleError` is raised.
 
 ## 31. Conceptual API
 
@@ -933,6 +952,24 @@ The read-only Catalog may expose:
             query: str,
         ) -> list[ProjectSummary]: ...
 
+Under ADR-0016, the Catalog is constructed with a `ProjectIndex`:
+
+    class ProjectIndex(Protocol):
+        def add(self, summary: ProjectSummary) -> None: ...
+        def remove(self, project_id: ProjectId) -> None: ...
+        def lookup(
+            self,
+            project_id: ProjectId,
+        ) -> ProjectSummary | None: ...
+        def list_summaries(self) -> tuple[ProjectSummary, ...]: ...
+        def list_ids(self) -> tuple[ProjectId, ...]: ...
+        def count(self) -> int: ...
+        def contains(self, project_id: ProjectId) -> bool: ...
+        def replace_all(
+            self,
+            summaries: Iterable[ProjectSummary],
+        ) -> None: ...
+
 Persistence remains behind:
 
     class ProjectRepository(Protocol):
@@ -940,6 +977,9 @@ Persistence remains behind:
         def get(self, project_id: ProjectId) -> Project: ...
         def update(self, project: Project) -> None: ...
         def delete(self, project_id: ProjectId) -> None: ...
+        def exists(self, project_id: ProjectId) -> bool: ...
+        def list_metadata(self) -> tuple[ProjectSummary, ...]: ...
+        def list_ids(self) -> tuple[ProjectId, ...]: ...
 
 These interfaces describe responsibility boundaries rather than prescribing concrete implementation details.
 
@@ -952,6 +992,8 @@ The Workspace then executes the selected clinical workflow.
 ## 33. Creation and Persistence Sequence
 
 The Home Page receives the updated discovery state through the Catalog mechanism rather than maintaining its own authoritative list.
+
+Under ADR-0016, the Catalog reflects the new project after the `ProjectCreated` event has been dispatched synchronously by the `ProjectManager`. No explicit refresh call by the Home Page is required.
 
 ## 34. Closing and Opening Projects
 
@@ -980,14 +1022,14 @@ It should be read together with:
 
 36. Related Architectural Decisions
 
-The following topics should be defined by dedicated ADRs rather than overloaded into this document:
+The following topics are defined by dedicated ADRs rather than overloaded into this document:
 
-    Project Catalog Synchronization
-    Project Concurrency
-    Project Persistence Format
-    Project Access and Audit
-    Project Transactions
-    Project Recovery / Autosave
+    Project Catalog Synchronization — ADR-0016 (Accepted, 2026-11-18)
+    Project Concurrency — pending (adr/project-concurrency.md)
+    Project Persistence Format — pending
+    Project Access and Audit — pending
+    Project Transactions — pending
+    Project Recovery / Autosave — pending
 
 The project.md document defines the stable responsibility boundaries. ADRs define implementation-specific or decision-sensitive policies.
 
@@ -1018,6 +1060,18 @@ The resulting architecture is:
 
     Project Catalog
           │
+          │ reads via
+          ▼
+    Project Index (ADR-0016)
+          │
+          │ populated by
+          ▼
+    Project Index Synchronizer
+          │
+          │ reads
+          ▼
+    Project Repository
+          │
           ▼
       Home Page
           │
@@ -1033,8 +1087,11 @@ The central responsibilities are:
     Project Catalog
         Provides read-only discovery.
     
+    Project Index
+        Provides an in-memory read model of project summaries, maintained by the synchronizer.
+    
     Project Repository
-        Provides persistence.
+        Provides persistence and remains the authoritative source of project metadata.
     
     Project Storage
         Provides physical storage.
@@ -1053,9 +1110,4 @@ The central responsibilities are:
 
 The architectural principle is:
 
-The Home Page discovers projects, the Project Manager owns their lifecycle, the Repository persists them, Storage provides the physical representation, the Project Context represents the active runtime state, and the Workspace executes the selected clinical workflow without managing the project.
-"""
-
-    path = Path("/mnt/data/project.md")
-    path.write_text(content, encoding="utf-8")
-    print(path)
+The Home Page discovers projects, the Project Manager owns their lifecycle, the Repository persists them and remains authoritative, the Project Index provides a read-optimized projection maintained by the Synchronizer, Storage provides the physical representation, the Project Context represents the active runtime state, and the Workspace executes the selected clinical workflow without managing the project.

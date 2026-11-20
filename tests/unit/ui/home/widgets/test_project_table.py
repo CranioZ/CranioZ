@@ -9,8 +9,13 @@ from cranioz.application.project.access_policy import (
     AllowAllProjectAccessPolicy,
 )
 from cranioz.application.project.catalog import ProjectCatalog
+from cranioz.application.project.in_memory_index import InMemoryProjectIndex
 from cranioz.application.project.in_memory_repository import (
     InMemoryProjectRepository,
+)
+from cranioz.application.project.index_synchronizer import (
+    ProjectIndexSynchronizer,
+    SynchronizedProjectIndex,
 )
 from cranioz.application.project.manager import ProjectManager
 from cranioz.domain.patient.value_objects.patient_id import PatientId
@@ -20,10 +25,16 @@ from cranioz.ui.home.widgets.project_table import ProjectTable
 
 def _make_catalog_and_manager() -> tuple[ProjectCatalog, ProjectManager]:
     repo = InMemoryProjectRepository()
-    catalog = ProjectCatalog(repository=repo)
+    event_bus = EventBus()
+
+    index = InMemoryProjectIndex()
+    synchronizer = ProjectIndexSynchronizer(index, repo, event_bus)
+    synchronizer.start()
+    catalog = ProjectCatalog(SynchronizedProjectIndex(index, synchronizer))
+
     manager = ProjectManager(
         repository=repo,
-        event_bus=EventBus(),
+        event_bus=event_bus,
         access_policy=AllowAllProjectAccessPolicy(),
     )
     return catalog, manager
