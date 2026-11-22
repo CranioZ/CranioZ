@@ -1,6 +1,6 @@
 """EventBusAdapter — scoped and publish-only facades over the EventBus.
 
-The adapter wraps a ``cranioz.application.event_bus.EventBus`` (or any
+The adapter wraps a ``cranioz.main_window.event_bus.EventBus`` (or any
 object satisfying its structural shape) and exposes two Protocol
 implementations. Each ``create_subscription()`` call returns a fresh
 ``EventSubscription`` with its own set of handles; disposing one does

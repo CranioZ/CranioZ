@@ -724,41 +724,41 @@ It does not create, modify, save, delete, or directly load Projects.
 
 Layout (top to bottom, left to right):
 
-```
-HomePage
-├── HomeTopBar
-│   ├── ☰ menu            → emits toggle_sidebar_requested
-│   ├── CranioZ
-│   ├── ? help            → emits help_requested
-│   └── ⚙ settings        → emits settings_requested
-│
-└── QHBoxLayout
-    ├── CommunitySidebar (hidden by default)
-    │   ├── Community            → emits community_requested
-    │   ├── Object library       → emits library_requested
-    │   ├── News                 → emits news_requested
-    │   ├── Suggest improvements → emits feedback_requested
-    │   └── Contribute           → emits contribute_requested
-    │
-    └── QVBoxLayout (right column, stretch 8 / 42 / 42 / 8)
-        ├── HomeTopBar             (stretch 8)
-        ├── ProjectTable           (stretch 42)
-        │   ├── [New project]      → emits new_project_requested()
-        │   ├── [Manage projects]  → emits manage_projects_requested()
-        │   ├── [Search]           → filters by project name or patient name
-        │   ├── [Expand]           → reserved (table expansion)
-        │   └── QTableWidget
+    HomePage
+    └── QHBoxLayout
+        ├── CommunitySidebar (hidden by default, full height)
+        │   ├── Community            → emits community_requested
+        │   ├── Object library       → emits library_requested
+        │   ├── News                 → emits news_requested
+        │   ├── Suggest improvements → emits feedback_requested
+        │   └── Contribute           → emits contribute_requested
         │
-        ├── FlowList               (stretch 42)
-        │   ├── [Manage Flows]     → emits manage_flows_requested()
-        │   └── Flow list
-        │       └── (each flow: horizontal row of steps — Block 9)
-        │
-        └── HomeBottomBar          (stretch 8)
-            └── StartButton        → emits project_open_requested(project_id, flow_id)
-                ├── Grey (default)
-                └── Green (only when both project and flow are selected)
-```
+        └── QVBoxLayout (right column, stretch 8 / 42 / 42 / 8)
+            ├── HomeTopBar             (stretch 8)
+            │   ├── ☰ menu             → emits toggle_sidebar_requested
+            │   ├── CranioZ            (title)
+            │   ├── (documentation)    → emits help_requested   [icon in image 4]
+            │   ├── ? help             → emits help_requested
+            │   ├── ⚙ settings         → emits settings_requested
+            │   └── window controls    → minimize / maximize / close
+            │
+            ├── ProjectTable           (stretch 42)
+            │   ├── [New project]      → emits new_project_requested()
+            │   ├── [Manage projects]  → emits manage_projects_requested()
+            │   ├── [Search]           → filters by project name or patient name
+            │   ├── [Expand]           → reserved (table expansion)
+            │   └── QTableWidget
+            │       (Nome, ID, Sexo, Idade, Criação do projeto, Última modificação)
+            │
+            ├── FlowList               (stretch 42)
+            │   ├── [Manage Flows]     → emits manage_flows_requested()
+            │   └── Flow list
+            │       └── each flow: horizontal row — [flow label] → step → step → … (Block 9)
+            │
+            └── HomeBottomBar          (stretch 8)
+                └── StartButton        → emits project_open_requested(project_id, flow_id)
+                    ├── Grey (default)
+                    └── Green (only when both project and flow are selected)
 
 * **About the QSplitter**: the prototype shows stacked panels with fixed proportional heights, not draggable dividers. That is why the HomePage uses a QVBoxLayout with stretch 8 / 42 / 42 / 8 and setMinimumHeight on HomeTopBar and HomeBottomBar. Persistent panel resizing, if ever needed, is a separate piece (LayoutState persistence), not an implicit decision of the initial layout.
 * **About "Manage projects" vs. "Remove project"**: the button exposed on the Home Page is "Manage projects", not a destructive action. The prototype confirms this. Project deletion happens inside the management page (piece 7.6d), where the user has context — archive, export, import, delete. The Home Page does not expose deletion in a single click. Without this button, the user would have no way to reach the management page.

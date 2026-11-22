@@ -53,7 +53,7 @@ from cranioz.infrastructure.visualization.vtk_image_adapter import (
 # ---- VTK / OpenGL configuration -------------------------------------
 # These MUST run before the first QApplication is created. Qt reads
 # the global QSurfaceFormat and the AA_ShareOpenGLContexts attribute
-# exactly once, at application startup. If they are set after the
+# exactly once, at main_window startup. If they are set after the
 # QApplication, they are silently ignored and QVTKRenderWindowInteractor
 # fails to render (white widget, no VTK output), which is exactly the
 # symptom this script is meant to diagnose. Mirrors src/cranioz/__main__.py.

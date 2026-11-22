@@ -1,4 +1,4 @@
-"""Project subsystem — application layer."""
+"""Project subsystem — main_window layer."""
 
 from cranioz.application.project.access_policy import (
     Actor,

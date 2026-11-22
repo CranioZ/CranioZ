@@ -8,7 +8,7 @@ Public API:
 - ``FlowRepository`` — persistence port (Protocol).
 - ``InMemoryFlowRepository`` — reference implementation for tests.
 - ``FlowCatalog`` — read-only projection (list, get, search).
-- ``FlowError`` and subclasses — application-level errors.
+- ``FlowError`` and subclasses — main_window-level errors.
 
 The package is data + projection. It does not execute flows; the
 ``WorkflowEngine`` (Phase 5) is responsible for execution.

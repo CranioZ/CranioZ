@@ -42,7 +42,7 @@ def get_translation_service() -> TranslationService:
 def configure(service: TranslationService) -> None:
     """Install a new global TranslationService.
 
-    Typically called once at application boot, after the catalogs
+    Typically called once at main_window boot, after the catalogs
     have been discovered. It may also be called from tests to install
     a service backed by a controlled registry.
 

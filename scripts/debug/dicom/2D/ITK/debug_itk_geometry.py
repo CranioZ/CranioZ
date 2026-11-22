@@ -133,10 +133,10 @@ def main() -> int:
         print(f"  direction match:  {same_direction}")
 
         if not all((same_dims, same_spacing, same_origin, same_direction)):
-            print("\n  >>> Geometry differs. The bug is in the current")
+            print("\n  >>> geometry differs. The bug is in the current")
             print("  >>> Volume/VolumeGeometry construction.")
         else:
-            print("\n  >>> Geometry matches. The bug is in the VTK render")
+            print("\n  >>> geometry matches. The bug is in the VTK render")
             print("  >>> pipeline (reslice, camera, transfer functions).")
 
     return 0

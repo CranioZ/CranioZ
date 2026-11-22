@@ -140,7 +140,7 @@ def test_editors_core_does_not_import_theme_compiler() -> None:
 def test_domain_imports_no_higher_layers() -> None:
     files = _get_all_py_files(SRC_ROOT / "domain")
     forbidden = (
-        "cranioz.application",
+        "cranioz.main_window",
         "cranioz.infrastructure",
         "cranioz.ui",
         "cranioz.editors",

@@ -22,7 +22,7 @@ Rules:
 - The Project always has a ProjectId and a ProjectMetadata.
 - The metadata's project_id must equal the Project's project_id.
 - The Project does not know about persistence, filesystem, or Qt.
-  Those are responsibilities of the infrastructure and application
+  Those are responsibilities of the infrastructure and main_window
   layers.
 """
 

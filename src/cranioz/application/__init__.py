@@ -1,10 +1,10 @@
-"""Project subsystem — application layer.
+"""Project subsystem — main_window layer.
 
 Public API of the Project management subsystem:
 
 - `ProjectRepository` — persistence port (Protocol).
 - `InMemoryProjectRepository` — reference implementation, test-only.
-- The `ProjectRepositoryError` family — application-level errors.
+- The `ProjectRepositoryError` family — main_window-level errors.
 
 Infrastructure adapters (e.g. `FilesystemProjectRepository`) live in
 `cranioz.infrastructure.project` and are imported by the bootstrap,

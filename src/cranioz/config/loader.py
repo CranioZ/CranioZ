@@ -4,7 +4,7 @@ Loads system configuration from src/cranioz/config/defaults/.
 Does not load user preferences; that is the responsibility of settings/.
 
 Rules:
-- The loader reads the defaults packaged with the application.
+- The loader reads the defaults packaged with the main_window.
 - The loader does not resolve physical OS paths.
 - The loader returns a validated Config.
 """

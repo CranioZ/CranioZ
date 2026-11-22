@@ -689,7 +689,7 @@ The application must document ownership and lifetime at every conversion boundar
 
 ITK must not be a mandatory dependency in the initial implementation.
 
-Dependencies should be added to `pyproject.toml` according to the capabilities actually implemented.
+Dependencies should be added to `../../../pyproject.toml` according to the capabilities actually implemented.
 
 ---
 

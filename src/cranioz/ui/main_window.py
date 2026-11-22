@@ -1,4 +1,4 @@
-"""MainWindow — the application shell."""
+"""MainWindow — the main_window shell."""
 
 from __future__ import annotations
 
@@ -449,11 +449,11 @@ class MainWindow(QMainWindow):
         if self._current_project_id is not None:
             reply = QMessageBox.question(
                 self,
-                self._tr("workspace.dialog.confirm_close_title", "Close application?"),
+                self._tr("workspace.dialog.confirm_close_title", "Close main_window?"),
                 self._tr(
                     "workspace.dialog.confirm_close_body",
                     "There is an open project. Any unsaved changes will be lost. "
-                    "Do you want to close the application?",
+                    "Do you want to close the main_window?",
                 ),
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 QMessageBox.StandardButton.No,
@@ -598,7 +598,7 @@ class MainWindow(QMainWindow):
                 self._tr("workspace.dialog.stl_import_failed", "Failed to import STL"),
                 self._tr(
                     "workspace.dialog.no_viewport_3d",
-                    "No 3D viewport in the scene. Run the application with "
+                    "No 3D viewport in the scene. Run the main_window with "
                     "CRANIOZ_DEBUG_MESH=1 to enable the mesh debug editor, "
                     "or open a project with the TomographyEditor.",
                 ),

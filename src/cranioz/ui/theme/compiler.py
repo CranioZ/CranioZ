@@ -3,7 +3,7 @@
 Converts a ``ThemeTokens`` instance into ``CompiledStyles``: a QSS
 string, a composed surface color map, and a typed elevation map.
 
-The compiler is the single owner of global stylesheet application.
+The compiler is the single owner of global stylesheet main_window.
 Widgets MUST NOT call ``QApplication.setStyleSheet`` themselves and
 MUST NOT compose RGBA colors from tokens.
 
@@ -177,7 +177,7 @@ class ThemeCompiler:
         if not isinstance(app, QApplication):
             _logger.warning(
                 "ThemeCompiler.apply() called before QApplication exists; "
-                "skipping global stylesheet application"
+                "skipping global stylesheet main_window"
             )
             return
         app.setStyleSheet(styles.qss)

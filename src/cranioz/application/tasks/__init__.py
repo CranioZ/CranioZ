@@ -9,7 +9,7 @@ Public API:
 - ``CancelToken`` — Protocol; cooperative cancellation handle passed
   to ``Task.run``.
 - ``TaskState`` — Enum; lifecycle of a dispatched Task.
-- ``TaskError`` and subclasses — application-level errors.
+- ``TaskError`` and subclasses — main_window-level errors.
 - ``NoOpTaskManager`` — reference implementation that runs Tasks
   synchronously. Used by tests and by the early bootstrap.
 

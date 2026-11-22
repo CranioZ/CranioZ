@@ -1,4 +1,4 @@
-"""Geometry domain — canonical representation of geometric data.
+"""geometry domain — canonical representation of geometric data.
 
 This package defines the geometry contracts independently of VTK, Qt,
 file formats, and other infrastructure dependencies.
@@ -10,7 +10,7 @@ Public API:
 - ``ValidationIssue``, ``ValidationResult``, ``ValidationSeverity``
   — structured validation findings.
 
-See the ``Geometry Infrastructure`` architecture document, §3.
+See the ``geometry Infrastructure`` architecture document, §3.
 """
 
 from cranioz.domain.geometry.coordinate_frame import CoordinateFrame

@@ -3,7 +3,7 @@
 The ExtrasSegment is the right zone of the Workspace Top Bar. It
 hosts six buttons:
 
-- ``⋮`` (menu) — opens a QMenu with application-level actions.
+- ``⋮`` (menu) — opens a QMenu with main_window-level actions.
 - ``⬜`` (toggle_bottom) — toggles Area Bottom.
 - ``⬜`` (toggle_right) — toggles Area Right.
 - ``—`` (minimize) — emits ``minimize_requested`` (Block 5.6).
@@ -11,7 +11,7 @@ hosts six buttons:
 - ``✕`` (close) — emits ``close_requested`` (Block 5.6).
 
 The segment is a pure presentation widget: it emits signals and
-knows nothing about the application. The MainWindow wires the
+knows nothing about the main_window. The MainWindow wires the
 signals to the real actions (showMinimized, showMaximized, close).
 """
 

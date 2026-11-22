@@ -1,4 +1,4 @@
-"""Geometry I/O — file format readers and writers.
+"""geometry I/O — file format readers and writers.
 
 The initial implementation supports STL. Additional formats are
 introduced only when a concrete clinical requirement justifies them.

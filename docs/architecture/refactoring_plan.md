@@ -1053,8 +1053,8 @@ The refactoring was completed on 2026-11-18.
 
 **Deviations from the original plan:**
 
-- **Step 6.1** (`application/event_bus.py` → `application/events/bus.py`) was explicitly deferred to a separate PR, per the recommendation in §5.10. It is independent of the structural refactoring.
-- **Step 4.4** (`editors/view_overlays/`) was skipped because `ui/editors/overlays/gizmos/` and `ui/editors/overlays/rulers/` contained only empty `__init__.py` files. No content was migrated; the package will be created when a concrete overlay implementation exists.
+- **Step 6.1** (`main_window` → `main_window`) was explicitly deferred to a separate PR, per the recommendation in §5.10. It is independent of the structural refactoring.
+- **Step 4.4** (`editors/view_overlays/`) was skipped because `editors` and `editors` contained only empty `__init__.py` files. No content was migrated; the package will be created when a concrete overlay implementation exists.
 
 **Resolved open decisions (§7):**
 

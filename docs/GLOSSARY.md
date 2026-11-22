@@ -140,7 +140,7 @@ An operational capability exposed to the user. A Tool defines what it represents
 
 **Distinguish from:** *Command* (the executable operation), *Widget* (a reusable UI component).
 
-**See:** `docs/architecture/ui/tools/tools.md`
+**See:** `architecture/tools`
 
 ---
 
@@ -151,96 +151,96 @@ A structural container provided by the Workspace. It occupies a position in the 
 
 **Distinguish from:** *Editor* (functional unit), *Region* (a geometric grouping of Areas), *Overlay* (a floating layer).
 
-**See:** `docs/architecture/ui/workspace/workspace.md` §2, ADR-0001
+**See:** `architecture/workspace` §2, ADR-0001
 
 ### Area Layout Tree
 The N-ary split tree that organizes the Areas of the Workspace. Nodes are `Leaf` (one Area) or `Split` (direction + two or more children). The Area Layout Tree is the single source of truth for Workspace structure.
 
-**See:** `docs/architecture/ui/workspace/workspace.md` §5`
+**See:** `architecture/workspace` §5`
 
 ### Editor
 A functional unit hosted inside an Area. It provides a specific interaction experience (e.g., `Viewport3DEditor`, `MPRViewerEditor`, `ConsoleEditor`). An Editor declares and materializes its own Toolbar(s) and internal overlays.
 
 **Distinguish from:** *Area* (the structural container), *Tool* (an action), *Toolbar* (the presentation of Tools inside an Editor).
 
-**See:** `docs/architecture/ui/editors/editors.md`, ADR-0001, ADR-0002
+**See:** `architecture/editors`, ADR-0001, ADR-0002
 
 ### Editor Layout Tree
 The N-ary split tree internal to an Area that organizes the Editors hosted by that Area. It uses the same node types as the Area Layout Tree (`Leaf`, `Split`).
 
-**See:** `docs/architecture/ui/workspace/workspace.md` §5`, `docs/architecture/ui/editors/editors.md` §8
+**See:** `architecture/workspace` §5`, `docs/architecture/ui/editors/editors.md` §8
 
 ### EditorCatalog
 The context-aware filter over the `EditorRegistry`. It answers: "Which registered Editors can be used in the current context?" It considers the active Scene, Project, Area, and required capabilities/data.
 
 **Distinguish from:** *EditorRegistry* (the registry of all Editor types).
 
-**See:** `docs/architecture/ui/editors/editors.md` §6
+**See:** `architecture/editors` §6
 
 ### EditorContext
 The controlled set of dependencies an Editor receives at insertion time. Created once per Editor (hybrid model): fields specific to the Editor (identity, view state, extras) are isolated; shared services (SceneQuery, CommandDispatcher, EventSubscription, EditorServices) are propagated by reference.
 
-**See:** `docs/architecture/ui/editors/editors.md` §15, ADR-0002
+**See:** `architecture/editors` §15, ADR-0002
 
 ### EditorRegistry
 The registry of all Editor **types** known to the system. It resolves `editor_id` to concrete Editor classes and creates instances. It does **not** manage instances.
 
 **Error contracts:** `register` raises `ValueError` on duplicate; `resolve` and `create` raise `KeyError` on unknown.
 
-**See:** `docs/architecture/ui/editors/editors.md` §5, `docs/architecture/ui/workspace/workspace.md` §3.6
+**See:** `architecture/editors` §5, `architecture/workspace` §3.6
 
 ### LayoutBuilder
 The component that consumes a `ModuleUISpec` and produces a `LayoutTree`. It is a **pure** composition step: it does not import PySide6, does not require a `QApplication`, and does not create widgets.
 
 **Distinguish from:** *LayoutRenderer* (materializes widgets).
 
-**See:** `docs/architecture/ui/workspace/workspace.md` §3.5`, ADR-0002
+**See:** `architecture/workspace` §3.5`, ADR-0002
 
 ### LayoutRenderer
 The component that materializes a `LayoutTree` as Qt widgets (nested `QSplitter` widgets and Area widgets). It is the sole materializer of widgets: Areas, Splits, Editors, and Toolbars.
 
 **Distinguish from:** *LayoutBuilder* (pure composition step).
 
-**See:** `docs/architecture/ui/workspace/implementation/workspace-implementation.md` Phase 6, ADR-0002
+**See:** `architecture/workspace` Phase 6, ADR-0002
 
 ### LayoutState
 The presentation state associated with a Workspace layout: proportions (`QSplitter` sizes per node), visibility (which Areas are shown or hidden), and the active Editor per Area. Stored separately from the structural trees.
 
 **Distinguish from:** *OverlayState* (state of Overlays), *ViewStateStore* (per-Editor presentation state).
 
-**See:** `docs/architecture/ui/workspace/workspace.md` §5.3
+**See:** `architecture/workspace` §5.3
 
 ### MainWindow
 The top-level application window. It hosts the Workspace and provides the application frame (native OS window controls and, when applicable, the OS menu bar). It does not own the Workspace layout state, clinical state, or workflow semantics.
 
-**See:** `architecture/application/main_window.md`
+**See:** `architecture/main_window`
 
 ### ModuleUISpec
 The declarative specification a Module provides to the Workspace, describing which Areas it wants the Workspace to materialize, their placement, and their internal Editor Layout Trees.
 
-**See:** `docs/architecture/ui/workspace/workspace.md` §3.5
+**See:** `architecture/workspace` §3.5
 
 ### Overlay
 A floating layer managed by the Workspace, positioned over a Region of Areas. Overlays can be moved, resized, and closed. The `steps_panel` is the primary example.
 
 **Distinguish from:** *Top Bar* (structural component, not repositionable), *Editor internal overlay* (belongs to an Editor, not the Workspace).
 
-**See:** `docs/architecture/ui/workspace/workspace.md` §7`
+**See:** `architecture/workspace` §7`
 
 ### OverlayState
 The presence, configuration, and anchoring of Overlays. Stored alongside the layout trees, inside the project file.
 
-**See:** `docs/architecture/ui/workspace/workspace.md` §5.3`, §7.6
+**See:** `architecture/workspace` §5.3`, §7.6
 
 ### Placement
 A semantic classification of an Area within the Workspace layout: `LEFT`, `CENTRAL`, `RIGHT`, `BOTTOM`. Placement is used to build the initial Area Layout Tree and to associate Areas with Regions. It is preserved after construction.
 
-**See:** `docs/architecture/ui/workspace/workspace.md` §3.5`
+**See:** `architecture/workspace` §3.5`
 
 ### Region
 A geometric area derived from the Area Layout Tree that groups related Areas. Overlays are positioned over Regions.
 
-**See:** `docs/architecture/ui/workspace/workspace.md` §7.2`
+**See:** `architecture/workspace` §7.2`
 
 ### Surface
 A visual background belonging to a window, panel, or overlay. CranioZ defines three surface styles: **Solid**, **Translucent**, and **Frosted Glass**.
@@ -255,14 +255,14 @@ The global visual palette and styling configuration of the interface (Light, Dar
 ### Toolbar
 A widget internal to an Editor that presents Tools to the user. A Toolbar is declared by a `ToolbarSpec` and materialized by the `LayoutRenderer` from the Editor's `toolbar_specs()`. The Workspace never hosts Toolbars; the Area never hosts Toolbars.
 
-**See:** `docs/architecture/ui/toolbar/toolbar.md`, ADR-0002
+**See:** `architecture/toolbar`, ADR-0002
 
 ### Top Bar
 A structural component of the Workspace, fixed at the top, not repositionable or closeable. It contains three segments: Left (menu, Home, toggle Left), Center (module tabs, `+` button), Right (Extras, toggle Right, window controls).
 
 **Distinguish from:** *Overlay* (repositionable, closeable).
 
-**See:** `docs/architecture/ui/workspace/workspace.md` §3.3`
+**See:** `architecture/workspace` §3.3`
 
 ### Widget
 A reusable interface component implementing the CranioZ visual and interaction conventions. Generic composite widgets live in `src/cranioz/ui/widgets/`. Editor-internal overlays live in `src/cranioz/ui/editors/overlays/`.
@@ -272,7 +272,7 @@ A reusable interface component implementing the CranioZ visual and interaction c
 ### Workspace
 The runtime environment where clinical work happens. It is a composition of Areas (structural containers that host Editors) and Overlays (floating layers). The Workspace manages Areas and Overlays; it does not own clinical state, Tools, Toolbars, or Module behavior.
 
-**See:** `docs/architecture/ui/workspace/workspace.md`
+**See:** `architecture/workspace`
 
 ---
 
@@ -291,12 +291,12 @@ The canonical registry and lifecycle authority for domain objects belonging to a
 ### Patient
 The person associated with clinical data in CranioZ. The Patient is composed of nine section value objects (identity, documents, filiation, address, complaint, comorbidities, medications, antecedents, habits). It is referenced by a Project; it does not own clinical data such as imaging, meshes, photographs, odontogram, or documents.
 
-**See:** `docs/architecture/domain/patient/patient.md`, ADR-0004
+**See:** `architecture/patient`, ADR-0004
 
 ### PatientSummary
 A lightweight read-only projection of the Patient carrying `patient_id`, `display_name`, `birth_date`, and `sex`. Used in contexts where the full record is not needed (Project Catalog, ProjectContext, tooltips).
 
-**See:** `docs/architecture/domain/patient/patient.md` §13
+**See:** `architecture/patient` §13
 
 ### Project
 The persistent clinical container associated with a patient and one or more clinical workflows. It provides the boundary within which patient-related data, imaging, models, planning data, workflow state, metadata, and other clinical artifacts are organized.
@@ -348,12 +348,12 @@ The mechanism through which Editors and Tools publish Commands. The CommandBus r
 ### CommandDispatcher
 The interface through which an Editor or Tool dispatches Commands. Part of the `EditorContext` and `ToolContext`.
 
-**See:** `docs/architecture/ui/editors/editors.md` §15
+**See:** `architecture/editors` §15
 
 ### CommandHandler / CommandExecutor
 The component responsible for validating a Command, opening a transaction, applying changes to the Domain/Scene, committing, and publishing events.
 
-**See:** `docs/architecture/ui/workspace/workspace.md` §3.4`
+**See:** `architecture/workspace` §3.4`
 
 ### Event Bus
 The mechanism through which the Application layer publishes events after a successful commit. Events communicate state changes; they do not replace Commands.
@@ -363,22 +363,22 @@ The mechanism through which the Application layer publishes events after a succe
 ### SelectionService
 The service through which an Editor or Tool queries and observes the current selection. Part of the `EditorContext` and `ToolContext`.
 
-**See:** `docs/architecture/ui/editors/editors.md` §15
+**See:** `architecture/editors` §15
 
 ### SceneQuery
 The read-only interface through which an Editor accesses the Scene. An Editor never receives a mutable reference to the Scene.
 
-**See:** `docs/architecture/ui/editors/editors.md` §15
+**See:** `architecture/editors` §15
 
 ### ToolContext
 A strict subset of the `EditorContext` provided to a Tool. Contains `SceneQuery`, `SelectionService`, `CommandDispatcher`, and `ToolServices`. Does not contain `EventSubscription`, `ViewStateStore`, or `EditorServices`.
 
-**See:** `docs/architecture/ui/editors/editors.md` §15
+**See:** `architecture/editors` §15
 
 ### ViewStateStore
 Per-Editor presentation state (zoom, camera, current slice, visual selection, presentation mode). It is not clinical state and not the same as `LayoutState`.
 
-**See:** `docs/architecture/ui/editors/editors.md` §15`
+**See:** `architecture/editors` §15`
 
 ---
 

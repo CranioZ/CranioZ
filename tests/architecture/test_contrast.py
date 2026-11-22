@@ -5,7 +5,7 @@ Per themes-and-design-tokens.md §12.1, the following pairs must meet
 
 The pairs, in spec order:
 
-    color.text.primary        on color.background.application   >= 4.5
+    color.text.primary        on color.background.main_window   >= 4.5
     color.text.primary        on color.background.panel         >= 4.5
     color.text.primary        on color.background.elevated      >= 4.5
     color.text.secondary      on color.background.panel         >= 4.5
@@ -19,7 +19,7 @@ The implementation follows WCAG's relative luminance formula.
 
 Block 5.7 ("Dark Graphite + Medical Blue"):
 The dark palette was refined to widen the tonal range
-(application L=11 to elevated L=24). All nine pairs still meet AA
+(main_window L=11 to elevated L=24). All nine pairs still meet AA
 on the new palette; the closest pair is ``text_inverse`` on
 ``interactive_default`` at 4.7:1, which is intentionally above the
 threshold to avoid a near-miss on the primary action color.
@@ -76,7 +76,7 @@ def _contrast_ratio(fg: str, bg: str) -> float:
 
 
 _TEXT_PAIRS: list[tuple[str, str, str]] = [
-    ("text_primary", "background_application", "text.primary on background.application"),
+    ("text_primary", "background_application", "text.primary on background.main_window"),
     ("text_primary", "background_panel", "text.primary on background.panel"),
     ("text_primary", "background_elevated", "text.primary on background.elevated"),
     ("text_secondary", "background_panel", "text.secondary on background.panel"),

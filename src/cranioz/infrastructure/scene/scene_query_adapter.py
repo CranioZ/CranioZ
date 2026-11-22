@@ -1,6 +1,6 @@
 """SceneQueryAdapter — real SceneQuery backed by a Scene.
 
-Implements the ``SceneQuery`` Protocol (application/scene/scene_query.py)
+Implements the ``SceneQuery`` Protocol (main_window/scene/scene_query.py)
 by querying the ``Scene`` (domain/scene/scene.py). The adapter is
 read-only: it never mutates the Scene. All mutations go through
 Commands (ADR-0007).

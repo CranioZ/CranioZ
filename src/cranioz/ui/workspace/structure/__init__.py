@@ -3,7 +3,7 @@
 The Top Bar of the Workspace is composed of three segments, each a
 plain presentation widget with no knowledge of Overlay, Region or
 Placement. The TopOverlay holds them; the MainWindow wires them to
-application handlers.
+main_window handlers.
 
 Public API:
 

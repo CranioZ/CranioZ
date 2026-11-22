@@ -1,11 +1,11 @@
-"""CranioZ application entry point.
+"""CranioZ main_window entry point.
 
 Boot sequence:
 1. Load configuration.
 2. Configure logging.
 3. Configure QSurfaceFormat (VTK needs compatibility profile).
 4. Create the QApplication.
-5. Initialize application paths.
+5. Initialize main_window paths.
 6. Initialize shared services (EventBus, CommandBus, CommandStack,
    CommandExecutor, TaskManager, TelemetrySink, ModuleRegistry).
 7. Initialize the project subsystem.
@@ -167,7 +167,7 @@ def _build_shared_services(
     EventBusAdapter,
     InMemoryModuleRegistry,
 ]:
-    """Build the shared application services (bus, stack, tasks, ...)."""
+    """Build the shared main_window services (bus, stack, tasks, ...)."""
     command_bus = InMemoryCommandBus()
     _logger.debug("Command bus initialized: %r", command_bus)
 
@@ -313,7 +313,7 @@ def main() -> int:
     try:
         app_paths.initialize(config.paths)
     except AppPathInaccessible as exc:
-        _logger.exception("cannot initialize application paths")
+        _logger.exception("cannot initialize main_window paths")
         QMessageBox.critical(
             None,
             translation_service.tr(
@@ -322,7 +322,7 @@ def main() -> int:
             ),
             translation_service.tr(
                 "core.errors.startup_failed.paths",
-                "The application paths could not be initialized:\n\n{detail}",
+                "The main_window paths could not be initialized:\n\n{detail}",
                 detail=exc,
             ),
         )

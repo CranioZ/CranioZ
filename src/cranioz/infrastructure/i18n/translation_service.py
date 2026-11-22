@@ -8,7 +8,7 @@ This module defines:
 - A concrete implementation, ``CatalogTranslationService``, backed
   by a TranslationCatalogRegistry.
 - An ``IdentityTranslationService``, useful for tests and for the
-  early phase of the application before catalogs exist.
+  early phase of the main_window before catalogs exist.
 
 The public API is a single method::
 
@@ -203,7 +203,7 @@ class IdentityTranslationService:
 
     Useful for:
     - Tests that do not care about translations.
-    - The early phase of the application before catalogs exist.
+    - The early phase of the main_window before catalogs exist.
     - Fallback when no catalog registry is available.
 
     It supports the language property and set_language() so that

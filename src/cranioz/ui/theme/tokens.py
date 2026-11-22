@@ -26,7 +26,7 @@ Phase 2 dark palette (Block 5.7):
   primary actions, focus and selection.
 - Feedback colors meet WCAG AA on ``background_panel`` (the darkest
   common surface used by feedback text).
-- Refined against the Affinity Design session: the application
+- Refined against the Affinity Design session: the main_window
   background is deeper, the panel and elevated surfaces are slightly
   lighter, and the input sits below the panel. The tonal range is
   therefore wider (L=11 to L=24) without changing the hue.
@@ -181,8 +181,8 @@ DARK_TOKENS: Final[ThemeTokens] = ThemeTokens(
     colors=ColorTokens(
         # Block 5.7 (Affinity refinement): Dark Graphite hierarchy.
         # Four tonal steps with a wider range than v1:
-        #   application (L=11) < input (L=15) < panel (L=19) < elevated (L=24)
-        # The application is deeper than v1, the panel and elevated
+        #   main_window (L=11) < input (L=15) < panel (L=19) < elevated (L=24)
+        # The main_window is deeper than v1, the panel and elevated
         # are slightly lighter, and the input sits below the panel
         # (a receiving surface, not a structural one).
         background_application="#1C1F24",
@@ -191,7 +191,7 @@ DARK_TOKENS: Final[ThemeTokens] = ThemeTokens(
         background_input="#232930",
         # Text: neutral, slightly cool. Secondary is brighter than v1
         # (the Affinity session showed #B0BAC5 reads better on the
-        # darker application background).
+        # darker main_window background).
         text_primary="#E1E5EA",
         text_secondary="#B0BAC5",
         text_disabled="#6B7580",

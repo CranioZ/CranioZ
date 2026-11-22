@@ -1,7 +1,7 @@
 """Tests for PatientId.
 
 PatientId is a frozen value object that identifies a Patient
-within the CranioZ application. These tests exercise its
+within the CranioZ main_window. These tests exercise its
 validation, equality, hashing, and representation.
 
 The tests do not depend on Qt, filesystem, or infrastructure.

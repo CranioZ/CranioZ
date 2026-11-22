@@ -14,7 +14,7 @@ coordinates:
 
 Design rules (see `project.md` §4, §16, §17, §21, §22, §25):
 
-- The Manager is **not thread-safe**. It runs on the application's
+- The Manager is **not thread-safe**. It runs on the main_window's
   main thread. Concurrency is a separate concern (project.md §26,
   pending ADR); this piece does not introduce locks.
 - The Manager does **not** access the filesystem directly. Every
@@ -50,7 +50,7 @@ Workspace/Application policy decision (project.md §21). If a
 second `open_project` is called while another is open, both remain
 open in the Manager; the caller decides which to close. This
 matches `project.md` §21 ("Whether another project can be opened
-before the current project is closed is an application/session
+before the current project is closed is an main_window/session
 policy and should not be implemented independently by the Home
 Page").
 """

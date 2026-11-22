@@ -2,14 +2,14 @@
 
 Six buttons, left to right:
 
-- ``⋮`` (three dots): a ``QMenu`` with application-level actions
+- ``⋮`` (three dots): a ``QMenu`` with main_window-level actions
   (Configurações, Temas, Ajuda, Atualizações, Sobre).
 - Two panel-toggle glyphs: toggle Area Bottom and toggle Area Right.
 - Three window controls: minimize, maximize/restore, close.
 
 The menu is auto-contained: the items are fixed and independent of
 context. Each item emits a dedicated signal. The segment does not
-know the application; the MainWindow connects the signals to its
+know the main_window; the MainWindow connects the signals to its
 existing handlers (or placeholders, until the corresponding phases
 deliver real implementations).
 

@@ -1,6 +1,6 @@
 """Built-in modules.
 
-The application bootstrap populates ModuleRegistry from BUILTIN_MANIFESTS
+The main_window bootstrap populates ModuleRegistry from BUILTIN_MANIFESTS
 (modules.md v10 §10.5). Each entry is a ModuleManifest imported from the
 corresponding subpackage's manifest.py.
 """

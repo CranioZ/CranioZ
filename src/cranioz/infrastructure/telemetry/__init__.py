@@ -1,11 +1,11 @@
 """Telemetry infrastructure — adapters for the TelemetrySink protocol.
 
-The application core depends on ``cranioz.application.telemetry``
+The main_window core depends on ``cranioz.main_window.telemetry``
 (the Protocol). This package provides the concrete adapters:
 
 - ``LoggingTelemetrySink`` — writes to the standard logging framework.
 - ``NoOpTelemetrySink`` — discards everything (re-exported from the
-  application layer for convenience).
+  main_window layer for convenience).
 """
 
 from cranioz.application.telemetry.noop_sink import NoOpTelemetrySink

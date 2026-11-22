@@ -1,7 +1,7 @@
 """ProjectId.
 
 A ProjectId is a value object that uniquely identifies a Project
-within the CranioZ application. It is deliberately distinct from
+within the CranioZ main_window. It is deliberately distinct from
 the project's display name, the patient's identity, and the
 filesystem path: those can all change, but the ProjectId must remain
 stable for the lifetime of the project.

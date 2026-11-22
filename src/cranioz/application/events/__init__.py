@@ -10,7 +10,7 @@ Public API:
   cancelled by ``cancel()``.
 - ``EventBusAdapter`` — reference implementation over the existing
   ``EventBus``.
-- ``SubscriptionClosed`` and ``EventPublicationError`` — application-level
+- ``SubscriptionClosed`` and ``EventPublicationError`` — main_window-level
   errors.
 
 The package wraps the existing ``EventBus`` (which has no scope concept).

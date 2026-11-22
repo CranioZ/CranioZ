@@ -34,7 +34,7 @@ class SceneProvider(Protocol):
         The Scene is the spatial organization of objects. It does not
         own the objects (DomainObjectStore owns them). For the first
         version, the Scene is empty; objects will be added by the
-        application (via Commands) as the user imports data.
+        main_window (via Commands) as the user imports data.
         """
         ...
 

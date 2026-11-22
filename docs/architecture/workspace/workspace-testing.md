@@ -132,13 +132,13 @@ tests/
 | `ui/workspace/workspace.py` | `tests/integration/ui/test_workspace.py` |
 | `ui/workspace/layout_builder.py` | `tests/integration/ui/test_layout_builder.py` |
 | `ui/workspace/layout_renderer.py` | `tests/integration/ui/test_layout_renderer.py` |
-| `ui/main_window.py` | `tests/integration/ui/test_main_window.py` |
+| `ui/main_window.py` | `../../../tests/integration/ui/test_main_window.py` |
 
 ---
 
 ## 6. Fixtures
 
-### 6.1 Global fixtures (`../../../../tests/conftest.py`)
+### 6.1 Global fixtures (`../../../tests/conftest.py`)
 
 ```python
 import pytest

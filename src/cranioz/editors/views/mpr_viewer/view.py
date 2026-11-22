@@ -15,7 +15,7 @@ Architectural decision (not a workaround):
   script that proved the data is correct.
 
 - **3D is VTK**. ``Viewport3DView`` continues to use VTK volume
-  rendering, which needs OpenGL. The application entry point
+  rendering, which needs OpenGL. The main_window entry point
   configures ``QSurfaceFormat`` with the Compatibility Profile so
   that the 3D view works. This separation — NumPy for 2D, VTK for
   3D — is what the project settled on after repeated, environment-

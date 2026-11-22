@@ -46,7 +46,7 @@ _SEED_ACTOR = "seed-script"
 
 
 def _projects_root() -> Path:
-    """Resolve the projects root using the same logic as the application."""
+    """Resolve the projects root using the same logic as the main_window."""
     config = ConfigurationLoader().load()
     app_paths = AppPathResolver()
     app_paths.initialize(config.paths)
@@ -86,7 +86,7 @@ def main() -> int:
 
     print(f"\nDone. Created: {created}, skipped: {skipped}.")
     if created:
-        print("Restart the application to see the projects in the Home Page.")
+        print("Restart the main_window to see the projects in the Home Page.")
     return 0
 
 

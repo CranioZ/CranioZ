@@ -8,7 +8,7 @@ The reader does not weld vertices. Two vertices with identical
 coordinates remain distinct in the resulting ``Mesh`` unless the
 caller explicitly welds them (out of scope for this block).
 
-See the ``Geometry Infrastructure`` architecture document, §4.5
+See the ``geometry Infrastructure`` architecture document, §4.5
 and §9.3.
 """
 

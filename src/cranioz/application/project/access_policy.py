@@ -17,7 +17,7 @@ Design rules (see `project.md` §15, §28):
 - An `Actor` is a string for now. It identifies who is performing
   the operation. In single-user mode (the initial deployment), the
   bootstrap passes a stable identifier (e.g. the OS username, or a
-  configured professional id). When the application gains a proper
+  configured professional id). When the main_window gains a proper
   user model, `Actor` will become a richer value object; the
   Protocol signature will not need to change for the common case.
 - `AllowAllProjectAccessPolicy` is the initial implementation. It
@@ -33,7 +33,7 @@ from typing import Protocol, runtime_checkable
 from cranioz.domain.project.project_id import ProjectId
 
 # An Actor identifies who is performing the operation. Kept as a
-# string alias for now; the application has no user model yet.
+# string alias for now; the main_window has no user model yet.
 # When a proper user model exists (roles, institutions), this alias
 # becomes a class, and callers that already pass strings continue
 # to work via a compatibility shim.

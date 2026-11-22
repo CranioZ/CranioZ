@@ -4,7 +4,7 @@ The shell widgets (HomePage tree, Top Bar segments, MainWindow,
 Workspace placeholder editor, bootstrap) must resolve every
 user-facing string through the TranslationService. Hardcoded strings
 in these files are a regression: they bypass the catalog, cannot be
-translated, and drift from the rest of the application.
+translated, and drift from the rest of the main_window.
 
 This test scans the AST of each shell file and flags string literals
 passed directly to a small set of UI-construction sites:
@@ -47,9 +47,9 @@ import pytest
 # Scope
 # ---------------------------------------------------------------------
 
-# The shell is the set of files that build the application frame and
+# The shell is the set of files that build the main_window frame and
 # the Home Page. Editors, Tools, Toolbars, dialogs owned by feature
-# modules, and domain/application layers are out of scope: they either
+# modules, and domain/main_window layers are out of scope: they either
 # already translate their own strings through EditorContext, or do
 # not present strings to the user at all.
 _REPO_ROOT = Path(__file__).parents[2]

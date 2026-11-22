@@ -376,7 +376,7 @@ document. The following were confirmed and resolved on 2026-11-18:
   removed on 2026-11-13 (§7.1).
 - **`SceneQueryAdapter` has a single implementation** in
   `infrastructure/scene/`. The duplicate in
-  `application/scene/` was removed on 2026-11-13 (§7.2).
+  `main_window` was removed on 2026-11-13 (§7.2).
 - **No new parallel implementations were introduced** during the
   refactoring, per the standing task in §7.3.
 
@@ -552,9 +552,9 @@ project goes through a Protocol defined in the Application layer.
 
 #### Required Corrections
 
-- Define a `DicomSeriesReader` Protocol in `application/imaging/`.
+- Define a `DicomSeriesReader` Protocol in `main_window`.
 - Make `ImportDicomSeriesHandler` depend on this Protocol.
-- Move the concrete implementation to `infrastructure/imaging/dicom/` as
+- Move the concrete implementation to `imaging` as
   `PydicomSeriesReader` (implementing the Protocol).
 - Inject the concrete implementation during application composition.
 
@@ -802,7 +802,7 @@ becomes a Correction only when the second workflow is added.
 **Category:** Correction
 **Status:** Resolved 2026-11-13
 
-`infrastructure/imaging/dicom_loader.py` maintained an implementation
+`imaging` maintained an implementation
 parallel to `DicomSeriesReader`, including normalization of values to
 the range 0 to 4095 and Gaussian smoothing.
 
@@ -954,16 +954,16 @@ consolidations that were previously listed as open or anticipated in
 this document and in `refactoring_plan.md` §7:
 
 - **`_PlaceholderEditor` duplication.** The private copy in
-  `ui/workspace/workspace_spec.py` was consolidated into the canonical
+  `workspace` was consolidated into the canonical
   `PlaceholderEditor` in `editors/core/editor/placeholder_editor.py`.
 - **`_null_task_manager.py` duplication.** Removed. `module_loader.py`
   now uses `NoopTaskManager` from `cranioz.application.tasks`.
 - **`editor_manifest.py` and `editor_catalog.py`** (both empty). Removed.
   If a contract is needed for Sprint L, it will be introduced with a
   real implementation.
-- **`ui/editors/mock/`** (debug-only production components). Removed.
+- **`editors`** (debug-only production components). Removed.
 - **`DummyEditor` / `DebugEditor`** moved from
-  `ui/editors/builtin/test_editor.py` to
+  `editors` to
   `tests/fixtures/editors/test_editor.py`.
 - **`MeshDebugEditor`** moved to `editors/builtin/mesh_debug/editor.py`
   and the composition-root import in `main_window.py` was updated.
@@ -983,12 +983,12 @@ The final validation is recorded in `refactoring_plan.md` §11:
 The following items were identified during the refactoring but were
 explicitly deferred to a separate PR to keep scopes clean:
 
-- **`application/event_bus.py` → `application/events/bus.py`**
+- **`main_window` → `main_window`**
   (Step 6.1 of `refactoring_plan.md`). The migration is mechanical and
   independent of the Editor reorganization.
 - **`editors/view_overlays/`** (Step 4.4 of `refactoring_plan.md`).
-  Skipped because `ui/editors/overlays/gizmos/` and
-  `ui/editors/overlays/rulers/` contain only empty `__init__.py` files.
+  Skipped because `editors` and
+  `editors` contain only empty `__init__.py` files.
   The package will be created when a concrete overlay implementation
   exists.
 - **`Workspace.find_viewport_3d()` regression test.** Documented as an

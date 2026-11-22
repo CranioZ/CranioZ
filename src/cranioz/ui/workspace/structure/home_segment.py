@@ -102,7 +102,7 @@ class HomeSegment(QWidget):
         """Reflect the project-open state on context-dependent actions.
 
         "Fechar projeto" and the import actions are only enabled when
-        a project is open. The segment does not inspect the application
+        a project is open. The segment does not inspect the main_window
         state; it trusts the boolean.
         """
         self._project_open = open

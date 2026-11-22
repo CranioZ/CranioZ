@@ -12,7 +12,7 @@ The placeholders will be replaced by real implementations once the
 domain objects (Mesh, Volume) are implemented.
 
 VTK is an optional dependency. The import is deferred to
-``create_mesh_actor`` so that the application can boot without VTK
+``create_mesh_actor`` so that the main_window can boot without VTK
 installed; the error is raised only when an actor is actually
 created.
 

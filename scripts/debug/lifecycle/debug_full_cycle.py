@@ -6,7 +6,7 @@ It seeds the filesystem repository (if needed), opens a project via
 ProjectManager, builds the ProjectContext, closes the project, and
 prints each step to the console. It does not open a GUI; it is a
 logic-only exercise, useful to verify that the lifecycle works before
-running the application.
+running the main_window.
 
 Run with:
 

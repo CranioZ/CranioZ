@@ -13,9 +13,9 @@ never exposes a writable buffer: array immutability is enforced by
 
 Mesh does NOT carry identity (that belongs to the Object System),
 revision history, persistence metadata, or attributes. Those are
-introduced in later phases of the Geometry Infrastructure document.
+introduced in later phases of the geometry Infrastructure document.
 
-See the ``Geometry Infrastructure`` architecture document, §3.1.
+See the ``geometry Infrastructure`` architecture document, §3.1.
 """
 
 from __future__ import annotations

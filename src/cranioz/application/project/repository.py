@@ -3,7 +3,7 @@
 `ProjectRepository` is a Protocol. It defines the persistence operations
 the Project Manager relies on, without committing to filesystem, database,
 or remote storage. Concrete adapters live in `infrastructure/` (e.g.
-`FilesystemProjectRepository`) or in the application layer for test
+`FilesystemProjectRepository`) or in the main_window layer for test
 doubles (e.g. `InMemoryProjectRepository`).
 
 Design rules (see `project.md` §11-§12):
@@ -39,7 +39,7 @@ class ProjectRepository(Protocol):
     """Persistence port for the Project subsystem.
 
     Implementations must raise the errors from
-    `cranioz.application.project.errors` for every documented
+    `cranioz.main_window.project.errors` for every documented
     failure mode. They must not raise `KeyError`, `ValueError`, or any
     `OSError` to the caller.
     """

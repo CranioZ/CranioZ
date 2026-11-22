@@ -1,7 +1,7 @@
 """QtTaskManager — production TaskManager backed by QThreadPool.
 
 Implements the ``TaskManager`` Protocol from
-``cranioz.application.tasks.base`` (ADR-0011). Responsibilities:
+``cranioz.main_window.tasks.base`` (ADR-0011). Responsibilities:
 
 - Dispatch Tasks onto a ``QThreadPool``.
 - Marshal every callback (progress, result, error, cancel) back to
@@ -15,7 +15,7 @@ Design notes (see ADR-0011 §2):
 
 - **QThreadPool, not ProcessPoolExecutor.** VTK/ITK release the GIL
   during native calls, so ``QThreadPool`` is sufficient for the
-  clinical workloads this application dispatches. Process pools are
+  clinical workloads this main_window dispatches. Process pools are
   reserved for future tasks that explicitly declare
   ``process_safe = True``.
 - **All callbacks run on the GUI thread.** The ``QtTaskManager``

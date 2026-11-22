@@ -15,13 +15,13 @@ Design rules (see `project.md` §27):
   failed, and (when known) the underlying cause.
 - Errors are not `ValueError` or `KeyError` subclasses. They are a
   separate hierarchy so that callers do not accidentally conflate a
-  domain validation error with an application lifecycle error.
+  domain validation error with an main_window lifecycle error.
 
 Two families live under `ProjectError`:
 
 - `ProjectRepositoryError` and subclasses — persistence failures.
   Raised by repository implementations (filesystem, in-memory).
-- `ProjectAccessDenied`, `ProjectInUse` — application decisions.
+- `ProjectAccessDenied`, `ProjectInUse` — main_window decisions.
   Raised by the Project Manager before touching persistence. They are
   not persistence errors and must not be caught as such.
 """
@@ -32,7 +32,7 @@ from cranioz.domain.project.project_id import ProjectId
 
 
 class ProjectError(Exception):
-    """Base of all application-level Project subsystem errors.
+    """Base of all main_window-level Project subsystem errors.
 
     Catching `ProjectError` catches every failure the Project Manager
     can raise. Catching a more specific subclass lets the caller react
@@ -75,7 +75,7 @@ class ProjectAlreadyExists(ProjectRepositoryError):
     """Raised when `create` is called with an id that already exists.
 
     Projects are identified by a stable `ProjectId`; creating a second
-    project with the same id is a programming error at the application
+    project with the same id is a programming error at the main_window
     level, never a silent overwrite.
     """
 

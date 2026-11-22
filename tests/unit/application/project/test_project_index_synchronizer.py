@@ -181,7 +181,7 @@ def test_handler_failure_logs_only_project_id_and_operation(
     index.add = _boom  # type: ignore[method-assign]
 
     synchronizer.start()
-    with caplog.at_level("WARNING", logger="cranioz.application.project.index_synchronizer"):
+    with caplog.at_level("WARNING", logger="cranioz.main_window.project.index_synchronizer"):
         synchronizer._on_created(
             ProjectCreated(
                 project_id=ProjectId("p-1"),

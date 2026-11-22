@@ -59,7 +59,7 @@ def _write_axial_dcm(
     ds.SamplesPerPixel = 1
     ds.PhotometricInterpretation = "MONOCHROME2"
 
-    # Geometry attributes required by the DicomSorter.
+    # geometry attributes required by the DicomSorter.
     ds.PixelSpacing = [0.5, 0.5]
     ds.SliceThickness = 0.5
     ds.ImagePositionPatient = [0.0, 0.0, z_position]

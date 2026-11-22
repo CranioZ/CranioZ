@@ -35,10 +35,10 @@ Rules:
 
 See also:
 
-- ``infrastructure/app/app_path_resolver.py`` — application-level
+- ``infrastructure/app/app_path_resolver.py`` — main_window-level
   paths (projects root, flows root, cache root).
 - ADR-0004 and ``project_pt.md`` §14 — the design rationale for
-  separating application paths from project paths.
+  separating main_window paths from project paths.
 """
 
 from __future__ import annotations

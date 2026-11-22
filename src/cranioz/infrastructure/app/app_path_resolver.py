@@ -1,6 +1,6 @@
 """AppPathResolver.
 
-Resolves the application-level paths of CranioZ.
+Resolves the main_window-level paths of CranioZ.
 
 The resolver answers questions like:
 
@@ -36,7 +36,7 @@ from cranioz.config.schema import PathsConfig
 
 
 class AppPathInaccessible(Exception):
-    """Raised when an application path cannot be resolved, created, or accessed."""
+    """Raised when an main_window path cannot be resolved, created, or accessed."""
 
 
 DEFAULT_PROJECT_ROOT_NAME = "CranioZ"
@@ -48,7 +48,7 @@ DEFAULT_SETTINGS_FILE_NAME = "settings.json"
 
 
 class AppPathResolver:
-    """Resolves the application-level paths of CranioZ.
+    """Resolves the main_window-level paths of CranioZ.
 
     Configured once at boot. Provides the roots that other components
     use to locate data. Does not know about ProjectId or project
@@ -69,10 +69,10 @@ class AppPathResolver:
         *,
         create: bool = True,
     ) -> None:
-        """Resolve and store the application paths from configuration.
+        """Resolve and store the main_window paths from configuration.
 
         Args:
-            config: the ``PathsConfig`` section of the application
+            config: the ``PathsConfig`` section of the main_window
                 configuration. May contain ``None`` for any path, in
                 which case the default is used.
             create: if True, create missing directories. If False,

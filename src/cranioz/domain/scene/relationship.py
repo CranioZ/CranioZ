@@ -10,7 +10,7 @@ Examples:
 - DerivedFrom(OsteotomySegment, Mandible)
 
 The Scene stores relationships; the algorithms that establish them
-belong to domain or application services.
+belong to domain or main_window services.
 
 See scene.md §13.
 """

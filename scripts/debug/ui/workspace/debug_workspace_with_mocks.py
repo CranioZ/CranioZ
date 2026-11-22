@@ -1,7 +1,7 @@
 """Debug script: launch the Workspace with mock Editors on all four Areas.
 
 This script isolates the layout behavior from the real Editor content.
-If the layout is correct here but wrong in the real application, the
+If the layout is correct here but wrong in the real main_window, the
 problem is the real Editors' minimumSizeHint (TomographyEditor,
 _PlaceholderEditor). If the layout is wrong here too, the problem is
 in the Workspace's splitter sizing logic.

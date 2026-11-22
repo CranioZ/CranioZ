@@ -162,7 +162,7 @@ class ThemeService(QObject):
             raise ValueError("logical_name must not be empty")
         return logical_name
 
-    # ----- Internal: theme resolution and application ------------------
+    # ----- Internal: theme resolution and main_window ------------------
 
     def _resolve(self, mode: ThemeMode) -> ThemeName:
         if mode is ThemeMode.DARK:

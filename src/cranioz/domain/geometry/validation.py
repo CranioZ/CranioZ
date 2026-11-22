@@ -4,9 +4,9 @@ A ``ValidationResult`` records the outcome of validating a mesh
 against a profile. The initial implementation only needs the
 ``ValidationSeverity`` enum and the two dataclasses; the actual
 profile registry and per-operation rules are introduced in later
-phases of the Geometry Infrastructure document.
+phases of the geometry Infrastructure document.
 
-See the ``Geometry Infrastructure`` architecture document, §7.
+See the ``geometry Infrastructure`` architecture document, §7.
 """
 
 from __future__ import annotations

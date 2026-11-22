@@ -1,4 +1,4 @@
-"""HomePage — the application's entry point and project discovery screen.
+"""HomePage — the main_window's entry point and project discovery screen.
 
 The HomePage is a presentation and dispatch layer. It lists projects
 and flows, and emits signals for every user intention. It does not
@@ -66,7 +66,7 @@ from cranioz.ui.icons.provider import IconProvider
 
 
 class HomePage(QWidget):
-    """Entry point of the application."""
+    """Entry point of the main_window."""
 
     # ----- Top bar ---------------------------------------------------
 

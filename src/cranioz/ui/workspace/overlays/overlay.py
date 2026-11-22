@@ -101,7 +101,7 @@ class Overlay(ABC):
         """
         raise NotImplementedError
 
-    # ----- Geometry --------------------------------------------------
+    # ----- geometry --------------------------------------------------
 
     @abstractmethod
     def reposition(self, bounds: Bounds) -> None:

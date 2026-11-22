@@ -16,7 +16,7 @@ the chosen position.
 
 This is a manual inspection tool. It is not a test. It does not
 assert anything. It uses the same production widgets the real
-application uses (``AreaLayoutRenderer``, ``Toolbar``, ``ThemeService``,
+main_window uses (``AreaLayoutRenderer``, ``Toolbar``, ``ThemeService``,
 ``UnicodeIconProvider``).
 
 Run from the repository root:
@@ -309,7 +309,7 @@ def main() -> int:
     app = QApplication.instance() or QApplication([])
 
     # Theme: apply the dark QSS so the Toolbars and labels look like
-    # the real application.
+    # the real main_window.
     settings = InMemorySettingsService()
     theme_service = ThemeService(settings=settings)
     theme_service.compiler().apply(theme_service.compiled())

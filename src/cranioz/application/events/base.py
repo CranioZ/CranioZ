@@ -1,6 +1,6 @@
 """Base Protocols for the Events facade (ADR-0007, ADR-0012).
 
-The ``EventBus`` in ``cranioz.application.event_bus`` is a synchronous
+The ``EventBus`` in ``cranioz.main_window.event_bus`` is a synchronous
 publish/subscribe mechanism. It has no concept of scope: a subscriber
 is subscribed until it explicitly unsubscribes.
 

@@ -3,7 +3,7 @@
 The SettingsService owns the persistence of user preferences (as opposed
 to the packaged defaults in cranioz.config, which are read-only).
 
-This package must not depend on UI, domain, or application layers.
+This package must not depend on UI, domain, or main_window layers.
 """
 
 from cranioz.infrastructure.settings.errors import (

@@ -652,7 +652,7 @@ class ThemeCompiler:
         composed surfaces, and supported visual effects."""
 
     def apply(self, styles: CompiledStyles) -> None:
-        """Apply compiled resources to the running Qt application."""
+        """Apply compiled resources to the running Qt main_window."""
 ```
 
 `CompiledStyles` is an opaque object that carries:

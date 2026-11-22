@@ -1,12 +1,12 @@
 """HomeTopBar — the top bar of the Home Page.
 
-Displays the menu icon, the application title, the help/settings
+Displays the menu icon, the main_window title, the help/settings
 icons, and the window controls. Every control emits a signal; nothing
 here executes an operation.
 
 The ☰ button toggles the CommunitySidebar. It does not emit a
 generic "menu requested"; the sidebar is the only thing it
-controls. A future application menu (if any) will be a separate
+controls. A future main_window menu (if any) will be a separate
 control.
 
 The window controls (minimize, maximize, close) emit dedicated

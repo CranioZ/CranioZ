@@ -6,7 +6,7 @@ and contiguity requirements are satisfied; otherwise it copies. In
 both cases, the caller must keep the ``Mesh`` alive for the lifetime
 of the VTK object that references it.
 
-See the ``Geometry Infrastructure`` architecture document, §11.
+See the ``geometry Infrastructure`` architecture document, §11.
 """
 
 from __future__ import annotations

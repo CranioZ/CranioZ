@@ -17,7 +17,7 @@ The initial implementation only needs the identity frame (origin at
 frames will be introduced when the Object System and Scene
 transformations are implemented.
 
-See the ``Geometry Infrastructure`` architecture document, §4.
+See the ``geometry Infrastructure`` architecture document, §4.
 """
 
 from __future__ import annotations

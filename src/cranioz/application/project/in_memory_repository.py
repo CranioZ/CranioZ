@@ -31,7 +31,7 @@ class InMemoryProjectRepository:
     """Reference implementation of `ProjectRepository` backed by a dict.
 
     Not thread-safe. The Project Manager (Peça 7.5) is the only
-    caller, and the application runs it on the main thread.
+    caller, and the main_window runs it on the main thread.
     """
 
     def __init__(self) -> None:

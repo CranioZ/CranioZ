@@ -1,7 +1,7 @@
 """ImageMetadata — DICOM-derived metadata for an imaging volume.
 
 This is a frozen value object that carries the metadata required by
-the application: modality, study/series identifiers, intensity
+the main_window: modality, study/series identifiers, intensity
 rescaling parameters, transfer syntax, and acquisition info.
 
 DICOM-specific structures (Dataset, DataElement) must NOT leak into

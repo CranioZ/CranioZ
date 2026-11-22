@@ -9,7 +9,7 @@ The renderer does NOT own the Scene. It observes it via the
 RenderingAdapter.
 
 VTK is an optional dependency. The import is deferred to
-``__init__`` so that the application can boot without VTK
+``__init__`` so that the main_window can boot without VTK
 installed; the error is raised only when a renderer is actually
 instantiated.
 

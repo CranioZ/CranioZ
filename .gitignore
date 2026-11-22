@@ -142,5 +142,5 @@ temp/
 # --- Local development tools ---
 # Packing scripts, code dumps, folder-tree generators, i18n helpers.
 # Local to each developer, regenerated per developer, not part of the
-# shipped application, and not consumed by CI.
+# shipped main_window, and not consumed by CI.
 /tools/

@@ -3,7 +3,7 @@
 **Document type:** Roadmap and execution plan
 **Status:** Living document
 **Scope:** Phased implementation of the CranioZ platform, from foundation to release
-**Last updated:** 2026-11-20
+**Last updated:** 2026-11-22
 
 ---
 
@@ -62,7 +62,7 @@ The implementation is divided into 11 phases. The sequence establishes the platf
 | **Phase 0** | Foundation & Boot | ✅ Implemented | Startup performance improvements |
 | **Phase 1** | Contracts, Core Domain & i18n | ✅ Implemented | — |
 | **Phase 2** | Workspace Engine & Icons | ✅ Implemented | — |
-| **Phase 3** | Project, Home Page & Professional Module | 🚧 In Progress | Coordinated deletion, async loading, Professional module |
+| **Phase 3** | Project, Home Page & Professional Module | 🚧 In Progress | Async loading (Sprint K), Professional module (Sprint L) |
 | **Phase 4** | Scene & Visualization | ⏳ Planned | Import Dialog, RenderingAdapter, Viewer Layout Manager, 2D/3D Tools, LUTs |
 | **Phase 5** | Clinical Flows & Panel Widget Registry | ⏳ Planned | WorkflowEngine, WorkflowBreadcrumb, Panel Registry |
 | **Phase 6** | Clinical Pipeline | ⏳ Planned | Tomography, Segmentation, Cephalometry, Osteotomy, Guides, Animation |
@@ -79,15 +79,17 @@ The implementation is divided into 11 phases. The sequence establishes the platf
 
 **Contracts layer:** ADR-0001, ADR-0002, ADR-0004–0016 are Accepted. **ADR-0014 (Widget Toolkit Selection)** is Accepted: Qt Widgets + QSS modular + Design Tokens in Python, not QML. **ADR-0015 (Editor and Module Package Reorganization)** is Accepted and records the structural refactoring that closed in Phase 3. **ADR-0016 (Project Catalog Synchronization)** is Accepted and specifies the synchronization mechanism between the Project subsystem and the Project Catalog. The appearance architecture is specified in `docs/architecture/appearance/`.
 
+The **Monitor de Logs** is a developer-facing diagnostic subsystem specified in `monitor_logs.md`. It is not an ADR and it is not part of any Phase's closure criteria. Its implementation is deferred to a dedicated sprint (§5.1) and does not block Phase 3 or Phase 4.
+
 **Application layer:** Commands, Tasks, Telemetry, Events and Flows have contracts and reference implementations with contract tests. This does not imply that all production services, module loading, or application workflows are complete.
 
 ---
 
 ## 5. Current Focus
 
-**Phases 1 and 2 are now closed.** The **Editor Architecture Refactoring** (see ADR-0015 and `refactoring_plan.md`) is complete, and its structural prerequisites for Sprint L (Professional module) are met.
+**Phases 1 and 2 are closed.** The **Editor Architecture Refactoring** (ADR-0015, `refactoring_plan.md`) is complete. Sprints I and J are complete.
 
-**Phase 3** remains the active phase. Its remaining functional deliverables are Sprints J, K, and L. Sprint I is complete (2026-11-20).
+**Phase 3** remains the active phase. Its remaining functional deliverables are **Sprint K (async loading)** and **Sprint L (Professional module)**. Sprint I closed on 2026-11-20; Sprint J closed on 2026-11-22.
 
 Phase 4 remains the next major implementation phase. It begins only after Phase 3 is marked `✅ Implemented` in this document.
 
@@ -105,15 +107,18 @@ The sprint order below respects dependencies within Phase 3.
 | **H** | 2 | `EditorStack` | ✅ Complete | G |
 | **Editor Refactoring** | 3 | Editor/Module package reorganization (ADR-0015) | ✅ Complete | — |
 | **I** | 3 | `ProjectIndex` (ADR-0016) | ✅ Complete (2026-11-20) | — |
-| **J** | 3 | Coordinated deletion | 🚧 Pending | I ✅ |
-| **K** | 3 | Async loading | 🚧 Pending | I ✅, J |
+| **J** | 3 | Coordinated deletion | ✅ Complete (2026-11-22) | I ✅ |
+| **K** | 3 | Async loading | 🚧 Pending | I ✅, J ✅ |
 | **L** | 3 | Professional module | 🚧 Pending | Editor Refactoring ✅, C ✅, E ✅, F ✅ |
+| **Monitor de Logs** | — | Diagnostic subsystem | ⏳ Planned (not scheduled; not a Phase 3 deliverable) | Sprint K (to inform tab mapping) |
 
-**Current sprint:** Sprint J — Coordinated deletion (unblocked by Sprint I; deletion reflects into the catalog via the `ProjectDeleted` event per ADR-0016).
+**Current sprint:** Sprint K — Async loading (unblocked by Sprint J). K-minimal is the recommended scope: `HomePage` project and flow loading becomes asynchronous via `TaskManager`, while `synchronizer.start()` remains synchronous in the composition root, so ADR-0016 §4.1 is **not** reopened.
 
-**Note on ordering:** Sprint L is unblocked by the completed Editor Refactoring (ADR-0015) and by the completed Sprints C, E, and F. The functional dependency chain for Phase 3 is **J → K**, then **L** (Sprint L is now independent of Sprints J–K, as planned in `next_steps.md` §6.1).
+**Note on ordering:** Sprint L is unblocked by the completed Editor Refactoring (ADR-0015) and by the completed Sprints C, E, and F. The functional dependency chain for Phase 3 is **J → K**, with **L** independent and able to proceed in parallel (`next_steps.md` §6.1).
 
 **Note on ADR-0016 and Sprint K:** ADR-0016 §4.1 records that the bootstrap-ordering guarantee holds only while the `ProjectIndex` bootstrap is synchronous. Sprint K (Async loading) makes `HomePage` load projects via `TaskManager`; if the bootstrap becomes asynchronous, ADR-0016 §4.1 must be revisited before Sprint K is closed.
+
+**Note on the Monitor de Logs:** the diagnostic subsystem is specified in `monitor_logs.md`. It is **not** part of Sprint K, Sprint L, or Phase 3 closure. Sprint K may emit additional `logging` records as a by-product of async work (e.g. Task lifecycle), but it does not introduce the `QtLogHandler`, the `LogsDialog`, the 📋 button wiring, or the `Areas` snapshot contract. Those belong to a dedicated, currently unscheduled sprint, deliberately sequenced after Sprint K.
 
 ---
 
@@ -218,7 +223,7 @@ The sprint order below respects dependencies within Phase 3.
 
 ### Phase 3: Project, Home Page & Professional Module
 
-**Goal:** Close Phase 3 formally. Blockers: coordinated deletion, async loading, Professional module.
+**Goal:** Close Phase 3 formally. Remaining blockers: async loading (Sprint K) and the Professional module (Sprint L).
 
 **Deliverables:**
 
@@ -239,30 +244,37 @@ The sprint order below respects dependencies within Phase 3.
   - Benchmark documented in ADR-0016's implementation notes (not a CI gate): 100/300/1000 projects in `tmp_path`, comparing `search_projects()` latency and `repository.list_metadata` call count between baseline (direct repository) and new (indexed).
   - **Not** part of Sprint I: `FilesystemProjectIndex` does not exist. A persisted index and a SQLite implementation remain deferred to Phase 8.
   - **Final validation (2026-11-20):** 1692 passing tests, 0 failed, 0 errors, 2 skipped; `ruff check`, `ruff format --check`, and `mypy src` clean. The integration fixture `tests/integration/ui/test_main_window_import.py` was migrated to the composition-root wiring; the bootstrap order (`synchronizer.start()` before `manager.create_project(...)`) is preserved and documented in ADR-0016 §4.2.
-- 🚧 **Sprint J (Coordinated deletion):**
-  - `ProjectManager.delete_project` coordinates `ProjectCatalog` → `ProjectIndex` → `FilesystemProjectRepository`.
-  - Rollback when any step fails.
-  - External source data (External Reference mode) is never removed by project deletion.
-  - Contract tests.
+- ✅ **Sprint J (Coordinated deletion):** complete on 2026-11-22.
+  - `ProjectManager.delete_project` coordinates `ProjectCatalog` → `ProjectIndex` → `FilesystemProjectRepository` via the `ProjectDeleted` event (ADR-0016 §2.2). The `ProjectManager` does not call `ProjectCatalog` or `ProjectIndex` directly.
+  - Rollback semantics verified: repository failure raises before `ProjectDeleted` is published; handler failure is contained by the synchronizer (ADR-0016 §3.4) and marks the index stale; the next query rebuilds from the authoritative repository (ADR-0016 §3.3). No event compensation, no manual index re-add.
+  - External source data (External Reference mode) is never removed by project deletion. `FilesystemProjectRepository` owns exactly one file (`project.json`); sibling files survive byte-identical.
+  - Contract and failure-path tests.
+  - **Final validation (2026-11-22):** 1701 passing tests, 0 failed, 0 errors, 2 skipped (+9 vs Sprint I); `tests/architecture/` 85 passed; `ruff check`, `ruff format --check`, `mypy src` clean (284 source files); `git diff --stat src/` empty (**no production code changed**; the coordination was already correct and the sprint proved it with tests).
+  - **Scope correction:** the UI affordance for delete is deferred. The API-level behavior is verified and propagates through the catalog. The UI affordance requires UX decisions that are out of scope for a "coordinated deletion" sprint. Tracked in `next_steps.md` §5.2 and §7.
 - 🚧 **Sprint K (Async loading):**
   - `HomePage` loads projects and flows via `TaskManager`.
   - No blocking I/O in `MainWindow.__init__`.
   - `HomePage.refresh()` does not block the GUI thread.
   - Rollback if `Workspace` creation fails after project open.
-  - Regression tests.
-  - **If the index bootstrap becomes asynchronous, ADR-0016 §4.1 must be revisited before Sprint K is closed.**
+  - Regression tests for loading, cancellation, failure, and recovery.
+  - **If the index bootstrap becomes asynchronous, ADR-0016 §4.1 must be revisited before Sprint K is closed.** K-minimal (bootstrap remains synchronous) does **not** reopen ADR-0016 §4.1.
+  - **Explicitly out of scope:** the Monitor de Logs subsystem (see §5.1 note and `monitor_logs.md`).
 - 🚧 **Sprint L (Professional module):**
   - `ProfessionalEditor` registered in `EditorRegistry`.
   - `ModuleUISpec` for the Professional module.
   - Settings integration (`professional.*` keys).
   - Tests.
-  - **Sprint L is now unblocked** by the completed Editor Architecture Refactoring, Sprint C, Sprint E, and Sprint F.
+  - **Sprint L is unblocked** by the completed Editor Architecture Refactoring, Sprint C, Sprint E, and Sprint F.
 
 **Deferred to Phase 8:**
 
 - SQLite `ProjectIndex` backend (`SqliteProjectIndex`, same `ProjectIndex` Protocol).
 - Recent Projects.
 - Background disk reconciliation.
+
+**Not part of Phase 3, not deferred to Phase 8 — deferred to a dedicated unscheduled sprint:**
+
+- Monitor de Logs (`monitor_logs.md`): `QtLogHandler`, `LogsDialog`, 📋 button wiring, `Areas` snapshot contract. Documented and awaiting a dedicated sprint.
 
 **Tests:**
 
@@ -272,9 +284,11 @@ The sprint order below respects dependencies within Phase 3.
 - Project opening and rollback tests.
 - ProjectIndex contract tests (index), synchronizer tests (bootstrap, events, error containment, `rebuild`, `ensure_fresh`), catalog-via-index tests, and end-to-end `ProjectManager` sync tests (Sprint I, ADR-0016).
 - `ProjectIndexStaleError` propagation and `MainWindow` handling tests (Sprint I, ADR-0016).
+- Delete-specific staleness paths and the physical delete invariant (Sprint J, ADR-0016 §3.3/§3.4 and §2.2).
+- Architecture gate: `tests/architecture/test_no_legacy_project_delete_api.py` (Sprint J).
 - Professional module integration tests.
 
-**Status:** 🚧 In Progress. Blockers: Sprints J, K, L. (Sprint I closed on 2026-11-20.)
+**Status:** 🚧 In Progress. Blockers: Sprints K and L. (Sprint I closed on 2026-11-20; Sprint J closed on 2026-11-22.)
 
 ---
 
@@ -286,7 +300,7 @@ The sprint order below respects dependencies within Phase 3.
 
 #### 4.1 Application Layer
 
-- ✅ `application/commands/`, `tasks/`, `telemetry/`, `events/` contracts and reference implementations.
+- ✅ `main_window`, `tasks/`, `telemetry/`, `events/` contracts and reference implementations.
 - 🚧 `CommandDispatcher` integration into all Editors.
 
 #### 4.2 Scene and Domain Integration
@@ -581,7 +595,7 @@ Testing is a clinical requirement. Metrics must be reproducible and contextualiz
 ### 7.1 Coverage
 
 - **Domain:** Critical invariants and error cases.
-- **Application:** Command execution, transaction rollback, event publication, task lifecycle, i18n contract, settings round-trip, project catalog synchronization (ADR-0016).
+- **Application:** Command execution, transaction rollback, event publication, task lifecycle, i18n contract, settings round-trip, project catalog synchronization (ADR-0016), coordinated deletion (ADR-0016 §2.2/§3.3/§3.4).
 - **Infrastructure:** DICOM parsing, geometry, calibration, persistence, interoperability, settings persistence and migration.
 - **UI:** Widget behavior, Editor lifecycle, Workspace integration, tool behavior, import dialog.
 - **Appearance:** Token completeness, theme completeness, contrast, no hardcoded values, icon catalog, surface composition.
@@ -613,12 +627,15 @@ Initial targets:
 - Cancellation is cooperative.
 - Do not use `QTimer` as a substitute for background execution.
 - The `ProjectIndexSynchronizer` (ADR-0016) assumes single-threaded execution on the main thread, consistent with the `EventBus` and `ProjectManager`. If the bootstrap becomes asynchronous (Sprint K), ADR-0016 §4.1 must be revisited.
+- The `QtLogHandler` (when implemented, see `monitor_logs.md` §6.3) does **not** spawn threads. It marshals `LogRecord`s from any thread to the GUI thread through a `Qt.ConnectionType.QueuedConnection`. This is a marshalling mechanism, not a work-execution mechanism; it does not conflict with the "TaskManager as the only application mechanism for off-thread work" rule.
 
 ### 7.5 Telemetry
 
 Long-running operations must emit telemetry events through `TelemetrySink`, using correlation IDs (ADR-0012). Telemetry must not contain PHI.
 
 The `ProjectIndexSynchronizer` (ADR-0016) must log failures using `project_id` and operation name only, never `project_name` or `patient_display_name`.
+
+The Monitor de Logs (`monitor_logs.md`) is a `logging` view, not a telemetry channel. It does not go through `TelemetrySink`, and it does not emit telemetry of its own.
 
 ---
 
@@ -675,11 +692,15 @@ Sprint C (`EditorContext` propagation) is complete. Phase 1 is closed.
 
 **Sprint I (ProjectIndex) is complete on 2026-11-20.** The `ProjectIndex` Protocol, `InMemoryProjectIndex`, `ProjectIndexSynchronizer`, and `SynchronizedProjectIndex` are implemented and tested under ADR-0016. `ProjectCatalog` consumes a `ProjectIndex` and no longer calls `repository.list_metadata()`; `refresh()` is removed. Final validation: **1692 passing tests, 0 failed, 0 errors, 2 skipped; `ruff check`, `ruff format --check`, `mypy src` clean.** The integration fixture `tests/integration/ui/test_main_window_import.py` was migrated to the composition-root wiring (`repository → synchronizer → index → catalog`), preserving the bootstrap order required by ADR-0016 §4. No production code changed during that migration; the drift was confined to the test fixture.
 
-The immediate focus is **Phase 3**, whose remaining functional deliverables are **Sprint J (coordinated deletion)**, **Sprint K (async loading)**, and **Sprint L (Professional module)**. Sprint J is the next priority. Sprints J and K form a functional chain; Sprint L is now unblocked by the completed Editor Architecture Refactoring.
+**Sprint J (Coordinated deletion) is complete on 2026-11-22.** `ProjectManager.delete_project` coordinates `ProjectCatalog` → `ProjectIndex` → `FilesystemProjectRepository` via the `ProjectDeleted` event. The delete-specific staleness paths (handler containment, rebuild-on-next-query, `ProjectIndexStaleError` on double failure) and the physical delete invariant (only `project.json` is removed; sibling files survive byte-identical) are verified. Final validation: **1701 passing tests, 0 failed, 0 errors, 2 skipped; `tests/architecture/` 85 passed; `ruff check`, `ruff format --check`, `mypy src` clean (284 source files); `git diff --stat src/` empty.** The UI affordance for delete remains deferred (`next_steps.md` §5.2, §7).
+
+The immediate focus is **Phase 3**, whose remaining functional deliverables are **Sprint K (async loading)** and **Sprint L (Professional module)**. Sprint K is the next priority. Sprint L is now unblocked by the completed Editor Architecture Refactoring and may proceed in parallel.
 
 Phase 4 begins after Phase 3 is marked `✅ Implemented`. Its first deliverables are the Unified Import Dialog, the `RenderingAdapter`, the `ViewerLayoutManager`, the 2D/3D tools, and the clinical transfer function presets.
 
 The geometry infrastructure initial subset is validated. Full geometry infrastructure is deferred.
+
+The **Monitor de Logs** (`monitor_logs.md`) is a developer-facing diagnostic subsystem. Its specification is complete, but no implementation exists. It is deferred to a dedicated, currently unscheduled sprint, sequenced after Sprint K so that the async-loading logging informs the tab mapping. It is **not** part of Phase 3's closure criteria, **not** part of Phase 4's deliverables, and **not** a Release 1.0 requirement. The `logs_requested` signal is reserved in `home_page.md` §25; the `Areas` snapshot contract with the `Workspace` is specified in `monitor_logs.md` §7.
 
 ---
 
@@ -695,7 +716,7 @@ Completed 2026-11-18. Resolved items:
 
 - The duplicated `_PlaceholderEditor` was consolidated into the canonical `PlaceholderEditor`.
 - The duplicate `_null_task_manager.py` was removed; `module_loader.py` uses `NoopTaskManager` from `cranioz.application.tasks`.
-- `ui/editors/mock/` was removed.
+- `cranioz.ui.editors` was removed.
 - `DummyEditor` and `DebugEditor` moved to `tests/fixtures/editors/test_editor.py`.
 - `editor_manifest.py` and `editor_catalog.py` were removed (deferred to Sprint L if a contract is needed).
 - `MeshDebugEditor` moved to `editors/builtin/mesh_debug/editor.py`.
@@ -715,9 +736,23 @@ Accepted 2026-11-18. Recorded decisions:
 - A query never silently returns data from a stale index; `ProjectIndexStaleError` is raised when a rebuild after a detected staleness fails.
 - External mutations are not detected automatically; explicit rebuild or restart is required, and background reconciliation is deferred to Phase 8.
 - Sprint K (Async loading) must revisit the bootstrap-ordering decision if the index bootstrap becomes asynchronous.
-- **Integration fixture drift (Sprint I/02, 2026-11-20):** `tests/integration/ui/test_main_window_import.py` was still constructing `ProjectCatalog(repository=...)` after ADR-0016 removed that parameter. The fixture was rewritten to mirror `app.py::_build_project_subsystem` line-for-line, preserving the `synchronizer.start()` → `manager.create_project(...)` order. No compatibility shim was added; the `TypeError` from the removed parameter is the intended forcing function. Recorded in ADR-0016 §6.3.
+- **Integration fixture drift (Sprint I/02, 2026-11-20):** `tests/integration/ui/test_main_window_import.py` was still constructing `ProjectCatalog(repository=...)` after ADR-0016 removed that parameter. The fixture was rewritten to mirror `__main__.py::_build_project_subsystem` line-for-line, preserving the `synchronizer.start()` → `manager.create_project(...)` order. No compatibility shim was added; the `TypeError` from the removed parameter is the intended forcing function. Recorded in ADR-0016 §6.3.
+- **Coordinated deletion closure (Sprint J, 2026-11-22):** the coordination is event-driven and already correct; the sprint added the failure-path tests and the physical delete invariant, and an architecture gate (`test_no_legacy_project_delete_api.py`). The UI affordance for delete is deferred. The `repository.delete → publish(ProjectDeleted)` pair remains synchronous and must not be parallelized without re-opening ADR-0016 §4.1.
 
 ### 10.4 Deferred to a Future PR
 
 - `application/event_bus.py` → `application/events/bus.py` (Step 6.1 of `refactoring_plan.md`). Deferred per `refactoring_plan.md` §5.10.
 - `editors/view_overlays/` (Step 4.4 of `refactoring_plan.md`). Skipped because the current `ui/editors/overlays/gizmos/` and `ui/editors/overlays/rulers/` directories contain only empty `__init__.py` files.
+
+### 10.5 Monitor de Logs (planned)
+
+The **Monitor de Logs** (`monitor_logs.md`) is a developer-facing diagnostic subsystem, distinct from the Console and History Editors (see `monitor_logs.md` §2). It is specified but not implemented. Recorded decisions:
+
+- The `logs_requested` signal is reserved in `home_page.md` §25; the 📋 button is not wired.
+- The `LogsDialog` is non-modal (`Qt.WindowType.Tool`), single-instance per `MainWindow`, with tabs `Boot / Home Page / Workspace / Areas / Scene / Project / Tomography / Segmentation`.
+- The `QtLogHandler` is a `logging.Handler` that marshals records to the GUI thread via a `QueuedConnection`; it is installed by the bootstrap after `_configure_logging`.
+- The `Areas` tab is fed by `cranioz.ui.workspace` records tagged with `area_snapshot=True`. The aggregated INFO line is emitted once per applied layout (already debounced by 50 ms in `Workspace._apply_default_splitter_sizes`); per-Area DEBUG lines are emitted per Area. The existing `_logger.info("DEBUG: Vertical splitter ...")` in `Workspace._compute_vertical_sizes` will be lowered to `debug` when the contract is implemented.
+- The Console Editor is **not** fed by `logging`. It is a clinical channel, fed by an application-level notification service (to be defined). This separation is a project invariant.
+- The Monitor de Logs is not a telemetry channel; it does not use `TelemetrySink` and does not emit telemetry.
+
+Implementation is deferred to a dedicated, currently unscheduled sprint, sequenced after Sprint K. It does not block Sprint K, Sprint L, Phase 3 closure, or Phase 4.

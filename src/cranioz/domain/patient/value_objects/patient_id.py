@@ -1,7 +1,7 @@
 """PatientId.
 
 A PatientId is a value object that uniquely identifies a Patient
-within the CranioZ application. Like ProjectId, it is deliberately
+within the CranioZ main_window. Like ProjectId, it is deliberately
 distinct from any human-readable field: a patient's name can change,
 but their PatientId must remain stable for the lifetime of the
 record.

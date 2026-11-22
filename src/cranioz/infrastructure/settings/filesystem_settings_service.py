@@ -11,7 +11,7 @@ Behaviour on load:
 - File at an older schema -> migrated via ``SettingsMigrator``.
 
 The service never raises from the constructor. Appearance configuration
-MUST NOT prevent the application from starting.
+MUST NOT prevent the main_window from starting.
 """
 
 from __future__ import annotations

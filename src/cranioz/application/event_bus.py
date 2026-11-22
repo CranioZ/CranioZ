@@ -1,6 +1,6 @@
 """Application event bus.
 
-Minimal synchronous publish/subscribe bus for application-level events.
+Minimal synchronous publish/subscribe bus for main_window-level events.
 Threading and async dispatch are out of scope for this phase.
 
 Rules:
