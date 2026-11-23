@@ -3,7 +3,7 @@
 **Document type:** Action plan and development handoff  
 **Status:** Active  
 **Scope:** Current development priorities and execution sequence for Phase 3  
-**Last updated:** 2026-11-23 (post-L.0.2 Delivery A)
+**Last updated:** 2026-11-23 (post-L.0.2 Delivery A, post-Ruler reclassification)
 
 ---
 
@@ -65,6 +65,7 @@ The following foundations are implemented:
 - System widget catalog (`widget_catalog.md` v0.4).
 - L.0 system form widgets (FormField, FormCombo, FilePicker, SignaturePreview).
 - L.0.2 Delivery A widgets (DateField, FormRow, DragHandle, EyeToggleButton, VisibilityToggle, SearchField, ProgressBar).
+- ADR-0018 — Generic widgets, Editor overlays, and icon-based actions (Proposed). This ADR governs the classification of every reusable UI element and is the authority for the `Ruler` reclassification below.
 
 The application uses Qt Widgets, modular QSS, and Python Design Tokens, as defined by ADR-0014.
 
@@ -92,6 +93,7 @@ The following documents have distinct responsibilities.
 | `sprint_l0_system_widgets.md` | Detailed implementation specification for L.0 widgets. |
 | `professional.md` | Professional profile domain, persistence, and behavior specification. |
 | `monitor_logs.md` | Technical specification for the deferred Logs Monitor. |
+| `ADR-0018` | Classification of reusable UI elements: generic widgets, Editor overlays, icon-based actions, semantic colors. |
 
 `implementation_plan.md` remains authoritative. This document must not redefine phase scope or silently introduce new roadmap deliverables.
 
@@ -105,7 +107,7 @@ Recommended execution sequence:
 
 1. ~~Consolidate the system widget catalog.~~ ✅
 2. ~~Specify and implement the L.0 form widgets.~~ ✅ (2026-11-23)
-3. **Implement L.0.2 — Extended widget suite** (14 widgets, divided into 4 deliveries). Delivery A complete; B, C, D pending.
+3. **Implement L.0.2 — Extended widget suite** (13 widgets, divided into 4 deliveries). Delivery A complete; B, C, D pending.
 4. Implement and integrate the Professional Editor and its profile persistence (L.1).
 5. Implement the Professional Editor's internal navigation and configuration interactions (L.2).
 6. Validate and close Sprint L.
@@ -118,7 +120,7 @@ Sprint L is divided into the following execution stages.
 | Stage | Scope | Main deliverable | Status |
 |---|---|---|---|
 | **L.0** | System form widgets | FormField, FormCombo, FilePicker, SignaturePreview. | Complete (2026-11-23) |
-| **L.0.2** | Extended widget suite | 14 additional atoms required by the Professional Module prototype. | In progress — Delivery A complete (2026-11-23) |
+| **L.0.2** | Extended widget suite | 13 additional widgets required by the Professional Module prototype. | In progress — Delivery A complete (2026-11-23) |
 | **L.1** | Professional Editor | Editor registration, profile interface, ModuleUISpec, settings integration, SQLite persistence. | Planned |
 | **L.2** | Professional Navigation | Reusable navigation, sections, visibility controls, drag-and-drop, persisted presentation state. | Planned |
 
@@ -143,6 +145,12 @@ The following constraints apply throughout implementation:
 - New system widgets that require icons must accept an injected `IconProvider` (Protocol) and fall back to `text_glyph()` when `icon()` returns a null `QIcon`.
 - Auxiliary enums (e.g. `FilePickerMode`) live in the same file as the widget that consumes them, never in separate files under `ui/widgets/`.
 - Package `__init__.py` must preserve all previously exported symbols when new ones are added.
+- Classification of reusable UI elements follows ADR-0018:
+  - Generic composite widgets → `src/cranioz/ui/widgets/`.
+  - Editor-internal overlays → `src/cranioz/ui/editors/overlays/`.
+  - Icon-based actions → Tools in `src/cranioz/ui/tools/builtin/`.
+- A widget that depends on a specific Editor's content area, hit-testing, viewport state, or `EditorContext` is an overlay, not a generic widget.
+- Clinical rulers, gizmos, and measurement tools are overlays. They are scheduled with their first consuming Editor, not speculatively.
 
 ---
 
@@ -260,8 +268,7 @@ src/cranioz/ui/widgets/
 │   └── drag_handle.py        ✅ L.0.2 A
 ├── horizontal/
 │   ├── __init__.py           🆕
-│   ├── timeline_slider.py    🆕 L.0.2
-│   └── ruler.py              🆕 L.0.2
+│   └── timeline_slider.py    🆕 L.0.2
 └── advanced/
     ├── __init__.py           ✅ L.0.2 A
     ├── search_field.py       ✅ L.0.2 A
@@ -270,6 +277,14 @@ src/cranioz/ui/widgets/
     └── progress_bar.py       ✅ L.0.2 A
 ```
 
+Removed from L.0.2 scope:
+
+Ruler (previously listed under horizontal/) — reclassified as an Editor overlay
+(src/cranioz/ui/editors/overlays/rulers/ruler_overlay.py) per ADR-0018 §2.2 and
+§6.5. It is a clinical measurement scale bound to a specific Editor's viewport and
+hit-testing; it is not a generic system widget. Scheduled with its first consuming
+Editor (MPR / Osteotomy / 2D Editor), i.e. L.1 or L.2.
+
 Explicitly excluded from L.0.2
 
 Component	Reason
@@ -277,6 +292,7 @@ ActionButtonRow	Trivial composition (QHBoxLayout + QPushButton); build directly 
 SectionItemRow	Unified into CollapsibleSection(draggable=True) — one widget, one API.
 ObjectMovementControl	Backlog; requires interaction specification.
 DualRangeSlider	Backlog; tied to future tomography workflows.
+Ruler / RulerOverlay	Reclassified as Editor overlay per ADR-0018. Scheduled with first consuming Editor (L.1/L.2).
 Decisions
 
 DragList — Custom widget, not QListView, because list items are complex CollapsibleSection widgets (header + body + drag handle), not plain text rows.
@@ -286,6 +302,8 @@ EyeToggleButton — QToolButton with setCheckable(True) and eye-open/eye-closed 
 IconSidebar — Generic (no Professional-specific references). The ProfessionalEditor registers its 6 icons in L.1.
 
 CollapsibleSection — Single widget with draggable: bool = False; shows DragHandle when True.
+
+TimelineSlider — Horizontal panel widget, remains in horizontal/. Clinical measurement rulers are overlays, not system widgets.
 
 Delivery A — Simple Qt-native atoms
 Status: Complete (2026-11-23)
@@ -318,7 +336,7 @@ Acceptance criteria:
 ☑ ruff, ruff format, mypy clean.
 ☑ Extended scripts/debug/ui/widgets/forms/debug_forms.py shows all 7 widgets in Dark and Light.
 ☑ No Professional-specific imports.
-☑ widget_catalog.md §5 statuses updated (Planned → Existing, milestone L.0.2) — pending catalog edit (tracked as a documentation follow-up in §9).
+□ widget_catalog.md §5 statuses updated (Planned → Existing, milestone L.0.2) — pending catalog edit (tracked as a documentation follow-up in §9).
 Delivery B — Sections and lists
 Depends on: Delivery A (DragHandle). Ready to start (2026-11-23).
 
@@ -339,17 +357,21 @@ Depends on: nothing from A/B beyond theme integration.
 
 Widget	Classification	Contract summary
 TimelineSlider	Custom Widget	Horizontal timeline with play/pause/step controls and a tick-based slider. Properties: frame_range (min, max), current_frame. Signals: frame_changed(int), play_requested, pause_requested. Custom paintEvent renders ticks and track.
-Ruler	Custom Widget	Horizontal measurement scale. Properties: range, units, major_tick_interval, minor_tick_interval. Custom paintEvent. Signal: position_clicked(float).
 ColorPicker	Composite Widget	Wraps QColorDialog plus an inline swatch preview. Properties: color. Signal: color_changed(QColor). Uses native dialog; custom presentation optional.
 Histogram	Custom Widget	Data-distribution visualization. Input: list[float] or (bins, counts). Properties: data, bins, log_scale. Custom paintEvent renders bars + optional axis labels. Signal: bin_clicked(int).
 Acceptance for Delivery C
 
-□ 4 widgets implemented.
-□ TimelineSlider and Ruler unit tests cover paintEvent smoke (no exceptions on empty data), public properties, signals emitted from API calls.
+□ 3 widgets implemented.
+□ TimelineSlider unit tests cover paintEvent smoke (no exceptions on empty data), public properties, signals emitted from API calls.
 □ Histogram unit tests cover data set/clear, bin_clicked emission after simulated click on a bin.
 □ ColorPicker tests cover property and signal, dialog suppressed via monkeypatch.
-□ Visual debug harness: Tela 3 (TimelineSlider, Ruler) and Tela 4 (ColorPicker, Histogram, ProgressBar) reproduced.
+□ Visual debug harness: Tela 3 (TimelineSlider) and Tela 4 (ColorPicker, Histogram, ProgressBar) reproduced.
 □ widget_catalog.md §5.6 / §5.7 statuses updated.
+Note on Ruler. The clinical RulerOverlay is not part of Delivery C.
+It is an Editor overlay (src/cranioz/ui/editors/overlays/rulers/ruler_overlay.py)
+per ADR-0018 §2.2 and §6.5, scheduled with the first consuming Editor
+(MPR / Osteotomy / 2D Editor) in L.1 or L.2. See §6.3 and §7.
+
 Delivery D — Debug harness consolidation and closure
 □ Extend scripts/debug/ui/widgets/forms/debug_forms.py into a full multi-tab debug window that reproduces:
 Tela 2 (Profissional) — with FormRow-based two-column layout and DateField.
@@ -358,7 +380,7 @@ Telas 3–6 (Modelo de documentos, Agenda, Procedimentos, Orçamentos) — with 
 
 Tela 7 (Config) — with EyeToggleButton / VisibilityToggle.
 
-Shared widgets page (PDF Prototipagem_UI_19_Widgets.pdf) — SearchField, ProgressBar, TimelineSlider, Ruler, ColorPicker, Histogram.
+Shared widgets page (PDF Prototipagem_UI_19_Widgets.pdf) — SearchField, ProgressBar, TimelineSlider, ColorPicker, Histogram.
 
 □ Validate Dark + Light themes visually.
 □ Validate HiDPI (QT_SCALE_FACTOR=1.5 and 2).
@@ -447,6 +469,10 @@ Migrate SignaturePreview empty-state colors to design tokens once it accepts an 
 
 Migrate FilePicker browse button to IconProvider.
 
+Deferred to this stage or later: implement the first RulerOverlay in
+src/cranioz/ui/editors/overlays/rulers/ruler_overlay.py, consumed by the
+MPR / Osteotomy / 2D Editor. This is not part of L.0.2.
+
 Professional-specific compositions
 The Professional Editor may compose the system widgets into higher-level components, such as:
 
@@ -508,8 +534,10 @@ Further Editor workflows and visualization integration.
 
 The widget catalog may contain components intended for these future workflows, but their presence in the catalog does not authorize implementation during Sprint L.
 
-6.3 Widget backlog
+6.3 Widget and overlay backlog
 The following components remain outside L.0.2 unless a concrete requirement is approved:
+
+System widgets (future, generic):
 
 ObjectMovementControl;
 
@@ -521,7 +549,20 @@ StartButton, ContinueButton, CompleteButton, PreviousButton, NextButton, RemoveB
 
 additional tomography and cephalometry controls.
 
-Their implementation milestones must follow the consuming Editor or subsystem dependencies documented in widget_catalog.md.
+Editor overlays (future, per ADR-0018):
+
+RulerOverlay — clinical measurement scale for MPR / Osteotomy / 2D Editor.
+Path: src/cranioz/ui/editors/overlays/rulers/ruler_overlay.py.
+Scheduled with its first consuming Editor (L.1/L.2).
+Contract: receives EditorContext and ThemeService; exposes
+set_view_transform(scale, offset, units), set_range(min, max),
+position_clicked(float). Consumes SceneQuery (read-only) via the Editor;
+never imports Scene, VTK, or any viewport type directly.
+
+TranslationGizmo, RotationGizmo — 3D manipulation overlays
+(Phase 4).
+
+Their implementation milestones must follow the consuming Editor or subsystem dependencies documented in widget_catalog.md and ADR-0018.
 
 7. Known issues and deferred items
 Item	Status	Action
@@ -538,6 +579,8 @@ FilePicker browse button glyph	L.2 deferral	Migrate to IconProvider.
 pt-BR translations for L.0 / L.0.2 widgets	L.2 deferral	Add catalog entries for static strings.
 widget_catalog.md L.0.2 Delivery A statuses	Documentation follow-up	Mark the 7 Delivery A widgets as Existing (milestone L.0.2) before Delivery B closes.
 ruff format touched docs/architecture/home_page/monitor_logs.md	Pre-existing debt	The file was out of format before L.0.2. Not a regression from Delivery A; revisit when the Logs Monitor sprint begins.
+Ruler reclassification	Resolved	Moved from system widget to Editor overlay per ADR-0018 §2.2/§6.5. Scheduled with first consuming Editor (L.1/L.2). Removed from L.0.2 Delivery C.
+ADR-0018 status	Proposed	Ratify when the first overlay is implemented (L.1/L.2) or earlier if the team prefers.
 7.1 Test stub documentation
 The intentionally empty infrastructure test stubs must be documented so that their purpose is clear.
 
@@ -592,7 +635,7 @@ The next implementation sequence is:
 
 Implement L.0.2 — Delivery B (CollapsibleSection, DragList, IconSidebar).
 
-Implement L.0.2 — Delivery C (TimelineSlider, Ruler, ColorPicker, Histogram).
+Implement L.0.2 — Delivery C (TimelineSlider, ColorPicker, Histogram).
 
 Implement L.0.2 — Delivery D (debug harness consolidation + catalog update + validation).
 
@@ -629,6 +672,8 @@ src/cranioz/ui/widgets/headers/section_header.py — to be inspected; decide whe
 
 src/cranioz/ui/icons/provider.py and unicode.py — icon integration contract.
 
+ADR-0018 — classification of widgets, overlays, and tools.
+
 Delivery B depends on Delivery A (DragHandle) and can start immediately from the §5.2 specification.
 
 10. Definition of Done
@@ -644,13 +689,15 @@ L.0.2 Delivery A is marked complete with its delivery table, supporting changes,
 
 L.0.2 Deliveries B, C, and D are defined with explicit widget lists and acceptance criteria.
 
+Ruler is reclassified as an Editor overlay and removed from L.0.2 Delivery C, with a pointer to its new home and milestone.
+
 The excluded widgets (ActionButtonRow, SectionItemRow, ObjectMovementControl, DualRangeSlider) are documented with reasons.
 
 L.1 defines ProfessionalEditor as an Editor hosted by the central Area.
 
 Professional profile persistence follows professional.md.
 
-L.2 covers navigation, sections, translations, and theme-token migration.
+L.2 covers navigation, sections, translations, theme-token migration, and the first RulerOverlay consumption.
 
 The widget catalog remains the authoritative system-wide inventory.
 
@@ -660,4 +707,4 @@ Phase 4 remains deferred until Phase 3 is closed.
 
 Validation requirements and the current baseline are recorded.
 
-Authority: implementation_plan.md defines phase scope and completion criteria. This document defines the immediate execution sequence and handoff.
+Authority: implementation_plan.md defines phase scope and completion criteria. ADR-0018 defines the classification of reusable UI elements. This document defines the immediate execution sequence and handoff.
