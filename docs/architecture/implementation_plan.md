@@ -62,7 +62,7 @@ The implementation is divided into 11 phases. The sequence establishes the platf
 | **Phase 0** | Foundation & Boot | ✅ Implemented | Startup performance improvements |
 | **Phase 1** | Contracts, Core Domain & i18n | ✅ Implemented | — |
 | **Phase 2** | Workspace Engine & Icons | ✅ Implemented | — |
-| **Phase 3** | Project, Home Page & Professional Module | 🚧 In Progress | Async loading (Sprint K), Professional module (Sprint L) |
+| **Phase 3** | Project, Home Page & Professional Module | 🚧 In Progress | Professional module (Sprint L) |
 | **Phase 4** | Scene & Visualization | ⏳ Planned | Import Dialog, RenderingAdapter, Viewer Layout Manager, 2D/3D Tools, LUTs |
 | **Phase 5** | Clinical Flows & Panel Widget Registry | ⏳ Planned | WorkflowEngine, WorkflowBreadcrumb, Panel Registry |
 | **Phase 6** | Clinical Pipeline | ⏳ Planned | Tomography, Segmentation, Cephalometry, Osteotomy, Guides, Animation |
@@ -89,7 +89,9 @@ The **Monitor de Logs** is a developer-facing diagnostic subsystem specified in 
 
 **Phases 1 and 2 are closed.** The **Editor Architecture Refactoring** (ADR-0015, `refactoring_plan.md`) is complete. Sprints I and J are complete.
 
-**Phase 3** remains the active phase. Its remaining functional deliverables are **Sprint K (async loading)** and **Sprint L (Professional module)**. Sprint I closed on 2026-11-20; Sprint J closed on 2026-11-22.
+**Phase 3** remains the active phase. Its remaining functional deliverable is
+**Sprint L (Professional module)**. Sprints I and J closed on 2026-11-20 and
+2026-11-22; Sprint K closed on 2026-11-22.
 
 Phase 4 remains the next major implementation phase. It begins only after Phase 3 is marked `✅ Implemented` in this document.
 
@@ -108,11 +110,14 @@ The sprint order below respects dependencies within Phase 3.
 | **Editor Refactoring** | 3 | Editor/Module package reorganization (ADR-0015) | ✅ Complete | — |
 | **I** | 3 | `ProjectIndex` (ADR-0016) | ✅ Complete (2026-11-20) | — |
 | **J** | 3 | Coordinated deletion | ✅ Complete (2026-11-22) | I ✅ |
-| **K** | 3 | Async loading | 🚧 Pending | I ✅, J ✅ |
-| **L** | 3 | Professional module | 🚧 Pending | Editor Refactoring ✅, C ✅, E ✅, F ✅ |
+| **K** | 3 | Async loading | ✅ Complete (2026-11-22) | I ✅, J ✅ |
+| **L** | 3 | Professional module | 🚧 In Progress — next focus is L.1 | Editor Refactoring ✅, C ✅, E ✅, F ✅ |
 | **Monitor de Logs** | — | Diagnostic subsystem | ⏳ Planned (not scheduled; not a Phase 3 deliverable) | Sprint K (to inform tab mapping) |
 
-**Current sprint:** Sprint K — Async loading (unblocked by Sprint J). K-minimal is the recommended scope: `HomePage` project and flow loading becomes asynchronous via `TaskManager`, while `synchronizer.start()` remains synchronous in the composition root, so ADR-0016 §4.1 is **not** reopened.
+**Current focus:** Sprint L. L.0 is complete; L.0.2 Deliveries A and B are
+complete. L.0.2 Deliveries C and D are deferred and do not block L.1. The next
+implementation task is L.1 — `ProfessionalEditor`, `ModuleUISpec`, settings and
+SQLite profile persistence.
 
 **Note on ordering:** Sprint L is unblocked by the completed Editor Refactoring (ADR-0015) and by the completed Sprints C, E, and F. The functional dependency chain for Phase 3 is **J → K**, with **L** independent and able to proceed in parallel (`next_steps.md` §6.1).
 
@@ -260,7 +265,18 @@ The sprint order below respects dependencies within Phase 3.
   composition root; ADR-0016 §4.1 is not reopened. New tests:
   `test_home_page_flows_async.py`, `test_main_window_workspace_rollback.py`,
   `test_main_window_bootstrap_ordering.py`[cite: 1].
+- ⏳ **Sprint L.0.2 Deliveries C and D:** deferred at the current planning
+  decision. They do not block L.1.
+  - Deferred: `TimelineSlider`, `ColorPicker`, `Histogram`, final debug-harness
+    consolidation, HiDPI validation and catalog closure.
 - 🚧 **Sprint L (Professional module):**
+  - **L.0:** complete. System form widgets delivered.
+  - **L.0.2 Delivery A:** complete. Simple Qt-native widgets delivered.
+  - **L.0.2 Delivery B:** complete. `CollapsibleSection`, stable-key `DragList`
+    and `IconSidebar` delivered.
+  - **L.1 (next):** `ProfessionalEditor`, `ModuleUISpec`, settings integration
+    and SQLite profile persistence.
+  - **L.2:** navigation, sections and configuration interactions.
   - `ProfessionalEditor` registered in `EditorRegistry`[cite: 1].
   - `ModuleUISpec` for the Professional module[cite: 1].
   - Settings integration (`professional.*` keys)[cite: 1].
@@ -290,7 +306,8 @@ The sprint order below respects dependencies within Phase 3.
 - Async flow loading, workspace rollback, and bootstrap ordering integration tests (Sprint K)[cite: 1].
 - Professional module integration tests[cite: 1].
 
-**Status:** 🚧 In Progress. Remaining functional blocker: **Sprint L**. (Sprint I closed on 2026-11-20; Sprints J and K closed on 2026-11-22.)[cite: 1]
+**Status:** 🚧 In Progress. Remaining functional blocker: **Sprint L**. L.1 is
+the next implementation focus. L.0.2 Deliveries C and D are deferred.
 
 ---
 
@@ -694,7 +711,8 @@ Sprint C (`EditorContext` propagation) is complete. Phase 1 is closed.
 
 **Sprint J (Coordinated deletion) is complete on 2026-11-22.** `ProjectManager.delete_project` coordinates `ProjectCatalog` → `ProjectIndex` → `FilesystemProjectRepository` via the `ProjectDeleted` event. The delete-specific staleness paths (handler containment, rebuild-on-next-query, `ProjectIndexStaleError` on double failure) and the physical delete invariant (only `project.json` is removed; sibling files survive byte-identical) are verified. Final validation: **1701 passing tests, 0 failed, 0 errors, 2 skipped; `tests/architecture/` 85 passed; `ruff check`, `ruff format --check`, `mypy src` clean (284 source files); `git diff --stat src/` empty.** The UI affordance for delete remains deferred (`next_steps.md` §5.2, §7).
 
-The immediate focus is **Phase 3**, whose remaining functional deliverables are **Sprint K (async loading)** and **Sprint L (Professional module)**. Sprint K is the next priority. Sprint L is now unblocked by the completed Editor Architecture Refactoring and may proceed in parallel.
+The immediate focus is **Sprint L.1 (Professional Editor)**. Sprint K is
+complete. L.0.2 Deliveries C and D are deferred and do not block Phase 3.
 
 Phase 4 begins after Phase 3 is marked `✅ Implemented`. Its first deliverables are the Unified Import Dialog, the `RenderingAdapter`, the `ViewerLayoutManager`, the 2D/3D tools, and the clinical transfer function presets.
 
