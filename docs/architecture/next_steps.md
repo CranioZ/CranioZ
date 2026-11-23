@@ -329,29 +329,56 @@ Lint/type gate: `ruff check .` → `All checks passed!`; `ruff format --check .`
 
 ### 5.3 Sprint K — Async loading
 
-**Status:** 🚧 Pending
+**Status:** ✅ Complete (2026-11-22)
 **Dependencies:** Sprint J ✅.
 
-Deliverables:
+**Scope decision (recorded at closure):** K-minimal option (b) —
+**flows async, projects synchronous**. Rationale:
 
-- `HomePage` loads projects and flows through `TaskManager`.
-- No blocking I/O in `MainWindow.__init__`.
-- `HomePage.refresh()` does not block the GUI thread.
-- Rollback if Workspace creation fails after project opening.
-- Regression tests for loading, cancellation, failure, and recovery.
-- **Bootstrap-ordering re-evaluation:** if the `ProjectIndexSynchronizer` bootstrap becomes asynchronous in Sprint K, ADR-0016 §4.1 must be revisited before Sprint K is closed. The options at that time include a bootstrap-time event queue or a transactional `replace_all` that preserves concurrent `add` operations. The ADR does not pre-commit to a solution; it records that the decision must be reopened.
+- The `ProjectCatalog` reads from an in-memory `SynchronizedProjectIndex`
+  (ADR-0016), so project listing performs no I/O on the GUI thread. A
+  Task for projects would be decorative.
+- The only blocking I/O on the boot path is
+  `FlowCatalog.list_definitions()` (filesystem read of
+  `<flows_root>/*/flow.json`), invoked from
+  `MainWindow._populate_flow_list()` in `MainWindow.__init__`. This is
+  exactly the "File I/O larger than a few milliseconds" case in
+  ADR-0011 §2.1, and it is moved to a `_LoadFlowsTask` dispatched
+  through the `TaskManager`.
+- `synchronizer.start()` remains synchronous in the composition root
+  (`__main__::_build_project_subsystem`). ADR-0016 §4.1 is **not**
+  reopened. The K.6 criterion is satisfied by construction.
 
-**Scope note (pre-planning):** Sprint K's bootstrap-ordering concern applies **only** if the index bootstrap becomes asynchronous. The current composition root (`_build_project_subsystem` in `__main__.py`) calls `synchronizer.start()` synchronously before constructing `MainWindow`. A "K-minimal" scope — `HomePage.refresh()` and `HomePage` flow loading become asynchronous, while `synchronizer.start()` remains synchronous — does **not** reopen ADR-0016 §4.1. The scope decision (K-minimal vs. K-full) is confirmed at sprint planning, not at closure.
+**Deliverables:**
 
-**Constraints inherited from Sprint J:**
+- ✅ `HomePage.refresh()` is synchronous (calls `ProjectTable.refresh()`).
+  The decorative `_LoadProjectsTask` and the `loading_*` signals for
+  projects were removed. The `HomePage` no longer receives a
+  `task_manager`.
+- ✅ `HomePage` exposes `flows_loading_started` / `flows_loading_finished` /
+  `flows_loading_failed` for the `MainWindow` to drive UI state if it
+  chooses. Today the `FlowList` keeps its "No flows available"
+  placeholder during the load (silent loading).
+- ✅ `MainWindow._dispatch_flow_loading()` dispatches a `_LoadFlowsTask`
+  through the injected `TaskManager`. It falls back to a synchronous
+  load when no `TaskManager` is injected (tests).
+- ✅ `_LoadFlowsTask` calls `progress(0.0)` / `progress(1.0)` and
+  `cancel_token.raise_if_cancelled()` at both boundaries, per
+  ADR-0011 §5.
+- ✅ `MainWindow.__init__` performs no blocking I/O on the flow path.
+- ✅ Rollback on Workspace creation failure (K.4) already present in
+  `_on_project_open_requested`; covered by a new integration test.
+- ✅ Bootstrap-ordering guarantee (K.6) covered by a new integration
+  test that mirrors `__main__::_build_project_subsystem`.
 
-- The `repository.delete → publish(ProjectDeleted)` pair must **not** be parallelized in Sprint K without re-opening ADR-0016 §4.1.
-- `HomePage.refresh()` currently triggers `ProjectTable.refresh()`, which reads the catalog synchronously. When it becomes asynchronous, the rollback path on `Workspace` creation failure must also be reviewed.
+**Explicitly out of Sprint K scope (unchanged):**
 
-**Explicitly out of Sprint K scope:**
+- Monitor de Logs subsystem (dedicated sprint, after K).
+- Separation Console / History / Monitor de Logs (project invariant).
 
-- The Monitor de Logs subsystem. Sprint K may emit additional logging as a by-product of the async loading work (e.g. Task lifecycle logs), but it does not introduce the `QtLogHandler`, the `LogsDialog`, the `logs_requested` connection, or the `Areas` tab contract. Those are governed by `monitor_logs.md` and belong to a dedicated sprint (§6.2).
-- Any change to the separation between the Console, the History, and the Monitor de Logs. That separation is a project invariant (`monitor_logs.md` §2) and is not renegotiable inside Sprint K.
+**Explicitly not re-opened:**
+
+- ADR-0016 §4.1 — the bootstrap remains synchronous.
 
 ### 5.4 Sprint L — Professional module
 

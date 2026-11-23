@@ -251,14 +251,15 @@ The sprint order below respects dependencies within Phase 3.
   - Contract and failure-path tests.
   - **Final validation (2026-11-22):** 1701 passing tests, 0 failed, 0 errors, 2 skipped (+9 vs Sprint I); `tests/architecture/` 85 passed; `ruff check`, `ruff format --check`, `mypy src` clean (284 source files); `git diff --stat src/` empty (**no production code changed**; the coordination was already correct and the sprint proved it with tests).
   - **Scope correction:** the UI affordance for delete is deferred. The API-level behavior is verified and propagates through the catalog. The UI affordance requires UX decisions that are out of scope for a "coordinated deletion" sprint. Tracked in `next_steps.md` §5.2 and §7.
-- 🚧 **Sprint K (Async loading):**
-  - `HomePage` loads projects and flows via `TaskManager`.
-  - No blocking I/O in `MainWindow.__init__`.
-  - `HomePage.refresh()` does not block the GUI thread.
-  - Rollback if `Workspace` creation fails after project open.
-  - Regression tests for loading, cancellation, failure, and recovery.
-  - **If the index bootstrap becomes asynchronous, ADR-0016 §4.1 must be revisited before Sprint K is closed.** K-minimal (bootstrap remains synchronous) does **not** reopen ADR-0016 §4.1.
-  - **Explicitly out of scope:** the Monitor de Logs subsystem (see §5.1 note and `monitor_logs.md`).
+- ✅ **Sprint K (Async loading):** complete on 2026-11-22. K-minimal
+  option (b): flows async, projects synchronous. `HomePage.refresh()`
+  is synchronous (in-memory `SynchronizedProjectIndex`, ADR-0016);
+  the `MainWindow` dispatches a `_LoadFlowsTask` through the
+  `TaskManager` because `FlowCatalog.list_definitions()` performs
+  filesystem I/O. `synchronizer.start()` remains synchronous in the
+  composition root; ADR-0016 §4.1 is not reopened. New tests:
+  `test_home_page_flows_async.py`, `test_main_window_workspace_rollback.py`,
+  `test_main_window_bootstrap_ordering.py`.
 - 🚧 **Sprint L (Professional module):**
   - `ProfessionalEditor` registered in `EditorRegistry`.
   - `ModuleUISpec` for the Professional module.

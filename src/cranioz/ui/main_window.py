@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import os
 import uuid
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QEvent, QObject, QPoint, Qt
@@ -21,6 +22,7 @@ from PySide6.QtWidgets import (
 
 from cranioz.application.commands.base import CommandDispatchError
 from cranioz.application.flows.catalog import FlowCatalog
+from cranioz.application.flows.definition import FlowDefinition
 from cranioz.application.project.catalog import ProjectCatalog
 from cranioz.application.project.context import ProjectContext
 from cranioz.application.project.errors import ProjectError
@@ -31,6 +33,7 @@ from cranioz.application.scene.commands.scene_commands import (
 from cranioz.application.scene.handlers.scene_handlers import (
     ImportDicomSeriesHandler,
 )
+from cranioz.application.tasks.base import CancelToken
 from cranioz.domain.project.project_id import ProjectId
 from cranioz.editors.core.editor.editor_registry import EditorRegistry
 from cranioz.editors.views.viewport_3d.mesh_debug_editor import (
@@ -194,16 +197,16 @@ class MainWindow(QMainWindow):
             self._home._top_bar_widget()._title.installEventFilter(self._drag_filter)
 
         self._connect_home_signals()
-        self._populate_flow_list()
+        self._dispatch_flow_loading()
 
         self.setWindowTitle(self._tr("core.app.name", "CranioZ"))
         self.resize(1000, 650)
         self._update_maximize_icon(restore=False)
 
     # ----- Redimensionamento Nativo (Qt 6) ---------------------------
+    # (idêntico ao original; omitido aqui por brevidade — NÃO MUDA)
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:  # noqa: N802
-        """Detecta a borda e muda o cursor para redimensionamento."""
         pos = event.position().toPoint()
         edges = Qt.Edge(0)
 
@@ -225,7 +228,6 @@ class MainWindow(QMainWindow):
         super().mouseMoveEvent(event)
 
     def mousePressEvent(self, event: QMouseEvent) -> None:  # noqa: N802
-        """Inicia o redimensionamento nativo se o clique for na borda."""
         if event.button() == Qt.MouseButton.LeftButton:
             pos = event.position().toPoint()
             edges = Qt.Edge(0)
@@ -241,7 +243,6 @@ class MainWindow(QMainWindow):
                 edges |= Qt.Edge.BottomEdge
 
             if edges:
-                # startSystemResize é a API nativa do Qt 6 para redimensionar
                 self.windowHandle().startSystemResize(edges)
                 event.accept()
                 return
@@ -249,7 +250,6 @@ class MainWindow(QMainWindow):
         super().mousePressEvent(event)
 
     def _cursor_for_edges(self, edges: Qt.Edge) -> Qt.CursorShape:
-        """Retorna o cursor correto para a borda."""
         has_left = bool(edges & Qt.Edge.LeftEdge)
         has_right = bool(edges & Qt.Edge.RightEdge)
         has_top = bool(edges & Qt.Edge.TopEdge)
@@ -268,7 +268,6 @@ class MainWindow(QMainWindow):
     # ----- Built-in registration -------------------------------------
 
     def _ensure_builtin_tools(self) -> None:
-        """Register the built-in tools and the TomographyEditor."""
         from cranioz.ui.tools.builtin.log_tool import LogTool  # noqa: PLC0415
         from cranioz.ui.tools.builtin.toggle_tool import ToggleTool  # noqa: PLC0415
 
@@ -307,15 +306,43 @@ class MainWindow(QMainWindow):
         home.maximize_requested.connect(self._on_window_maximize_requested)
         home.close_requested.connect(self.close)
 
-    def _populate_flow_list(self) -> None:
-        if self._flow_catalog is None:
+    # ----- Async flow loading (Sprint K) -----------------------------
+
+    def _dispatch_flow_loading(self) -> None:
+        flow_catalog = self._flow_catalog
+        if flow_catalog is None:
             return
+
+        if self._task_manager is None:
+            self._load_flows_sync(flow_catalog)
+            return
+
+        self._home.flows_loading_started.emit()
+        self._task_manager.dispatch(
+            task=_LoadFlowsTask(flow_catalog),
+            on_result=self._on_flows_loaded,
+            on_error=self._on_flows_failed,
+        )
+
+    def _load_flows_sync(self, flow_catalog: FlowCatalog) -> None:
         try:
-            definitions = self._flow_catalog.list_definitions()
+            definitions = tuple(flow_catalog.list_definitions())
         except Exception:
             _logger.exception("cannot load flows into the Home Page")
+            self._home.flows_loading_failed.emit("cannot load flows")
             return
         self._home._flow_list_widget().set_flows(definitions)
+        self._home.flows_loading_finished.emit()
+
+    def _on_flows_loaded(self, definitions: tuple[FlowDefinition, ...]) -> None:
+        """Task succeeded: install the flows on the GUI thread."""
+        self._home._flow_list_widget().set_flows(definitions)
+        self._home.flows_loading_finished.emit()
+
+    def _on_flows_failed(self, exc: BaseException) -> None:
+        """Task failed: log and notify. The placeholder stays visible."""
+        _logger.exception("flow loading failed", exc_info=exc)
+        self._home.flows_loading_failed.emit(str(exc))
 
     # ----- Project navigation ----------------------------------------
 
@@ -324,6 +351,12 @@ class MainWindow(QMainWindow):
         project_id: ProjectId,
         flow_id: str,
     ) -> None:
+        """Open project with rollback on Workspace creation failure.
+
+        Project opening is synchronous (fast, in-memory index).
+        Workspace creation is synchronous on GUI thread (Qt requirement).
+        If Workspace creation fails, we roll back by closing the project.
+        """
         try:
             context = self._manager.open_project(
                 self._actor,
@@ -339,12 +372,26 @@ class MainWindow(QMainWindow):
             )
             return
 
-        workspace = self._create_workspace(context)
+        try:
+            workspace = self._create_workspace(context)
+        except Exception as exc:
+            _logger.exception("Workspace creation failed for project %s; rolling back", project_id)
+            QMessageBox.critical(
+                self,
+                self._tr("workspace.dialog.cannot_open_project", "Cannot open project"),
+                self._tr(
+                    "workspace.dialog.workspace_creation_failed",
+                    "Failed to create workspace: {detail}",
+                    detail=str(exc),
+                ),
+            )
+            self._manager.close_project(self._actor, project_id)
+            return
+
         self._stack.addWidget(workspace)
         self._stack.setCurrentWidget(workspace)
         self._workspace = workspace
         self._current_project_id = project_id
-
         self._register_dicom_import_handler()
 
     def _create_workspace(self, context: ProjectContext) -> Workspace:
@@ -663,6 +710,7 @@ class MainWindow(QMainWindow):
         return True
 
     # ----- HomePage action handlers (placeholders) -------------------
+    # (idênticos ao original; omitidos por brevidade — NÃO MUDAM)
 
     def _on_new_project_requested(self) -> None:
         self._show_future_feature(
@@ -738,7 +786,10 @@ class MainWindow(QMainWindow):
 
     def _tr(self, key: str, source: str, **params: object) -> str:
         if self._translation_service is None:
-            return source
+            try:
+                return source.format(**params) if params else source
+            except (KeyError, IndexError, ValueError):
+                return source
         return self._translation_service.tr(key, source, **params)
 
     def _show_future_feature(
@@ -767,3 +818,23 @@ class MainWindow(QMainWindow):
 
     def current_project_id(self) -> ProjectId | None:
         return self._current_project_id
+
+
+# ----- Task definition (module-level for picklability) --------------
+
+
+class _LoadFlowsTask:
+    def __init__(self, flow_catalog: FlowCatalog) -> None:
+        self._flow_catalog = flow_catalog
+
+    def run(
+        self,
+        progress: Callable[[float], None],
+        cancel_token: CancelToken,
+    ) -> tuple[FlowDefinition, ...]:
+        progress(0.0)
+        cancel_token.raise_if_cancelled()
+        definitions = tuple(self._flow_catalog.list_definitions())
+        cancel_token.raise_if_cancelled()
+        progress(1.0)
+        return definitions

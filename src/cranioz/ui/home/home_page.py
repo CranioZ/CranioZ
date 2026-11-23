@@ -25,12 +25,6 @@ Layout:
             ├── FlowList         (stretch 42 — ~42%)
             └── HomeBottomBar    (stretch 8  — ~8%)
 
-The right column uses a plain QVBoxLayout with stretch factors,
-not a QSplitter. The prototype shows fixed panels, not a draggable
-divider. Proportional heights (8/42/42/8) keep the four bars
-visually balanced regardless of window size; setMinimumHeight on
-the top and bottom bars protects against very small windows.
-
 CommunitySidebar is hidden by default. The ☰ button in the top bar
 toggles it. The sidebar is an "extra" resource, not part of the
 default workflow. It fills the full height of the HomePage; when
@@ -42,6 +36,20 @@ StartButton state:
 - Disabled (grey) by default.
 - Enabled (green) only when BOTH a project and a flow are selected.
 - Clicking emits `project_open_requested(project_id, flow_id)`.
+
+Sprint K scope:
+
+- Project listing is synchronous. The `ProjectCatalog` reads from an
+  in-memory `SynchronizedProjectIndex` (ADR-0016), so no I/O occurs
+  on the GUI thread and no Task is needed. `refresh()` simply calls
+  `ProjectTable.refresh()`.
+- Flow listing is asynchronous. The `MainWindow` dispatches a
+  `_LoadFlowsTask` through the `TaskManager` (ADR-0011) because
+  `FlowCatalog.list_definitions()` performs filesystem I/O. The
+  HomePage only exposes the `flows_loading_started` /
+  `flows_loading_finished` / `flows_loading_failed` signals so the
+  MainWindow can render state if it chooses to; today the `FlowList`
+  keeps its "No flows available" placeholder during the load.
 """
 
 from __future__ import annotations
@@ -100,6 +108,12 @@ class HomePage(QWidget):
     # ----- Start button ----------------------------------------------
 
     project_open_requested = Signal(object, str)  # ProjectId, flow_id
+
+    # ----- Async flow loading (Sprint K) -----------------------------
+
+    flows_loading_started = Signal()
+    flows_loading_finished = Signal()
+    flows_loading_failed = Signal(str)  # error message
 
     def __init__(
         self,
@@ -167,7 +181,16 @@ class HomePage(QWidget):
     # ----- Public API -----------------------------------------------
 
     def refresh(self) -> None:
-        """Reload the project table from the catalog."""
+        """Reload the project table from the catalog.
+
+        Synchronous: the catalog reads from an in-memory
+        `SynchronizedProjectIndex` (ADR-0016), so no I/O occurs on
+        the GUI thread and no Task is needed (ADR-0011 §2.1: "a few
+        milliseconds run directly on the GUI thread").
+
+        Flow loading is asynchronous and is triggered separately by
+        the `MainWindow` through `_dispatch_flow_loading()`.
+        """
         self._project_table.refresh()
 
     def selected_project_id(self) -> ProjectId | None:

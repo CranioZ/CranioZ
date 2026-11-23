@@ -78,7 +78,9 @@ class FlowList(QWidget):
         self._content_layout.setContentsMargins(8, 8, 8, 8)
         self._content_layout.setSpacing(6)
 
-        self._placeholder = QLabel(tr("homepage.flow_list.empty", "No flows available"))
+        self._placeholder: QLabel | None = QLabel(
+            tr("homepage.flow_list.empty", "No flows available")
+        )
         self._placeholder.setObjectName("home_page.flow_list.placeholder")
         self._placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._content_layout.addWidget(self._placeholder)
@@ -107,15 +109,20 @@ class FlowList(QWidget):
 
         Clears any existing selection and emits ``flow_selected(None)``
         so the caller's state is consistent with the (empty) selection.
+
+        Idempotent: calling ``set_flows`` twice does not attempt to
+        destroy an already-destroyed placeholder. The placeholder is
+        destroyed once and ``self._placeholder`` is set to ``None``.
         """
         for row in self._rows.values():
             row.setParent(None)
             row.deleteLater()
         self._rows.clear()
 
-        if flows:
+        if flows and self._placeholder is not None:
             self._placeholder.setParent(None)
             self._placeholder.deleteLater()
+            self._placeholder = None
 
         for flow in sorted(flows, key=lambda f: f.flow_id):
             row = FlowRow(

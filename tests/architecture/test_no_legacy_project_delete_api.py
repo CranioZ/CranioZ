@@ -55,7 +55,7 @@ _PROJECT_JSON_WHITELIST: frozenset[Path] = frozenset(
 _REPOSITORY_DELETE_WHITELIST: frozenset[Path] = frozenset(
     {
         # The manager is the single lifecycle writer (project.md §25).
-        _SRC / "main_window" / "project" / "manager.py",
+        _SRC / "application" / "project" / "manager.py",
     }
 )
 

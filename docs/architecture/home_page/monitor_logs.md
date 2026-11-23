@@ -194,7 +194,7 @@ self._logs_dialog: LogsDialog | None = None
 # MainWindow._on_logs_requested
 if self._logs_dialog is None:
     self._logs_dialog = LogsDialog(
-        log_handler=self._log_handler,          # from bootstrap
+        log_handler=self._log_handler,  # from bootstrap
         translation_service=self._translation_service,
         icon_provider=self._icon_provider,
         parent=self,
