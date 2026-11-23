@@ -582,7 +582,7 @@ application.
 Layout snapshot records use a structured logging attribute:
 
 ```python
-extra={"area_snapshot": True}
+extra = {"area_snapshot": True}
 ```
 
 The handler routes records carrying this attribute to the `Areas` tab.

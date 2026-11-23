@@ -3,11 +3,6 @@
 from cranioz.ui.icons.unicode import _DEFAULT_GLYPHS
 
 
-def test_catalog_has_expected_count() -> None:
-    # 60 canonical + 6 shell + 4 window + 1 toggle = 71
-    assert len(_DEFAULT_GLYPHS) == 71
-
-
 def test_catalog_contains_required_names() -> None:
     required = {
         "home",
@@ -26,5 +21,14 @@ def test_catalog_contains_required_names() -> None:
         "toggle_right",
         "toggle_bottom",
         "new",
+        "eye-open",
+        "eye-closed",
+        "clear",
+        "drag",
     }
     assert required.issubset(_DEFAULT_GLYPHS.keys())
+
+
+def test_catalog_has_expected_count() -> None:
+    # 60 canonical + 6 shell + 4 window + 1 toggle + 4 L.0.2 = 75
+    assert len(_DEFAULT_GLYPHS) == 75

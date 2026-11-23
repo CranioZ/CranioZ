@@ -110,6 +110,10 @@ _DEFAULT_GLYPHS: Final[dict[str, str]] = {
     "feedback": "✉",
     "contribute": "♥",
     "start": "▶",
+    "eye-open": "👁",
+    "eye-closed": "⊘",
+    "clear": "✕",
+    "drag": "⋮⋮",
 }
 
 
