@@ -353,6 +353,35 @@ QPushButton[class="secondary"]:hover, QToolButton[class="secondary"]:hover {{
     border-color: {c.interactive_hover};
 }}
 
+
+/* FilePicker browse button: compact secondary variant.
+   The objectName selector has higher specificity than the generic
+   QToolButton rule, so it wins without needing !important. The
+   fixed width set on the widget keeps the button from growing
+   under the global padding. */
+QToolButton#CraniozFilePickerBrowse {{
+    background-color: {c.background_elevated};
+    color: {c.text_primary};
+    border: {b.width_default}px solid {c.border_default};
+    border-radius: {b.radius_control}px;
+    min-height: {d.control_height}px;
+    max-height: {d.control_height}px;
+    padding: 0;
+    font-size: {t.size_body}pt;
+}}
+
+QToolButton#CraniozFilePickerBrowse:hover {{
+    background-color: {c.background_panel};
+    border-color: {c.interactive_hover};
+}}
+
+QToolButton#CraniozFilePickerBrowse:pressed {{
+    background-color: {c.interactive_pressed};
+    border-color: {c.interactive_pressed};
+    color: {c.text_inverse};
+}}
+
+
 /* ----- Window control buttons (Block 5.6.1) --------------------- */
 /* Flat buttons matching the Windows OS convention:
    - Transparent background in the default state.
