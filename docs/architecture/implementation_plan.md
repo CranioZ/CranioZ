@@ -223,34 +223,34 @@ The sprint order below respects dependencies within Phase 3.
 
 ### Phase 3: Project, Home Page & Professional Module
 
-**Goal:** Close Phase 3 formally. Remaining blockers: async loading (Sprint K) and the Professional module (Sprint L).
+**Goal:** Close Phase 3 formally. Remaining functional blocker: the **Professional module (Sprint L)**[cite: 1].
 
 **Deliverables:**
 
-- ✅ `ProjectManager`, `ProjectCatalog`, `HomePage`, `MainWindow`.
-- ✅ Project selection lifecycle.
-- ✅ `FlowCatalog` and Flow repositories.
-- ✅ **Editor Architecture Refactoring:** see ADR-0015 and `refactoring_plan.md` §11. Completed on 2026-11-18.
-- ✅ **Sprint I (`ProjectIndex`):** implemented per ADR-0016. Closed on 2026-11-20.
-  - `ProjectIndex` Protocol in `application/project/index.py`: `add`, `remove`, `lookup`, `list_summaries`, `list_ids`, `count`, `contains`, `replace_all`. Includes `ProjectIndexStaleError`. The Protocol is a pure read model and does not know about the repository, the event bus, or the filesystem.
-  - `InMemoryProjectIndex` in `application/project/in_memory_index.py`.
-  - `ProjectIndexSynchronizer` and `SynchronizedProjectIndex` in `application/project/index_synchronizer.py`.
-  - `ProjectCatalog` consumes a `ProjectIndex` instead of querying the `ProjectRepository` directly; `ProjectCatalog.refresh()` is removed (freshness is automatic).
-  - Event-driven invalidation via `ProjectCreated`, `ProjectUpdated`, `ProjectDeleted`.
-  - Bootstrap ordering guarantee per ADR-0016 §4: `subscribe` → `repository.list_metadata()` → `replace_all`, on the same synchronous call stack. No event queue while the bootstrap is synchronous (see §5.1 note on Sprint K).
-  - Staleness rule per ADR-0016 §3.3: a query never silently returns data from a stale index; `ProjectIndexStaleError` is raised when a rebuild after a detected staleness fails.
-  - Handler error containment per ADR-0016 §3.4: handlers never propagate to the `EventBus`; failures log with `project_id` and operation name only (no PHI) and mark the index as possibly stale.
-  - Contract tests: `add`/`remove`/`lookup`/`list`/`count`/`contains`/`replace_all`; bootstrap ordering; handler error containment; staleness propagation; catalog reads via `ProjectIndex` only; end-to-end integration with `ProjectManager`.
-  - Benchmark documented in ADR-0016's implementation notes (not a CI gate): 100/300/1000 projects in `tmp_path`, comparing `search_projects()` latency and `repository.list_metadata` call count between baseline (direct repository) and new (indexed).
-  - **Not** part of Sprint I: `FilesystemProjectIndex` does not exist. A persisted index and a SQLite implementation remain deferred to Phase 8.
-  - **Final validation (2026-11-20):** 1692 passing tests, 0 failed, 0 errors, 2 skipped; `ruff check`, `ruff format --check`, and `mypy src` clean. The integration fixture `tests/integration/ui/test_main_window_import.py` was migrated to the composition-root wiring; the bootstrap order (`synchronizer.start()` before `manager.create_project(...)`) is preserved and documented in ADR-0016 §4.2.
-- ✅ **Sprint J (Coordinated deletion):** complete on 2026-11-22.
-  - `ProjectManager.delete_project` coordinates `ProjectCatalog` → `ProjectIndex` → `FilesystemProjectRepository` via the `ProjectDeleted` event (ADR-0016 §2.2). The `ProjectManager` does not call `ProjectCatalog` or `ProjectIndex` directly.
-  - Rollback semantics verified: repository failure raises before `ProjectDeleted` is published; handler failure is contained by the synchronizer (ADR-0016 §3.4) and marks the index stale; the next query rebuilds from the authoritative repository (ADR-0016 §3.3). No event compensation, no manual index re-add.
-  - External source data (External Reference mode) is never removed by project deletion. `FilesystemProjectRepository` owns exactly one file (`project.json`); sibling files survive byte-identical.
-  - Contract and failure-path tests.
-  - **Final validation (2026-11-22):** 1701 passing tests, 0 failed, 0 errors, 2 skipped (+9 vs Sprint I); `tests/architecture/` 85 passed; `ruff check`, `ruff format --check`, `mypy src` clean (284 source files); `git diff --stat src/` empty (**no production code changed**; the coordination was already correct and the sprint proved it with tests).
-  - **Scope correction:** the UI affordance for delete is deferred. The API-level behavior is verified and propagates through the catalog. The UI affordance requires UX decisions that are out of scope for a "coordinated deletion" sprint. Tracked in `next_steps.md` §5.2 and §7.
+- ✅ `ProjectManager`, `ProjectCatalog`, `HomePage`, `MainWindow`[cite: 1].
+- ✅ Project selection lifecycle[cite: 1].
+- ✅ `FlowCatalog` and Flow repositories[cite: 1].
+- ✅ **Editor Architecture Refactoring:** see ADR-0015 and `refactoring_plan.md` §11. Completed on 2026-11-18[cite: 1].
+- ✅ **Sprint I (`ProjectIndex`):** implemented per ADR-0016. Closed on 2026-11-20[cite: 1].
+  - `ProjectIndex` Protocol in `application/project/index.py`: `add`, `remove`, `lookup`, `list_summaries`, `list_ids`, `count`, `contains`, `replace_all`. Includes `ProjectIndexStaleError`. The Protocol is a pure read model and does not know about the repository, the event bus, or the filesystem[cite: 1].
+  - `InMemoryProjectIndex` in `application/project/in_memory_index.py`[cite: 1].
+  - `ProjectIndexSynchronizer` and `SynchronizedProjectIndex` in `application/project/index_synchronizer.py`[cite: 1].
+  - `ProjectCatalog` consumes a `ProjectIndex` instead of querying the `ProjectRepository` directly; `ProjectCatalog.refresh()` is removed (freshness is automatic)[cite: 1].
+  - Event-driven invalidation via `ProjectCreated`, `ProjectUpdated`, `ProjectDeleted`[cite: 1].
+  - Bootstrap ordering guarantee per ADR-0016 §4: `subscribe` → `repository.list_metadata()` → `replace_all`, on the same synchronous call stack. No event queue while the bootstrap is synchronous (see §5.1 note on Sprint K)[cite: 1].
+  - Staleness rule per ADR-0016 §3.3: a query never silently returns data from a stale index; `ProjectIndexStaleError` is raised when a rebuild after a detected staleness fails[cite: 1].
+  - Handler error containment per ADR-0016 §3.4: handlers never propagate to the `EventBus`; failures log with `project_id` and operation name only (no PHI) and mark the index as possibly stale[cite: 1].
+  - Contract tests: `add`/`remove`/`lookup`/`list`/`count`/`contains`/`replace_all`; bootstrap ordering; handler error containment; staleness propagation; catalog reads via `ProjectIndex` only; end-to-end integration with `ProjectManager`[cite: 1].
+  - Benchmark documented in ADR-0016's implementation notes (not a CI gate): 100/300/1000 projects in `tmp_path`, comparing `search_projects()` latency and `repository.list_metadata` call count between baseline (direct repository) and new (indexed)[cite: 1].
+  - **Not** part of Sprint I: `FilesystemProjectIndex` does not exist. A persisted index and a SQLite implementation remain deferred to Phase 8[cite: 1].
+  - **Final validation (2026-11-20):** 1692 passing tests, 0 failed, 0 errors, 2 skipped; `ruff check`, `ruff format --check`, and `mypy src` clean. The integration fixture `tests/integration/ui/test_main_window_import.py` was migrated to the composition-root wiring; the bootstrap order (`synchronizer.start()` before `manager.create_project(...)`) is preserved and documented in ADR-0016 §4.2[cite: 1].
+- ✅ **Sprint J (Coordinated deletion):** complete on 2026-11-22[cite: 1].
+  - `ProjectManager.delete_project` coordinates `ProjectCatalog` → `ProjectIndex` → `FilesystemProjectRepository` via the `ProjectDeleted` event (ADR-0016 §2.2). The `ProjectManager` does not call `ProjectCatalog` or `ProjectIndex` directly[cite: 1].
+  - Rollback semantics verified: repository failure raises before `ProjectDeleted` is published; handler failure is contained by the synchronizer (ADR-0016 §3.4) and marks the index stale; the next query rebuilds from the authoritative repository (ADR-0016 §3.3). No event compensation, no manual index re-add[cite: 1].
+  - External source data (External Reference mode) is never removed by project deletion. `FilesystemProjectRepository` owns exactly one file (`project.json`); sibling files survive byte-identical[cite: 1].
+  - Contract and failure-path tests[cite: 1].
+  - **Final validation (2026-11-22):** 1701 passing tests, 0 failed, 0 errors, 2 skipped (+9 vs Sprint I); `tests/architecture/` 85 passed; `ruff check`, `ruff format --check`, `mypy src` clean (284 source files); `git diff --stat src/` empty (**no production code changed**; the coordination was already correct and the sprint proved it with tests)[cite: 1].
+  - **Scope correction:** the UI affordance for delete is deferred. The API-level behavior is verified and propagates through the catalog. The UI affordance requires UX decisions that are out of scope for a "coordinated deletion" sprint. Tracked in `next_steps.md` §5.2 and §7[cite: 1].
 - ✅ **Sprint K (Async loading):** complete on 2026-11-22. K-minimal
   option (b): flows async, projects synchronous. `HomePage.refresh()`
   is synchronous (in-memory `SynchronizedProjectIndex`, ADR-0016);
@@ -259,167 +259,166 @@ The sprint order below respects dependencies within Phase 3.
   filesystem I/O. `synchronizer.start()` remains synchronous in the
   composition root; ADR-0016 §4.1 is not reopened. New tests:
   `test_home_page_flows_async.py`, `test_main_window_workspace_rollback.py`,
-  `test_main_window_bootstrap_ordering.py`.
+  `test_main_window_bootstrap_ordering.py`[cite: 1].
 - 🚧 **Sprint L (Professional module):**
-  - `ProfessionalEditor` registered in `EditorRegistry`.
-  - `ModuleUISpec` for the Professional module.
-  - Settings integration (`professional.*` keys).
-  - Tests.
-  - **Sprint L is unblocked** by the completed Editor Architecture Refactoring, Sprint C, Sprint E, and Sprint F.
+  - `ProfessionalEditor` registered in `EditorRegistry`[cite: 1].
+  - `ModuleUISpec` for the Professional module[cite: 1].
+  - Settings integration (`professional.*` keys)[cite: 1].
+  - Tests[cite: 1].
+  - **Sprint L is unblocked** by the completed Editor Architecture Refactoring, Sprint C, Sprint E, and Sprint F[cite: 1].
 
 **Deferred to Phase 8:**
 
-- SQLite `ProjectIndex` backend (`SqliteProjectIndex`, same `ProjectIndex` Protocol).
-- Recent Projects.
-- Background disk reconciliation.
+- SQLite `ProjectIndex` backend (`SqliteProjectIndex`, same `ProjectIndex` Protocol)[cite: 1].
+- Recent Projects[cite: 1].
+- Background disk reconciliation[cite: 1].
 
 **Not part of Phase 3, not deferred to Phase 8 — deferred to a dedicated unscheduled sprint:**
 
-- Monitor de Logs (`monitor_logs.md`): `QtLogHandler`, `LogsDialog`, 📋 button wiring, `Areas` snapshot contract. Documented and awaiting a dedicated sprint.
+- Monitor de Logs (`monitor_logs.md`): `QtLogHandler`, `LogsDialog`, 📋 button wiring, `Areas` snapshot contract. Documented and awaiting a dedicated sprint[cite: 1].
 
 **Tests:**
 
-- Project lifecycle tests.
-- Filesystem repository integration tests.
-- HomePage selection and refresh regression tests.
-- Project opening and rollback tests.
-- ProjectIndex contract tests (index), synchronizer tests (bootstrap, events, error containment, `rebuild`, `ensure_fresh`), catalog-via-index tests, and end-to-end `ProjectManager` sync tests (Sprint I, ADR-0016).
-- `ProjectIndexStaleError` propagation and `MainWindow` handling tests (Sprint I, ADR-0016).
-- Delete-specific staleness paths and the physical delete invariant (Sprint J, ADR-0016 §3.3/§3.4 and §2.2).
-- Architecture gate: `tests/architecture/test_no_legacy_project_delete_api.py` (Sprint J).
-- Professional module integration tests.
+- Project lifecycle tests[cite: 1].
+- Filesystem repository integration tests[cite: 1].
+- HomePage selection and refresh regression tests[cite: 1].
+- Project opening and rollback tests[cite: 1].
+- ProjectIndex contract tests (index), synchronizer tests (bootstrap, events, error containment, `rebuild`, `ensure_fresh`), catalog-via-index tests, and end-to-end `ProjectManager` sync tests (Sprint I, ADR-0016)[cite: 1].
+- `ProjectIndexStaleError` propagation and `MainWindow` handling tests (Sprint I, ADR-0016)[cite: 1].
+- Delete-specific staleness paths and the physical delete invariant (Sprint J, ADR-0016 §3.3/§3.4 and §2.2)[cite: 1].
+- Architecture gate: `tests/architecture/test_no_legacy_project_delete_api.py` (Sprint J)[cite: 1].
+- Async flow loading, workspace rollback, and bootstrap ordering integration tests (Sprint K)[cite: 1].
+- Professional module integration tests[cite: 1].
 
-**Status:** 🚧 In Progress. Blockers: Sprints K and L. (Sprint I closed on 2026-11-20; Sprint J closed on 2026-11-22.)
+**Status:** 🚧 In Progress. Remaining functional blocker: **Sprint L**. (Sprint I closed on 2026-11-20; Sprints J and K closed on 2026-11-22.)[cite: 1]
 
 ---
 
 ### Phase 4: Scene & Visualization
 
-**Status:** ⏳ Planned. Begins after Phase 3 is marked `✅ Implemented`.
+**Status:** ⏳ Planned. Begins after Phase 3 is marked `✅ Implemented`[cite: 1].
 
-**Goal:** Complete the integration between the Application layer, Scene, imaging infrastructure, rendering adapters, and Editors.
+**Goal:** Complete the integration between the Application layer, Scene, imaging infrastructure, rendering adapters, and Editors[cite: 1].
 
 #### 4.1 Application Layer
 
-- ✅ `main_window`, `tasks/`, `telemetry/`, `events/` contracts and reference implementations.
-- 🚧 `CommandDispatcher` integration into all Editors.
+- ✅ `main_window`, `tasks/`, `telemetry/`, `events/` contracts and reference implementations[cite: 1].
+- 🚧 `CommandDispatcher` integration into all Editors[cite: 1].
 
 #### 4.2 Scene and Domain Integration
 
-- ✅ `domain/scene/`, `application/scene/`.
-- ✅ `ImportDicomSeriesCommand` and handler.
-- 🚧 Complete `SceneQuery` propagation.
-- ⏳ Scene serialization (ADR-0009).
-- ⏳ Filesystem-backed Scene persistence.
-- ⏳ Complete integration between Commands, Scene and imported objects.
+- ✅ `domain/scene/`, `application/scene/`[cite: 1].
+- ✅ `ImportDicomSeriesCommand` and handler[cite: 1].
+- 🚧 Complete `SceneQuery` propagation[cite: 1].
+- ⏳ Scene serialization (ADR-0009)[cite: 1].
+- ⏳ Filesystem-backed Scene persistence[cite: 1].
+- ⏳ Complete integration between Commands, Scene and imported objects[cite: 1].
 
 #### 4.3 Medical Imaging Infrastructure
 
 **4.3.1 Volume and geometry**
 
-- ✅ `Volume`, `VolumeGeometry`, `ImageMetadata`, `VolumeProvenance`, `IntensityScale`.
-- ✅ Internal RAS convention.
-- ✅ LPS-to-RAS conversion.
-- ✅ Explicit intensity calibration state.
+- ✅ `Volume`, `VolumeGeometry`, `ImageMetadata`, `VolumeProvenance`, `IntensityScale`[cite: 1].
+- ✅ Internal RAS convention[cite: 1].
+- ✅ LPS-to-RAS conversion[cite: 1].
+- ✅ Explicit intensity calibration state[cite: 1].
 
 **4.3.2 DICOM import and validation**
 
-- ✅ `DicomSorter`, `DicomValidator`, `DicomSeriesReader`, `ImportReport`.
-- ✅ `spacing_z` from `ImagePositionPatient` distance.
-- ✅ `RescaleSlope`/`RescaleIntercept` per slice.
-- ⏳ Patient identity mismatch handling.
-- ⏳ PHI-aware logging.
+- ✅ `DicomSorter`, `DicomValidator`, `DicomSeriesReader`, `ImportReport`[cite: 1].
+- ✅ `spacing_z` from `ImagePositionPatient` distance[cite: 1].
+- ✅ `RescaleSlope`/`RescaleIntercept` per slice[cite: 1].
+- ⏳ Patient identity mismatch handling[cite: 1].
+- ⏳ PHI-aware logging[cite: 1].
 
 **4.3.3 Memory and interoperability**
 
-- ✅ Voxel buffer ownership: `Volume` owns; `VtkImageAdapter` shares.
-- ✅ NumPy `[z, y, x]` convention.
-- ✅ Voxel ordering contract: `data.ravel(order="C")` without transposition. Regression test enforced.
-- ✅ Production scalar type: `VTK_SHORT`.
-- ✅ Direction matrix applied in `VtkImageAdapter`.
+- ✅ Voxel buffer ownership: `Volume` owns; `VtkImageAdapter` shares[cite: 1].
+- ✅ NumPy `[z, y, x]` convention[cite: 1].
+- ✅ Voxel ordering contract: `data.ravel(order="C")` without transposition. Regression test enforced[cite: 1].
+- ✅ Production scalar type: `VTK_SHORT`[cite: 1].
+- ✅ Direction matrix applied in `VtkImageAdapter`[cite: 1].
 
 **4.3.4 Unified Import Dialog (required)**
 
-- `ImportManager` with categories (Volume, Radiographs, Scans, Photographs, Meshes, Dental Implants, Facial Implants), sources (project, file, sample data), preview, auto-tagging.
-- `ImportDialog` with tab bar, source selector, asset grid/list, preview panel, add/remove/select actions.
-- Per-category importers.
-- Scene and DomainObjectStore integration.
-- TaskManager progress, cancellation, error reporting.
+- `ImportManager` with categories (Volume, Radiographs, Scans, Photographs, Meshes, Dental Implants, Facial Implants), sources (project, file, sample data), preview, auto-tagging[cite: 1].
+- `ImportDialog` with tab bar, source selector, asset grid/list, preview panel, add/remove/select actions[cite: 1].
+- Per-category importers[cite: 1].
+- Scene and DomainObjectStore integration[cite: 1].
+- TaskManager progress, cancellation, error reporting[cite: 1].
 
 **4.3.5 Storage and export**
 
-- ⏳ External Reference and Managed Copy storage modes.
-- ⏳ Preserve source DICOM as canonical.
-- ⏳ VTI export with round-trip validation.
-- ⏳ Project deletion never removes external source data.
+- ⏳ External Reference and Managed Copy storage modes[cite: 1].
+- ⏳ Preserve source DICOM as canonical[cite: 1].
+- ⏳ VTI export with round-trip validation[cite: 1].
+- ⏳ Project deletion never removes external source data[cite: 1].
 
 #### 4.4 Geometry Infrastructure
 
-**Implemented:** `Mesh`, `CoordinateFrame`, STL I/O, VTK adapter, `MeshDebugEditor`.
+**Implemented:** `Mesh`, `CoordinateFrame`, STL I/O, VTK adapter, `MeshDebugEditor`[cite: 1].
 
-**Deferred:** `GeometryRevision`, content-hash deduplication, persistent asset storage, `ValidationProfile`, `GeometryOperation`, booleans, welding, benchmarks.
+**Deferred:** `GeometryRevision`, content-hash deduplication, persistent asset storage, `ValidationProfile`, `GeometryOperation`, booleans, welding, benchmarks[cite: 1].
 
 #### 4.5 Visualization Infrastructure
 
 **Implemented:**
 
-- ✅ `MPRView` (manual `vtkImageReslice` pipeline).
-- ✅ `Viewport3DView` (`vtkSmartVolumeMapper`, `VTK_SHORT`).
-- ✅ Axial, coronal, sagittal, 3D orientations.
-- ✅ Volume rendering presets.
-- ✅ `set_volume(Volume)`, `set_mesh(Mesh)`.
-- ✅ DICOM volume path validated in MPR and 3D.
+- ✅ `MPRView` (manual `vtkImageReslice` pipeline)[cite: 1].
+- ✅ `Viewport3DView` (`vtkSmartVolumeMapper`, `VTK_SHORT`)[cite: 1].
+- ✅ Axial, coronal, sagittal, 3D orientations[cite: 1].
+- ✅ Volume rendering presets[cite: 1].
+- ✅ `set_volume(Volume)`, `set_mesh(Mesh)`[cite: 1].
+- ✅ DICOM volume path validated in MPR and 3D[cite: 1].
 
 **Pending:**
 
-- ⏳ `RenderingAdapter` between Scene and VTK.
-- ⏳ **ViewerLayoutManager** (dynamic grids: 1×1, 2×2, 3×3, editable up to 6×4, panoramic, ATM).
-- ⏳ **2D Tools** (brightness/contrast, pan, zoom, HU probe, ROI, nerve drawing, distance/angle, crosshair, ruler, LUT selection, LUT inversion, background color, animation, thumbnail).
-- ⏳ **3D Tools** (ROI, cut, paint, annotations, distance/angle, preset selection, orthographic/perspective, background color, lock rotation, thumbnail).
-- ⏳ **Clinical transfer functions** (HU-based presets: `bone_cortical`, `bone_trabecular`, `soft_tissue`, `air`, `metal`, `cbct_percentile`).
-- ⏳ **Viewer status indicators** (active view badge, orientation badge, inactive state).
-- ⏳ Remove the debug bounding box from `Viewport3DView`.
-- ⏳ VTK resource lifecycle under repeated open/close.
-- ⏳ Headless and Windows rendering tests.
+- ⏳ `RenderingAdapter` between Scene and VTK[cite: 1].
+- ⏳ **ViewerLayoutManager** (dynamic grids: 1×1, 2×2, 3×3, editable up to 6×4, panoramic, ATM)[cite: 1].
+- ⏳ **2D Tools** (brightness/contrast, pan, zoom, HU probe, ROI, nerve drawing, distance/angle, crosshair, ruler, LUT selection, LUT inversion, background color, animation, thumbnail)[cite: 1].
+- ⏳ **3D Tools** (ROI, cut, paint, annotations, distance/angle, preset selection, orthographic/perspective, background color, lock rotation, thumbnail)[cite: 1].
+- ⏳ **Clinical transfer functions** (HU-based presets: `bone_cortical`, `bone_trabecular`, `soft_tissue`, `air`, `metal`, `cbct_percentile`)[cite: 1].
+- ⏳ **Viewer status indicators** (active view badge, orientation badge, inactive state)[cite: 1].
+- ⏳ Remove the debug bounding box from `Viewport3DView`[cite: 1].
+- ⏳ VTK resource lifecycle under repeated open/close[cite: 1].
+- ⏳ Headless and Windows rendering tests[cite: 1].
 
 **Architectural constraints:**
 
-- Domain data must not depend on VTK.
-- VTK actors, mappers, and render windows are presentation objects.
-- Rendering adapters translate semantic Scene objects into renderable representations.
-- Rendering updates must not mutate clinical source data.
-- VTK render-window and actor lifecycle operations remain on the GUI thread (ADR-0011).
+- Domain data must not depend on VTK[cite: 1].
+- VTK actors, mappers, and render windows are presentation objects[cite: 1].
+- Rendering adapters translate semantic Scene objects into renderable representations[cite: 1].
+- Rendering updates must not mutate clinical source data[cite: 1].
+- VTK render-window and actor lifecycle operations remain on the GUI thread (ADR-0011)[cite: 1].
 
 #### 4.6 Module Integration
 
-- 🚧 `InMemoryModuleLoader` with dependency resolution.
-- 🚧 Entry-point imports.
-- 🚧 Tools, Editors, Services, Flows registration.
-- 🚧 `BUILTIN_MANIFESTS`.
-- 🚧 Shared EventBus across ModuleContexts.
-- ⏳ First functional built-in module.
+- 🚧 `InMemoryModuleLoader` with dependency resolution[cite: 1].
+- 🚧 Entry-point imports[cite: 1].
+- 🚧 Tools, Editors, Services, Flows registration[cite: 1].
+- 🚧 `BUILTIN_MANIFESTS`[cite: 1].
+- 🚧 Shared EventBus across ModuleContexts[cite: 1].
+- ⏳ First functional built-in module[cite: 1].
 
 #### 4.7 Tests
 
-- DICOM import tests.
-- Geometry and coordinate conversion tests.
-- Slice ordering and spacing validation.
-- Intensity calibration tests.
-- NumPy/VTK interoperability tests.
-- Geometry Infrastructure tests.
-- VTI round-trip tests.
-- Scene lifecycle and persistence tests.
-- ✅ Voxel ordering regression tests.
-- ✅ `int16` fidelity test.
-- ✅ `spacing_z` test.
-- ⏳ Import Dialog end-to-end tests.
-- ⏳ ViewerLayoutManager tests.
-- ⏳ Tool behavior tests.
-- ⏳ LUT selection and inversion tests.
-- ⏳ Preset selection tests.
-- ⏳ Performance tests.
-
----
+- DICOM import tests[cite: 1].
+- Geometry and coordinate conversion tests[cite: 1].
+- Slice ordering and spacing validation[cite: 1].
+- Intensity calibration tests[cite: 1].
+- NumPy/VTK interoperability tests[cite: 1].
+- Geometry Infrastructure tests[cite: 1].
+- VTI round-trip tests[cite: 1].
+- Scene lifecycle and persistence tests[cite: 1].
+- ✅ Voxel ordering regression tests[cite: 1].
+- ✅ `int16` fidelity test[cite: 1].
+- ✅ `spacing_z` test[cite: 1].
+- ⏳ Import Dialog end-to-end tests[cite: 1].
+- ⏳ ViewerLayoutManager tests[cite: 1].
+- ⏳ Tool behavior tests[cite: 1].
+- ⏳ LUT selection and inversion tests[cite: 1].
+- ⏳ Preset selection tests[cite: 1].
+- ⏳ Performance tests[cite: 1].
 
 ### Phase 5: Clinical Flows & Panel Widget Registry
 
