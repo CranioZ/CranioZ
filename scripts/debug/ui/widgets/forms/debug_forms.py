@@ -53,8 +53,10 @@ from cranioz.ui.widgets.forms import (
 from cranioz.ui.widgets.lists import DragHandle
 from cranioz.ui.widgets.navigation import (
     EyeToggleButton,
+    IconSidebar,
     VisibilityToggle,
 )
+from cranioz.ui.widgets.sections import CollapsibleSection, DragList
 
 
 def _make_signature_pixmap() -> QPixmap:
@@ -68,7 +70,7 @@ class DebugWindow(QWidget):
     def __init__(self) -> None:
         super().__init__()
         self.setWindowTitle("CranioZ — L.0 / L.0.2 Form Widgets Visual Debug")
-        self.resize(960, 900)
+        self.resize(1100, 1200)
 
         self._theme_service = ThemeService(
             settings=InMemorySettingsService(),
@@ -81,9 +83,7 @@ class DebugWindow(QWidget):
         self._form_field.placeholder = "e.g. Alice Silva"
 
         self._form_combo = FormCombo(label="Role")
-        self._form_combo.add_items(
-            [("Doctor", "doc"), ("Assistant", "asst"), ("Admin", "adm")]
-        )
+        self._form_combo.add_items([("Doctor", "doc"), ("Assistant", "asst"), ("Admin", "adm")])
 
         self._file_picker_open = FilePicker(
             label="Profile picture",
@@ -112,9 +112,7 @@ class DebugWindow(QWidget):
         self._form_row.add_field(self._row_left, stretch=2)
         self._form_row.add_field(self._row_right, stretch=1)
 
-        self._drag_handle_with_icon = DragHandle(
-            icon_provider=self._icon_provider
-        )
+        self._drag_handle_with_icon = DragHandle(icon_provider=self._icon_provider)
         self._drag_handle_plain = DragHandle()
 
         self._eye_toggle = EyeToggleButton(self._icon_provider)
@@ -136,9 +134,7 @@ class DebugWindow(QWidget):
         self._progress_mode_combo = QComboBox()
         self._progress_mode_combo.addItem("Determinate", False)
         self._progress_mode_combo.addItem("Indeterminate", True)
-        self._progress_mode_combo.currentIndexChanged.connect(
-            self._on_progress_mode_changed
-        )
+        self._progress_mode_combo.currentIndexChanged.connect(self._on_progress_mode_changed)
         self._progress_timer = QTimer(self)
         self._progress_timer.setInterval(250)
         self._progress_timer.timeout.connect(self._advance_progress)
@@ -197,9 +193,7 @@ class DebugWindow(QWidget):
         d_a_left.addWidget(QLabel("— L.0.2 A: EyeToggleButton —"))
         eye_row = QHBoxLayout()
         eye_row.addWidget(self._eye_toggle)
-        eye_row.addWidget(
-            QLabel("toggle to flip icon and accessibleName")
-        )
+        eye_row.addWidget(QLabel("toggle to flip icon and accessibleName"))
         eye_row.addStretch(1)
         d_a_left.addLayout(eye_row)
         d_a_left.addWidget(QLabel("— L.0.2 A: VisibilityToggle —"))
@@ -232,15 +226,121 @@ class DebugWindow(QWidget):
         root.addSpacing(12)
         root.addWidget(QLabel("L.0.2 — Delivery A widgets"))
         root.addLayout(d_a_body)
+        root.addSpacing(12)
+        root.addWidget(self._build_delivery_b_page(), 1)
 
         self._apply_theme(self._theme_service.theme())
+
+    def _build_delivery_b_page(self) -> QWidget:
+        page = QWidget()
+        page_layout = QVBoxLayout(page)
+        page_layout.addWidget(
+            QLabel(
+                "Telas 3, 4 e 6: seções expansíveis, drag handles, "
+                "IconSidebar e listas com chaves estáveis."
+            )
+        )
+
+        sidebar = IconSidebar(self._icon_provider)
+        sidebar.add_item("documents", "open", "Modelos de documentos")
+        sidebar.add_item("schedule", "home", "Agenda")
+        sidebar.add_item("procedures", "module_cephalometry", "Procedimentos")
+        sidebar.add_item("budgets", "module_guides", "Orçamentos")
+        sidebar.set_active("documents")
+        sidebar.setFixedWidth(56)
+
+        section_list = DragList()
+
+        document_categories = DragList()
+        for key, title in (
+            ("orientations", "Orientações"),
+            ("contracts", "Contratos"),
+            ("consent", "Termo de consentimento"),
+            ("prescriptions", "Prescrições"),
+        ):
+            document_categories.add_section(
+                key,
+                CollapsibleSection(
+                    title,
+                    draggable=True,
+                    icon_provider=self._icon_provider,
+                ),
+            )
+
+        documents = CollapsibleSection(
+            "Modelo de documentos",
+            draggable=True,
+            icon_provider=self._icon_provider,
+        )
+        documents.set_body_widget(document_categories)
+
+        agenda = CollapsibleSection(
+            "Agenda",
+            draggable=True,
+            icon_provider=self._icon_provider,
+        )
+        agenda.set_body_widget(QLabel("Agenda e tarefas do profissional"))
+
+        procedures_body = DragList()
+        for key, title in (
+            ("odontology", "Odontologia"),
+            ("otorhinolaryngology", "Otorrinolaringologia"),
+            ("maxillofacial", "Cirurgia e Traumatologia Buco-Maxilo-Facial"),
+        ):
+            procedures_body.add_section(
+                key,
+                CollapsibleSection(
+                    title,
+                    draggable=True,
+                    icon_provider=self._icon_provider,
+                ),
+            )
+        procedures = CollapsibleSection(
+            "Procedimentos",
+            draggable=True,
+            icon_provider=self._icon_provider,
+        )
+        procedures.set_body_widget(procedures_body)
+
+        budgets = CollapsibleSection(
+            "Orçamentos",
+            draggable=True,
+            icon_provider=self._icon_provider,
+        )
+        budgets.set_body_widget(QLabel("Orçamentos gerados a partir de procedimentos"))
+
+        section_list.add_section("documents", documents)
+        section_list.add_section("schedule", agenda)
+        section_list.add_section("procedures", procedures)
+        section_list.add_section("budgets", budgets)
+
+        order_status = QLabel()
+
+        def update_order(keys: list[str]) -> None:
+            order_status.setText(f"Ordem atual: {' → '.join(keys)}")
+
+        section_list.order_changed.connect(update_order)
+        update_order(section_list.keys())
+
+        configuration = QHBoxLayout()
+        configuration.addWidget(QLabel("Visibilidade:"))
+        configuration.addWidget(EyeToggleButton(self._icon_provider))
+        configuration.addWidget(VisibilityToggle("Exibir Agenda"))
+        configuration.addStretch(1)
+
+        main = QHBoxLayout()
+        main.addWidget(sidebar)
+        main.addWidget(section_list, 1)
+
+        page_layout.addLayout(configuration)
+        page_layout.addLayout(main, 1)
+        page_layout.addWidget(order_status)
+        return page
 
     # ---- handlers ------------------------------------------------
     def _on_theme_changed(self) -> None:
         theme_name = self._theme_combo.currentData()
-        mode = (
-            ThemeMode.DARK if theme_name is ThemeName.DARK else ThemeMode.LIGHT
-        )
+        mode = ThemeMode.DARK if theme_name is ThemeName.DARK else ThemeMode.LIGHT
         self._theme_service.set_mode(mode)
         self._apply_theme(self._theme_service.theme())
 

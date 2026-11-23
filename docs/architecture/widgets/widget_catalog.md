@@ -2,7 +2,7 @@
 
 **Document type:** UI component catalog  
 **Status:** Draft  
-**Version:** 0.3  
+**Version:** 0.4
 **Scope:** Reusable UI widgets and components available or planned for CranioZ  
 **Last updated:** 2026-11-23
 
@@ -142,7 +142,7 @@ Components representing discrete actions or commands.
 | NextButton | Qt Component | Planned | TBD | Navigates to the next step. |
 | RemoveButton | Qt Component | Planned | TBD | Requests removal of a selected element. |
 | SettingsButton | Qt Component | Planned | TBD | Opens a settings interface. |
-| SearchField | Composite Widget | Planned | TBD | Search input with an optional clear or search action. |
+| SearchField | Composite Widget | Existing | L.0.2 | Search input with an optional clear or search action. |
 | BlurToggle | Qt Component | Planned | TBD | Toggles the background blur behavior where supported. |
 
 **Implementation notes**
@@ -164,7 +164,8 @@ Reusable components for structured data entry and file selection.
 | FormCombo | Composite Widget | Existing | L.0 | Label and QComboBox composition. |
 | FilePicker | Composite Widget | Existing | L.0 | File or directory selection with a read-only path field and browse action. |
 | SignaturePreview | Custom Widget | Existing | L.0 | Displays a signature image or an empty preview state. |
-| DateField | Qt Component | Planned | TBD | Uses QDateEdit with appropriate formatting and validation. |
+| DateField | Qt Component | Existing | L.0.2 | Uses QDateEdit with appropriate formatting and validation. |
+| FormRow | Composite Widget | Existing | L.0.2 | Horizontal two-column form container. |
 
 **Implementation notes**
 
@@ -198,8 +199,8 @@ Components that organize content into reusable visual sections.
 
 | Component | Classification | Status | Milestone | Notes |
 |---|---|---|---|---|
-| CollapsibleSection | Composite Widget | Planned | L.2 | Header with expand/collapse behavior and a content area. |
-| SectionHeader | Existing | Existing | — | Existing header component in `ui/widgets/headers/`. |
+| CollapsibleSection | Composite Widget | Existing | L.0.2 | Header with expand/collapse behavior and a content area. |
+| SectionHeader | Composite Widget | Backlog | TBD | Reserved file exists but has no implementation; CollapsibleSection currently owns its internal header. |
 | CardContainer | Qt Component | Existing | — | Uses the existing QFrame/QSS card styling. |
 
 **Implementation notes**
@@ -222,10 +223,10 @@ Components used to navigate between sections or configure their presentation.
 
 | Component | Classification | Status | Milestone | Notes |
 |---|---|---|---|---|
-| IconSidebar | Composite Widget | Planned | L.2 | Vertical navigation component with selectable icon items. |
-| EyeToggleButton | Qt Component | Planned | L.2 | Toggles the visibility of an item or section. |
-| DragHandle | Qt Component | Planned | L.2 | Visual handle indicating that an item can be reordered. |
-| DragList | Custom Widget | Planned | L.2 | List supporting item reordering through drag-and-drop. |
+| IconSidebar | Composite Widget | Existing | L.0.2 | Vertical navigation component with selectable icon items. |
+| EyeToggleButton | Qt Component | Existing | L.0.2 | Toggles the visibility of an item or section. |
+| DragHandle | Qt Component | Existing | L.0.2 | Visual handle indicating that an item can be reordered. |
+| DragList | Custom Widget | Existing | L.0.2 | List supporting item reordering through drag-and-drop. |
 
 **Implementation notes**
 
@@ -237,7 +238,12 @@ EyeToggleButton should expose its checked/visibility state and a corresponding s
 
 DragHandle is a small visual and interaction affordance. It should not become a general-purpose drag-and-drop framework.
 
-DragList should use native Qt item-view capabilities where they satisfy the required behavior. A custom implementation is justified only when the interaction or visual requirements cannot be met adequately with QListView, QAbstractItemView, or an appropriate model.
+DragList is a custom `QWidget` because its children are complex
+`CollapsibleSection` widgets, not plain text rows. Sections are identified by
+stable string keys. The public contract is `add_section(key, section)`,
+`remove_section(key)`, `move_section(key, new_index)`, and `set_order(keys)`.
+`order_changed(list[str])` reports the current key order; `section_added(str)`
+and `section_removed(str)` report membership changes.
 
 The following components are consumer-specific compositions and are not independent system widgets:
 
@@ -256,7 +262,7 @@ Controls representing selection, activation, movement, or visibility states.
 | CheckBox | Qt Component | Planned | TBD | Native QCheckBox with CranioZ styling. |
 | RadioButton | Qt Component | Planned | TBD | Native QRadioButton with CranioZ styling. |
 | ObjectMovementControl | Custom Widget | Backlog | TBD | Interactive control for object movement. |
-| VisibilityToggle | Qt Component | Planned | L.2 | Generic visibility state control when EyeToggleButton is not the appropriate semantic component. |
+| VisibilityToggle | Qt Component | Existing | L.0.2 | Generic visibility state control when EyeToggleButton is not the appropriate semantic component. |
 
 **Implementation notes**
 
@@ -264,7 +270,10 @@ CheckBox and RadioButton should use native Qt components unless a specific inter
 
 ObjectMovementControl requires a separate interaction specification before implementation. Its visual representation and movement semantics must be defined by the consuming Editor.
 
-VisibilityToggle and EyeToggleButton must not become competing implementations of the same behavior. EyeToggleButton is the catalog component intended for the Professional configuration interface. A separate generic VisibilityToggle should be implemented only if another use case requires a distinct public contract.
+VisibilityToggle and EyeToggleButton must not become competing implementations
+of the same behavior. EyeToggleButton is the icon-based control intended for the
+Professional configuration interface. VisibilityToggle is the generic labeled
+checkbox form used when an icon-only control is not appropriate.
 
 ### 5.6 Horizontal widgets
 
@@ -272,14 +281,15 @@ Independent horizontal components used for animation, measurement, or timeline i
 
 | Component | Classification | Status | Milestone | Notes |
 |---|---|---|---|---|
-| TimelineSlider | Custom Widget | Planned | TBD — Animation/Simulation | Horizontal timeline control for animation playback and navigation. |
-| Ruler | Custom Widget | Planned | TBD — Measurement/Visualization | Horizontal measurement scale with configurable range and graduations. |
+| TimelineSlider | Custom Widget | Planned | L.0.2 | Horizontal timeline control for animation playback and navigation. |
 
 **Implementation notes**
 
 TimelineSlider is intended for future animation or simulation workflows. Its specification must define frame range, current position, navigation, and synchronization with the corresponding animation state.
 
-Ruler is intended for measurement and visualization workflows. Its specification must define scale, units, range, graduations, and visual adaptation to the displayed content.
+Ruler is not a system widget. It is reclassified as an Editor overlay under
+`src/cranioz/ui/editors/overlays/rulers/`, following ADR-0003 §2.2. The overlay
+is created with its first consuming Editor, not in the generic widget catalog.
 
 Neither component should be implemented as a generic Toolbar.
 
@@ -289,9 +299,9 @@ Components with specialized visualization or interaction behavior.
 
 | Component | Classification | Status | Milestone | Notes |
 |---|---|---|---|---|
-| ColorPicker | Composite Widget | Planned | TBD | Color selection interface. |
-| Histogram | Custom Widget | Backlog | TBD | Data distribution visualization. |
-| ProgressBar | Qt Component | Planned | L.3+ | Progress feedback for asynchronous operations. |
+| ColorPicker | Composite Widget | Planned | L.0.2 | Color selection interface. |
+| Histogram | Custom Widget | Planned | L.0.2 | Data distribution visualization. |
+| ProgressBar | Qt Component | Existing | L.0.2 | Progress feedback for asynchronous operations. |
 
 **Implementation notes**
 
@@ -343,14 +353,13 @@ This section records the principal implementation dependencies. Dependencies des
 | IconSidebar | Icon buttons + layout + selection state |
 | EyeToggleButton | QToolButton or QPushButton |
 | DragHandle | QToolButton or custom-painted handle |
-| DragList | QListView/QAbstractItemView + model and drag-and-drop support |
+| DragList | QWidget + QVBoxLayout + QDrag/QDrop events |
 | SearchField | QLineEdit + optional action button |
 | SingleSlider | QSlider + optional label |
 | DualRangeSlider | Custom range interaction and value presentation |
 | SliceControl | Slider + labels + navigation controls |
 | LandmarkSizeControl | SingleSlider + value presentation |
 | TimelineSlider | Custom timeline interaction and scale |
-| Ruler | Custom scale and graduation rendering |
 | ColorPicker | Native color dialog or custom color-selection controls |
 | Histogram | Custom data visualization |
 | ProgressBar | QProgressBar |
@@ -516,10 +525,11 @@ The catalog contains components with different implementation priorities. The fo
 | Milestone | Scope | Main components |
 |---|---|---|
 | **L.0** | System form widgets | FormField, FormCombo, FilePicker, SignaturePreview — **Complete (2026-11-23)** |
+| **L.0.2** | Extended widget suite | DateField, FormRow, DragHandle, EyeToggleButton, VisibilityToggle, SearchField, ProgressBar, CollapsibleSection, DragList, IconSidebar — **Existing**; TimelineSlider, ColorPicker and Histogram pending |
 | **L.1** | Professional profile Editor | Consumes L.0 widgets; does not introduce a separate widget-building milestone |
-| **L.2** | Professional navigation and sections | IconSidebar, CollapsibleSection, EyeToggleButton, DragHandle, DragList |
-| **L.3+** | Future functionality | ProgressBar and other components as their dependencies and use cases become available |
-| **TBD** | Future Editor-specific requirements | TimelineSlider, Ruler, DualRangeSlider, SliceControl, Histogram, ColorPicker and other backlog components |
+| **L.2** | Professional navigation and sections | Consumes L.0.2 navigation and section widgets |
+| **L.3+** | Future functionality | Components whose dependencies and use cases become available |
+| **TBD** | Future system-widget requirements | DualRangeSlider, SliceControl and other backlog components |
 
 L.1 is a consumer milestone, not a widget implementation milestone. The ProfessionalEditor is an Editor hosted by the central Area and consumes reusable system widgets.
 

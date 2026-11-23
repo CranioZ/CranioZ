@@ -3,7 +3,7 @@
 **Document type:** Action plan and development handoff  
 **Status:** Active  
 **Scope:** Current development priorities and execution sequence for Phase 3  
-**Last updated:** 2026-11-23 (post-L.0.2 Delivery A, post-Ruler reclassification)
+**Last updated:** 2026-11-23 (L.0.2 Delivery B implemented)
 
 ---
 
@@ -16,7 +16,7 @@ Phases 0, 1, and 2 are complete. The structural Editor Architecture Refactoring 
 Sprint L is now divided into two macro-blocks:
 
 - **L.0** — System form widgets required by the Professional Editor. **Complete (2026-11-23).**
-- **L.0.2** — Extended widget suite, covering every atom required by the Professional Module prototype. **In progress — Delivery A complete (2026-11-23).**
+- **L.0.2** — Extended widget suite, covering every atom required by the Professional Module prototype. **In progress — Deliveries A and B complete (2026-11-23).**
 - **L.1** — Professional Editor proper (registration, profile UI, ModuleUISpec, settings, SQLite persistence).
 - **L.2** — Professional navigation, sections and configuration interactions.
 
@@ -25,19 +25,19 @@ L.0.2 was promoted after the UI prototype review (`Prototipagem_UI_19_Profission
 The widget inventory is maintained separately in:
 
 - `docs/architecture/widgets/widget_catalog.md` — system-wide widget catalog, classifications, implementation status, dependencies, and architectural guidelines.
-- `docs/architecture/widgets/sprint_l0_system_widgets.md` — implementation specification for the four L.0 widgets. **Delivered.**
+- `docs/architecture/widgets/widget_catalog.md` — authoritative implementation status and widget contracts.
 
 ### 1.1 Current validation baseline
 
-**Baseline recorded on 2026-11-23 (post-L.0.2 Delivery A):**
+**Baseline recorded on 2026-11-23 (post-L.0.2 Delivery B):**
 
-- 1773 tests passing.
+- 1795 tests passing.
 - 0 failed.
 - 0 errors.
 - 2 skipped.
 - `ruff check .` clean.
-- `ruff format --check .` clean (602 files).
-- `mypy src` clean (299 source files).
+- `ruff format --check .` clean (610 files).
+- `mypy src` clean (303 source files).
 
 Previous baselines:
 
@@ -65,7 +65,11 @@ The following foundations are implemented:
 - System widget catalog (`widget_catalog.md` v0.4).
 - L.0 system form widgets (FormField, FormCombo, FilePicker, SignaturePreview).
 - L.0.2 Delivery A widgets (DateField, FormRow, DragHandle, EyeToggleButton, VisibilityToggle, SearchField, ProgressBar).
-- ADR-0018 — Generic widgets, Editor overlays, and icon-based actions (Proposed). This ADR governs the classification of every reusable UI element and is the authority for the `Ruler` reclassification below.
+- L.0.2 Delivery B widgets (CollapsibleSection, DragList, IconSidebar) with
+  stable-string-key reordering and Qt drag/drop support.
+- ADR-0003 — UI Widgets and Editor Overlays (Proposed). This ADR governs the
+  classification of reusable UI elements and is the authority for the `Ruler`
+  reclassification below.
 
 The application uses Qt Widgets, modular QSS, and Python Design Tokens, as defined by ADR-0014.
 
@@ -90,12 +94,15 @@ The following documents have distinct responsibilities.
 | `architectural_consolidation_plan.md` | Architectural inconsistencies, duplication, legacy code, and consolidation decisions. |
 | `refactoring_plan.md` | Technical procedure for Editor and Module architecture refactoring. |
 | `widget_catalog.md` | Permanent inventory of reusable system widgets. |
-| `sprint_l0_system_widgets.md` | Detailed implementation specification for L.0 widgets. |
 | `professional.md` | Professional profile domain, persistence, and behavior specification. |
 | `monitor_logs.md` | Technical specification for the deferred Logs Monitor. |
-| `ADR-0018` | Classification of reusable UI elements: generic widgets, Editor overlays, icon-based actions, semantic colors. |
+| `ADR-0003` | Classification of reusable UI elements: generic widgets, Editor overlays, icon-based actions, semantic colors. |
 
 `implementation_plan.md` remains authoritative. This document must not redefine phase scope or silently introduce new roadmap deliverables.
+
+`implementation_plan.md` is intentionally not updated in the current Delivery B
+change. Its Phase 3 summary is therefore expected to lag behind the sprint-level
+status recorded here until the roadmap synchronization task is performed.
 
 ---
 
@@ -107,7 +114,7 @@ Recommended execution sequence:
 
 1. ~~Consolidate the system widget catalog.~~ ✅
 2. ~~Specify and implement the L.0 form widgets.~~ ✅ (2026-11-23)
-3. **Implement L.0.2 — Extended widget suite** (13 widgets, divided into 4 deliveries). Delivery A complete; B, C, D pending.
+3. **Implement L.0.2 — Extended widget suite** (13 widgets, divided into 4 deliveries). Deliveries A and B complete; C and D pending.
 4. Implement and integrate the Professional Editor and its profile persistence (L.1).
 5. Implement the Professional Editor's internal navigation and configuration interactions (L.2).
 6. Validate and close Sprint L.
@@ -120,7 +127,7 @@ Sprint L is divided into the following execution stages.
 | Stage | Scope | Main deliverable | Status |
 |---|---|---|---|
 | **L.0** | System form widgets | FormField, FormCombo, FilePicker, SignaturePreview. | Complete (2026-11-23) |
-| **L.0.2** | Extended widget suite | 13 additional widgets required by the Professional Module prototype. | In progress — Delivery A complete (2026-11-23) |
+| **L.0.2** | Extended widget suite | 13 additional widgets required by the Professional Module prototype. | In progress — Deliveries A and B complete (2026-11-23) |
 | **L.1** | Professional Editor | Editor registration, profile interface, ModuleUISpec, settings integration, SQLite persistence. | Planned |
 | **L.2** | Professional Navigation | Reusable navigation, sections, visibility controls, drag-and-drop, persisted presentation state. | Planned |
 
@@ -145,7 +152,7 @@ The following constraints apply throughout implementation:
 - New system widgets that require icons must accept an injected `IconProvider` (Protocol) and fall back to `text_glyph()` when `icon()` returns a null `QIcon`.
 - Auxiliary enums (e.g. `FilePickerMode`) live in the same file as the widget that consumes them, never in separate files under `ui/widgets/`.
 - Package `__init__.py` must preserve all previously exported symbols when new ones are added.
-- Classification of reusable UI elements follows ADR-0018:
+- Classification of reusable UI elements follows ADR-0003:
   - Generic composite widgets → `src/cranioz/ui/widgets/`.
   - Editor-internal overlays → `src/cranioz/ui/editors/overlays/`.
   - Icon-based actions → Tools in `src/cranioz/ui/tools/builtin/`.
@@ -176,8 +183,9 @@ Complete.
 | ProjectIndex (Sprint I) | Complete | ADR-0016 |
 | Coordinated project deletion (Sprint J) | Complete | `ProjectManager` / project subsystem |
 | Asynchronous loading (Sprint K) | Complete | Flow loading and TaskManager integration |
-| Sprint L.0 — System form widgets | Complete (2026-11-23) | `sprint_l0_system_widgets.md` |
+| Sprint L.0 — System form widgets | Complete (2026-11-23) | `widget_catalog.md` §5.2 |
 | Sprint L.0.2 Delivery A — Simple Qt-native widgets | Complete (2026-11-23) | §5.2 of this document |
+| Sprint L.0.2 Delivery B — Sections, lists and navigation | Complete (2026-11-23) | §5.2 of this document |
 
 The completed work must not be reopened as part of Sprint L unless a concrete regression or missing contract is identified.
 
@@ -280,7 +288,7 @@ src/cranioz/ui/widgets/
 Removed from L.0.2 scope:
 
 Ruler (previously listed under horizontal/) — reclassified as an Editor overlay
-(src/cranioz/ui/editors/overlays/rulers/ruler_overlay.py) per ADR-0018 §2.2 and
+(src/cranioz/ui/editors/overlays/rulers/ruler_overlay.py) per ADR-0003 §2.2 and
 §6.5. It is a clinical measurement scale bound to a specific Editor's viewport and
 hit-testing; it is not a generic system widget. Scheduled with its first consuming
 Editor (MPR / Osteotomy / 2D Editor), i.e. L.1 or L.2.
@@ -292,7 +300,7 @@ ActionButtonRow	Trivial composition (QHBoxLayout + QPushButton); build directly 
 SectionItemRow	Unified into CollapsibleSection(draggable=True) — one widget, one API.
 ObjectMovementControl	Backlog; requires interaction specification.
 DualRangeSlider	Backlog; tied to future tomography workflows.
-Ruler / RulerOverlay	Reclassified as Editor overlay per ADR-0018. Scheduled with first consuming Editor (L.1/L.2).
+Ruler / RulerOverlay	Reclassified as Editor overlay per ADR-0003. Scheduled with first consuming Editor (L.1/L.2).
 Decisions
 
 DragList — Custom widget, not QListView, because list items are complex CollapsibleSection widgets (header + body + drag handle), not plain text rows.
@@ -336,23 +344,37 @@ Acceptance criteria:
 ☑ ruff, ruff format, mypy clean.
 ☑ Extended scripts/debug/ui/widgets/forms/debug_forms.py shows all 7 widgets in Dark and Light.
 ☑ No Professional-specific imports.
-□ widget_catalog.md §5 statuses updated (Planned → Existing, milestone L.0.2) — pending catalog edit (tracked as a documentation follow-up in §9).
-Delivery B — Sections and lists
-Depends on: Delivery A (DragHandle). Ready to start (2026-11-23).
+☑ widget_catalog.md §5 statuses updated (Planned → Existing, milestone L.0.2).
+
+### Delivery B — Sections and lists
+
+**Status: Complete (2026-11-23).**
+
+Depends on Delivery A (`DragHandle`).
 
 Widget	Classification	Base	Contract summary
 CollapsibleSection	Composite Widget	QFrame + header + body	Header with expand/collapse toggle. Optional left DragHandle when draggable=True. Properties: title, expanded, draggable, header_widget, body_widget. Signals: expanded_changed(bool), drag_started. Keyboard: Space/Enter toggles.
-DragList	Custom Widget	QWidget hosting CollapsibleSection children	Vertical container with drag-and-drop reordering of child sections. Methods: add_section, remove_section, move_section. Signal: order_changed(list[int]). Uses Qt drag events; no external deps.
+DragList	Custom Widget	QWidget hosting CollapsibleSection children	Vertical container with drag-and-drop reordering of child sections. Sections are identified by a stable string key. Methods: add_section(key, section), remove_section(key), move_section(key, new_index), set_order(keys). Signals: order_changed(list[str]) (keys in current order), section_added(str), section_removed(str). Uses Qt drag events; no external deps.
 IconSidebar	Composite Widget	QToolButton column + selection state	Vertical navigation bar. Methods: add_item(key, icon_name, tooltip), set_active(key). Signal: item_selected(str). No Professional-specific content.
-Acceptance for Delivery B
+#### Acceptance for Delivery B
 
-□ 3 widgets implemented.
-□ CollapsibleSection unit tests include: expand/collapse toggle, keyboard interaction, draggable=True shows handle, draggable=False hides handle.
-□ DragList unit test simulates reordering via API (move_section) and asserts order_changed payload.
-□ IconSidebar unit tests cover add/set_active/item_selected and accessibility.
-□ Extended visual debug harness: Tela 3, Tela 4, Tela 6 mockups reproduced with real widgets.
-□ widget_catalog.md §5.3 / §5.4 statuses updated.
-Delivery C — Custom-painted horizontal and advanced widgets
+☑ 3 widgets implemented.
+☑ CollapsibleSection unit tests include expand/collapse, keyboard interaction, body visibility, and drag-handle visibility.
+☑ DragList tests cover API reordering, drop-based reordering, stable-string-key payloads, and section_added / section_removed membership signals.
+☑ IconSidebar unit tests cover add/set_active/item_selected, icon fallback, and accessibility.
+☑ Extended visual debug harness includes the Tela 3/4/6 section-list composition with real widgets.
+☑ widget_catalog.md §5.3 / §5.4 statuses updated.
+
+Implemented files:
+
+- `src/cranioz/ui/widgets/sections/collapsible_section.py`
+- `src/cranioz/ui/widgets/sections/drag_list.py`
+- `src/cranioz/ui/widgets/navigation/icon_sidebar.py`
+- `tests/unit/ui/widgets/sections/`
+- `tests/unit/ui/widgets/navigation/test_icon_sidebar.py`
+
+### Delivery C — Custom-painted horizontal and advanced widgets
+
 Depends on: nothing from A/B beyond theme integration.
 
 Widget	Classification	Contract summary
@@ -369,7 +391,7 @@ Acceptance for Delivery C
 □ widget_catalog.md §5.6 / §5.7 statuses updated.
 Note on Ruler. The clinical RulerOverlay is not part of Delivery C.
 It is an Editor overlay (src/cranioz/ui/editors/overlays/rulers/ruler_overlay.py)
-per ADR-0018 §2.2 and §6.5, scheduled with the first consuming Editor
+per ADR-0003 §2.2 and §6.5, scheduled with the first consuming Editor
 (MPR / Osteotomy / 2D Editor) in L.1 or L.2. See §6.3 and §7.
 
 Delivery D — Debug harness consolidation and closure
@@ -392,7 +414,7 @@ Five commits, in order:
 
 feat(ui): add L.0.2 delivery A — simple Qt-native widgets ✅ (ready)
 
-feat(ui): add L.0.2 delivery B — sections and lists
+feat(ui): add L.0.2 delivery B — sections and lists ✅ (ready)
 
 feat(ui): add L.0.2 delivery C — custom-painted widgets
 
@@ -549,7 +571,7 @@ StartButton, ContinueButton, CompleteButton, PreviousButton, NextButton, RemoveB
 
 additional tomography and cephalometry controls.
 
-Editor overlays (future, per ADR-0018):
+Editor overlays (future, per ADR-0003):
 
 RulerOverlay — clinical measurement scale for MPR / Osteotomy / 2D Editor.
 Path: src/cranioz/ui/editors/overlays/rulers/ruler_overlay.py.
@@ -562,7 +584,7 @@ never imports Scene, VTK, or any viewport type directly.
 TranslationGizmo, RotationGizmo — 3D manipulation overlays
 (Phase 4).
 
-Their implementation milestones must follow the consuming Editor or subsystem dependencies documented in widget_catalog.md and ADR-0018.
+Their implementation milestones must follow the consuming Editor or subsystem dependencies documented in widget_catalog.md and ADR-0003.
 
 7. Known issues and deferred items
 Item	Status	Action
@@ -577,10 +599,10 @@ Phase 4 viewer and visualization work	Deferred	Start only after Phase 3 closure.
 SignaturePreview empty-state colors	L.2 deferral	Migrate to design tokens once optional ThemeService supported.
 FilePicker browse button glyph	L.2 deferral	Migrate to IconProvider.
 pt-BR translations for L.0 / L.0.2 widgets	L.2 deferral	Add catalog entries for static strings.
-widget_catalog.md L.0.2 Delivery A statuses	Documentation follow-up	Mark the 7 Delivery A widgets as Existing (milestone L.0.2) before Delivery B closes.
+widget_catalog.md L.0.2 Delivery A / B statuses	Resolved	Delivery A and B entries are marked Existing with milestone L.0.2.
 ruff format touched docs/architecture/home_page/monitor_logs.md	Pre-existing debt	The file was out of format before L.0.2. Not a regression from Delivery A; revisit when the Logs Monitor sprint begins.
-Ruler reclassification	Resolved	Moved from system widget to Editor overlay per ADR-0018 §2.2/§6.5. Scheduled with first consuming Editor (L.1/L.2). Removed from L.0.2 Delivery C.
-ADR-0018 status	Proposed	Ratify when the first overlay is implemented (L.1/L.2) or earlier if the team prefers.
+Ruler reclassification	Resolved	Moved from system widget to Editor overlay per ADR-0003 §2.2/§6.5. Scheduled with first consuming Editor (L.1/L.2). Removed from L.0.2 Delivery C.
+ADR-0003 status	Proposed	Ratify when the first overlay is implemented (L.1/L.2) or earlier if the team prefers.
 7.1 Test stub documentation
 The intentionally empty infrastructure test stubs must be documented so that their purpose is clear.
 
@@ -627,13 +649,13 @@ The next implementation sequence is:
 
 ~~Review and consolidate widget_catalog.md.~~ ✅ (v0.4)
 
-~~Create sprint_l0_system_widgets.md.~~ ✅
+~~Document and implement the L.0 form widget contracts.~~ ✅
 
 ~~Implement and test L.0.~~ ✅ (2026-11-23)
 
 ~~Implement L.0.2 — Delivery A (DateField, FormRow, DragHandle, EyeToggleButton, VisibilityToggle, SearchField, ProgressBar).~~ ✅ (2026-11-23)
 
-Implement L.0.2 — Delivery B (CollapsibleSection, DragList, IconSidebar).
+~~Implement L.0.2 — Delivery B (CollapsibleSection, DragList, IconSidebar).~~ ✅ (2026-11-23)
 
 Implement L.0.2 — Delivery C (TimelineSlider, ColorPicker, Histogram).
 
@@ -652,34 +674,35 @@ Close Phase 3 formally only when its authoritative completion criteria are satis
 9.1 Next handoff
 The next development task is:
 
-Implement L.0.2 — Delivery B (3 widgets: CollapsibleSection, DragList, IconSidebar).
+Implement L.0.2 — Delivery C (TimelineSlider, ColorPicker, Histogram).
 
 Reference documents for the next session:
 
 docs/architecture/widgets/widget_catalog.md v0.4 — full inventory.
 
-docs/architecture/widgets/sprint_l0_system_widgets.md — L.0 contracts (patterns to replicate).
+src/cranioz/ui/widgets/forms/__init__.py and tests/unit/ui/widgets/forms/ — L.0 public API and testing patterns.
 
-docs/architecture/modules/professional/professional.md — to be provided, required for L.1.
+docs/architecture/modules/professional/professional.md — existing domain and persistence specification required for L.1.
 
 src/cranioz/ui/theme/tokens.py, compiler.py, service.py — theme integration.
 
 src/cranioz/ui/widgets/forms/* — L.0 reference implementations.
 
-src/cranioz/ui/widgets/lists/drag_handle.py — L.0.2 A reference (Delivery B depends on it).
+src/cranioz/ui/widgets/sections/ — CollapsibleSection and stable-key DragList reference implementations.
 
-src/cranioz/ui/widgets/headers/section_header.py — to be inspected; decide whether CollapsibleSection reuses it or builds its own header.
+src/cranioz/ui/widgets/navigation/icon_sidebar.py — IconSidebar reference implementation.
 
 src/cranioz/ui/icons/provider.py and unicode.py — icon integration contract.
 
-ADR-0018 — classification of widgets, overlays, and tools.
+ADR-0003 — classification of widgets, overlays, and tools.
 
-Delivery B depends on Delivery A (DragHandle) and can start immediately from the §5.2 specification.
+Delivery C can start from the §5.2 specification. The Ruler remains deferred as
+an Editor overlay and is not part of Delivery C.
 
 10. Definition of Done
 This handoff is considered current when:
 
-Completed Sprints I, J, K, L.0, and L.0.2 Delivery A are reflected accurately.
+Completed Sprints I, J, K, L.0, and L.0.2 Deliveries A and B are reflected accurately.
 
 Sprint L is divided into L.0, L.0.2, L.1, and L.2.
 
@@ -687,7 +710,9 @@ L.0 is marked complete with its delivery table and known deferrals.
 
 L.0.2 Delivery A is marked complete with its delivery table, supporting changes, and acceptance criteria.
 
-L.0.2 Deliveries B, C, and D are defined with explicit widget lists and acceptance criteria.
+L.0.2 Delivery B is marked complete with its stable-key DragList contract, implemented files, and acceptance criteria.
+
+L.0.2 Deliveries C and D are defined with explicit widget lists and acceptance criteria.
 
 Ruler is reclassified as an Editor overlay and removed from L.0.2 Delivery C, with a pointer to its new home and milestone.
 
@@ -707,4 +732,4 @@ Phase 4 remains deferred until Phase 3 is closed.
 
 Validation requirements and the current baseline are recorded.
 
-Authority: implementation_plan.md defines phase scope and completion criteria. ADR-0018 defines the classification of reusable UI elements. This document defines the immediate execution sequence and handoff.
+Authority: implementation_plan.md defines phase scope and completion criteria. ADR-0003 defines the classification of reusable UI elements. This document defines the immediate execution sequence and handoff.
