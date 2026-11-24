@@ -40,6 +40,7 @@ def defaults_dir(tmp_path: Path) -> Path:
                     "project_root": None,
                     "flows_root": None,
                     "cache_root": None,
+                    "professional_root": None,
                 }
             }
         ),
@@ -56,6 +57,7 @@ def test_load_returns_config(defaults_dir: Path) -> None:
     assert cfg.app.recent_projects_limit == 10
     assert cfg.logging.level == "INFO"
     assert cfg.paths.project_root is None
+    assert cfg.paths.professional_root is None
 
 
 def test_missing_app_json_raises(tmp_path: Path) -> None:

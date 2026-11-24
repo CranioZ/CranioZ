@@ -21,12 +21,14 @@ def _paths_config(
     flows_root: str | None = None,
     cache_root: str | None = None,
     settings_root: str | None = None,
+    professional_root: str | None = None,
 ) -> PathsConfig:
     return PathsConfig(
         project_root=project_root,
         flows_root=flows_root,
         cache_root=cache_root,
         settings_root=settings_root,
+        professional_root=professional_root,
     )
 
 
@@ -36,6 +38,7 @@ def _initialize(tmp_path: Path) -> AppPathResolver:
         flows_root=str(tmp_path / "flows"),
         cache_root=str(tmp_path / "cache"),
         settings_root=str(tmp_path / "settings"),
+        professional_root=str(tmp_path / "professional"),
     )
     resolver = AppPathResolver()
     resolver.initialize(cfg)
@@ -51,12 +54,14 @@ def test_initialize_creates_directories(tmp_path: Path) -> None:
     assert resolver.projects_root.is_dir()
     assert resolver.flows_root.is_dir()
     assert resolver.cache_root.is_dir()
+    assert resolver.professional_root.is_dir()
 
 
 def test_initialize_uses_configured_paths(tmp_path: Path) -> None:
     projects = tmp_path / "my_projects"
     flows = tmp_path / "my_flows"
     cache = tmp_path / "my_cache"
+    professional = tmp_path / "my_professional"
 
     resolver = AppPathResolver()
     resolver.initialize(
@@ -64,12 +69,15 @@ def test_initialize_uses_configured_paths(tmp_path: Path) -> None:
             project_root=str(projects),
             flows_root=str(flows),
             cache_root=str(cache),
+            professional_root=str(professional),
         )
     )
 
     assert resolver.projects_root == projects
     assert resolver.flows_root == flows
     assert resolver.cache_root == cache
+    assert resolver.professional_root == professional
+    assert resolver.professional_database_path() == professional / "professional.db"
 
 
 def test_initialize_uses_defaults_when_none(
@@ -83,6 +91,7 @@ def test_initialize_uses_defaults_when_none(
     assert resolver.projects_root == (tmp_path / "Documents" / "CranioZ" / "Projects")
     assert resolver.flows_root == (tmp_path / "Documents" / "CranioZ" / "Flows")
     assert resolver.cache_root == tmp_path / ".cranioz" / "Cache"
+    assert resolver.professional_root == tmp_path / ".cranioz" / "professional"
 
 
 def test_initialize_without_create_fails_if_missing(tmp_path: Path) -> None:
@@ -135,6 +144,12 @@ def test_cache_root_before_initialize_raises() -> None:
     resolver = AppPathResolver()
     with pytest.raises(AppPathInaccessible, match="not initialized"):
         _ = resolver.cache_root
+
+
+def test_professional_root_before_initialize_raises() -> None:
+    resolver = AppPathResolver()
+    with pytest.raises(AppPathInaccessible, match="not initialized"):
+        _ = resolver.professional_root
 
 
 # ----- resolve_in_projects_root -------------------------------------

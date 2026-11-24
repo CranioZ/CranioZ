@@ -45,6 +45,8 @@ DEFAULT_FLOWS_DIR_NAME = "Flows"
 DEFAULT_CACHE_DIR_NAME = "Cache"
 DEFAULT_SETTINGS_DIR_NAME = "Settings"
 DEFAULT_SETTINGS_FILE_NAME = "settings.json"
+DEFAULT_PROFESSIONAL_DIR_NAME = "professional"
+DEFAULT_PROFESSIONAL_DATABASE_NAME = "professional.db"
 
 
 class AppPathResolver:
@@ -60,6 +62,7 @@ class AppPathResolver:
         self._flows_root: Path | None = None
         self._cache_root: Path | None = None
         self._settings_root: Path | None = None
+        self._professional_root: Path | None = None
 
     # ----- Initialization -------------------------------------------
 
@@ -106,6 +109,12 @@ class AppPathResolver:
             field_name="settings_root",
             create=create,
         )
+        self._professional_root = self._resolve_dir(
+            configured=config.professional_root,
+            default=self._default_professional_root(),
+            field_name="professional_root",
+            create=create,
+        )
 
     # ----- Accessors ------------------------------------------------
 
@@ -141,6 +150,13 @@ class AppPathResolver:
             raise AppPathInaccessible("resolver is not initialized")
         return self._settings_root
 
+    @property
+    def professional_root(self) -> Path:
+        """Directory containing the Professional database and owned assets."""
+        if self._professional_root is None:
+            raise AppPathInaccessible("resolver is not initialized")
+        return self._professional_root
+
     def user_settings_path(self) -> Path:
         """Return the path to the user settings file.
 
@@ -153,6 +169,10 @@ class AppPathResolver:
         §11.2) and by every other user-scoped preference.
         """
         return self.settings_root / DEFAULT_SETTINGS_FILE_NAME
+
+    def professional_database_path(self) -> Path:
+        """Return the dedicated Professional SQLite database path."""
+        return self.professional_root / DEFAULT_PROFESSIONAL_DATABASE_NAME
 
     # ----- Path resolution ------------------------------------------
 
@@ -220,3 +240,7 @@ class AppPathResolver:
     @staticmethod
     def _default_settings_root() -> Path:
         return Path.home() / ".cranioz" / DEFAULT_SETTINGS_DIR_NAME
+
+    @staticmethod
+    def _default_professional_root() -> Path:
+        return Path.home() / ".cranioz" / DEFAULT_PROFESSIONAL_DIR_NAME
