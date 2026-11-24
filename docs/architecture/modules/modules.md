@@ -221,7 +221,7 @@ The ServiceContainer owns this lifecycle. Modules do not instantiate or dispose 
 
 Session state lives on the Module instance and ends at unload. Transient Module state is cleared on deactivation or unload. Editor view state belongs to `EditorContext` and follows the Editor instance; the Workspace may preserve it when reusing a compatible Editor across Module switches.
 
-Project state belongs to the Project/domain and is read through application ports or repositories and changed through Commands. Modules must not write project files directly, mutate the Scene outside Commands, or cache project data as a competing source of truth. No Module-owned persisted files or migration hook are defined in this version; a future persisted Module resource requires an ADR for ownership, access, schema, and migration.
+Project state belongs to the Project/domain and is read through application ports or repositories and changed through Commands. Modules must not write project files directly, mutate the Scene outside Commands, or cache project data as a competing source of truth. A Module-owned persisted resource requires an accepted ADR for ownership, access, schema, and migration. ADR-0018 authorizes the dedicated SQLite database owned by the Professional Module; it is not a general persistence mechanism for other Modules.
 
 Hook contracts:
 
@@ -352,14 +352,16 @@ Module unit tests should use fake ports and registries where appropriate. Worksp
 
 - Plugin isolation, untrusted dynamic loading, and optional dependencies (future plugin phase).
 - Multiple simultaneously active Module specs in one Workspace.
-- Module-owned persisted files and migration; these require a separate ADR.
+- Module-owned persisted files and migration beyond the Professional
+  database accepted in ADR-0018; each additional resource requires a
+  separate ADR.
 - Module-level access control; authorization belongs at Project and Command boundaries.
 - Automatic cancellation of all tasks on deactivation; task lifecycle follows the Application TaskManager contract.
 - Detailed threading and telemetry implementation, defined by their respective architecture decisions.
 
 ## 16. Related documents
 
-`overview.md` §§6–8; `workspace.md` §§3.5, 6.4; `clinical_workflows.md`; ADR-0001, ADR-0002, ADR-0007–ADR-0012; `tools.md`; `commands.md`; `editors.md`; `folder_structure.md` (Modules layout).
+`overview.md` §§6–8; `workspace.md` §§3.5, 6.4; `clinical_workflows.md`; ADR-0001, ADR-0002, ADR-0007–ADR-0012, ADR-0018; `tools.md`; `commands.md`; `editors.md`; `folder_structure.md` (Modules layout).
 
 ## 17. Summary
 

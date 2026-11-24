@@ -1,547 +1,848 @@
 # Professional Module
 
-**Module ID:** `professional`
-**Status:** Proposed
-**Scope:** Personal, administrative, and financial management of the surgeon
-**Persistence:** Dedicated database outside projects (`~/.cranioz/professional/`)
+**Module ID:** `professional`  
+**Status:** Specification  
+**Scope:** Professional profile, administrative management, procedures, documents, schedule, and budgets  
+**Persistence:** Dedicated SQLite database outside clinical projects (ADR-0018)  
+**Initial Regional Profile:** `BR` (Brazil)  
+**Implementation:** Incremental, following the project roadmap
 
 ---
 
 ## 1. Purpose
 
-The **Professional Module** manages the surgeon's personal, administrative, and financial information. It is the application's administrative counterpart to the clinical modules.
+The **Professional Module** manages the surgeon's professional profile and administrative activities.
 
-The module does **not** handle patient clinical data (imaging, planning, osteotomies, Scene). It produces administrative artifacts — documents, budgets, appointments, procedure catalogs — that are **consumed** by clinical modules, particularly the Patient Module.
+It provides:
 
-The module is **self-contained**: it works without any open project, and its data is reused across projects.
+- Professional and clinic information.
+- Procedure and specialty catalogs.
+- Document templates.
+- Appointment scheduling.
+- Budgets and budget items.
+- Professional attachments, such as logos and signature images.
 
----
+The module does not manage clinical data. It references patients and projects through their identifiers and integrates with the Patient and Project modules through explicit contracts.
+
+The module works independently of an open clinical project. Its data is stored outside individual projects and can be reused across them.
 
 ## 2. Core Principles
 
-- **Outside projects.** Professional data lives in a dedicated database, not inside clinical projects.
-- **Reusable across projects.** A procedure catalog, a document template, or a budget is defined once and reused for many patients.
-- **Reference, do not contain, patient data.** The module references patients and projects by ID; it never stores clinical content.
-- **Translate everything.** Specialties, categories, and procedures are always resolved through the `TranslationService`.
-- **Commands for all mutations.** Every persistent change passes through an application Command.
-- **Single service owns the database.** A `ProfessionalService` is the only component that reads or writes the professional database.
-
----
+1. **Independent persistence:** Professional data is stored outside clinical projects.
+2. **Single ownership:** `ProfessionalService` is the only application service responsible for accessing the professional database.
+3. **Command-based mutations:** Persistent changes are performed through application Commands.
+4. **Patient data ownership:** The Patient Module remains the source of truth for patient information and generated patient documents.
+5. **Regional independence:** The domain model must not depend on Brazilian-specific registration types, identifiers, or codes.
+6. **Internationalization:** Interface, document, and entity languages are independent.
+7. **Data integrity:** Financial values, document versions, and schedule transitions must follow explicit validation rules.
+8. **Privacy:** Store only the information required for professional and administrative operations.
 
 ## 3. Ownership and Boundaries
 
-### 3.1 What the Module Owns
+### 3.1 Module-owned data
 
-- The professional's profile.
-- The procedure catalog (specialties, categories, procedures).
-- Document templates (orientations, contracts, consent terms, prescriptions, certificates).
-- The appointment schedule.
+- Professional profile and registrations.
+- Practice information.
+- Specialty, category, and procedure catalogs.
+- Document templates and their versions.
+- Appointments and schedule entries.
 - Budgets and budget items.
-- Attachments (logo, signature image).
+- Professional attachments.
+- User-defined translations and catalog entries.
 
-### 3.2 What the Module References (Does Not Own)
+### 3.2 Referenced data
 
-- Patients — referenced by `patient_id`, live in projects.
-- Projects — referenced by `project_id`, live in the Project Root.
-- Osteotomy patterns — a separate shared catalog (see ADR-0006).
-- Scene, imaging, planning — never referenced by this module.
+| Data | Owner | Reference |
+|---|---|---|
+| Patients | Patient Module | `patient_id` |
+| Clinical records | Patient Module | Patient-owned records |
+| Projects | Project Module | `project_id` |
+| Generated patient documents | Patient Module | Document identifier |
+| Osteotomy patterns | Shared catalog | ADR-0006 |
 
-### 3.3 What the Module Does Not Do
+The Professional Module must not create, modify, or delete patients or projects.
 
-- It does not create, modify, or delete patients or projects.
-- It does not store clinical data (imaging, planning, Scene).
-- It does not implement clinical rules.
-- It does not manage the Project lifecycle.
+### 3.3 Patient integration
+
+Patient information is obtained through the Patient Module when needed.
+
+The Professional Module may retain a minimal display label for administrative lists, but it must not store national identifiers or duplicate the patient's complete record.
+
+The display label must contain only the patient's name. It must be removed when the patient is deleted or anonymized.
+
+If the patient cannot be resolved, the interface must display an explicit unavailable-patient state.
+
+Generated patient documents belong to the Patient Module. The Professional Module retains only the generation provenance, including the template version and rendering timestamp.
+
+Temporary files may be created in `exports/`, but they must be cleaned up. Document generation is considered complete only after the Patient Module confirms persistence.
 
 ---
 
-## 4. Persistence
+## 4. Regionalization and Internationalization
 
-### 4.1 Location
+### 4.1 Regional profiles
+
+The module uses a regional profile to provide initial configuration and catalog seeds.
+
+Initial profiles:
+
+- `BR`: Brazil.
+- `GENERIC`: No country-specific seeds; language, currency, and regional formats are selected by the user.
+
+The core domain must remain country-independent.
+
+A regional profile may provide:
+
+- Default currency.
+- Registration authorities.
+- Identifier types.
+- Initial specialty and procedure catalogs.
+- Document templates.
+- Address and telephone formats.
+- Regional legal metadata.
+
+Regional profile versions must be recorded. Updating regional seeds must never overwrite user-modified or user-referenced data.
+
+### 4.2 Professional registrations
+
+Registrations must use an extensible model rather than a fixed enum.
+
+Each registration contains:
+
+- Authority.
+- Country (`ISO 3166-1`).
+- Region (`ISO 3166-2` when applicable).
+- Registration number stored as text.
+- Primary registration flag.
+
+Authorities may include CRM, CRO, GMC, or user-defined authorities.
+
+For Brazil, CRM registrations require a state identifier.
+
+The professional may have no registrations. If registrations exist, exactly one must be primary. Removing the primary registration must select another registration in the same transaction, when one remains.
+
+### 4.3 Codes and identifiers
+
+Codes must use an extensible structure:
+
+- `CodeSystem`
+- `EntityCode`
+- `purpose`, such as `DIAGNOSIS` or `PROCEDURE`
+
+Initial code systems may include ICD-10 for diagnosis and TUSS for procedures.
+
+Users may add code systems, but system-defined code-system metadata remains controlled by CranioZ.
+
+Patient identifiers must use a neutral identifier type, such as CPF, SSN, or NIF. The Brazilian CPF is an initial regional option, not a domain-level requirement.
+
+### 4.4 Language
+
+The following language settings are independent:
+
+- **Interface language:** Controlled by application preferences.
+- **Document language:** Selected for each generated document.
+- **Entity language:** Source language of user-created catalog entries.
+
+English (`en`) is the source language for system keys, built-in definitions, and final fallback.
+
+Document language resolution follows:
+
+1. Template language.
+2. Practice language.
+3. Regional profile language.
+4. English (`en`).
+
+The existing `TranslationService` must be used. The Professional Module must not create a competing translation infrastructure.
+
+User-defined entity translations may be stored separately, using stable entity identifiers.
+
+---
+
+## 5. Persistence
+
+### 5.1 Location
+
+The professional database is stored outside clinical projects.
 
 ```text
-~/.cranioz/professional/          (Linux/macOS)
-%APPDATA%\CranioZ\Professional\   (Windows)
+~/.cranioz/professional/
+    professional.db
+    templates/
+    attachments/
+    exports/
 ```
 
-The location is resolved by the same ConfigurationPaths component used for project_root, with an override in config/paths.json and an environment variable CRANIOZ_HOME.
-
-### 4.2 Structure
-
-    professional/
-    ├── professional.db          # SQLite
-    ├── professional.db.bak      # Automatic backup
-    ├── templates/               # Document templates
-    │   ├── orientations/
-    │   ├── contracts/
-    │   ├── consent_terms/
-    │   ├── prescriptions/
-    │   ├── certificates/
-    │   └── declarations/
-    ├── attachments/             # Logo, signature
-    ├── translations/            # User-supplied translations for custom entities
-    │   ├── pt-BR.json
-    │   └── en.json
-    └── exports/                 # Generated PDFs
-        └── budgets/
-
-### 4.3 Technology
-SQLite. Chosen for relational integrity, indexed queries (schedule, budgets), ACID transactions, and versioned migrations. A single file simplifies backup and export.
-
-### 4.4 Schema Versioning
-A schema_version table tracks the current version. Migrations are applied on database open, following the pattern of ProjectMigrationService. Invalid or future schemas are rejected with a clear error.
-
-## 5. Module Structure
-The module is organized into five tabs, presented in a default order that follows the surgeon's natural workflow.
-
-#	Tab	Purpose	Frequency
-1	Professional	Personal and professional profile	Rare
-2	Procedures	Catalog of procedures and prices	Occasional
-3	Budgets	Budget creation from procedure catalog	Frequent
-4	Schedule	Appointments, tasks, scheduled surgeries	Daily
-5	Document Templates	Reusable document templates	Occasional
-Default order rationale: identity → offering → billing → operation → delivery.
-
-Reorganization: the user can reorder tabs, following the pattern of the Patient Module.
-
-## 6. Tab: Professional
-6.1 Purpose
-The surgeon's identity and presentation data. Used in generated documents (budgets, contracts, prescriptions, orientations).
-
-### 6.2 Fields
-    Field	                    Type	                                    Required
-    Salutation	                Enum (Dr., Dra., Prof., Profa., —)	        No
-    Full name	                Text	                                    Yes
-    Registration type	        Enum (CRM, CRO, CREFONO, OTHER)	            No
-    Registration number	        Text	                                    No
-    Email	                    Text	                                    No
-    Phone	                    Text	                                    No
-    Address	                    Text	                                    No
-    City	                    Text	                                    No
-    State	                    Text	                                    No
-    Country	                    Text	                                    No
-    Clinic logo	                File reference	                            No
-    Digital signature	        File reference	                            No
-    Date format	                Enum (DD/MM/YYYY, MM/DD/YYYY, YYYY-MM-DD)	Yes
-
-### 6.3 Preview
-A signature preview panel shows how the professional's identity will appear in generated documents, using the current profile fields.
-
-### 6.4 Behavior
-Saving dispatches an UpdateProfessionalProfileCommand.
-
-Cancelling reverts the fields.
+The application must resolve the actual platform-specific path through the existing configuration-path infrastructure.
 
-The onboarding wizard populates the minimal fields on first run; the tab is used for later edits.
+The `templates/` directory stores immutable template versions. It must not contain an ambiguous `source/` directory that duplicates the versioned storage model.
 
-## 7. Tab: Procedures
-### 7.1 Purpose
-The catalog of procedures offered by the surgeon. Serves as the basis for budgets.
+The `exports/` directory is temporary staging for generated files, not the permanent owner of patient documents.
 
-### 7.2 Hierarchy
+### 5.2 Database
 
-    Specialty
-        └── Category
-                └── Procedure
+SQLite is used for:
 
-Specialties are built-in or user-created.
+- Relational integrity.
+- Indexed queries.
+- Transactions.
+- Schema migrations.
+- Local persistence.
 
-Categories group procedures within a specialty.
+The database has a schema version and uses explicit migrations.
 
-Procedures are the final entity.
+The initial profile implementation must use SQLite directly. Temporary JSON persistence is not permitted.
 
-### 7.3 Built-in Specialties
-The following are provided as built-in, non-deletable suggestions:
+Ownership, database location, schema versioning, migration, access, and
+testing are governed by `ADR-0018_Professional_Module_SQLite_Persistence.md`.
 
-Odontology (area)
-Otorhinolaryngology
-Oral and Maxillofacial Surgery
-Plastic Surgery
-Orthodontics
-Implantology
+### 5.3 Settings
 
-The user may add custom specialties. Custom entities are always translatable (see §11).
+The module uses the `professional.*` settings namespace for interface and presentation preferences.
 
-### 7.4 Procedure Fields
-Field	                    Type	                Required
-Category	                FK	                    Yes
-Name (translation key)	    Text	                Yes
-Default price	            Decimal	                Yes
-Default duration (minutes)	Integer                 No
-TUSS code	                Text	                No
-CID code	                Text	                No
-Notes	                    Text	                No
-Active	                    Boolean	                Yes
+Examples:
 
-### 7.5 Actions
-Create, edit, deactivate, and delete procedures, categories, and specialties. Deletion of a specialty or category cascades to its children after confirmation.
+- `professional.ui.navigation_order`
+- `professional.ui.visible_sections`
+- `professional.ui.last_section`
 
-### 7.6 Catalog vs. Performed Procedures
-The catalog holds definitions. Performed procedures (with a patient, date, and execution) live elsewhere:
+Professional profile data must not be duplicated in application settings.
 
-Inside a budget, as line items.
+`persistent_state()` and `restore_state()` are reserved for Editor visual state.
 
-Inside the schedule, as scheduled appointments.
+### 5.4 System preferences
 
-Inside the Patient Module, as part of the patient's history.
+The module consumes application preferences through a read-only `SystemPreferencesProvider` contract.
 
-The catalog never stores instances.
+Relevant preferences include:
 
-## 8. Tab: Budgets
-### 8.1 Purpose
-Creation of budgets for a specific patient, composed of procedures from the catalog.
+- Interface language.
+- Formatting locale.
+- Date and time format.
+- First day of the week.
+- Timezone.
+- Country preference.
 
-### 8.2 Budget Fields
-Field	                            Type	                                        Required
-Patient	                            Reference (patient_id)	                        Yes
-Project	                            Reference (project_id)	                        No
-Status	                            Enum (draft, sent, accepted, rejected, expired)	Yes
-Discount	                        Decimal	                                        No
-Total	                            Decimal	                                        Computed
-Valid until	                        Date	                                        No
-Notes	                            Text	                                        No
+Changes are communicated through `SystemPreferencesChanged`.
 
-### 8.3 Budget Item Fields
-Field	                            Type	                            Required
-Procedure	                        FK	                                Yes
-Description	                        Text	                            No
-Quantity	                        Integer	                            Yes (default 1)
-Unit price	                        Decimal	                            Yes (default from procedure)
-Notes	                            Text	                            No
+Preference changes may update presentation, but must not rewrite historical financial values, document content, or previously stored regional data.
 
+---
 
-### 8.4 Computation
-    subtotal = Σ (quantity × unit_price)
-    total    = subtotal − discount
+## 6. Functional Areas
 
-### 8.5 State Machine
-    draft ──▶ sent ──▶ accepted
-                  ├──▶ rejected
-                  └──▶ expired
+The module is organized into five main areas.
 
+| Area | Purpose |
+|---|---|
+| Professional | Professional and practice profile |
+| Procedures | Specialty, category, and procedure catalogs |
+| Budgets | Budget creation and management |
+| Schedule | Appointments, tasks, and scheduled activities |
+| Document Templates | Reusable administrative and clinical document templates |
 
-Transitions are validated. accepted and rejected are terminal except for explicit reopening by the user, which resets the budget to draft.
+The initial implementation may expose these areas progressively. Their presence in this specification does not mean they must all be implemented in Sprint L.
 
+### 6.1 Professional profile
 
-### 8.6 PDF Export
-Budgets can be exported to PDF. The PDF includes:
+The profile contains:
 
-Header with logo, name, registration, address.
+- Full name.
+- Preferred name.
+- Salutation.
+- Professional registrations.
+- Email and telephone.
+- Address.
+- Practice information.
+- Logo and signature references.
+- Regional profile.
+- Document language preference.
 
-Patient identification.
+The initial release supports one practice or clinic per installation.
 
-Line items, subtotal, discount, total.
+The model should allow future extension to multiple practice locations, but a complete multi-clinic management system is not part of the initial implementation.
 
-Validity date.
-
-Signature image.
-
-The PDF is saved in exports/budgets/ and, optionally, attached to the patient in the Patient Module.
-
-### 8.7 Actions
-Create, edit, duplicate, delete, export PDF, change status.
-
-## 9. Tab: Schedule
-### 9.1 Purpose
-The surgeon's personal calendar: appointments, tasks, scheduled surgeries, and administrative notes. Independent of projects.
+A profile preview must show how professional information will appear in generated documents.
 
-### 9.2 Views
-Weekly (primary).
+### 6.2 Procedures
 
-Monthly (overview).
+The procedure catalog organizes:
 
-List (upcoming appointments).
+- Specialties.
+- Categories.
+- Procedures.
+- Procedure codes.
+- Default prices.
 
-### 9.3 Appointment Types
-    Type	        Description
-    Consultation	Initial or follow-up visit
-    Surgery	        Scheduled surgical procedure
-    Follow-up	    Post-operative visit
-    Exam	        Imaging or laboratory
-    Meeting	        Team, supplier, or institutional
-    Task	        Administrative reminder
-    Block	        Vacation, congress, unavailability
+Specialties and categories are extensible catalogs, not fixed enums.
 
-### 9.4 Appointment Fields
-    Field	                Type	                                                    Required
-    Type	                Enum	                                                    Yes
-    Title	                Text	                                                    Yes
-    Patient	                Reference (patient_id)	                                    No
-    Project	                Reference (project_id)	                                    No
-    Procedure	            FK	                                                        No
-    Start / End	            Timestamp	                                                Yes
-    Location	            Text	                                                    No
-    Status	                Enum (scheduled, confirmed, completed, cancelled, no_show)	Yes
-    Notes	                Text	                                                    No
+Users can create, rename, reorder, and deactivate entries.
 
-### 9.5 State Machine
-text
-scheduled ──▶ confirmed ──▶ completed
-                        ├──▶ cancelled
-                        └──▶ no_show
-### 9.6 Actions
-Create, edit, cancel, mark completed, navigate (day, week, month, today).
+System-provided entries use stable identifiers. They must not be physically deleted or overwritten when referenced by user data.
 
-### 9.7 Future Extensions
-iCal export and import.
+Seed updates must preserve user modifications.
 
-Google Calendar and Outlook synchronization.
+Procedure prices include their currency. A budget cannot contain items with different currencies.
 
-Desktop reminders.
+### 6.3 Budgets
 
-Recurring appointments.
-
-These are not part of the initial release.
-
-## 10. Tab: Document Templates
-### 10.1 Purpose
-A list of pre-configured documents that can be applied to a patient in the Patient Module. Templates are reusable, translatable, and versioned independently of any project.
-
-###10.2 Categories
-
-    Category	    Built-in	Examples
-    Orientations	Yes	        Post-operative care
-    Contracts	    Yes	        Service agreement
-    Consent terms	Yes	        Surgical consent
-    Prescriptions	Yes	        Post-operative prescription
-    Certificates	No	        Attendance certificate
-    Declarations	No	        Procedure declaration
-
-The first four are built-in and non-deletable. Others can be added by the user.
-
-### 10.3 Template Fields
-    Field	                Type	                            Required
-    Kind	                Enum (category)	                    Yes
-    Name (translation key)	Text	                            Yes
-    File path	            Text (relative to templates/)	    Yes
-    Created / Updated	    Timestamp	                        Auto
-
-### 10.4 Format
-Templates are plain text files (.txt) with placeholders using the syntax {{variable_name}}.
-
-    Dear {{patient_name}},
-    
-    You underwent {{procedure_name}} on {{procedure_date}}.
-    Please follow the post-operative instructions below.
-    
-    Sincerely,
-    {{professional_salutation}} {{professional_name}}
-    {{professional_registration_type}} {{professional_registration}}
-    10.5 Placeholders
-    Available variables include (non-exhaustive):
-    
-    Patient: patient_name, patient_social_name, patient_birth_date, patient_cpf.
-    
-    Procedure: procedure_name, procedure_date.
-    
-    Professional: professional_salutation, professional_name, professional_registration_type, professional_registration, clinic_name, clinic_address.
-    
-    System: today.
-
-### 10.6 Actions
-Create, import, edit, delete, and create a new category.
-
-### 10.7 Use in the Patient Module
-The Patient Module displays the list of templates and allows the user to apply one to a patient. Variables are filled from the patient record, the active procedure, and the professional profile. The rendered document is saved as a patient document.
-
-This is the primary interface between the Professional Module and the Patient Module.
-
-## 11. Internationalization
-All specialties, categories, and procedures are always translated.
-
-Built-in entities have translation keys in translations/<lang>/professional.json, provided by CranioZ.
-
-Custom entities have translation keys of the form user.<kind>.<uuid>, provided by the user.
-
-Custom translations live in ~/.cranioz/professional/translations/<lang>.json.
-
-When a translation is missing in the active language, the fallback sequence is:
-
-* The entity's source_language (the language at creation time).
-* 
-* The translation key itself.
-* 
-* A neutral placeholder.
-
-The TranslationCatalogRegistry loads catalog sources in this precedence order (highest to lowest):
-
-* Professional (user-created entities).
-* 
-* Settings (user overrides).
-* 
-* System (built-in).
-
-12. Application Service
-12.1 ProfessionalService
-The ProfessionalService is the sole owner of the professional database. It exposes commands, reads the repository, and validates inputs.
-
-Conceptual interface:
-
-    class ProfessionalService(Protocol):
-        # Profile
-        def get_profile(self) -> ProfessionalProfile: ...
-        def update_profile(self, command: UpdateProfessionalProfileCommand) -> None: ...
-    
-        # Catalog
-        def list_specialties(self) -> list[Specialty]: ...
-        def list_categories(self, specialty_id: str) -> list[Category]: ...
-        def list_procedures(self, category_id: str | None = None) -> list[Procedure]: ...
-        def create_procedure(self, command: CreateProcedureCommand) -> None: ...
-        def update_procedure(self, command: UpdateProcedureCommand) -> None: ...
-        def delete_procedure(self, command: DeleteProcedureCommand) -> None: ...
-    
-        # Templates
-        def list_templates(self, kind: str) -> list[DocumentTemplate]: ...
-        def create_template(self, command: CreateDocumentTemplateCommand) -> None: ...
-        def update_template(self, command: UpdateDocumentTemplateCommand) -> None: ...
-        def delete_template(self, command: DeleteDocumentTemplateCommand) -> None: ...
-    
-        # Schedule
-        def list_appointments(self, start: date, end: date) -> list[Appointment]: ...
-        def create_appointment(self, command: CreateAppointmentCommand) -> None: ...
-        def update_appointment(self, command: UpdateAppointmentCommand) -> None: ...
-        def cancel_appointment(self, command: CancelAppointmentCommand) -> None: ...
-    
-        # Budgets
-        def list_budgets(self, patient_id: str | None = None) -> list[Budget]: ...
-        def get_budget(self, budget_id: str) -> Budget: ...
-        def create_budget(self, command: CreateBudgetCommand) -> None: ...
-        def update_budget(self, command: UpdateBudgetCommand) -> None: ...
-        def delete_budget(self, command: DeleteBudgetCommand) -> None: ...
-    
-        # Lifecycle
-        def export_data(self) -> Path: ...
-        def import_data(self, archive: Path) -> None: ...
-        def backup(self) -> Path: ...
-
-### 12.2 Repository
-A ProfessionalRepository port abstracts SQLite access. The concrete adapter lives in infrastructure/persistence/professional/.
-
-### 12.3 Ownership
-The ProfessionalService is the only component that accesses the professional database. The onboarding wizard and the Professional Module both use the service; neither accesses the database directly.
-
-## 13. Onboarding
-### 13.1 First Run
-On first boot, if no professional profile exists, an onboarding wizard collects the minimal fields:
-
-* Salutation
-* Full name
-* Registration type
-* Registration number
-
-The wizard dispatches an UpdateProfessionalProfileCommand and closes. The remaining fields (email, address, logo, signature) are filled later via the Professional tab.
-
-### 13.2 Skipping
-The wizard can be skipped. In that case, generated documents will contain placeholders for the missing fields, and the user is warned.
-
-### 13.3 Re-entry
-There is no separate "onboarding" after the first run. All edits happen through the Professional tab.
-
-## 14. Commands
-The module introduces the following application Commands:
-
-    Profile
-    
-    UpdateProfessionalProfileCommand
-    
-    Catalog
-    
-    CreateSpecialtyCommand, UpdateSpecialtyCommand, DeleteSpecialtyCommand
-    
-    CreateCategoryCommand, UpdateCategoryCommand, DeleteCategoryCommand
-    
-    CreateProcedureCommand, UpdateProcedureCommand, DeleteProcedureCommand
-    
-    Templates
-    
-    CreateDocumentTemplateCommand, UpdateDocumentTemplateCommand, DeleteDocumentTemplateCommand, ImportDocumentTemplateCommand
-    
-    Schedule
-    
-    CreateAppointmentCommand, UpdateAppointmentCommand, CancelAppointmentCommand, CompleteAppointmentCommand
-    
-    Budgets
-    
-    CreateBudgetCommand, UpdateBudgetCommand, DeleteBudgetCommand, ChangeBudgetStatusCommand, ExportBudgetPdfCommand
-    
-    Maintenance
-    
-    ExportProfessionalDataCommand
-    
-    ImportProfessionalDataCommand
-    
-    BackupProfessionalDataCommand
-
-15. Interfaces with Other Modules
-### 15.1 Patient Module
-    Direction	            Data
-    Professional → Patient	Document templates (applied to a patient)
-    Professional → Patient	Budgets (created for a patient)
-    Professional → Patient	Procedure catalog (referenced in patient history)
-    Professional → Patient	Schedule (appointments linked to a patient)
-    Patient → Professional	Patient identity (name, birth date, contact) for rendering templates and budgets
-
-The interface is documented in docs/architecture/professional_patient_interface.md.
-
-### 15.2 Project Module
-The Professional Module references projects by project_id when a budget or appointment is linked to a project. It never reads or writes project files directly.
-
-### 15.3 Osteotomy Module
-Osteotomy patterns are not part of the Professional Module. They live in a separate shared catalog (see ADR-0006).
-
-## 16. Security and Privacy
-### 16.1 Sensitive Data
-The professional database may contain patient-identifying information (names, contact details) in budgets and appointments. Although it does not hold clinical data, it falls under the same privacy considerations.
-
-### 16.2 File Permissions
-The ~/.cranioz/professional/ directory is created with permissions restricted to the operating system user.
-
-### 16.3 Encryption
-SQLCipher is available as an optional encryption layer. When enabled, the database and its backups are encrypted with a user-provided key. When disabled, the database is plaintext but access-restricted.
-
-### 16.4 Audit
-A professional_audit_log table records creation, modification, and deletion of budgets and appointments, including actor, timestamp, and affected entity. Audit logging is optional in the first release.
-
-### 16.5 Export and Import
-Exported archives contain patient-identifying information. The user is warned before exporting, and the archive may be encrypted.
-
-## 17. Backup, Export, and Import
-### 17.1 Automatic Backup
-On application close (or at a configurable interval), the database is copied to professional.db.bak and to ~/.cranioz/backups/professional/. The last five backups are retained by default.
-
-### 17.2 Manual Export
-The user can export the entire professional database as a .cranioz-professional archive (a zip containing professional.db, templates/, attachments/, and a manifest.json with version metadata).
-
-### 17.3 Import
-Importing an archive replaces the current database after confirmation. Conflict resolution policies (merge, replace, rename) are defined in ADR-0009.
-
-18. Out of Scope
-The following are explicitly out of scope for the initial release:
-
-* Multiple professionals on the same installation.
-* 
-* Integration with external ERP, billing, or insurance systems.
-* 
-* Advanced financial analytics and reports.
-* 
-* Cryptographic digital signature (ICP-Brasil).
-* 
-* Conditional and loop constructs in document templates.
-* 
-* Recurring appointments.
-* 
-* Bidirectional calendar synchronization.
-* 
-* These may be added in future versions if demand justifies them.
-
-## 19. Related Documents
-    docs/architecture/domain/professional/ — domain entities.
-    
-    docs/architecture/professional_patient_interface.md — interface with the Patient Module.
-    
-    docs/architecture/config/cranioz_home.md — structure of ~/.cranioz/.
-    
-    docs/architecture/internationalization/internationalization.md — translation system.
-    
-    docs/architecture/overview.md — overall architecture.
+A budget contains:
 
+- Unique identifier.
+- Patient reference.
+- Optional project reference.
+- Creation date.
+- Expiration date.
+- Items.
+- Currency.
+- Subtotal.
+- Absolute discount.
+- Total.
+- Status.
+- Relevant timestamps.
+
+Money must use integer minor units or an equivalent exact decimal representation. Floating-point values must not be used for financial calculations.
+
+Budget items preserve snapshots of procedure descriptions and prices at the time of creation.
+
+Updating the procedure catalog must not change existing budgets.
+
+An explicit action may refresh prices from the catalog.
+
+Supported statuses:
+
+- `DRAFT`
+- `SENT`
+- `ACCEPTED`
+- `REJECTED`
+- `CANCELLED`
+- `EXPIRED`
+
+Expiration must be derived from the expiration date or updated through an explicit mechanism.
+
+An expired budget may only be accepted after explicit user confirmation.
+
+A sent budget cannot return directly to draft. The user must cancel it or create a duplicate.
+
+Only draft budgets may be deleted.
+
+Budget duplication preserves the original item snapshots. Updating prices is a separate operation.
+
+Budget numbering must be human-readable and sequential. `sent_at` and `accepted_at` must be recorded when applicable.
+
+PDF generation uses the selected document locale and the existing `TranslationService`.
+
+### 6.4 Schedule
+
+The schedule supports:
+
+- Appointments.
+- Tasks.
+- Blocks.
+- Scheduled surgeries.
+- Patient references.
+- Optional project references.
+
+Appointments use an extensible appointment-type catalog. Initial types are regional seeds, not a closed enum.
+
+Each timed event must satisfy:
+
+- Start before end.
+- Positive duration.
+- Valid timezone interpretation.
+
+All-day events and tasks without an end time must be supported.
+
+Conflict detection is mandatory. The implementation must define whether conflicts block saving or generate a warning.
+
+The schedule uses the installation's clinic-local timezone. The timezone identifier must be persisted.
+
+Supported appointment states:
+
+- `SCHEDULED`
+- `COMPLETED`
+- `CANCELLED`
+- `NO_SHOW`
+
+Transitions to completed, cancelled, and no-show are terminal by default. Reopening an appointment is an explicit operation that returns it to `SCHEDULED`.
+
+### 6.5 Document templates
+
+Templates support:
+
+- Orientations.
+- Contracts.
+- Consent terms.
+- Prescriptions.
+- Certificates.
+- Declarations.
+- User-defined categories.
+
+Each template has a stable identity independent of its versions.
+
+Template versions are immutable. Editing a template creates a new version and must never overwrite an existing version.
+
+Each version records:
+
+- Version identifier.
+- Language (`BCP 47`).
+- Jurisdiction, when applicable.
+- Creation timestamp.
+- Source content.
+- Relevant metadata.
+
+Brazilian templates are regional seeds marked with `pt-BR` and appropriate jurisdiction metadata. They are not universal legal documents and must be reviewed for their intended jurisdiction.
+
+English examples may include `en-US` and `en-GB`.
+
+Templates may be soft-deleted. Existing generated documents must retain their original provenance.
+
+Supported placeholders must be explicitly declared and validated before rendering.
+
+Patient-sensitive placeholders must be resolved at generation time through the Patient Module. Preview and logs must not expose sensitive patient information unnecessarily.
+
+---
+
+## 7. Application Architecture
+
+### 7.1 Main components
+
+The module follows the existing CranioZ architecture.
+
+- `ProfessionalModule`: declarative module definition.
+- `ProfessionalEditor`: concrete Editor implementation.
+- `ProfessionalService`: application service and database owner.
+- `ProfessionalRepository`: persistence abstraction.
+- `ProfessionalCommands`: persistent mutation operations.
+- `ProfessionalQueries`: read operations.
+- `ProfessionalMigrationService`: database schema migrations.
+
+The module contributes its UI through `ModuleUISpec`. It must not instantiate its Editor directly.
+
+The Editor is registered in `EditorRegistry` and hosted by the central Workspace Area.
+
+### 7.2 Commands
+
+Persistent changes must use Commands.
+
+Examples:
+
+**Profile**
+- `UpdateProfessionalProfileCommand`
+
+**Catalog**
+- `CreateProcedureCommand`
+- `UpdateProcedureCommand`
+- `DeactivateProcedureCommand`
+- `CreateCategoryCommand`
+- `UpdateCategoryCommand`
+
+**Templates**
+- `CreateDocumentTemplateCommand`
+- `CreateDocumentTemplateVersionCommand`
+- `DeleteDocumentTemplateCommand`
+- `ImportDocumentTemplateCommand`
+
+**Schedule**
+- `CreateAppointmentCommand`
+- `UpdateAppointmentCommand`
+- `CancelAppointmentCommand`
+- `CompleteAppointmentCommand`
+- `ReopenAppointmentCommand`
+
+**Budgets**
+- `CreateBudgetCommand`
+- `UpdateBudgetCommand`
+- `DeleteBudgetCommand`
+- `ChangeBudgetStatusCommand`
+- `ExportBudgetPdfCommand`
+
+**Data transfer**
+- `BackupProfessionalDataCommand`
+- `ExportProfessionalDataCommand`
+- `ImportProfessionalDataCommand`
+- `RestoreProfessionalDataCommand`
+
+File generation and data transfer may use application services, but persistent state changes must remain explicit and validated.
+
+### 7.3 Data transfer
+
+The module must distinguish:
+
+- **Backup:** Complete recoverable copy of the professional database and associated files.
+- **Selective export:** Selected catalogs and templates without patient data.
+- **Full export:** Complete professional data package, with a privacy warning.
+
+Packages must include a manifest containing format version, schema version, and stable identifiers.
+
+Import must validate the package before changing the database. Conflicts must be resolved explicitly.
+
+Password-based encryption may be introduced as a separate implementation stage. Until then, database and archive access must be restricted to the operating-system user.
+
+### 7.4 Security and privacy
+
+- Restrict access to the professional data directory.
+- Do not write patient identifiers or sensitive document content to logs.
+- Warn before exporting archives containing identifying information.
+- Apply the same privacy policy to backups and export archives.
+- Define backup retention and rotation.
+- Keep encryption at rest as an explicit configuration decision.
+- Do not retain temporary generated patient documents after successful transfer.
+
+---
+
+## 8. System Widget Catalog and Reuse
+
+The Professional Module must use the system-wide widget catalog as the authoritative reference for reusable UI components.
+
+**Reference:** `docs/architecture/widgets/widget_catalog.md`
+
+### 8.1 Widget selection
+
+Before implementing any UI component, the developer must:
+
+1. Consult `widget_catalog.md` and identify existing components that meet the requirement.
+2. Reuse existing system widgets whenever possible.
+3. Compose existing widgets when a more specialized interface is required.
+4. Implement a new system widget only when a clear reuse case exists beyond the Professional Module.
+5. Keep Professional-specific compositions inside the Professional Editor unless another module has a demonstrated need for them.
+
+### 8.2 Architectural classification
+
+Follow the classifications defined in ADR-0003 and `widget_catalog.md`:
+
+- **System Widgets:** Reusable components located in `src/cranioz/ui/widgets/`.
+- **Editor Overlays:** Contextual visual components owned by the Editor architecture.
+- **Professional Compositions:** Components combining system widgets for Professional-specific workflows. These remain inside the Professional Editor.
+
+Do not place Editor-specific overlays or Professional-specific components in the generic system widget package.
+
+### 8.3 Implementation requirements
+
+When a new reusable widget is justified:
+
+- Define its public API and expected behavior.
+- Follow the existing theme, icon, translation, and accessibility contracts.
+- Implement unit tests.
+- Provide a visual debug harness when appropriate.
+- Register the component and its implementation status in `widget_catalog.md`.
+- Update the catalog when its API, dependencies, or status changes.
+
+### 8.4 Professional Editor composition
+
+The Professional Editor should be built primarily through composition of existing system widgets.
+
+Examples include:
+
+- `IconSidebar` for internal navigation.
+- `CollapsibleSection` for grouped configuration sections.
+- `DragList` for configurable ordering.
+- `FormField`, `FormCombo`, and `FilePicker` for profile forms.
+- `SignaturePreview` for professional signature presentation.
+- `DateField` and other form widgets where applicable.
+
+Professional-specific structures, such as `ProfessionalSidebar`, `ProfessionalSectionTree`, and `ProfessionalConfigPanel`, must remain consumer-specific compositions unless a separate system-wide reuse requirement is established.
+
+The widget catalog is an evolving system contract. Its presence does not authorize implementation outside the current roadmap or sprint scope.
+
+# 9. Implementation Plan
+
+The implementation is incremental. The stages below describe the target delivery sequence; they do not create new CranioZ phases or automatically expand Sprint L.
+
+## Stage 0 — Foundation and contracts
+
+**Goal:** Establish the module's technical foundation.
+
+**Implementation**
+- Define domain entities and invariants.
+- Define repository and service contracts.
+- Define the SQLite database location.
+- Implement schema versioning and migrations.
+- Define regional profile and language contracts.
+- Define Patient Module integration boundaries.
+
+**Tests**
+- Domain validation tests.
+- Repository contract tests.
+- SQLite transaction and rollback tests.
+- Migration tests.
+- Regional profile and language resolution tests.
+
+**Completion criteria**
+- Domain contracts are documented.
+- Database can be created and migrated.
+- Invalid data is rejected.
+- Tests pass.
+
+## Stage 1 — Professional profile (Sprint L.1)
+
+**Goal:** Deliver the first functional Professional Editor.
+
+**Implementation**
+- Implement `ProfessionalEditor`.
+- Register it in `EditorRegistry`.
+- Provide the Professional Module's `ModuleUISpec`.
+- Host the Editor in the central Area.
+- Implement the initial profile interface (Tela 2 of the UI prototype).
+- Integrate `professional.*` settings.
+- Persist profile data in SQLite.
+- Implement profile preview.
+
+**Tests**
+- Editor lifecycle and contract tests.
+- ModuleUISpec registration tests.
+- Profile validation tests.
+- SQLite persistence and reload tests.
+- Settings integration tests.
+- Workspace integration tests.
+
+**Completion criteria**
+- Editor is materialized through the established architecture.
+- Profile can be created, edited, saved, and reloaded.
+- No profile data is stored through Editor visual-state persistence.
+- Integration tests pass.
+
+## Stage 2 — Navigation and configuration (Sprint L.2)
+
+**Goal:** Complete the Professional Editor's internal navigation.
+
+**Implementation**
+- Integrate `IconSidebar`.
+- Integrate `CollapsibleSection`.
+- Integrate `DragList`.
+- Integrate visibility controls.
+- Implement the navigation and configuration screens from the UI prototype.
+- Persist navigation order and visibility.
+- Complete required theme and translation integration.
+
+**Tests**
+- Navigation behavior tests.
+- Reordering and visibility tests.
+- Settings persistence tests.
+- Dark and Light theme checks.
+- HiDPI visual checks.
+- Regression tests for shared widgets.
+
+**Completion criteria**
+- Navigation and configuration work as specified.
+- Presentation state survives application restart.
+- No unnecessary Professional-specific widgets are added to the generic widget package.
+
+## Stage 3 — Professional catalogs
+
+**Goal:** Implement specialties, categories, and procedures.
+
+**Implementation**
+- Implement catalog entities and repositories.
+- Add regional seed catalogs.
+- Support create, edit, reorder, and deactivate operations.
+- Implement code-system references.
+- Implement procedure prices and currencies.
+
+**Tests**
+- Catalog CRUD and validation tests.
+- Stable identifier tests.
+- Seed update and user modification preservation tests.
+- Code-system and purpose validation tests.
+- Currency consistency tests.
+
+**Completion criteria**
+- Catalogs are extensible.
+- User changes survive seed updates.
+- Invalid procedure and currency data are rejected.
+
+## Stage 4 — Document templates
+
+**Goal:** Implement reusable, versioned document templates.
+
+**Implementation**
+- Implement template identity and version entities.
+- Implement template categories.
+- Implement immutable version storage.
+- Implement placeholder validation.
+- Integrate document language resolution.
+- Integrate Patient Module document generation.
+
+**Tests**
+- Template CRUD tests.
+- Version immutability tests.
+- Placeholder validation tests.
+- Language fallback tests.
+- Patient data resolution tests.
+- Document provenance and persistence integration tests.
+
+**Completion criteria**
+- Editing creates a new version.
+- Existing versions remain unchanged.
+- Generated documents are persisted by the Patient Module.
+
+## Stage 5 — Schedule
+
+**Goal:** Implement appointments, tasks, and schedule management.
+
+**Implementation**
+- Implement schedule entities and repositories.
+- Implement appointment-type catalog.
+- Implement status transitions.
+- Implement timezone handling.
+- Implement conflict detection.
+- Implement all-day events and tasks without end times.
+
+**Tests**
+- Date and duration validation tests.
+- Timezone tests.
+- Conflict detection tests.
+- Status transition tests.
+- Patient and project reference tests.
+- Repository and integration tests.
+
+**Completion criteria**
+- Invalid events cannot be saved.
+- Conflict behavior is explicit.
+- Status transitions follow the defined rules.
+
+## Stage 6 — Budgets
+
+**Goal:** Implement budget creation and management.
+
+**Implementation**
+- Implement budget and budget-item entities.
+- Implement catalog-based budget creation.
+- Implement price snapshots.
+- Implement discounts and totals.
+- Implement status transitions.
+- Implement sequential numbering.
+- Implement PDF generation.
+
+**Tests**
+- Financial calculation tests.
+- Currency consistency tests.
+- Snapshot preservation tests.
+- Budget status transition tests.
+- Expiration and confirmation tests.
+- PDF generation and locale tests.
+
+**Completion criteria**
+- Calculations are exact.
+- Existing budgets do not change when catalog prices change.
+- PDF output uses the selected document language.
+
+## Stage 7 — Data transfer and security
+
+**Goal:** Provide reliable backup, export, import, and recovery.
+
+**Implementation**
+- Implement automatic and manual backups.
+- Implement retention and rotation.
+- Implement selective and full exports.
+- Implement package validation and import.
+- Implement restore operations.
+- Apply privacy and filesystem access policies.
+- Implement encryption if approved for this delivery.
+
+**Tests**
+- Backup and restore round-trip tests.
+- Export and import round-trip tests.
+- Invalid package tests.
+- Conflict resolution tests.
+- Retention tests.
+- Privacy and access-control tests.
+
+**Completion criteria**
+- Data can be recovered from a valid backup.
+- Imports validate data before modifying the database.
+- Sensitive exports require explicit confirmation.
+
+## Stage 8 — Final integration and validation
+
+**Goal:** Validate the complete Professional Module.
+
+**Implementation**
+- Integrate all functional areas.
+- Review Patient and Project module contracts.
+- Review regional profiles and translations.
+- Review migrations and error handling.
+- Update architecture and user documentation.
+
+**Tests**
+- Full unit test suite.
+- Repository and service contract tests.
+- Editor and Workspace integration tests.
+- Patient Module integration tests.
+- Backup and restore tests.
+- Regression tests.
+- Dark and Light theme checks.
+- HiDPI checks.
+- Static analysis.
+
+**Completion criteria**
+- All defined functional requirements are implemented or explicitly deferred.
+- All critical domain invariants are tested.
+- No unresolved data-integrity issues remain.
+- Full project validation passes.
+
+---
+
+## 10. Implementation Scope and Scheduling
+
+The implementation plan above describes the target Professional Module. It does not mean all stages belong to the current Sprint L.
+
+**Current Sprint L scope:**
+
+| Stage | Deliverable | Status |
+|---|---|---|
+| L.0 | System form widgets | Complete |
+| L.0.2 A/B | Extended widgets — initial deliveries | Complete |
+| L.0.2 C/D | Remaining widgets and debug harness consolidation | Deferred |
+| L.1 | ProfessionalEditor, profile, SQLite persistence, ModuleUISpec, settings | Next implementation focus |
+| L.2 | Professional navigation and configuration interactions | Planned |
+
+The immediate implementation must remain limited to:
+
+- Professional Editor.
+- Initial professional profile interface.
+- SQLite profile persistence.
+- EditorRegistry and ModuleUISpec integration.
+- `professional.*` settings.
+- Required navigation and configuration interactions.
+
+The procedures, templates, schedule, budgets, and data-transfer stages must be scheduled according to the master implementation plan. They must not be silently added to Sprint L.
+
+Phase 4 remains gated by formal Phase 3 closure.
+
+---
+
+## 11. Validation Standards
+
+Every implementation stage must include tests appropriate to its scope.
+
+Required project validation commands:
+
+```powershell
+python -m pytest
+python -m ruff check .
+python -m ruff format --check .
+python -m mypy src/
+```
+
+Validation rules:
+
+- Do not introduce new Ruff violations.
+- Do not introduce new mypy errors.
+- Investigate regressions against the recorded baseline.
+- Do not reduce test coverage merely to obtain a passing suite.
+- Update test counts and validation dates after completed deliveries.
+- Preserve existing Editor, Workspace, settings, theme, and translation contracts.
+
+The module is considered complete only when all required functional, persistence, integration, and regression tests pass.
+
+## 12. Related Documents
+
+- `docs/architecture/modules/modules.md`
+- `docs/architecture/domain/professional/`
+- `docs/architecture/professional_patient_interface.md`
+- `docs/architecture/config/cranioz_home.md`
+- `docs/architecture/internationalization/internationalization.md`
+- `docs/architecture/overview.md`
+- `docs/architecture/widgets/widget_catalog.md`
+- `next_steps.md`
+- `implementation_plan.md`
