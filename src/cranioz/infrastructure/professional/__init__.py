@@ -11,6 +11,9 @@ from cranioz.infrastructure.professional.migrations import (
     ProfessionalMigrationError,
     ProfessionalMigrationService,
 )
+from cranioz.infrastructure.professional.repository import (
+    SqliteProfessionalRepository,
+)
 
 __all__ = [
     "LATEST_PROFESSIONAL_SCHEMA_VERSION",
@@ -20,4 +23,5 @@ __all__ = [
     "ProfessionalMigration",
     "ProfessionalMigrationError",
     "ProfessionalMigrationService",
+    "SqliteProfessionalRepository",
 ]

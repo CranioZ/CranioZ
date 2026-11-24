@@ -19,25 +19,28 @@ Sprint L is divided into four internal stages:
 
 - **L.0 — System Form Widgets:** Complete.
 - **L.0.2 — Extended Widget Suite:** Deliveries A and B complete; C and D deferred.
-- **L.1 — Professional Editor:** Next implementation focus.
+- **L.1 — Professional Editor:** In progress; domain, SQLite persistence, and
+  profile command/query flow complete.
 - **L.2 — Professional Navigation:** Planned after L.1.
 
 These stages are internal execution steps of Sprint L. They are not independent implementation phases.
 
 ### 1.1 Current validation baseline
 
-**Baseline recorded on 2026-11-23 (post-L.0.2 Delivery B):**
+**Baseline recorded on 2026-11-24 (post-L.1 profile persistence):**
 
-- 1795 tests passing.
+- 1854 tests passing.
 - 0 failed.
 - 0 errors.
-- 2 skipped.
+- 3 skipped.
 - `ruff check .` clean.
-- `ruff format --check .` clean (610 files).
-- `mypy src` clean (303 source files).
+- `ruff format --check .` clean (636 files).
+- `mypy src` clean (318 source files).
 
 Previous baseline:
 
+- Post-L.1 SQLite foundation (2026-11-24): 1804 tests passing.
+- Post-L.0.2 Delivery B (2026-11-23): 1795 tests passing.
 - Post-L.0 (2026-11-23): 1743 tests passing.
 
 Update the numbers and date after each completed delivery. Do not report a new baseline until the validation commands have actually been executed.
@@ -62,6 +65,9 @@ The following foundations are implemented:
 - L.0 system form widgets.
 - L.0.2 Delivery A widgets.
 - L.0.2 Delivery B widgets.
+- Professional profile domain contracts.
+- Professional profile repository/service boundary and SQLite adapter.
+- Professional profile command/query flow.
 
 The application uses Qt Widgets, modular QSS, and Python Design Tokens, as defined by ADR-0014.
 
@@ -123,7 +129,7 @@ L.0.2 Deliveries C and D remain documented as deferred work. They do not block L
 | **L.0.2 B** | Sections, lists, and navigation | CollapsibleSection, DragList, IconSidebar | Complete |
 | **L.0.2 C** | Custom-painted and advanced widgets | TimelineSlider, ColorPicker, Histogram | Deferred |
 | **L.0.2 D** | Debug harness consolidation and validation | Consolidated visual debug harness and catalog closure | Deferred |
-| **L.1** | Professional Editor | Editor registration, profile interface, ModuleUISpec, settings, SQLite persistence | Next |
+| **L.1** | Professional Editor | Editor registration, profile interface, ModuleUISpec, settings, SQLite persistence | In progress — profile persistence complete |
 | **L.2** | Professional Navigation | Sections, visibility controls, drag-and-drop, persisted presentation state | Planned |
 
 ### 3.2 Architectural principles for Sprint L
@@ -407,7 +413,8 @@ Delivery D must not be treated as a prerequisite for L.1. Its rescheduling requi
 
 ### 5.3 L.1 — Professional Editor
 
-**Status:** Next implementation focus.
+**Status:** In progress. Domain contracts, SQLite persistence, and the profile
+command/query flow are complete; settings and Editor work remain.
 
 **Purpose:** Deliver the first functional Professional Editor using the existing system widget infrastructure and the domain specification in `professional.md`.
 
@@ -458,6 +465,14 @@ Do not use Editor visual-state persistence to store profile data.
 
 The initial implementation must remain limited to the profile fields and operations required by `professional.md`.
 
+The persistence work implemented on 2026-11-24 provides `professional_root`,
+database lifecycle, schema versioning, migration backup/rollback, the initial
+profile/registration schema, an application repository port, an in-memory
+reference repository, `ProfessionalService`, `ProfessionalQueries`,
+`UpdateProfessionalProfileCommand`, and the SQLite profile adapter. Profile
+saves atomically replace the profile and its registrations; reads reconstruct
+and validate the domain aggregate.
+
 #### Settings integration
 
 - Use the `professional.*` namespace for appropriate presentation and application settings.
@@ -472,9 +487,9 @@ The initial implementation must remain limited to the profile fields and operati
 - [ ] Initial profile interface functional (Tela 2).
 - [ ] Existing system widgets reused where appropriate.
 - [ ] No unnecessary Professional-specific widgets added to the generic system widget package.
-- [ ] SQLite persistence integrated according to `professional.md`.
+- [x] SQLite persistence integrated according to `professional.md`.
 - [ ] Settings namespace integrated.
-- [ ] Profile data survives application restarts.
+- [x] Profile data survives application restarts.
 - [ ] Editor lifecycle and integration tests passing.
 
 ---
@@ -690,6 +705,9 @@ The current implementation sequence is:
 - [x] Implement and test L.0.
 - [x] Implement L.0.2 Delivery A.
 - [x] Implement L.0.2 Delivery B.
+- [x] Establish the Professional SQLite persistence foundation (ADR-0018).
+- [x] Implement the Professional profile domain contracts.
+- [x] Implement the Professional repository/service and command/query flow.
 - [ ] Implement L.1 — `ProfessionalEditor`, `ModuleUISpec`, settings integration, and SQLite persistence.
 - [ ] Implement L.2 — Professional navigation, sections, and configuration interactions.
 - [ ] Run complete validation and close Sprint L.
@@ -702,7 +720,10 @@ L.0.2 Deliveries C and D remain deferred. They are not part of the immediate imp
 
 **Next development task:**
 
-Implement **L.1 — Professional Editor**.
+Continue **L.1** with `ProfessionalEditor`, its central-Area materialization,
+the Professional Module's `ModuleUISpec`, and `professional.*` settings
+integration. Reuse the completed profile repository/service and dispatch profile
+changes through `UpdateProfessionalProfileCommand`.
 
 Before implementation, review these references:
 

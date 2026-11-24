@@ -115,9 +115,11 @@ The sprint order below respects dependencies within Phase 3.
 | **Monitor de Logs** | — | Diagnostic subsystem | ⏳ Planned (not scheduled; not a Phase 3 deliverable) | Sprint K (to inform tab mapping) |
 
 **Current focus:** Sprint L. L.0 is complete; L.0.2 Deliveries A and B are
-complete. L.0.2 Deliveries C and D are deferred and do not block L.1. The next
-implementation task is L.1 — `ProfessionalEditor`, `ModuleUISpec`, settings and
-SQLite profile persistence.
+complete. L.1 is in progress with the Professional domain, SQLite profile
+persistence, repository/service boundary, and command/query flow complete.
+L.0.2 Deliveries C and D are deferred and do not block L.1. The next
+implementation task is `ProfessionalEditor`, `ModuleUISpec`, and settings
+integration.
 
 **Note on ordering:** Sprint L is unblocked by the completed Editor Refactoring (ADR-0015) and by the completed Sprints C, E, and F. The functional dependency chain for Phase 3 is **J → K**, with **L** independent and able to proceed in parallel (`next_steps.md` §6.1).
 
@@ -274,8 +276,9 @@ SQLite profile persistence.
   - **L.0.2 Delivery A:** complete. Simple Qt-native widgets delivered.
   - **L.0.2 Delivery B:** complete. `CollapsibleSection`, stable-key `DragList`
     and `IconSidebar` delivered.
-  - **L.1 (next):** `ProfessionalEditor`, `ModuleUISpec`, settings integration
-    and SQLite profile persistence.
+  - **L.1 (in progress):** domain, SQLite profile persistence,
+    repository/service, and command/query flow complete; `ProfessionalEditor`,
+    `ModuleUISpec`, and settings integration remain.
   - **L.2:** navigation, sections and configuration interactions.
   - `ProfessionalEditor` registered in `EditorRegistry`[cite: 1].
   - `ModuleUISpec` for the Professional module[cite: 1].
@@ -307,7 +310,9 @@ SQLite profile persistence.
 - Professional module integration tests[cite: 1].
 
 **Status:** 🚧 In Progress. Remaining functional blocker: **Sprint L**. L.1 is
-the next implementation focus. L.0.2 Deliveries C and D are deferred.
+in progress with domain, SQLite profile persistence, repository/service, and
+command/query flow complete; `ProfessionalEditor`, `ModuleUISpec`, and settings
+integration remain. L.0.2 Deliveries C and D are deferred.
 
 ---
 
@@ -711,8 +716,12 @@ Sprint C (`EditorContext` propagation) is complete. Phase 1 is closed.
 
 **Sprint J (Coordinated deletion) is complete on 2026-11-22.** `ProjectManager.delete_project` coordinates `ProjectCatalog` → `ProjectIndex` → `FilesystemProjectRepository` via the `ProjectDeleted` event. The delete-specific staleness paths (handler containment, rebuild-on-next-query, `ProjectIndexStaleError` on double failure) and the physical delete invariant (only `project.json` is removed; sibling files survive byte-identical) are verified. Final validation: **1701 passing tests, 0 failed, 0 errors, 2 skipped; `tests/architecture/` 85 passed; `ruff check`, `ruff format --check`, `mypy src` clean (284 source files); `git diff --stat src/` empty.** The UI affordance for delete remains deferred (`next_steps.md` §5.2, §7).
 
-The immediate focus is **Sprint L.1 (Professional Editor)**. Sprint K is
-complete. L.0.2 Deliveries C and D are deferred and do not block Phase 3.
+The immediate focus is **Sprint L.1 (Professional Module)**. The ADR-0018 SQLite
+persistence foundation, profile repository/service boundary, and command/query
+flow were completed on 2026-11-24. Validation:
+**1854 passed, 0 failed, 3 skipped; `ruff check`, `ruff format --check`, and
+`mypy src` clean.** Sprint K is complete. L.0.2 Deliveries C and D are deferred
+and do not block Phase 3.
 
 Phase 4 begins after Phase 3 is marked `✅ Implemented`. Its first deliverables are the Unified Import Dialog, the `RenderingAdapter`, the `ViewerLayoutManager`, the 2D/3D tools, and the clinical transfer function presets.
 
