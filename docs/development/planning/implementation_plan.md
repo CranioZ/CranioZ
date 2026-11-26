@@ -106,7 +106,7 @@ Phase 3 remains active. Phase 4 begins after formal Phase 3 closure.
 - **L.0.2 B:** CollapsibleSection, DragList, IconSidebar — complete.
 - **L.0.2 C/D:** TimelineSlider, ColorPicker, Histogram, final harness consolidation, HiDPI validation, and catalog closure — deferred.
 - **L.1:** Professional domain, SQLite profile persistence, repository/service, command/query flow, ProfessionalEditor, Tela 2, central-Area composition, and `professional.*` settings — implementation substantially complete.
-- **L.2:** Navigation, section organization, visibility, drag ordering, persistence, and final UI integration — in progress. `CollapsibleSection` is integrated into the Tela 2 profile groups; the remaining interactions and persistence are pending.
+- **L.2:** Navigation, section organization, visibility, drag ordering, persistence, and final UI integration — in progress. `CollapsibleSection` is integrated into the Tela 2 profile groups, and their `DragList` order is restored and persisted through `professional.ui.navigation_order`; the remaining interactions and persistence are pending.
 
 The `ModuleUISpec` ownership decision and the visual approval of Tela 2
 were completed on 2026-11-26.
@@ -731,7 +731,7 @@ The SQLite index and background disk reconciliation remain Phase 8 deliverables.
 
 Sprint L is the active Phase 3 work.
 
-The Professional domain, SQLite profile persistence, service/repository boundary, command/query flow, ProfessionalEditor, Tela 2, and settings integration have been implemented. `ModuleUISpec` ownership and Tela 2 visual approval were completed on 2026-11-26. L.2 remains required for closure and is in progress.
+The Professional domain, SQLite profile persistence, service/repository boundary, command/query flow, ProfessionalEditor, Tela 2, and settings integration have been implemented. `ModuleUISpec` ownership and Tela 2 visual approval were completed on 2026-11-26. Tela 2 section ordering is integrated with `DragList` and persisted through `professional.ui.navigation_order`. L.2 remains required for closure and is in progress.
 
 ### 9.5 Imaging
 
@@ -750,7 +750,7 @@ The complete DICOM-to-Scene-to-rendering path must still pass the Phase 4A refer
 
 ### 9.6 Validation Baseline
 
-The last recorded full validation baseline is:
+The last recorded full validation baseline, rerun on 2026-11-26 after the Tela 2 section-ordering integration, is:
 
 - 1867 passed.
 - 0 failed.
@@ -760,7 +760,7 @@ The last recorded full validation baseline is:
 - `ruff format --check` clean (644 files).
 - `mypy src` clean (325 source files).
 
-This is the last recorded baseline, not an assertion that the full suite was rerun on 2026-11-26. Each subsequent sprint must record its own validation results.
+Each subsequent sprint must record its own validation results.
 
 ## 10. Deferred Work and Architectural References
 

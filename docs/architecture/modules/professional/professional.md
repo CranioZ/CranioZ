@@ -640,7 +640,9 @@ The implementation is incremental. The stages below describe the target delivery
 - No unnecessary Professional-specific widgets are added to the generic widget package.
 
 **Current status:** In progress. `CollapsibleSection` is integrated into the
-Tela 2 profile groups; navigation, persistence, and the remaining screens are pending.
+Tela 2 profile groups, and their `DragList` order is restored and persisted
+through `professional.ui.navigation_order`; navigation, visibility, the
+remaining presentation persistence, and the remaining screens are pending.
 
 ## Stage 3 — Professional catalogs
 
@@ -809,7 +811,7 @@ The implementation plan above describes the target Professional Module. It does 
 | L.0.2 A/B | Extended widgets — initial deliveries | Complete |
 | L.0.2 C/D | Remaining widgets and debug harness consolidation | Deferred |
 | L.1 | ProfessionalEditor, profile, SQLite persistence, Workspace composition, settings | Implemented; visually approved 2026-11-26 |
-| L.2 | Professional navigation and configuration interactions | In progress |
+| L.2 | Professional navigation and configuration interactions | In progress; Tela 2 ordering complete |
 
 The immediate implementation must remain limited to:
 

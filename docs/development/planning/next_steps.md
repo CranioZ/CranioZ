@@ -51,7 +51,7 @@ The Editor Architecture Refactoring (ADR-0015) and Sprints I, J, and K are compl
 
 ### 2.2 Current Validation Baseline
 
-Last recorded baseline after the initial L.2 section integration, 2026-11-26:
+Last recorded baseline after the L.2 Tela 2 section-ordering integration, 2026-11-26:
 
 - 1867 passed.
 - 0 failed.
@@ -61,7 +61,7 @@ Last recorded baseline after the initial L.2 section integration, 2026-11-26:
 - `ruff format --check` clean (644 files).
 - `mypy src` clean (325 source files).
 
-This is the last recorded validation result, not a claim that the suite was rerun after every subsequent change. Update the baseline after each completed delivery.
+This validation was rerun for the current delivery. Update the baseline after each subsequent completed delivery.
 
 Focused L.1 validation on 2026-11-26: 9 tests passed for the Professional Module contract, Editor/Workspace materialization, and dependency boundaries.
 
@@ -70,7 +70,7 @@ Focused L.1 validation on 2026-11-26: 9 tests passed for the Professional Module
 The `ModuleUISpec` ownership decision was approved on 2026-11-26. The current execution sequence is:
 
 1. Decide whether application-level selection of `PROFESSIONAL_UI_SPEC` belongs to Sprint L or the future module activation flow.
-2. Continue Sprint L.2 with `DragList`, `IconSidebar`, section persistence, and the remaining prototype screens.
+2. Continue Sprint L.2 with `IconSidebar`, visibility and remaining presentation persistence, and the remaining prototype screens.
 3. Implement the pending project-management UI, especially project removal.
 4. Run complete validation and close Sprint L.
 5. Review all Phase 3 completion criteria against `implementation_plan.md`.
@@ -89,7 +89,7 @@ Sprint L is organized into four execution stages.
 | L.0.2 A/B | Extended widget suite | Complete |
 | L.0.2 C/D | TimelineSlider, ColorPicker, Histogram, final harness and HiDPI closure | Deferred |
 | L.1 | Professional Editor and profile integration | Implemented; visually approved 2026-11-26 |
-| L.2 | Navigation, sections, visibility, ordering, and persistence | In progress |
+| L.2 | Navigation, sections, visibility, ordering, and persistence | In progress; Tela 2 ordering complete |
 
 ### 4.1 L.1 — Remaining Actions
 
@@ -126,8 +126,10 @@ corrected Tela 2 was approved by the developer on 2026-11-26.
 Scope:
 
 - [x] Integrate `CollapsibleSection` into the Tela 2 profile groups.
-- [ ] Connect section presentation state to persistence and the remaining L.2 screens.
-- [ ] Integrate `DragList` and `IconSidebar`.
+- [x] Integrate `DragList` for ordering the Tela 2 profile groups.
+- [x] Persist and restore the Tela 2 section order through `professional.ui.navigation_order`.
+- [ ] Connect the remaining section presentation state to persistence.
+- [ ] Integrate `IconSidebar`.
 - [ ] Integrate `EyeToggleButton` and `VisibilityToggle`.
 - [ ] Implement prototype screens Tela 3–7.
 - [ ] Implement navigation between sections.
@@ -337,7 +339,7 @@ module activation flow.
 
 After that decision:
 
-1. Continue L.2 with `DragList`, `IconSidebar`, section persistence, and the remaining prototype screens.
+1. Continue L.2 with `IconSidebar`, visibility and remaining presentation persistence, and the remaining prototype screens.
 2. Complete the remaining Phase 3 project-management UI.
 3. Validate and close Sprint L.
 4. Close Phase 3 according to `implementation_plan.md`.

@@ -42,7 +42,7 @@ from cranioz.ui.widgets.forms import (
     FormRow,
     SignaturePreview,
 )
-from cranioz.ui.widgets.sections import CollapsibleSection
+from cranioz.ui.widgets.sections import CollapsibleSection, DragList
 
 _logger = logging.getLogger(__name__)
 
@@ -103,6 +103,7 @@ class ProfessionalEditor(Editor):
         self._signature: FilePicker | None = None
         self._signature_preview: SignaturePreview | None = None
         self._sections: dict[str, CollapsibleSection] = {}
+        self._section_list: DragList | None = None
 
     # ----- Lifecycle -------------------------------------------------
 
@@ -136,6 +137,7 @@ class ProfessionalEditor(Editor):
         self._settings = None
         self._loaded_profile = None
         self._sections.clear()
+        self._section_list = None
 
     # ----- Content ---------------------------------------------------
 
@@ -296,7 +298,10 @@ class ProfessionalEditor(Editor):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(12)
 
-        layout.addWidget(
+        section_list = DragList()
+        section_list.setObjectName("professional.profile.sections")
+        section_list.add_section(
+            "identification",
             self._section(
                 "identification",
                 self._tr("professional.profile.identification", "Professional identification"),
@@ -305,9 +310,10 @@ class ProfessionalEditor(Editor):
                     self._row(self._preferred_name, self._email),
                     self._row(self._phone, self._practice_name),
                 ),
-            )
+            ),
         )
-        layout.addWidget(
+        section_list.add_section(
+            "registration",
             self._section(
                 "registration",
                 self._tr("professional.profile.registration_section", "Professional registration"),
@@ -316,9 +322,10 @@ class ProfessionalEditor(Editor):
                     self._row(self._region_code, self._regional_profile),
                     self._row(self._document_language),
                 ),
-            )
+            ),
         )
-        layout.addWidget(
+        section_list.add_section(
+            "address",
             self._section(
                 "address",
                 self._tr("professional.profile.address_section", "Address"),
@@ -328,9 +335,10 @@ class ProfessionalEditor(Editor):
                     self._row(self._district, self._city, self._state),
                     self._row(self._country),
                 ),
-            )
+            ),
         )
-        layout.addWidget(
+        section_list.add_section(
+            "documents",
             self._section(
                 "documents",
                 self._tr("professional.profile.documents_section", "Documents"),
@@ -345,8 +353,12 @@ class ProfessionalEditor(Editor):
                     ),
                     self._signature_preview,
                 ),
-            )
+            ),
         )
+        self._section_list = section_list
+        self._restore_section_order()
+        section_list.order_changed.connect(self._persist_section_order)
+        layout.addWidget(section_list)
         layout.addStretch(1)
         return page
 
@@ -418,6 +430,28 @@ class ProfessionalEditor(Editor):
         section.set_body_widget(body)
         self._sections[section_id] = section
         return section
+
+    def _restore_section_order(self) -> None:
+        section_list = self._section_list
+        settings = self._settings
+        if section_list is None or settings is None:
+            return
+
+        current = section_list.keys()
+        ordered: list[str] = []
+        seen: set[str] = set()
+        for key in settings.navigation_order():
+            if key in current and key not in seen:
+                ordered.append(key)
+                seen.add(key)
+        ordered.extend(key for key in current if key not in seen)
+        if ordered != current:
+            section_list.set_order(ordered)
+
+    def _persist_section_order(self, sections: list[str]) -> None:
+        if self._settings is None:
+            return
+        self._settings.set_navigation_order(tuple(sections))
 
     @staticmethod
     def _row(*widgets: QWidget, stretches: int | tuple[int, ...] = 1) -> FormRow:

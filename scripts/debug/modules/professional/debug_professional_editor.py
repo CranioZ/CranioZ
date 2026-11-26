@@ -2,7 +2,7 @@
 
 Run with::
 
-    .venv\\Scripts\\python.exe scripts\\debug\\ui\\professional\\debug_professional_editor.py
+    .venv\\Scripts\\python.exe scripts\\debug\\modules\\professional\\debug_professional_editor.py
 
 The harness materializes the Professional ModuleUISpec through the real
 Workspace and ProfessionalEditor. It uses an in-memory profile repository
@@ -125,7 +125,7 @@ def main() -> int:
     workspace.load_spec(PROFESSIONAL_UI_SPEC)
 
     window = QMainWindow()
-    window.setWindowTitle("CranioZ - Professional Editor (L.2 sections)")
+    window.setWindowTitle("CranioZ - Professional Editor (L.2 sections and ordering)")
     window.setCentralWidget(workspace)
     window.resize(1280, 800)
     window.show()
