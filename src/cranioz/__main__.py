@@ -66,6 +66,11 @@ from cranioz.application.commands.transaction import (  # noqa: E402
 from cranioz.application.event_bus import EventBus  # noqa: E402
 from cranioz.application.events import EventBusAdapter  # noqa: E402
 from cranioz.application.flows.catalog import FlowCatalog  # noqa: E402
+from cranioz.application.professional import (  # noqa: E402
+    ProfessionalService,
+    UpdateProfessionalProfileCommand,
+    UpdateProfessionalProfileHandler,
+)
 from cranioz.application.project.access_policy import (  # noqa: E402
     AllowAllProjectAccessPolicy,
 )
@@ -86,6 +91,11 @@ from cranioz.config.schema import Config  # noqa: E402
 from cranioz.domain.scene.domain_object_store import DomainObjectStore  # noqa: E402
 
 # --- Editors ---
+from cranioz.editors.builtin.professional import (  # noqa: E402
+    PROFESSIONAL_QUERIES_EXTRA,
+    PROFESSIONAL_SETTINGS_EXTRA,
+    ProfessionalEditor,
+)
 from cranioz.editors.builtin.tomography.editor import TomographyEditor  # noqa: E402
 from cranioz.editors.core.editor.editor_registry import EditorRegistry  # noqa: E402
 
@@ -106,6 +116,10 @@ from cranioz.infrastructure.i18n.instance import (  # noqa: E402
 )
 from cranioz.infrastructure.i18n.translation_service import (  # noqa: E402
     CatalogTranslationService,
+)
+from cranioz.infrastructure.professional import (  # noqa: E402
+    ProfessionalDatabase,
+    SqliteProfessionalRepository,
 )
 from cranioz.infrastructure.project.filesystem_project_repository import (  # noqa: E402
     FilesystemProjectRepository,
@@ -236,6 +250,7 @@ def _build_project_subsystem(
 def _build_ui_registries() -> tuple[EditorRegistry, ToolRegistry]:
     """Build the UI registries (editors, tools)."""
     editor_registry = EditorRegistry()
+    editor_registry.register("editor.professional", ProfessionalEditor)
     editor_registry.register("editor.tomography", TomographyEditor)
 
     tool_registry = ToolRegistry()
@@ -243,6 +258,24 @@ def _build_ui_registries() -> tuple[EditorRegistry, ToolRegistry]:
     tool_registry.register("tool.toggle", ToggleTool)
 
     return editor_registry, tool_registry
+
+
+def _build_professional_service(
+    app_paths: AppPathResolver,
+    command_bus: InMemoryCommandBus,
+) -> ProfessionalService | None:
+    """Build the Professional profile service without blocking app startup."""
+    try:
+        database = ProfessionalDatabase(app_paths.professional_database_path())
+        service = ProfessionalService(SqliteProfessionalRepository(database))
+        command_bus.register(
+            UpdateProfessionalProfileCommand,
+            UpdateProfessionalProfileHandler(service),
+        )
+    except Exception:
+        _logger.exception("cannot initialize Professional profile storage")
+        return None
+    return service
 
 
 def _build_theme_service(
@@ -357,6 +390,14 @@ def main() -> int:
     )
     _logger.debug("SettingsService initialized: %r", settings)
 
+    # ----- Professional profile --------------------------------------
+    professional_service = _build_professional_service(app_paths, command_bus)
+    editor_context_extras: dict[str, object] = {
+        PROFESSIONAL_SETTINGS_EXTRA: settings,
+    }
+    if professional_service is not None:
+        editor_context_extras[PROFESSIONAL_QUERIES_EXTRA] = professional_service
+
     # ----- UI services ------------------------------------------------
     editor_registry, tool_registry = _build_ui_registries()
     theme_service = _build_theme_service(config, settings)
@@ -385,6 +426,7 @@ def main() -> int:
         scene_provider=scene_provider,
         domain_object_store=domain_object_store,
         translation_service=translation_service,
+        editor_context_extras=editor_context_extras,
     )
     window.show()
 

@@ -111,15 +111,16 @@ The sprint order below respects dependencies within Phase 3.
 | **I** | 3 | `ProjectIndex` (ADR-0016) | ✅ Complete (2026-11-20) | — |
 | **J** | 3 | Coordinated deletion | ✅ Complete (2026-11-22) | I ✅ |
 | **K** | 3 | Async loading | ✅ Complete (2026-11-22) | I ✅, J ✅ |
-| **L** | 3 | Professional module | 🚧 In Progress — next focus is L.1 | Editor Refactoring ✅, C ✅, E ✅, F ✅ |
+| **L** | 3 | Professional module | 🚧 In Progress — L.1 pending architecture decision and visual approval | Editor Refactoring ✅, C ✅, E ✅, F ✅ |
 | **Monitor de Logs** | — | Diagnostic subsystem | ⏳ Planned (not scheduled; not a Phase 3 deliverable) | Sprint K (to inform tab mapping) |
 
-**Current focus:** Sprint L. L.0 is complete; L.0.2 Deliveries A and B are
-complete. L.1 is in progress with the Professional domain, SQLite profile
-persistence, repository/service boundary, and command/query flow complete.
-L.0.2 Deliveries C and D are deferred and do not block L.1. The next
-implementation task is `ProfessionalEditor`, `ModuleUISpec`, and settings
-integration.
+**Current focus:** Sprint L. L.0 and L.0.2 Deliveries A and B are complete.
+L.1 now includes the Professional domain, SQLite profile persistence,
+repository/service boundary, command/query flow, `ProfessionalEditor`, the
+Tela 2 profile interface, central-Area materialization, and `professional.*`
+settings integration. Two items remain: the developer decision on whether a
+built-in Module may expose `ModuleUISpec` despite refactoring rule 4.1.2, and
+manual visual approval of Tela 2. L.0.2 Deliveries C and D remain deferred.
 
 **Note on ordering:** Sprint L is unblocked by the completed Editor Refactoring (ADR-0015) and by the completed Sprints C, E, and F. The functional dependency chain for Phase 3 is **J → K**, with **L** independent and able to proceed in parallel (`next_steps.md` §6.1).
 
@@ -276,9 +277,14 @@ integration.
   - **L.0.2 Delivery A:** complete. Simple Qt-native widgets delivered.
   - **L.0.2 Delivery B:** complete. `CollapsibleSection`, stable-key `DragList`
     and `IconSidebar` delivered.
-  - **L.1 (in progress):** domain, SQLite profile persistence,
-    repository/service, and command/query flow complete; `ProfessionalEditor`,
-    `ModuleUISpec`, and settings integration remain.
+  - **L.1 (implementation complete, pending decision and visual approval):**
+    domain, SQLite profile persistence, repository/service, command/query flow,
+    `ProfessionalEditor`, Tela 2, central-Area materialization, and
+    `professional.*` settings are implemented. Refactoring rule 4.1.2 forbids
+    `modules.builtin` from importing Workspace components, so the UI spec is
+    currently exposed through the UI composition layer. Developer approval is
+    required before changing that boundary or closing the ModuleUISpec
+    completion criterion.
   - **L.2:** navigation, sections and configuration interactions.
   - `ProfessionalEditor` registered in `EditorRegistry`[cite: 1].
   - `ModuleUISpec` for the Professional module[cite: 1].
@@ -310,9 +316,9 @@ integration.
 - Professional module integration tests[cite: 1].
 
 **Status:** 🚧 In Progress. Remaining functional blocker: **Sprint L**. L.1 is
-in progress with domain, SQLite profile persistence, repository/service, and
-command/query flow complete; `ProfessionalEditor`, `ModuleUISpec`, and settings
-integration remain. L.0.2 Deliveries C and D are deferred.
+implemented through the profile Editor and settings flow, but still requires a
+developer decision on ModuleUISpec ownership and manual visual approval of
+Tela 2. L.0.2 Deliveries C and D are deferred.
 
 ---
 
@@ -716,11 +722,13 @@ Sprint C (`EditorContext` propagation) is complete. Phase 1 is closed.
 
 **Sprint J (Coordinated deletion) is complete on 2026-11-22.** `ProjectManager.delete_project` coordinates `ProjectCatalog` → `ProjectIndex` → `FilesystemProjectRepository` via the `ProjectDeleted` event. The delete-specific staleness paths (handler containment, rebuild-on-next-query, `ProjectIndexStaleError` on double failure) and the physical delete invariant (only `project.json` is removed; sibling files survive byte-identical) are verified. Final validation: **1701 passing tests, 0 failed, 0 errors, 2 skipped; `../../../tests/architecture` 85 passed; `ruff check`, `ruff format --check`, `mypy src` clean (284 source files); `git diff --stat src/` empty.** The UI affordance for delete remains deferred (`next_steps.md` §5.2, §7).
 
-The immediate focus is **Sprint L.1 (Professional Module)**. The ADR-0018 SQLite
-persistence foundation, profile repository/service boundary, and command/query
-flow were completed on 2026-11-24. Validation:
-**1854 passed, 0 failed, 3 skipped; `ruff check`, `ruff format --check`, and
-`mypy src` clean.** Sprint K is complete. L.0.2 Deliveries C and D are deferred
+The immediate focus is **Sprint L.1 (Professional Module)**. On 2026-11-26 the
+`ProfessionalEditor`, Tela 2 profile interface, central-Area composition,
+profile settings integration, visual debug harness, and focused tests were
+added. Validation: **1863 passed, 0 failed, 0 errors, 3 skipped; `ruff check`,
+`ruff format --check` (644 files), and `mypy src` (325 source files) clean.**
+The remaining L.1 items are the ModuleUISpec ownership decision and manual
+visual approval. Sprint K is complete. L.0.2 Deliveries C and D are deferred
 and do not block Phase 3.
 
 Phase 4 begins after Phase 3 is marked `✅ Implemented`. Its first deliverables are the Unified Import Dialog, the `RenderingAdapter`, the `ViewerLayoutManager`, the 2D/3D tools, and the clinical transfer function presets.

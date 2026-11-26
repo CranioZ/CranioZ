@@ -67,7 +67,7 @@ Block 5.5 fix (layout architecture):
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QResizeEvent, QShowEvent
@@ -140,6 +140,7 @@ class Workspace(QWidget):
         theme_service: ThemeService,
         icon_provider: IconProvider,
         translation_service: TranslationService | None = None,
+        editor_context_extras: dict[str, Any] | None = None,
         # --- Configuration, Flags & Parent ---
         debug_colors: bool = False,
         parent: QWidget | None = None,
@@ -168,6 +169,7 @@ class Workspace(QWidget):
         self._theme_service = theme_service
         self._icon_provider = icon_provider
         self._translation_service = translation_service
+        self._editor_context_extras = dict(editor_context_extras or {})
 
         # --- Configuration & Flags Assignment ---
         self._debug_colors = debug_colors
@@ -237,6 +239,7 @@ class Workspace(QWidget):
         # O LayoutBuilder agora injeta o EditorLayoutSpec na Area.
         new_result = self._layout_builder.build(
             spec,
+            context_extras=self._editor_context_extras,
             shared_context={
                 "task_manager": self._task_manager,
                 "telemetry": self._telemetry,

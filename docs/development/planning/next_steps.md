@@ -3,7 +3,7 @@
 **Document type:** Action plan and development handoff  
 **Status:** Active  
 **Scope:** Current development priorities and execution sequence for Phase 3  
-**Last updated:** 2026-11-24
+**Last updated:** 2026-11-26
 
 ---
 
@@ -19,26 +19,27 @@ Sprint L is divided into four internal stages:
 
 - **L.0 — System Form Widgets:** Complete.
 - **L.0.2 — Extended Widget Suite:** Deliveries A and B complete; C and D deferred.
-- **L.1 — Professional Editor:** In progress; domain, SQLite persistence, and
-  profile command/query flow complete.
+- **L.1 — Professional Editor:** Implementation complete; pending a developer
+  decision on `ModuleUISpec` ownership and manual visual approval of Tela 2.
 - **L.2 — Professional Navigation:** Planned after L.1.
 
 These stages are internal execution steps of Sprint L. They are not independent implementation phases.
 
 ### 1.1 Current validation baseline
 
-**Baseline recorded on 2026-11-24 (post-L.1 profile persistence):**
+**Baseline recorded on 2026-11-26 (post-L.1 Professional Editor implementation):**
 
-- 1854 tests passing.
+- 1863 tests passing.
 - 0 failed.
 - 0 errors.
 - 3 skipped.
 - `ruff check .` clean.
-- `ruff format --check .` clean (636 files).
-- `mypy src` clean (318 source files).
+- `ruff format --check .` clean (644 files).
+- `mypy src` clean (325 source files).
 
 Previous baseline:
 
+- Post-L.1 profile persistence (2026-11-24): 1854 tests passing.
 - Post-L.1 SQLite foundation (2026-11-24): 1804 tests passing.
 - Post-L.0.2 Delivery B (2026-11-23): 1795 tests passing.
 - Post-L.0 (2026-11-23): 1743 tests passing.
@@ -68,6 +69,9 @@ The following foundations are implemented:
 - Professional profile domain contracts.
 - Professional profile repository/service boundary and SQLite adapter.
 - Professional profile command/query flow.
+- `ProfessionalEditor` and Tela 2 profile composition.
+- Professional profile central-Area `ModuleUISpec`.
+- `professional.*` presentation settings namespace.
 
 The application uses Qt Widgets, modular QSS, and Python Design Tokens, as defined by ADR-0014.
 
@@ -112,7 +116,7 @@ The current implementation sequence is:
 1. ~~Consolidate the system widget catalog.~~ Complete.
 2. ~~Specify and implement L.0 form widgets.~~ Complete.
 3. ~~Implement L.0.2 Deliveries A and B.~~ Complete.
-4. **Implement L.1 — Professional Editor, ModuleUISpec, settings integration, and SQLite profile persistence.**
+4. **Close L.1 — resolve the `ModuleUISpec` ownership conflict and approve Tela 2 visually.**
 5. Implement L.2 — Professional navigation, sections, and configuration interactions.
 6. Validate and close Sprint L.
 7. Review the remaining Phase 3 completion criteria.
@@ -129,7 +133,7 @@ L.0.2 Deliveries C and D remain documented as deferred work. They do not block L
 | **L.0.2 B** | Sections, lists, and navigation | CollapsibleSection, DragList, IconSidebar | Complete |
 | **L.0.2 C** | Custom-painted and advanced widgets | TimelineSlider, ColorPicker, Histogram | Deferred |
 | **L.0.2 D** | Debug harness consolidation and validation | Consolidated visual debug harness and catalog closure | Deferred |
-| **L.1** | Professional Editor | Editor registration, profile interface, ModuleUISpec, settings, SQLite persistence | In progress — profile persistence complete |
+| **L.1** | Professional Editor | Editor registration, profile interface, ModuleUISpec, settings, SQLite persistence | Implementation complete — decision and visual approval pending |
 | **L.2** | Professional Navigation | Sections, visibility controls, drag-and-drop, persisted presentation state | Planned |
 
 ### 3.2 Architectural principles for Sprint L
@@ -157,6 +161,16 @@ The following constraints apply throughout implementation:
   - Icon-based actions → Tools in `../../../src/cranioz/ui/tools/builtin`.
 - A component that depends on a specific Editor's content area, hit-testing, viewport state, or `EditorContext` is an overlay, not a generic widget.
 - Clinical rulers, gizmos, and measurement tools are overlays. They are scheduled with their first consuming Editor, not speculatively.
+
+> **Open architectural decision:** `professional.md` and this planning document
+> state that the Module contributes its `ModuleUISpec`, while
+> `refactoring_plan.md` rule 4.1.2 and
+> `tests/architecture/test_dependency_boundaries.py` forbid `modules.builtin`
+> from importing Editors or Workspace components. The current implementation
+> follows the architecture guard: the spec lives in
+> `src/cranioz/ui/workspace/specs/professional.py`, and the composition root
+> registers `ProfessionalEditor`. Closing the ModuleUISpec completion criterion
+> requires explicit developer direction.
 
 ---
 
@@ -413,8 +427,8 @@ Delivery D must not be treated as a prerequisite for L.1. Its rescheduling requi
 
 ### 5.3 L.1 — Professional Editor
 
-**Status:** In progress. Domain contracts, SQLite persistence, and the profile
-command/query flow are complete; settings and Editor work remain.
+**Status:** Implementation complete; two closure items remain: the
+`ModuleUISpec` ownership decision and manual visual approval of Tela 2.
 
 **Purpose:** Deliver the first functional Professional Editor using the existing system widget infrastructure and the domain specification in `professional.md`.
 
@@ -479,18 +493,38 @@ and validate the domain aggregate.
 - Do not duplicate profile data in settings when it belongs in the Professional database.
 - Keep visual Editor state separate from persistent professional domain data.
 
+The Editor reads and writes `professional.ui.last_section`. The
+`professional.ui.navigation_order` and
+`professional.ui.visible_sections` keys are registered for L.2 without
+duplicating profile data in settings.
+
+#### Implementation record (2026-11-26)
+
+- `ProfessionalEditor` registered by the composition root and materialized
+  through `EditorRegistry`.
+- Tela 2 composes existing `FormField`, `FormCombo`, `FilePicker`,
+  `SignaturePreview`, and `FormRow` widgets.
+- Profile load, cancel, validation, preview, and save use
+  `ProfessionalQueries` and `UpdateProfessionalProfileCommand`.
+- SQLite remains the profile source of truth; Editor settings hold only
+  presentation state.
+- Visual debug harness:
+  `../../../scripts/debug/ui/professional/debug_professional_editor.py`.
+- Validation: 1863 passed, 0 failed, 0 errors, 3 skipped; Ruff, formatting,
+  and mypy clean.
+
 #### Completion criteria
 
-- [ ] `ProfessionalEditor` registered and materialized through the established Editor architecture.
+- [x] `ProfessionalEditor` registered and materialized through the established Editor architecture.
 - [ ] Professional Module exposes the correct `ModuleUISpec`.
-- [ ] Editor hosted in the central Area.
-- [ ] Initial profile interface functional (Tela 2).
-- [ ] Existing system widgets reused where appropriate.
-- [ ] No unnecessary Professional-specific widgets added to the generic system widget package.
+- [x] Editor hosted in the central Area.
+- [x] Initial profile interface functional (Tela 2).
+- [x] Existing system widgets reused where appropriate.
+- [x] No unnecessary Professional-specific widgets added to the generic system widget package.
 - [x] SQLite persistence integrated according to `professional.md`.
-- [ ] Settings namespace integrated.
+- [x] Settings namespace integrated.
 - [x] Profile data survives application restarts.
-- [ ] Editor lifecycle and integration tests passing.
+- [x] Editor lifecycle and integration tests passing.
 
 ---
 
@@ -708,7 +742,9 @@ The current implementation sequence is:
 - [x] Establish the Professional SQLite persistence foundation (ADR-0018).
 - [x] Implement the Professional profile domain contracts.
 - [x] Implement the Professional repository/service and command/query flow.
-- [ ] Implement L.1 — `ProfessionalEditor`, `ModuleUISpec`, settings integration, and SQLite persistence.
+- [x] Implement the L.1 code slices: `ProfessionalEditor`, Tela 2, central-Area composition, settings integration, and SQLite persistence.
+- [ ] Resolve the `ModuleUISpec` ownership conflict between `professional.md` and refactoring rule 4.1.2.
+- [ ] Visually validate Tela 2 in Dark and Light themes.
 - [ ] Implement L.2 — Professional navigation, sections, and configuration interactions.
 - [ ] Run complete validation and close Sprint L.
 - [ ] Review remaining Phase 3 deliverables against `implementation_plan.md`.
@@ -720,10 +756,17 @@ L.0.2 Deliveries C and D remain deferred. They are not part of the immediate imp
 
 **Next development task:**
 
-Continue **L.1** with `ProfessionalEditor`, its central-Area materialization,
-the Professional Module's `ModuleUISpec`, and `professional.*` settings
-integration. Reuse the completed profile repository/service and dispatch profile
-changes through `UpdateProfessionalProfileCommand`.
+Resolve the L.1 `ModuleUISpec` ownership conflict before L.2. The current
+implementation has a functional UI-layer spec and composition-root registration,
+but the planning documents also require the Module itself to expose the spec.
+After the developer chooses the boundary, manually validate the Tela 2 harness:
+
+```powershell
+.venv\Scripts\python.exe scripts\debug\ui\professional\debug_professional_editor.py
+```
+
+Validate field layout, scrolling, signature preview, Save/Cancel behavior, and
+Dark/Light rendering. L.2 must not begin until the ownership decision is recorded.
 
 Before implementation, review these references:
 
@@ -759,14 +802,11 @@ Before implementation, review these references:
 
 **Implementation instructions**
 
-1. Read `professional.md` before defining profile models or persistence.
-2. Inspect `widget_catalog.md` before implementing UI components.
-3. Reuse existing widgets whenever their contracts satisfy the requirement.
-4. Keep Professional-specific compositions inside the Professional Editor.
-5. Implement the Editor through the established registry and lifecycle.
-6. Keep profile persistence in SQLite and visual state in the Editor state mechanism.
-7. Add unit, contract, and integration tests.
-8. Run the complete validation suite and update this document with the actual results.
+1. `professional.md` defines the functional Module and profile contracts.
+2. `refactoring_plan.md` rule 4.1.2 and the architecture tests define package boundaries.
+3. `widget_catalog.md` remains authoritative for reusable UI components.
+4. L.1 code and validation are complete unless the ownership decision changes them.
+5. L.2 starts only after Tela 2 visual approval and a recorded decision.
 
 Do not begin L.0.2 Delivery C or D as a prerequisite for L.1.
 
@@ -786,13 +826,14 @@ This handoff is considered current when:
 - Widget catalog consultation and reuse are explicit implementation requirements.
 - Professional-specific compositions are distinguished from reusable system widgets.
 - `ProfessionalEditor` is defined as an Editor hosted by the central Area.
-- The Professional Module exposes declarative UI through `ModuleUISpec`.
+- The Professional UI composition uses `ModuleUISpec`; whether the built-in
+  Module package may expose it directly is an explicit open decision.
 - Professional profile persistence follows `professional.md`.
 - L.2 covers navigation, sections, translations, and theme-token migration.
 - Ruler is classified as an Editor overlay and excluded from the generic widget suite.
 - Logs Monitor remains deferred and does not block Sprint L.
 - Phase 4 remains deferred until Phase 3 is closed.
 - Validation requirements and the latest verified baseline are recorded.
-- The next handoff identifies L.1 and its required references.
+- The next handoff identifies the L.1 ownership decision, visual validation, and required references.
 
 **Authority:** `implementation_plan.md` defines phase scope and completion criteria. ADR-0003 defines the classification of reusable UI elements. `widget_catalog.md` defines the system widget inventory and contracts. This document defines the immediate execution sequence and development handoff.

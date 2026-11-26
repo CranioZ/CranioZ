@@ -6,7 +6,7 @@ import logging
 import os
 import uuid
 from collections.abc import Callable
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from PySide6.QtCore import QEvent, QObject, QPoint, Qt
 from PySide6.QtGui import QCloseEvent, QMouseEvent
@@ -130,6 +130,7 @@ class MainWindow(QMainWindow):
         flow_catalog: FlowCatalog | None = None,
         scene_provider: SceneProvider | None = None,
         domain_object_store: DomainObjectStore | None = None,
+        editor_context_extras: dict[str, Any] | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -148,6 +149,7 @@ class MainWindow(QMainWindow):
         self._flow_catalog = flow_catalog
         self._scene_provider = scene_provider
         self._domain_object_store = domain_object_store
+        self._editor_context_extras = dict(editor_context_extras or {})
 
         self._current_project_id: ProjectId | None = None
         self._workspace: Workspace | None = None
@@ -279,9 +281,11 @@ class MainWindow(QMainWindow):
             if not self._tool_registry.contains(tool_id):
                 self._tool_registry.register(tool_id, factory)
 
+        from cranioz.editors.builtin.professional import ProfessionalEditor  # noqa: PLC0415
         from cranioz.editors.builtin.tomography.editor import TomographyEditor  # noqa: PLC0415
 
         self._editor_registry.register("editor.tomography", TomographyEditor)
+        self._editor_registry.register("editor.professional", ProfessionalEditor)
         _logger.debug(
             "MainWindow registered editor.tomography -> %s",
             TomographyEditor.__module__,
@@ -412,6 +416,7 @@ class MainWindow(QMainWindow):
             scene_query=scene_query,
             domain_object_store=self._domain_object_store,
             translation_service=self._translation_service,
+            editor_context_extras=self._editor_context_extras,
         )
 
         home_segment = HomeSegment(self._icon_provider)
