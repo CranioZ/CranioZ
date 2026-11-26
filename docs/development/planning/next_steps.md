@@ -65,10 +65,10 @@ This is the last recorded validation result, not a claim that the suite was reru
 
 ## 3. Immediate Priorities
 
-The current execution sequence is:
+The `ModuleUISpec` ownership decision was approved on 2026-11-26. The current execution sequence is:
 
-1. Resolve the `ModuleUISpec` ownership decision.
-2. Perform manual visual review and approval of Professional Editor Tela 2.
+1. Perform manual visual review and approval of Professional Editor Tela 2.
+2. Align the Professional architecture documentation with the approved `ModuleUISpec` ownership.
 3. Implement Sprint L.2 — Professional navigation and configuration interactions.
 4. Implement the pending project-management UI, especially project removal.
 5. Run complete validation and close Sprint L.
@@ -87,7 +87,7 @@ Sprint L is organized into four execution stages.
 | L.0 | System form widgets | Complete |
 | L.0.2 A/B | Extended widget suite | Complete |
 | L.0.2 C/D | TimelineSlider, ColorPicker, Histogram, final harness and HiDPI closure | Deferred |
-| L.1 | Professional Editor and profile integration | Implemented; pending decision and visual approval |
+| L.1 | Professional Editor and profile integration | Implemented; pending visual approval |
 | L.2 | Navigation, sections, visibility, ordering, and persistence | Pending |
 
 ### 4.1 L.1 — Remaining Actions
@@ -105,12 +105,13 @@ The implementation includes:
 
 Remaining actions:
 
-- [ ] Decide the ownership and exposure contract for `ModuleUISpec`, respecting the package dependency rules established by ADR-0015.
+- [x] Decide the ownership and exposure contract for `ModuleUISpec`, respecting the package dependency rules established by ADR-0015.
+- [ ] Align `professional.md` and related architecture documentation with the approved decision.
 - [ ] Validate the actual Editor registration and materialization path.
 - [ ] Perform manual visual review of Tela 2.
 - [ ] Record approval or required corrections.
 
-Do not solve the ModuleUISpec issue by introducing a prohibited dependency from `modules.builtin` to Workspace internals.
+**Approved decision (2026-11-26):** `PROFESSIONAL_UI_SPEC` remains owned by the UI Workspace composition layer and is selected and registered by the composition root. Built-in Modules must not import Workspace components or concrete Editors. This preserves the dependency boundaries established by ADR-0015 and the existing architecture guard.
 
 ### 4.2 L.2 — Professional Navigation
 
@@ -175,11 +176,14 @@ The project deletion API is already implemented. The missing work is its user-fa
 
 - [x] Implement project search.
 - [x] Implement project sorting.
+- [x] Validate project sorting visually through the Home Page debug harness.
 - [ ] Implement project selection and multi-selection behavior.
 - [ ] Implement project removal UI.
 - [ ] Connect removal to the existing `ProjectManager.delete_project` API.
 - [ ] Validate confirmation, error handling, and catalog refresh.
 - [ ] Ensure External Reference source data is never deleted with the project.
+
+Visual validation on 2026-11-26 confirmed ascending order and sort indicators for project name, ID, and creation date.
 
 The project import/export interface is not part of Phase 3; it belongs to Phase 8.
 
@@ -188,7 +192,7 @@ The project import/export interface is not part of Phase 3; it belongs to Phase 
 Before closing Phase 3:
 
 - [ ] Complete Sprint L, including L.2.
-- [ ] Resolve ModuleUISpec ownership.
+- [x] Resolve ModuleUISpec ownership.
 - [ ] Approve Tela 2 visually.
 - [ ] Complete project search, sorting, selection, and removal UI.
 - [ ] Run complete validation.
@@ -319,16 +323,23 @@ Run the complete validation suite after each delivery and before closing Sprint 
 
 ## 10. Next Handoff
 
-**Immediate task:** Resolve the `ModuleUISpec` ownership decision for Sprint L.1.
+**Immediate task:** Perform the manual visual review of Professional Editor Tela 2.
 
-After the decision:
+Run:
 
-1. Validate the registration and materialization path.
-2. Obtain manual visual approval of Tela 2.
-3. Implement L.2.
-4. Complete the remaining Phase 3 project-management UI.
-5. Validate and close Sprint L.
-6. Close Phase 3 according to `implementation_plan.md`.
+```powershell
+.venv\Scripts\python.exe scripts\debug\ui\professional\debug_professional_editor.py
+```
+
+After the review:
+
+1. Record visual approval or required corrections.
+2. Align the Professional architecture documentation with the approved `ModuleUISpec` ownership.
+3. Validate the actual Editor registration and materialization path.
+4. Implement L.2.
+5. Complete the remaining Phase 3 project-management UI.
+6. Validate and close Sprint L.
+7. Close Phase 3 according to `implementation_plan.md`.
 
 ### Reference Documents
 

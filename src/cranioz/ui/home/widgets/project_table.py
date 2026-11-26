@@ -54,6 +54,19 @@ from cranioz.domain.project.project_summary import ProjectSummary
 from cranioz.infrastructure.i18n import tr
 
 
+class _ProjectTableItem(QTableWidgetItem):
+    """Table item sorted by a normalized key instead of display text."""
+
+    def __init__(self, text: str, sort_key: str) -> None:
+        super().__init__(text)
+        self._sort_key = sort_key
+
+    def __lt__(self, other: QTableWidgetItem) -> bool:
+        if isinstance(other, _ProjectTableItem):
+            return self._sort_key < other._sort_key
+        return super().__lt__(other)
+
+
 def _columns() -> tuple[str, ...]:
     """Build the column labels for the current locale.
 
@@ -132,9 +145,11 @@ class ProjectTable(QWidget):
         self._table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self._table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self._table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self._table.setSortingEnabled(True)
         self._table.verticalHeader().setVisible(False)
 
         header_view = self._table.horizontalHeader()
+        header_view.setSortIndicator(-1, Qt.SortOrder.AscendingOrder)
         header_view.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         for column in range(1, len(columns) - 1):
             header_view.setSectionResizeMode(column, QHeaderView.ResizeMode.ResizeToContents)
@@ -199,40 +214,80 @@ class ProjectTable(QWidget):
         on every refresh.
         """
         previous_selection = self.selected_project_id()
+        header_view = self._table.horizontalHeader()
+        sort_column = header_view.sortIndicatorSection()
+        sort_order = header_view.sortIndicatorOrder()
 
         # Block table signals during the rebuild so that intermediate
         # clearSelection() / setRowCount() do not fire
         # itemSelectionChanged for states the user never actually chose.
         self._table.blockSignals(True)
+        self._table.setSortingEnabled(False)
         try:
             self._table.clearSelection()
             self._table.setRowCount(len(summaries))
             for row, summary in enumerate(summaries):
-                self._set_cell(row, 0, summary.project_name)
-                self._set_cell(row, 1, summary.project_id.value)
+                self._set_cell(
+                    row,
+                    0,
+                    summary.project_name,
+                    sort_key=summary.project_name.casefold(),
+                )
+                self._set_cell(
+                    row,
+                    1,
+                    summary.project_id.value,
+                    sort_key=summary.project_id.value.casefold(),
+                )
                 self._set_cell(row, 2, _format_sex(summary))
                 self._set_cell(row, 3, _format_age(summary))
-                self._set_cell(row, 4, _format_datetime(summary.created_at))
-                self._set_cell(row, 5, _format_datetime(summary.updated_at))
+                self._set_cell(
+                    row,
+                    4,
+                    _format_datetime(summary.created_at),
+                    sort_key=summary.created_at.isoformat(),
+                )
+                self._set_cell(
+                    row,
+                    5,
+                    _format_datetime(summary.updated_at),
+                    sort_key=summary.updated_at.isoformat(),
+                )
         finally:
+            self._table.setSortingEnabled(True)
+            if sort_column >= 0:
+                self._table.sortItems(sort_column, sort_order)
             self._table.blockSignals(False)
 
         # Restore the previous selection when possible. selectRow()
         # triggers itemSelectionChanged, which emits the project id
         # via _on_selection_changed. No manual emission needed here.
         if previous_selection is not None:
-            for row, summary in enumerate(summaries):
-                if summary.project_id == previous_selection:
-                    self._table.selectRow(row)
-                    return
+            selected_row = self._row_for_project_id(previous_selection)
+            if selected_row is not None:
+                self._table.selectRow(selected_row)
+                return
 
         # The previously selected project is no longer in the table.
         # Tell HomePage that the selection is now empty.
         if previous_selection is not None:
             self.project_selected.emit(None)
 
-    def _set_cell(self, row: int, column: int, text: str) -> None:
-        item = QTableWidgetItem(text)
+    def _row_for_project_id(self, project_id: ProjectId) -> int | None:
+        for row in range(self._table.rowCount()):
+            if self._id_text_at_row(row) == project_id.value:
+                return row
+        return None
+
+    def _set_cell(
+        self,
+        row: int,
+        column: int,
+        text: str,
+        *,
+        sort_key: str | None = None,
+    ) -> None:
+        item = _ProjectTableItem(text, sort_key if sort_key is not None else text.casefold())
         item.setTextAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         self._table.setItem(row, column, item)
 

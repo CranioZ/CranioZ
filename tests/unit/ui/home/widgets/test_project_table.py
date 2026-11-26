@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
+from PySide6.QtCore import Qt
 from pytestqt.qtbot import QtBot
 
 from cranioz.application.event_bus import EventBus
@@ -20,6 +23,8 @@ from cranioz.application.project.index_synchronizer import (
 from cranioz.application.project.manager import ProjectManager
 from cranioz.domain.patient.value_objects.patient_id import PatientId
 from cranioz.domain.project.project_id import ProjectId
+from cranioz.domain.project.project_status import ProjectStatus
+from cranioz.domain.project.project_summary import ProjectSummary
 from cranioz.ui.home.widgets.project_table import ProjectTable
 
 
@@ -143,6 +148,49 @@ def test_refresh_reloads(qtbot: QtBot) -> None:
     assert table.row_count() == 1
 
 
+def test_sorts_projects_by_column(qtbot: QtBot) -> None:
+    catalog, manager = _make_catalog_and_manager()
+    _seed(manager, "p-001", "Charlie")
+    _seed(manager, "p-002", "Alpha")
+    _seed(manager, "p-003", "Bravo")
+    table = ProjectTable(catalog)
+    qtbot.addWidget(table)
+
+    table._table.sortItems(0, Qt.SortOrder.AscendingOrder)
+
+    names = [table._table.item(row, 0).text() for row in range(table.row_count())]
+    assert names == ["Alpha", "Bravo", "Charlie"]
+
+
+def test_sorts_dates_chronologically_not_by_display_text(qtbot: QtBot) -> None:
+    summaries = (
+        _summary("late", "Late", datetime(2026, 2, 1, tzinfo=UTC)),
+        _summary("early", "Early", datetime(2026, 1, 2, tzinfo=UTC)),
+    )
+    table = ProjectTable(_SummaryCatalog(summaries))
+    qtbot.addWidget(table)
+
+    table._table.sortItems(4, Qt.SortOrder.AscendingOrder)
+
+    ids = [table._table.item(row, 1).text() for row in range(table.row_count())]
+    assert ids == ["early", "late"]
+
+
+def test_refresh_preserves_active_sort(qtbot: QtBot) -> None:
+    catalog, manager = _make_catalog_and_manager()
+    _seed(manager, "p-001", "Alpha")
+    _seed(manager, "p-002", "Bravo")
+    _seed(manager, "p-003", "Charlie")
+    table = ProjectTable(catalog)
+    qtbot.addWidget(table)
+    table._table.sortItems(0, Qt.SortOrder.DescendingOrder)
+
+    table.refresh()
+
+    names = [table._table.item(row, 0).text() for row in range(table.row_count())]
+    assert names == ["Charlie", "Bravo", "Alpha"]
+
+
 # ----- Selection lifecycle (None emission) ---------------------------
 
 
@@ -264,3 +312,35 @@ def test_populate_blocks_intermediate_signals(qtbot: QtBot) -> None:
     # Exactly one emission (if any), and it must be the ProjectId,
     # never a bare None.
     assert None not in emitted
+
+
+class _SummaryCatalog:
+    def __init__(self, summaries: tuple[ProjectSummary, ...]) -> None:
+        self._summaries = summaries
+
+    def list_projects(self) -> tuple[ProjectSummary, ...]:
+        return self._summaries
+
+    def search_projects(self, query: str) -> tuple[ProjectSummary, ...]:
+        normalized = query.strip().casefold()
+        if not normalized:
+            return self._summaries
+        return tuple(
+            summary
+            for summary in self._summaries
+            if normalized in summary.project_name.casefold()
+            or normalized in summary.patient_display_name.casefold()
+        )
+
+
+def _summary(project_id: str, name: str, created_at: datetime) -> ProjectSummary:
+    return ProjectSummary(
+        project_id=ProjectId(project_id),
+        project_name=name,
+        patient_display_name=name,
+        status=ProjectStatus.ACTIVE,
+        procedure="orthognathic",
+        created_at=created_at,
+        updated_at=created_at,
+        last_opened_at=None,
+    )

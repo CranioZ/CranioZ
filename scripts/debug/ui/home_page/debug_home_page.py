@@ -10,10 +10,11 @@ It builds a HomePage with:
   from grey to green when a project and a flow are selected.
 - All 14 HomePage signals connected to print(), so you can see them
   fire in the console.
+- Project table column headers are clickable for sorting validation.
 
 Run with:
 
-    .venv\\Scripts\\python.exe scripts\\debug_home_page.py
+    .venv\\Scripts\\python.exe scripts\\debug\\ui\\home_page\\debug_home_page.py
 
 Close the window to exit.
 """
@@ -25,15 +26,28 @@ from datetime import UTC, datetime
 
 from PySide6.QtWidgets import QApplication, QMainWindow
 
+from cranioz.application.event_bus import EventBus
+from cranioz.application.flows.definition import FlowDefinition, FlowStep
+from cranioz.application.project.catalog import ProjectCatalog
+from cranioz.application.project.in_memory_index import InMemoryProjectIndex
 from cranioz.application.project.in_memory_repository import (
     InMemoryProjectRepository,
 )
-from cranioz.application.project.catalog import ProjectCatalog
+from cranioz.application.project.index_synchronizer import (
+    ProjectIndexSynchronizer,
+    SynchronizedProjectIndex,
+)
 from cranioz.domain.project.project import Project
 from cranioz.domain.project.project_id import ProjectId
 from cranioz.domain.project.project_metadata import ProjectMetadata
 from cranioz.domain.project.project_status import ProjectStatus
+from cranioz.infrastructure.settings.in_memory_settings_service import (
+    InMemorySettingsService,
+)
 from cranioz.ui.home.home_page import HomePage
+from cranioz.ui.icons.unicode import UnicodeIconProvider
+from cranioz.ui.theme.service import ThemeService
+from cranioz.ui.theme.tokens import ThemeMode
 
 # ----- Seed data ----------------------------------------------------
 
@@ -74,14 +88,63 @@ def _seed_projects(repository: InMemoryProjectRepository) -> None:
         repository.create(project)
 
 
+def _build_catalog(repository: InMemoryProjectRepository) -> ProjectCatalog:
+    """Build the synchronized catalog consumed by the Home Page."""
+    event_bus = EventBus()
+    index = InMemoryProjectIndex()
+    synchronizer = ProjectIndexSynchronizer(index, repository, event_bus)
+    synchronizer.start()
+    return ProjectCatalog(SynchronizedProjectIndex(index, synchronizer))
+
+
 def _flow_list(page: HomePage) -> None:
     """Populate the FlowList with three fake flows."""
     page._flow_list_widget().set_flows(
-        [
-            ("orthognathic_basic", "Cirurgia Ortognática"),
-            ("orthognathic_advanced", "Cirurgia Ortognática Avançada"),
-            ("facial_implants", "Implantes Faciais"),
-        ]
+        (
+            _flow(
+                "orthognathic_basic",
+                "Cirurgia Ortognática",
+                "Paciente",
+                "Tomografia",
+                "Osteotomia",
+                "Guia",
+            ),
+            _flow(
+                "orthognathic_advanced",
+                "Cirurgia Ortognática Avançada",
+                "Paciente",
+                "Tomografia",
+                "Cefalometria",
+                "Registro",
+                "Osteotomia",
+            ),
+            _flow(
+                "facial_implants",
+                "Implantes Faciais",
+                "Paciente",
+                "Tomografia",
+                "Implantes Faciais",
+                "Contenção",
+                "Molde Bipartido",
+            ),
+        )
+    )
+
+
+def _flow(flow_id: str, name: str, *steps: str) -> FlowDefinition:
+    """Create a debug flow with display labels used as fallback keys."""
+    return FlowDefinition(
+        flow_id=flow_id,
+        name_key=name,
+        version=1,
+        steps=tuple(
+            FlowStep(
+                step_id=f"{flow_id}.step-{index}",
+                name_key=step,
+                module_id="debug.preview",
+            )
+            for index, step in enumerate(steps)
+        ),
     )
 
 
@@ -121,9 +184,16 @@ def main() -> int:
 
     repository = InMemoryProjectRepository()
     _seed_projects(repository)
-    catalog = ProjectCatalog(repository=repository)
+    catalog = _build_catalog(repository)
 
-    page = HomePage(catalog=catalog)
+    theme = ThemeService(
+        settings=InMemorySettingsService(),
+        default_mode=ThemeMode.DARK,
+    )
+    theme.compiler().apply(theme.compiled())
+    icon_provider = UnicodeIconProvider(theme)
+
+    page = HomePage(catalog=catalog, icon_provider=icon_provider)
     _flow_list(page)
     _connect_debug_signals(page)
 
