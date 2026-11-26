@@ -1073,7 +1073,7 @@ The refactoring was completed on 2026-11-18.
 
 **Architectural outcome:**
 
-See ADR-0015 (`docs/adr/ADR-0015_Editor_and_Module_Package_Reorganization.md`) for the recorded architecture.
+See ADR-0015 (`../../adr/ADR-0015_Editor_and_Module_Package_Reorganization.md`) for the recorded architecture.
 
 **Next work item:**
 

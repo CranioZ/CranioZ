@@ -6,7 +6,7 @@
 **Date:** November 18, 2026
 **Status:** Proposed for Implementation
 **Project:** CranioZ
-**Companion documents:** `Next Steps.md` (immediate work items), `Implementation Plan.md` (11-phase roadmap), `docs/adr/` (architectural decisions), `refactoring_plan.md` (structural refactoring execution)
+**Companion documents:** `Next Steps.md` (immediate work items), `Implementation Plan.md` (11-phase roadmap), `../../adr` (architectural decisions), `refactoring_plan.md` (structural refactoring execution)
 
 ---
 
@@ -826,7 +826,7 @@ The following components were removed on 2026-11-13:
 - `src/cranioz/application/scene/scene_query_adapter.py` — a byte-identical
   duplicate of `infrastructure/scene/scene_query_adapter.py`. `MainWindow`
   imports the infrastructure version.
-- 10 obsolete DICOM debug scripts under `scripts/debug/dicom/` (see
+- 10 obsolete DICOM debug scripts under `../../../scripts/debug/dicom` (see
   §11.2).
 
 ### 7.3. Standing Task: Prevent New Parallel Implementations
@@ -862,7 +862,7 @@ Delivered:
   `set_active_view` validates `view_id` against the Editor's Views
   (unknown id produces a WARNING and no signal); idempotent for the same
   id; `None` clears. `dispose()` resets without emitting. 12 tests in
-  `tests/unit/ui/editors/test_editor_active_view.py`.
+  `../../../tests/unit/ui/editors/test_editor_active_view.py`.
 - **Block 4 — `ViewLayoutRenderer` event filter + `ACTIVE_ONLY`.**
   Activation filter installed on each View's `activation_widget()`
   (Viewport3DView returns the `QVTKRenderWindowInteractor`; other Views
@@ -964,7 +964,7 @@ this document and in `refactoring_plan.md` §7:
 - **`editors`** (debug-only production components). Removed.
 - **`DummyEditor` / `DebugEditor`** moved from
   `editors` to
-  `tests/fixtures/editors/test_editor.py`.
+  `../../../tests/fixtures/editors/test_editor.py`.
 - **`MeshDebugEditor`** moved to `editors/builtin/mesh_debug/editor.py`
   and the composition-root import in `main_window.py` was updated.
 - **`_KNOWN_DEBT_FILES`** reduced from 8 to 5 files; the corresponding

@@ -31,7 +31,7 @@ A deliverable marked as implemented must exist in the codebase and have passing 
 8. **No Orphaned Implementations:** A feature is not complete merely because its backend exists. Its intended application workflow must be usable and tested.
 9. **UI Fidelity to Prototype:** The Prototipagem_UI documents are the canonical reference for widget layout, interaction models, and clinical affordances. Deviations must be justified in an ADR.
 10. **Explicit Internationalization:** User-facing strings must be translatable. UI widgets must never hardcode clinical labels.
-11. **Centralized Appearance:** Shared visual properties must use design tokens. Component-specific constraints and intrinsic dimensions may be defined locally when they are not part of the shared visual system. See `docs/architecture/appearance/`.
+11. **Centralized Appearance:** Shared visual properties must use design tokens. Component-specific constraints and intrinsic dimensions may be defined locally when they are not part of the shared visual system. See `../../architecture/appearance`.
 
 ---
 
@@ -77,7 +77,7 @@ The implementation is divided into 11 phases. The sequence establishes the platf
 - 🚧 **In Progress:** A contract, partial implementation, or reference implementation exists, but the deliverable is incomplete or not fully integrated.
 - ⏳ **Planned:** Not implemented or not yet started.
 
-**Contracts layer:** ADR-0001, ADR-0002, ADR-0004–0016 are Accepted. **ADR-0014 (Widget Toolkit Selection)** is Accepted: Qt Widgets + QSS modular + Design Tokens in Python, not QML. **ADR-0015 (Editor and Module Package Reorganization)** is Accepted and records the structural refactoring that closed in Phase 3. **ADR-0016 (Project Catalog Synchronization)** is Accepted and specifies the synchronization mechanism between the Project subsystem and the Project Catalog. **ADR-0018 (Professional Module SQLite Persistence)** is Accepted and authorizes the dedicated Professional database without creating a generic module-persistence mechanism. The appearance architecture is specified in `docs/architecture/appearance/`.
+**Contracts layer:** ADR-0001, ADR-0002, ADR-0004–0016 are Accepted. **ADR-0014 (Widget Toolkit Selection)** is Accepted: Qt Widgets + QSS modular + Design Tokens in Python, not QML. **ADR-0015 (Editor and Module Package Reorganization)** is Accepted and records the structural refactoring that closed in Phase 3. **ADR-0016 (Project Catalog Synchronization)** is Accepted and specifies the synchronization mechanism between the Project subsystem and the Project Catalog. **ADR-0018 (Professional Module SQLite Persistence)** is Accepted and authorizes the dedicated Professional database without creating a generic module-persistence mechanism. The appearance architecture is specified in `../../architecture/appearance`.
 
 The **Monitor de Logs** is a developer-facing diagnostic subsystem specified in `monitor_logs.md`. It is not an ADR and it is not part of any Phase's closure criteria. Its implementation is deferred to a dedicated sprint (§5.1) and does not block Phase 3 or Phase 4.
 
@@ -137,7 +137,7 @@ integration.
 
 **Deliverables:**
 
-- ✅ `pyproject.toml` and CI pipeline.
+- ✅ `../../../pyproject.toml` and CI pipeline.
 - ✅ `ConfigurationLoader` and `AppPathResolver`.
 - ✅ `EventBus`.
 - ✅ JSON serialization for Project Metadata.
@@ -174,7 +174,7 @@ integration.
   - Injection into `MainWindow`, `Workspace`, `HomePage`, `TomographyEditor`.
   - Removal of `MainWindow._humanize_translation_key`.
   - Contract test: every `name_key` in every `flow.json` resolves in `en_US`.
-  - `tests/architecture/test_no_hardcoded_strings_in_shell_widgets.py`: shell widgets must route user-facing strings through `tr(...)`.
+  - `../../../tests/architecture/test_no_hardcoded_strings_in_shell_widgets.py`: shell widgets must route user-facing strings through `tr(...)`.
 - ✅ **Sprint C (`EditorContext` propagation):**
   - `task_manager`, `telemetry`, `correlation_id`, `command_dispatcher`, `scene_query`, `event_subscription`, `translation_service`, `theme_service`, `icon_provider` propagated to every Editor.
   - `Workspace._create_editor` and `MainWindow._create_workspace` pass the complete set.
@@ -250,13 +250,13 @@ integration.
   - Contract tests: `add`/`remove`/`lookup`/`list`/`count`/`contains`/`replace_all`; bootstrap ordering; handler error containment; staleness propagation; catalog reads via `ProjectIndex` only; end-to-end integration with `ProjectManager`[cite: 1].
   - Benchmark documented in ADR-0016's implementation notes (not a CI gate): 100/300/1000 projects in `tmp_path`, comparing `search_projects()` latency and `repository.list_metadata` call count between baseline (direct repository) and new (indexed)[cite: 1].
   - **Not** part of Sprint I: `FilesystemProjectIndex` does not exist. A persisted index and a SQLite implementation remain deferred to Phase 8[cite: 1].
-  - **Final validation (2026-11-20):** 1692 passing tests, 0 failed, 0 errors, 2 skipped; `ruff check`, `ruff format --check`, and `mypy src` clean. The integration fixture `tests/integration/ui/test_main_window_import.py` was migrated to the composition-root wiring; the bootstrap order (`synchronizer.start()` before `manager.create_project(...)`) is preserved and documented in ADR-0016 §4.2[cite: 1].
+  - **Final validation (2026-11-20):** 1692 passing tests, 0 failed, 0 errors, 2 skipped; `ruff check`, `ruff format --check`, and `mypy src` clean. The integration fixture `../../../tests/integration/ui/test_main_window_import.py` was migrated to the composition-root wiring; the bootstrap order (`synchronizer.start()` before `manager.create_project(...)`) is preserved and documented in ADR-0016 §4.2[cite: 1].
 - ✅ **Sprint J (Coordinated deletion):** complete on 2026-11-22[cite: 1].
   - `ProjectManager.delete_project` coordinates `ProjectCatalog` → `ProjectIndex` → `FilesystemProjectRepository` via the `ProjectDeleted` event (ADR-0016 §2.2). The `ProjectManager` does not call `ProjectCatalog` or `ProjectIndex` directly[cite: 1].
   - Rollback semantics verified: repository failure raises before `ProjectDeleted` is published; handler failure is contained by the synchronizer (ADR-0016 §3.4) and marks the index stale; the next query rebuilds from the authoritative repository (ADR-0016 §3.3). No event compensation, no manual index re-add[cite: 1].
   - External source data (External Reference mode) is never removed by project deletion. `FilesystemProjectRepository` owns exactly one file (`project.json`); sibling files survive byte-identical[cite: 1].
   - Contract and failure-path tests[cite: 1].
-  - **Final validation (2026-11-22):** 1701 passing tests, 0 failed, 0 errors, 2 skipped (+9 vs Sprint I); `tests/architecture/` 85 passed; `ruff check`, `ruff format --check`, `mypy src` clean (284 source files); `git diff --stat src/` empty (**no production code changed**; the coordination was already correct and the sprint proved it with tests)[cite: 1].
+  - **Final validation (2026-11-22):** 1701 passing tests, 0 failed, 0 errors, 2 skipped (+9 vs Sprint I); `../../../tests/architecture` 85 passed; `ruff check`, `ruff format --check`, `mypy src` clean (284 source files); `git diff --stat src/` empty (**no production code changed**; the coordination was already correct and the sprint proved it with tests)[cite: 1].
   - **Scope correction:** the UI affordance for delete is deferred. The API-level behavior is verified and propagates through the catalog. The UI affordance requires UX decisions that are out of scope for a "coordinated deletion" sprint. Tracked in `next_steps.md` §5.2 and §7[cite: 1].
 - ✅ **Sprint K (Async loading):** complete on 2026-11-22. K-minimal
   option (b): flows async, projects synchronous. `HomePage.refresh()`
@@ -305,7 +305,7 @@ integration.
 - ProjectIndex contract tests (index), synchronizer tests (bootstrap, events, error containment, `rebuild`, `ensure_fresh`), catalog-via-index tests, and end-to-end `ProjectManager` sync tests (Sprint I, ADR-0016)[cite: 1].
 - `ProjectIndexStaleError` propagation and `MainWindow` handling tests (Sprint I, ADR-0016)[cite: 1].
 - Delete-specific staleness paths and the physical delete invariant (Sprint J, ADR-0016 §3.3/§3.4 and §2.2)[cite: 1].
-- Architecture gate: `tests/architecture/test_no_legacy_project_delete_api.py` (Sprint J)[cite: 1].
+- Architecture gate: `../../../tests/architecture/test_no_legacy_project_delete_api.py` (Sprint J)[cite: 1].
 - Async flow loading, workspace rollback, and bootstrap ordering integration tests (Sprint K)[cite: 1].
 - Professional module integration tests[cite: 1].
 
@@ -696,11 +696,11 @@ These capabilities belong to Releases 2.0 and 3.0.
 
 ## 9. Implementation Summary
 
-The foundation, core domain, workspace, project lifecycle, imaging pipeline, and DICOM visualization are implemented. The voxel-ordering bug that blocked Phase 4 was resolved on 2026-11-06. The appearance architecture is decided (ADR-0014, `docs/architecture/appearance/`).
+The foundation, core domain, workspace, project lifecycle, imaging pipeline, and DICOM visualization are implemented. The voxel-ordering bug that blocked Phase 4 was resolved on 2026-11-06. The appearance architecture is decided (ADR-0014, `../../architecture/appearance`).
 
-**The Editor Architecture Refactoring closed on 2026-11-18.** It moved Editor implementations out of `ui/` into a top-level `cranioz/editors/` package, separated Editor contracts from concrete implementations, separated reusable Views from concrete Editors, and enforced the dependency boundaries through AST-based architecture tests. See ADR-0015 (`docs/adr/ADR-0015_Editor_and_Module_Package_Reorganization.md`) and `refactoring_plan.md` §11. Final validation: **1635 passing tests, 0 failed, 0 errors, 2 skipped, ruff check clean, ruff format --check clean, mypy src clean (281 files), 85% overall coverage.**
+**The Editor Architecture Refactoring closed on 2026-11-18.** It moved Editor implementations out of `ui/` into a top-level `cranioz/editors/` package, separated Editor contracts from concrete implementations, separated reusable Views from concrete Editors, and enforced the dependency boundaries through AST-based architecture tests. See ADR-0015 (`../../adr/ADR-0015_Editor_and_Module_Package_Reorganization.md`) and `refactoring_plan.md` §11. Final validation: **1635 passing tests, 0 failed, 0 errors, 2 skipped, ruff check clean, ruff format --check clean, mypy src clean (281 files), 85% overall coverage.**
 
-Sprint B (i18n) is complete: the shell — `MainWindow`, the Home Page tree, the three Top Bar segments, and the Workspace placeholder editor — resolves user-facing strings through the `TranslationService`. The architecture guard `tests/architecture/test_no_hardcoded_strings_in_shell_widgets.py` prevents regressions.
+Sprint B (i18n) is complete: the shell — `MainWindow`, the Home Page tree, the three Top Bar segments, and the Workspace placeholder editor — resolves user-facing strings through the `TranslationService`. The architecture guard `../../../tests/architecture/test_no_hardcoded_strings_in_shell_widgets.py` prevents regressions.
 
 Sprint E (appearance foundation) is complete: `ThemeService` and `ThemeCompiler` are implemented, the 47 canonical design tokens are defined for `DARK` and `LIGHT`, the `cranioz.infrastructure.settings` package provides typed, versioned, and atomically written user settings, and `AppPathResolver.user_settings_path()` resolves the user settings file. The Modern Dark palette is applied, the QSS covers tables, headers, scrollbars, buttons, inputs, labels, cards, `StartButton`, and `FlowRow`, and the two Home Page widgets (`StartButton`, `FlowRow`) are migrated from inline `setStyleSheet` to `setProperty` + the global QSS.
 
@@ -712,9 +712,9 @@ Sprint C (`EditorContext` propagation) is complete. Phase 1 is closed.
 
 **ADR-0016 (Project Catalog Synchronization) is Accepted on 2026-11-18.** It specifies the mechanism by which the `ProjectCatalog` remains consistent with the `ProjectManager`: an in-memory `ProjectIndex` populated by a `ProjectIndexSynchronizer` and invalidated by `ProjectCreated`, `ProjectUpdated`, and `ProjectDeleted`. The repository remains the authoritative source; the index is a read-optimized projection. External mutations are not detected automatically and require an explicit rebuild or restart. SQLite and background reconciliation remain deferred to Phase 8.
 
-**Sprint I (ProjectIndex) is complete on 2026-11-20.** The `ProjectIndex` Protocol, `InMemoryProjectIndex`, `ProjectIndexSynchronizer`, and `SynchronizedProjectIndex` are implemented and tested under ADR-0016. `ProjectCatalog` consumes a `ProjectIndex` and no longer calls `repository.list_metadata()`; `refresh()` is removed. Final validation: **1692 passing tests, 0 failed, 0 errors, 2 skipped; `ruff check`, `ruff format --check`, `mypy src` clean.** The integration fixture `tests/integration/ui/test_main_window_import.py` was migrated to the composition-root wiring (`repository → synchronizer → index → catalog`), preserving the bootstrap order required by ADR-0016 §4. No production code changed during that migration; the drift was confined to the test fixture.
+**Sprint I (ProjectIndex) is complete on 2026-11-20.** The `ProjectIndex` Protocol, `InMemoryProjectIndex`, `ProjectIndexSynchronizer`, and `SynchronizedProjectIndex` are implemented and tested under ADR-0016. `ProjectCatalog` consumes a `ProjectIndex` and no longer calls `repository.list_metadata()`; `refresh()` is removed. Final validation: **1692 passing tests, 0 failed, 0 errors, 2 skipped; `ruff check`, `ruff format --check`, `mypy src` clean.** The integration fixture `../../../tests/integration/ui/test_main_window_import.py` was migrated to the composition-root wiring (`repository → synchronizer → index → catalog`), preserving the bootstrap order required by ADR-0016 §4. No production code changed during that migration; the drift was confined to the test fixture.
 
-**Sprint J (Coordinated deletion) is complete on 2026-11-22.** `ProjectManager.delete_project` coordinates `ProjectCatalog` → `ProjectIndex` → `FilesystemProjectRepository` via the `ProjectDeleted` event. The delete-specific staleness paths (handler containment, rebuild-on-next-query, `ProjectIndexStaleError` on double failure) and the physical delete invariant (only `project.json` is removed; sibling files survive byte-identical) are verified. Final validation: **1701 passing tests, 0 failed, 0 errors, 2 skipped; `tests/architecture/` 85 passed; `ruff check`, `ruff format --check`, `mypy src` clean (284 source files); `git diff --stat src/` empty.** The UI affordance for delete remains deferred (`next_steps.md` §5.2, §7).
+**Sprint J (Coordinated deletion) is complete on 2026-11-22.** `ProjectManager.delete_project` coordinates `ProjectCatalog` → `ProjectIndex` → `FilesystemProjectRepository` via the `ProjectDeleted` event. The delete-specific staleness paths (handler containment, rebuild-on-next-query, `ProjectIndexStaleError` on double failure) and the physical delete invariant (only `project.json` is removed; sibling files survive byte-identical) are verified. Final validation: **1701 passing tests, 0 failed, 0 errors, 2 skipped; `../../../tests/architecture` 85 passed; `ruff check`, `ruff format --check`, `mypy src` clean (284 source files); `git diff --stat src/` empty.** The UI affordance for delete remains deferred (`next_steps.md` §5.2, §7).
 
 The immediate focus is **Sprint L.1 (Professional Module)**. The ADR-0018 SQLite
 persistence foundation, profile repository/service boundary, and command/query
@@ -744,7 +744,7 @@ Completed 2026-11-18. Resolved items:
 - The duplicated `_PlaceholderEditor` was consolidated into the canonical `PlaceholderEditor`.
 - The duplicate `_null_task_manager.py` was removed; `module_loader.py` uses `NoopTaskManager` from `cranioz.application.tasks`.
 - `cranioz.ui.editors` was removed.
-- `DummyEditor` and `DebugEditor` moved to `tests/fixtures/editors/test_editor.py`.
+- `DummyEditor` and `DebugEditor` moved to `../../../tests/fixtures/editors/test_editor.py`.
 - `editor_manifest.py` and `editor_catalog.py` were removed (deferred to Sprint L if a contract is needed).
 - `MeshDebugEditor` moved to `editors/builtin/mesh_debug/editor.py`.
 - `_KNOWN_DEBT_FILES` reduced from 8 to 5 files.
@@ -763,7 +763,7 @@ Accepted 2026-11-18. Recorded decisions:
 - A query never silently returns data from a stale index; `ProjectIndexStaleError` is raised when a rebuild after a detected staleness fails.
 - External mutations are not detected automatically; explicit rebuild or restart is required, and background reconciliation is deferred to Phase 8.
 - Sprint K (Async loading) must revisit the bootstrap-ordering decision if the index bootstrap becomes asynchronous.
-- **Integration fixture drift (Sprint I/02, 2026-11-20):** `tests/integration/ui/test_main_window_import.py` was still constructing `ProjectCatalog(repository=...)` after ADR-0016 removed that parameter. The fixture was rewritten to mirror `__main__.py::_build_project_subsystem` line-for-line, preserving the `synchronizer.start()` → `manager.create_project(...)` order. No compatibility shim was added; the `TypeError` from the removed parameter is the intended forcing function. Recorded in ADR-0016 §6.3.
+- **Integration fixture drift (Sprint I/02, 2026-11-20):** `../../../tests/integration/ui/test_main_window_import.py` was still constructing `ProjectCatalog(repository=...)` after ADR-0016 removed that parameter. The fixture was rewritten to mirror `__main__.py::_build_project_subsystem` line-for-line, preserving the `synchronizer.start()` → `manager.create_project(...)` order. No compatibility shim was added; the `TypeError` from the removed parameter is the intended forcing function. Recorded in ADR-0016 §6.3.
 - **Coordinated deletion closure (Sprint J, 2026-11-22):** the coordination is event-driven and already correct; the sprint added the failure-path tests and the physical delete invariant, and an architecture gate (`test_no_legacy_project_delete_api.py`). The UI affordance for delete is deferred. The `repository.delete → publish(ProjectDeleted)` pair remains synchronous and must not be parallelized without re-opening ADR-0016 §4.1.
 
 ### 10.4 Deferred to a Future PR

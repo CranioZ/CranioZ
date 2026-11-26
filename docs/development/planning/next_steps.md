@@ -61,7 +61,7 @@ The following foundations are implemented:
 - `ProjectIndex` and coordinated project deletion.
 - Asynchronous flow loading.
 - Project and Home Page foundations.
-- System widget catalog (`docs/architecture/widgets/widget_catalog.md` v0.4).
+- System widget catalog (`../../architecture/widgets/widget_catalog.md` v0.4).
 - L.0 system form widgets.
 - L.0.2 Delivery A widgets.
 - L.0.2 Delivery B widgets.
@@ -89,7 +89,7 @@ The project documents have distinct responsibilities.
 |---|---|
 | `implementation_plan.md` | Authoritative roadmap: phases, deliverables, dependencies, and completion criteria. |
 | `next_steps.md` | Immediate priorities, execution sequence, current status, and development handoff. |
-| `architectural_consolidation_plan.md` | Architectural inconsistencies, duplication, legacy code, and consolidation decisions. |
+| `../architectural_consolidation_plan.md` | Architectural inconsistencies, duplication, legacy code, and consolidation decisions. |
 | `refactoring_plan.md` | Technical procedure for Editor and Module architecture refactoring. |
 | `widget_catalog.md` | Authoritative inventory of reusable system widgets, contracts, classifications, status, and dependencies. |
 | `professional.md` | Professional Module domain, persistence, behavior, and implementation specification. |
@@ -140,7 +140,7 @@ The following constraints apply throughout implementation:
 - It is hosted by the central Area.
 - The Professional Module contributes declarative UI configuration through `ModuleUISpec`.
 - Module definitions must not instantiate concrete Editors.
-- Reusable system widgets belong to `src/cranioz/ui/widgets/`.
+- Reusable system widgets belong to `../../../src/cranioz/ui/widgets`.
 - The Professional Editor consumes system widgets; it does not own their implementations.
 - Professional-specific compositions remain inside the Professional Editor unless a broader reuse case is demonstrated.
 - Use native Qt Widgets when they satisfy the required behavior.
@@ -152,9 +152,9 @@ The following constraints apply throughout implementation:
 - Auxiliary enums (e.g. `FilePickerMode`) live in the same file as the widget that consumes them, not in separate files under `ui/widgets/`.
 - Package `__init__.py` changes must preserve all previously exported symbols.
 - Classification of reusable UI elements follows ADR-0003:
-  - Generic composite widgets → `src/cranioz/ui/widgets/`.
-  - Editor-internal overlays → `src/cranioz/ui/editors/overlays/`.
-  - Icon-based actions → Tools in `src/cranioz/ui/tools/builtin/`.
+  - Generic composite widgets → `../../../src/cranioz/ui/widgets`.
+  - Editor-internal overlays → `../../../src/cranioz/ui/editors/overlays`.
+  - Icon-based actions → Tools in `../../../src/cranioz/ui/tools/builtin`.
 - A component that depends on a specific Editor's content area, hit-testing, viewport state, or `EditorContext` is an overlay, not a generic widget.
 - Clinical rulers, gizmos, and measurement tools are overlays. They are scheduled with their first consuming Editor, not speculatively.
 
@@ -202,12 +202,12 @@ Completed work must not be reopened during Sprint L unless a concrete regression
 
 | Component | File | Tests |
 |---|---|---:|
-| `FormField` | `src/cranioz/ui/widgets/forms/form_field.py` | 8 |
-| `FormCombo` | `src/cranioz/ui/widgets/forms/form_combo.py` | 7 |
-| `FilePicker` | `src/cranioz/ui/widgets/forms/file_picker.py` | 8 |
-| `SignaturePreview` | `src/cranioz/ui/widgets/forms/signature_preview.py` | 7 |
+| `FormField` | `../../../src/cranioz/ui/widgets/forms/form_field.py` | 8 |
+| `FormCombo` | `../../../src/cranioz/ui/widgets/forms/form_combo.py` | 7 |
+| `FilePicker` | `../../../src/cranioz/ui/widgets/forms/file_picker.py` | 8 |
+| `SignaturePreview` | `../../../src/cranioz/ui/widgets/forms/signature_preview.py` | 7 |
 
-**Package:** `src/cranioz/ui/widgets/forms/`  
+**Package:** `../../../src/cranioz/ui/widgets/forms`  
 **Tests:** `tests/unit/ui/widgets/forms/`  
 **Public API:** `cranioz.ui.widgets.forms.__all__`  
 **Visual debug harness:** `scripts/debug/ui/widgets/forms/debug_forms.py`
@@ -248,7 +248,7 @@ Completed work must not be reopened during Sprint L unless a concrete regression
 
 Before implementing, modifying, or replacing a reusable UI component:
 
-1. Consult `docs/architecture/widgets/widget_catalog.md`.
+1. Consult `../../architecture/widgets/widget_catalog.md`.
 2. Check whether an existing widget already provides the required behavior.
 3. Reuse the existing widget when its contract satisfies the requirement.
 4. Compose existing widgets when the requirement is specific to the Professional Editor.
@@ -263,9 +263,9 @@ Follow ADR-0003:
 
 | Classification | Location | Intended use |
 |---|---|---|
-| System widgets | `src/cranioz/ui/widgets/` | Reusable components independent of a specific Editor |
-| Editor overlays | `src/cranioz/ui/editors/overlays/` | Components bound to an Editor's viewport or interaction context |
-| Tools | `src/cranioz/ui/tools/builtin/` | User actions and icon-based commands |
+| System widgets | `../../../src/cranioz/ui/widgets` | Reusable components independent of a specific Editor |
+| Editor overlays | `../../../src/cranioz/ui/editors/overlays` | Components bound to an Editor's viewport or interaction context |
+| Tools | `../../../src/cranioz/ui/tools/builtin` | User actions and icon-based commands |
 | Professional compositions | Professional Editor implementation | Higher-level combinations specific to this consumer |
 
 Do not place Editor overlays or Professional-specific compositions in the generic system widget package.
@@ -324,7 +324,7 @@ Supporting changes:
 
 #### Delivery A acceptance criteria
 
-- [x] Seven widgets implemented under `src/cranioz/ui/widgets/`.
+- [x] Seven widgets implemented under `../../../src/cranioz/ui/widgets`.
 - [x] Unit tests cover default state, public properties, signals, disabled state, and `accessibleName`.
 - [x] Ruff, formatting, and mypy validation clean.
 - [x] Visual debug harness covers all seven widgets in Dark and Light themes.
@@ -354,11 +354,11 @@ Depends on Delivery A (`DragHandle`).
 
 Implemented files:
 
-- `src/cranioz/ui/widgets/sections/collapsible_section.py`
-- `src/cranioz/ui/widgets/sections/drag_list.py`
-- `src/cranioz/ui/widgets/navigation/icon_sidebar.py`
-- `tests/unit/ui/widgets/sections/`
-- `tests/unit/ui/widgets/navigation/test_icon_sidebar.py`
+- `../../../src/cranioz/ui/widgets/sections/collapsible_section.py`
+- `../../../src/cranioz/ui/widgets/sections/drag_list.py`
+- `../../../src/cranioz/ui/widgets/navigation/icon_sidebar.py`
+- `../../../tests/unit/ui/widgets/sections`
+- `../../../tests/unit/ui/widgets/navigation/test_icon_sidebar.py`
 
 #### Delivery C — Custom-painted and advanced widgets
 
@@ -388,7 +388,7 @@ The clinical `RulerOverlay` is not part of Delivery C. It is an Editor overlay u
 
 Planned scope when rescheduled:
 
-- [ ] Extend `scripts/debug/ui/widgets/forms/debug_forms.py` into a multi-tab debug window.
+- [ ] Extend `../../../scripts/debug/ui/widgets/forms/debug_forms.py` into a multi-tab debug window.
 - [ ] Reproduce the Professional profile, document templates, schedule, procedures, budgets, and configuration screens using the actual widgets.
 - [ ] Include the shared widgets prototype components.
 - [ ] Validate Dark and Light themes.
@@ -433,7 +433,7 @@ command/query flow are complete; settings and Editor work remain.
 
 Before implementing the interface:
 
-- Review `docs/architecture/widgets/widget_catalog.md`.
+- Review `../../architecture/widgets/widget_catalog.md`.
 - Identify existing widgets suitable for the profile screen.
 - Prefer existing system widgets and native Qt components.
 - Compose Professional-specific components inside the Professional Editor.
@@ -522,7 +522,7 @@ Professional-specific compositions may include:
 
 These are consumer-specific compositions and should remain inside the Professional Editor implementation unless a separate system-wide reuse case emerges.
 
-Do not move a composition into `src/cranioz/ui/widgets/` solely because it contains multiple widgets.
+Do not move a composition into `../../../src/cranioz/ui/widgets` solely because it contains multiple widgets.
 
 #### Editor overlays
 
@@ -635,7 +635,7 @@ Their implementation milestones must follow the consuming Editor or subsystem de
 | `event_subscription` contract test | Deferred | Add dedicated coverage when the corresponding integration is implemented. |
 | Remaining hardcoded appearance literals | Tracked debt | Continue using the existing architecture guard and debt list. |
 | VTK `GetData()` deprecation | Deferred | Migrate according to the VTK 10 compatibility plan. |
-| Unused `ignore_missing_imports` entries in `pyproject.toml` | Cleanup | Remove when appropriate; no functional impact. |
+| Unused `ignore_missing_imports` entries in `../../../pyproject.toml` | Cleanup | Remove when appropriate; no functional impact. |
 | Phase 4 viewer and visualization work | Deferred | Start only after Phase 3 closure. |
 | `SignaturePreview` empty-state colors | L.2 deferral | Migrate to design tokens once optional `ThemeService` is supported. |
 | `FilePicker` browse button glyph | L.2 deferral | Migrate to `IconProvider`. |
@@ -651,9 +651,9 @@ The intentionally empty infrastructure test stubs must be documented so their pu
 
 Required actions:
 
-- Add a `README.md` to `tests/infrastructure/i18n/`.
+- Add a `../../../README.md` to `tests/infrastructure/i18n/`.
 - Add a `# TODO(sprint-i18n)` marker to each relevant stub.
-- Add equivalent documentation to `tests/infrastructure/scene/`.
+- Add equivalent documentation to `../../../tests/infrastructure/scene`.
 - Preserve the distinction between reserved infrastructure contracts and actual integration coverage.
 
 This is maintenance work. It must not expand into a general test architecture refactoring.
@@ -729,8 +729,8 @@ Before implementation, review these references:
 
 **Primary specifications**
 
-- `docs/architecture/modules/professional/professional.md` — domain, persistence, behavior, and implementation specification.
-- `docs/architecture/widgets/widget_catalog.md` — authoritative system widget inventory and contracts.
+- `../../architecture/modules/professional/professional.md` — domain, persistence, behavior, and implementation specification.
+- `../../architecture/widgets/widget_catalog.md` — authoritative system widget inventory and contracts.
 - `implementation_plan.md` — Phase 3 scope and completion criteria.
 - ADR-0003 — classification of widgets, overlays, and tools.
 
@@ -743,19 +743,19 @@ Before implementation, review these references:
 
 **Widget implementations**
 
-- `src/cranioz/ui/widgets/forms/` — L.0 form widget implementations.
-- `src/cranioz/ui/widgets/sections/` — `CollapsibleSection` and `DragList`.
-- `src/cranioz/ui/widgets/navigation/` — navigation widget implementations.
-- `tests/unit/ui/widgets/` — widget testing patterns.
-- `scripts/debug/ui/widgets/forms/debug_forms.py` — visual debug harness.
+- `../../../src/cranioz/ui/widgets/forms` — L.0 form widget implementations.
+- `../../../src/cranioz/ui/widgets/sections` — `CollapsibleSection` and `DragList`.
+- `../../../src/cranioz/ui/widgets/navigation` — navigation widget implementations.
+- `../../../tests/unit/ui/widgets` — widget testing patterns.
+- `../../../scripts/debug/ui/widgets/forms/debug_forms.py` — visual debug harness.
 
 **Theme and icon infrastructure**
 
-- `src/cranioz/ui/theme/tokens.py`
-- `src/cranioz/ui/theme/compiler.py`
-- `src/cranioz/ui/theme/service.py`
-- `src/cranioz/ui/icons/provider.py`
-- `src/cranioz/ui/icons/unicode.py`
+- `../../../src/cranioz/ui/theme/tokens.py`
+- `../../../src/cranioz/ui/theme/compiler.py`
+- `../../../src/cranioz/ui/theme/service.py`
+- `../../../src/cranioz/ui/icons/provider.py`
+- `../../../src/cranioz/ui/icons/unicode.py`
 
 **Implementation instructions**
 

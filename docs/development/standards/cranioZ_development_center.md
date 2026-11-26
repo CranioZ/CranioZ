@@ -82,7 +82,7 @@ The generated text file should:
 
 Common exclusions include:
 
-- `.venv/`
+- `../../../.venv`
 - `__pycache__/`
 - `.git/`
 - Build and distribution directories.
@@ -371,7 +371,7 @@ Configuration should support:
 - Code extraction profiles.
 - Report and execution history locations.
 
-The application should reuse the project's existing `pyproject.toml`, test configuration, linting rules, and other configuration files rather than maintaining duplicated settings.
+The application should reuse the project's existing `../../../pyproject.toml`, test configuration, linting rules, and other configuration files rather than maintaining duplicated settings.
 
 ---
 
