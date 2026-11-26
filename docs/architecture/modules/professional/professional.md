@@ -641,8 +641,9 @@ The implementation is incremental. The stages below describe the target delivery
 
 **Current status:** In progress. `CollapsibleSection` is integrated into the
 Tela 2 profile groups, and their `DragList` order is restored and persisted
-through `professional.ui.navigation_order`; navigation, visibility, the
-remaining presentation persistence, and the remaining screens are pending.
+through `professional.ui.navigation_order`. The Tela 2 ordering interface was
+visually approved on 2026-11-26; navigation, visibility, the remaining
+presentation persistence, and the remaining screens are pending.
 
 ## Stage 3 — Professional catalogs
 

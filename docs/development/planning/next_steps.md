@@ -133,13 +133,19 @@ Scope:
 - [ ] Integrate `EyeToggleButton` and `VisibilityToggle`.
 - [ ] Implement prototype screens Tela 3–7.
 - [ ] Implement navigation between sections.
-- [ ] Support section expansion/collapse, visibility, and drag ordering.
-- [ ] Persist and restore navigation order and visibility.
+- [x] Support section expansion/collapse and drag ordering in Tela 2.
+- [ ] Support section visibility.
+- [x] Persist and restore Tela 2 navigation order.
+- [ ] Persist and restore section visibility.
 - [ ] Implement pending `pt_BR` translations.
 - [ ] Migrate `SignaturePreview` empty-state colors to design tokens.
 - [ ] Migrate the `FilePicker` browse action to the existing icon infrastructure.
 - [ ] Validate keyboard and accessibility behavior.
 - [ ] Validate theme and language changes.
+
+Visual validation on 2026-11-26 confirmed the Tela 2 section layout,
+expansion/collapse behavior, drag handles, ordering, and preview rendering.
+The developer approved the resulting interface.
 
 Professional-specific compositions must remain inside the Professional Editor unless a demonstrated reuse case justifies extracting them into system widgets.
 

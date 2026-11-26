@@ -106,7 +106,7 @@ Phase 3 remains active. Phase 4 begins after formal Phase 3 closure.
 - **L.0.2 B:** CollapsibleSection, DragList, IconSidebar — complete.
 - **L.0.2 C/D:** TimelineSlider, ColorPicker, Histogram, final harness consolidation, HiDPI validation, and catalog closure — deferred.
 - **L.1:** Professional domain, SQLite profile persistence, repository/service, command/query flow, ProfessionalEditor, Tela 2, central-Area composition, and `professional.*` settings — implementation substantially complete.
-- **L.2:** Navigation, section organization, visibility, drag ordering, persistence, and final UI integration — in progress. `CollapsibleSection` is integrated into the Tela 2 profile groups, and their `DragList` order is restored and persisted through `professional.ui.navigation_order`; the remaining interactions and persistence are pending.
+- **L.2:** Navigation, section organization, visibility, drag ordering, persistence, and final UI integration — in progress. `CollapsibleSection` is integrated into the Tela 2 profile groups, and their `DragList` order is restored and persisted through `professional.ui.navigation_order`. The Tela 2 ordering interface was visually approved on 2026-11-26; the remaining interactions and persistence are pending.
 
 The `ModuleUISpec` ownership decision and the visual approval of Tela 2
 were completed on 2026-11-26.
