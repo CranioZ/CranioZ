@@ -106,10 +106,14 @@ Phase 3 remains active. Phase 4 begins after formal Phase 3 closure.
 - **L.0.2 B:** CollapsibleSection, DragList, IconSidebar — complete.
 - **L.0.2 C/D:** TimelineSlider, ColorPicker, Histogram, final harness consolidation, HiDPI validation, and catalog closure — deferred.
 - **L.1:** Professional domain, SQLite profile persistence, repository/service, command/query flow, ProfessionalEditor, Tela 2, central-Area composition, and `professional.*` settings — implementation substantially complete.
-- **L.2:** Navigation, section organization, visibility, drag ordering, persistence, and final UI integration — in progress. `CollapsibleSection` is integrated into the Tela 2 profile groups, and their `DragList` order is restored and persisted through `professional.ui.navigation_order`. The Tela 2 ordering interface was visually approved on 2026-11-26; the remaining interactions and persistence are pending.
+- **L.2:** Navigation, section organization, visibility, drag ordering, persistence, and final UI integration — in progress. `CollapsibleSection` is integrated into the Tela 2 profile groups. Their `DragList` order and expanded/collapsed state are restored and persisted through `professional.ui.navigation_order` and `professional.ui.collapsed_sections`. The Tela 2 ordering interface was visually approved on 2026-11-26; internal navigation and the remaining screens are pending.
 
 The `ModuleUISpec` ownership decision and the visual approval of Tela 2
 were completed on 2026-11-26.
+
+Tela 2 does not expose visibility controls in its profile sections. Per the
+UI prototype, top-level module tab visibility and ordering belong to the
+Tela 7 reorganization dialog.
 
 L.2 remains part of Phase 3 and is required for its closure.
 
@@ -731,7 +735,7 @@ The SQLite index and background disk reconciliation remain Phase 8 deliverables.
 
 Sprint L is the active Phase 3 work.
 
-The Professional domain, SQLite profile persistence, service/repository boundary, command/query flow, ProfessionalEditor, Tela 2, and settings integration have been implemented. `ModuleUISpec` ownership and Tela 2 visual approval were completed on 2026-11-26. Tela 2 section ordering is integrated with `DragList` and persisted through `professional.ui.navigation_order`. L.2 remains required for closure and is in progress.
+The Professional domain, SQLite profile persistence, service/repository boundary, command/query flow, ProfessionalEditor, Tela 2, and settings integration have been implemented. `ModuleUISpec` ownership and Tela 2 visual approval were completed on 2026-11-26. Tela 2 section ordering and expansion state are persisted through `professional.ui.navigation_order` and `professional.ui.collapsed_sections`. L.2 remains required for closure and is in progress.
 
 ### 9.5 Imaging
 

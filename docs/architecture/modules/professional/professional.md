@@ -207,6 +207,7 @@ The module uses the `professional.*` settings namespace for interface and presen
 Examples:
 
 - `professional.ui.navigation_order`
+- `professional.ui.collapsed_sections`
 - `professional.ui.visible_sections`
 - `professional.ui.last_section`
 
@@ -640,10 +641,12 @@ The implementation is incremental. The stages below describe the target delivery
 - No unnecessary Professional-specific widgets are added to the generic widget package.
 
 **Current status:** In progress. `CollapsibleSection` is integrated into the
-Tela 2 profile groups, and their `DragList` order is restored and persisted
-through `professional.ui.navigation_order`. The Tela 2 ordering interface was
-visually approved on 2026-11-26; navigation, visibility, the remaining
-presentation persistence, and the remaining screens are pending.
+Tela 2 profile groups. Their `DragList` order is restored and persisted through
+`professional.ui.navigation_order`, and their expanded/collapsed state is
+restored and persisted through `professional.ui.collapsed_sections`. The Tela 2
+ordering interface was visually approved on 2026-11-26; navigation and the
+remaining screens are pending. Tela 2 does not expose visibility controls; tab
+visibility and ordering belong to the Tela 7 reorganization dialog.
 
 ## Stage 3 — Professional catalogs
 

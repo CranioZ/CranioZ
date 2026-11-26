@@ -70,7 +70,7 @@ Focused L.1 validation on 2026-11-26: 9 tests passed for the Professional Module
 The `ModuleUISpec` ownership decision was approved on 2026-11-26. The current execution sequence is:
 
 1. Decide whether application-level selection of `PROFESSIONAL_UI_SPEC` belongs to Sprint L or the future module activation flow.
-2. Continue Sprint L.2 with `IconSidebar`, visibility and remaining presentation persistence, and the remaining prototype screens.
+2. Continue Sprint L.2 with `IconSidebar`, Tela 7 visibility, and the remaining prototype screens.
 3. Implement the pending project-management UI, especially project removal.
 4. Run complete validation and close Sprint L.
 5. Review all Phase 3 completion criteria against `implementation_plan.md`.
@@ -128,15 +128,15 @@ Scope:
 - [x] Integrate `CollapsibleSection` into the Tela 2 profile groups.
 - [x] Integrate `DragList` for ordering the Tela 2 profile groups.
 - [x] Persist and restore the Tela 2 section order through `professional.ui.navigation_order`.
-- [ ] Connect the remaining section presentation state to persistence.
+- [x] Persist and restore Tela 2 section expansion state through `professional.ui.collapsed_sections`.
 - [ ] Integrate `IconSidebar`.
-- [ ] Integrate `EyeToggleButton` and `VisibilityToggle`.
+- [ ] Integrate `EyeToggleButton` and `VisibilityToggle` in the Tela 7 top-level tab configuration.
 - [ ] Implement prototype screens Tela 3–7.
 - [ ] Implement navigation between sections.
 - [x] Support section expansion/collapse and drag ordering in Tela 2.
-- [ ] Support section visibility.
+- [ ] Implement Tela 7 top-level tab visibility and ordering.
 - [x] Persist and restore Tela 2 navigation order.
-- [ ] Persist and restore section visibility.
+- [ ] Persist and restore Tela 7 top-level tab visibility.
 - [ ] Implement pending `pt_BR` translations.
 - [ ] Migrate `SignaturePreview` empty-state colors to design tokens.
 - [ ] Migrate the `FilePicker` browse action to the existing icon infrastructure.
@@ -146,6 +146,14 @@ Scope:
 Visual validation on 2026-11-26 confirmed the Tela 2 section layout,
 expansion/collapse behavior, drag handles, ordering, and preview rendering.
 The developer approved the resulting interface.
+
+Tela 2 section visibility is not required by the approved prototype.
+Visibility and ordering controls belong to the Tela 7 top-level tab
+reorganization dialog.
+
+Tela 2 section order and expansion state are now restored and persisted
+independently through `professional.ui.navigation_order` and
+`professional.ui.collapsed_sections`.
 
 Professional-specific compositions must remain inside the Professional Editor unless a demonstrated reuse case justifies extracting them into system widgets.
 
