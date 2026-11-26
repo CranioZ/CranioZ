@@ -1,589 +1,586 @@
 # Implementation Plan
 
-**Document type:** Roadmap and execution plan
-**Status:** Living document
-**Scope:** Phased implementation of the CranioZ platform, from foundation to release
-**Last updated:** 2026-11-22
+**Document type:** Roadmap and execution plan  
+**Status:** Living document  
+**Scope:** Phased implementation of the CranioZ platform, from foundation to release  
+**Last updated:** 2026-11-26
 
 ---
 
 ## 1. Purpose
 
-This document defines the execution strategy for building the CranioZ platform. It translates architectural decisions (ADRs), domain contracts, and clinical requirements into a sequenced, testable implementation plan.
+This document defines the implementation roadmap for CranioZ, translating accepted architectural decisions (ADRs), domain contracts, and clinical requirements into sequenced and testable deliverables.
 
-It serves as a scientific, technical, and managerial instrument, distinguishing the PhD research scope from the long-term evolution of the open-source platform.
+It serves as a technical and scientific execution plan, distinguishing the doctoral research scope from the long-term evolution of the open-source platform.
 
-It is also an honest implementation record. It distinguishes between contracts, reference implementations, production implementations, and integration work.
-
-A deliverable marked as implemented must exist in the codebase and have passing tests. Partial implementations and known limitations must remain visible.
-
----
+Implementation status must reflect the actual codebase. A deliverable is considered complete only when its implementation, relevant tests, and intended integration are verified. Partial implementations and known limitations must remain explicit.
 
 ## 2. Guiding Principles
 
-1. **Vertical Slices over Horizontal Layers:** Implement features across UI, Application, Domain, and Infrastructure, validating the complete workflow whenever possible.
-2. **Stable Contracts:** A phase may begin before the previous phase is complete if its architectural dependencies are defined and stable.
-3. **Early Persistence:** Establish persistence contracts and minimum viable serialization early to avoid architectural rework.
-4. **Testable at Every Step:** Each phase must include appropriate unit, contract, integration, and UI tests.
-5. **Reversible Decisions:** Validate uncertain technical decisions through prototypes, benchmarks, and ADRs before making them architectural dependencies.
-6. **Clinical Data Integrity:** Never silently modify, reinterpret, or discard source imaging data. Geometry, calibration, provenance, and validation must remain explicit.
-7. **CPU-First Execution:** The application must remain usable on conventional workstations. GPU acceleration is an optimization, not a prerequisite for core clinical functionality.
-8. **No Orphaned Implementations:** A feature is not complete merely because its backend exists. Its intended application workflow must be usable and tested.
-9. **UI Fidelity to Prototype:** The Prototipagem_UI documents are the canonical reference for widget layout, interaction models, and clinical affordances. Deviations must be justified in an ADR.
-10. **Explicit Internationalization:** User-facing strings must be translatable. UI widgets must never hardcode clinical labels.
-11. **Centralized Appearance:** Shared visual properties must use design tokens. Component-specific constraints and intrinsic dimensions may be defined locally when they are not part of the shared visual system. See `../../architecture/appearance`.
+1. **Vertical Slices:** Prefer complete, testable features across Domain, Application, Infrastructure, and UI.
+2. **Stable Contracts:** Work may proceed in parallel when dependencies and architectural contracts are stable.
+3. **Early Persistence:** Define serialization and persistence contracts before they become architectural bottlenecks.
+4. **Continuous Testing:** Include unit, contract, integration, and UI tests as appropriate.
+5. **Reversible Decisions:** Validate uncertain technical choices through prototypes, benchmarks, and ADRs.
+6. **Clinical Data Integrity:** Never silently modify, reinterpret, or discard source imaging data. Geometry, calibration, and provenance must remain explicit.
+7. **CPU-First:** Core clinical functionality must not depend on GPU acceleration.
+8. **Complete Integration:** Backend implementation alone does not constitute a completed feature; its intended workflow must be usable.
+9. **Prototype Fidelity:** `Prototipagem_UI` is the reference for UI structure and interaction. Deviations must be justified.
+10. **Internationalization:** All user-facing strings must use `TranslationService`.
+11. **Centralized Appearance:** Shared visual properties must use design tokens and `ThemeService`. See `../../architecture/appearance`.
 
----
+## 3. Technology Stack
 
-## 3. External Dependencies & Tech Stack
+| Area | Technology |
+|---|---|
+| Language | Python 3.12+ |
+| UI | PySide6 / Qt 6 Widgets + QSS |
+| Medical visualization | VTK |
+| DICOM | pydicom |
+| Scientific computing | NumPy, SciPy |
+| Image processing | ITK, when justified |
+| Geometric modeling | OCCT, CGAL |
+| Mesh processing | VTK, OpenMesh |
+| Persistence | JSON; SQLite for indexed catalogs |
+| Testing | pytest, pytest-qt, pytest-benchmark, hypothesis |
+| Tooling | uv, ruff, mypy |
 
-- **Language:** Python 3.12+
-- **UI Framework:** PySide6 / Qt 6 (minimum 6.5.0 for `QStyleHints.colorScheme()`)
-- **Medical Visualization:** VTK
-- **DICOM Parsing:** pydicom
-- **Scientific Computing:** NumPy, SciPy
-- **Image Processing:** ITK (optional, introduced when justified by a concrete requirement)
-- **Geometric Modeling:** Open CASCADE (OCCT), CGAL
-- **Mesh Processing:** VTK, OpenMesh and other specialized libraries as required
-- **Persistence:** JSON for project metadata, scene and layout; SQLite for indexed catalogs (deferred to Phase 8); JSON for user settings
-- **Testing:** pytest, pytest-qt, pytest-benchmark, hypothesis
-- **Tooling:** uv, ruff, mypy
-
-Dependencies must be introduced when required by an implementation task. Their presence in this list does not imply that every library must be integrated during the foundation phases.
-
----
+Dependencies must be introduced when required. Their presence in this list does not imply immediate integration.
 
 ## 4. Phase Overview
 
-The implementation is divided into 11 phases. The sequence establishes the platform progressively while prioritizing a validated clinical core.
+The roadmap contains eleven phases. Phase 4 is divided into two milestones to isolate imaging validation from UI expansion.
 
-| Phase | Name | Status | Main Pending Work |
+| Phase | Name | Status | Main Deliverables |
 |---|---|---|---|
-| **Phase 0** | Foundation & Boot | ✅ Implemented | Startup performance improvements |
-| **Phase 1** | Contracts, Core Domain & i18n | ✅ Implemented | — |
-| **Phase 2** | Workspace Engine & Icons | ✅ Implemented | — |
-| **Phase 3** | Project, Home Page & Professional Module | 🚧 In Progress | Professional module (Sprint L) |
-| **Phase 4** | Scene & Visualization | ⏳ Planned | Import Dialog, RenderingAdapter, Viewer Layout Manager, 2D/3D Tools, LUTs |
-| **Phase 5** | Clinical Flows & Panel Widget Registry | ⏳ Planned | WorkflowEngine, WorkflowBreadcrumb, Panel Registry |
-| **Phase 6** | Clinical Pipeline | ⏳ Planned | Tomography, Segmentation, Cephalometry, Osteotomy, Guides, Animation |
-| **Phase 7** | Scientific Validation | ⏳ Planned | Geometric, clinical and usability validation |
-| **Phase 8** | Scientific Product (Release 1.0) | ⏳ Planned | SvgIconProvider, SQLite ProjectIndex, Recent Projects, PDF reports, locale selector |
-| **Phase 9** | Extensibility (Release 2.0) | ⏳ Planned | Module API and Plugin API |
-| **Phase 10** | AI and Nodes (Release 3.0) | ⏳ Planned | Node system, AI assistance and MCP integration |
+| 0 | Foundation & Boot | Complete | Repository, configuration, boot |
+| 1 | Contracts, Core Domain & i18n | Complete | Domain contracts, repositories, localization |
+| 2 | Workspace Engine & Icons | Complete | Workspace, themes, icon infrastructure |
+| 3 | Project, Home Page & Professional Module | In progress | Project lifecycle, Professional module |
+| 4A | Imaging Core & Rendering Validation | Planned | DICOM-to-Scene pipeline, validated MPR/3D |
+| 4B | Import & Visualization UI | Planned | Import Dialog, layouts, tools, presets |
+| 5 | Clinical Flows & Panel Registry | Planned | WorkflowEngine, panels, layout persistence |
+| 6 | Clinical Pipeline | Planned | Segmentation, cephalometry, osteotomy, guides |
+| 7 | Scientific Validation | Planned | Geometric, clinical, usability validation |
+| 8 | Scientific Product (Release 1.0) | Planned | Packaging, persistence, documentation, publication |
+| 9 | Extensibility (Release 2.0) | Planned | Module and Plugin APIs |
+| 10 | AI and Nodes (Release 3.0) | Planned | Node system, AI assistance, MCP |
 
-**Status legend:**
+**Status definitions**
 
-- ✅ **Implemented:** Implemented in the codebase and tested. Known limitations may still exist.
-- 🚧 **In Progress:** A contract, partial implementation, or reference implementation exists, but the deliverable is incomplete or not fully integrated.
-- ⏳ **Planned:** Not implemented or not yet started.
+- **Complete:** Implemented and tested, with known limitations documented.
+- **In progress:** Partially implemented or awaiting integration, decisions, or acceptance.
+- **Planned:** Not yet implemented.
 
-**Contracts layer:** ADR-0001, ADR-0002, ADR-0004–0016 are Accepted. **ADR-0014 (Widget Toolkit Selection)** is Accepted: Qt Widgets + QSS modular + Design Tokens in Python, not QML. **ADR-0015 (Editor and Module Package Reorganization)** is Accepted and records the structural refactoring that closed in Phase 3. **ADR-0016 (Project Catalog Synchronization)** is Accepted and specifies the synchronization mechanism between the Project subsystem and the Project Catalog. **ADR-0018 (Professional Module SQLite Persistence)** is Accepted and authorizes the dedicated Professional database without creating a generic module-persistence mechanism. The appearance architecture is specified in `../../architecture/appearance`.
+**Architectural references:** ADR-0001 through ADR-0016 and ADR-0018 are accepted. ADR-0014 establishes Qt Widgets, QSS, and Python design tokens. ADR-0015 governs Editor and Module package organization. ADR-0016 governs ProjectIndex synchronization. ADR-0018 governs Professional module SQLite persistence.
 
-The **Monitor de Logs** is a developer-facing diagnostic subsystem specified in `monitor_logs.md`. It is not an ADR and it is not part of any Phase's closure criteria. Its implementation is deferred to a dedicated sprint (§5.1) and does not block Phase 3 or Phase 4.
+The appearance architecture is documented in `../../architecture/appearance`.
 
-**Application layer:** Commands, Tasks, Telemetry, Events and Flows have contracts and reference implementations with contract tests. This does not imply that all production services, module loading, or application workflows are complete.
+## 5. Current Status and Immediate Priorities
 
----
+Phases 0, 1, and 2 are closed. The Editor Architecture Refactoring (ADR-0015) is complete.
 
-## 5. Current Focus
+Phase 3 remains active. Phase 4 begins after formal Phase 3 closure.
 
-**Phases 1 and 2 are closed.** The **Editor Architecture Refactoring** (ADR-0015, `refactoring_plan.md`) is complete. Sprints I and J are complete.
+### 5.1 Completed Work
 
-**Phase 3** remains the active phase. Its remaining functional deliverable is
-**Sprint L (Professional module)**. Sprints I and J closed on 2026-11-20 and
-2026-11-22; Sprint K closed on 2026-11-22.
+| Sprint | Phase | Deliverable | Status |
+|---|---|---|---|
+| B | 1 | i18n contracts and catalogs | Complete |
+| C | 1 | EditorContext propagation | Complete |
+| E | 2 | ThemeService, ThemeCompiler, tokens | Complete |
+| F | 2 | IconProvider, UnicodeIconProvider | Complete |
+| G | 2 | AreaLayoutRenderer | Complete |
+| H | 2 | EditorStack | Complete |
+| Editor Refactoring | 3 | Editor/Module package reorganization | Complete |
+| I | 3 | ProjectIndex (ADR-0016) | Complete |
+| J | 3 | Coordinated project deletion | Complete |
+| K | 3 | Asynchronous flow loading | Complete |
 
-Phase 4 remains the next major implementation phase. It begins only after Phase 3 is marked `✅ Implemented` in this document.
+### 5.2 Sprint L — Professional Module
 
-### 5.1 Immediate Priorities
+**Status:** In progress.
 
-The sprint order below respects dependencies within Phase 3.
+- **L.0:** System form widgets — complete.
+- **L.0.2 A:** Qt-native widgets — complete.
+- **L.0.2 B:** CollapsibleSection, DragList, IconSidebar — complete.
+- **L.0.2 C/D:** TimelineSlider, ColorPicker, Histogram, final harness consolidation, HiDPI validation, and catalog closure — deferred.
+- **L.1:** Professional domain, SQLite profile persistence, repository/service, command/query flow, ProfessionalEditor, Tela 2, central-Area composition, and `professional.*` settings — implementation substantially complete.
+- **L.2:** Navigation, section organization, visibility, drag ordering, persistence, and final UI integration — pending.
 
-| Sprint | Phase | Deliverable | Status | Depends on |
-|---|---|---|---|---|
-| **B** | 1 | i18n contract and catalogs | ✅ Complete | — |
-| **C** | 1 | `EditorContext` propagation | ✅ Complete | B, E, F |
-| **E** | 2 | `ThemeService`, `ThemeCompiler`, tokens | ✅ Complete | — |
-| **F** | 2 | `IconProvider`, `UnicodeIconProvider`, glyph migration | ✅ Complete | E |
-| **G** | 2 | `AreaLayoutRenderer` | ✅ Complete | — |
-| **H** | 2 | `EditorStack` | ✅ Complete | G |
-| **Editor Refactoring** | 3 | Editor/Module package reorganization (ADR-0015) | ✅ Complete | — |
-| **I** | 3 | `ProjectIndex` (ADR-0016) | ✅ Complete (2026-11-20) | — |
-| **J** | 3 | Coordinated deletion | ✅ Complete (2026-11-22) | I ✅ |
-| **K** | 3 | Async loading | ✅ Complete (2026-11-22) | I ✅, J ✅ |
-| **L** | 3 | Professional module | 🚧 In Progress — L.1 pending architecture decision and visual approval | Editor Refactoring ✅, C ✅, E ✅, F ✅ |
-| **Monitor de Logs** | — | Diagnostic subsystem | ⏳ Planned (not scheduled; not a Phase 3 deliverable) | Sprint K (to inform tab mapping) |
+L.1 still requires:
+1. A decision on `ModuleUISpec` ownership that respects the package dependency rules.
+2. Manual visual approval of Tela 2.
 
-**Current focus:** Sprint L. L.0 and L.0.2 Deliveries A and B are complete.
-L.1 now includes the Professional domain, SQLite profile persistence,
-repository/service boundary, command/query flow, `ProfessionalEditor`, the
-Tela 2 profile interface, central-Area materialization, and `professional.*`
-settings integration. Two items remain: the developer decision on whether a
-built-in Module may expose `ModuleUISpec` despite refactoring rule 4.1.2, and
-manual visual approval of Tela 2. L.0.2 Deliveries C and D remain deferred.
+L.2 remains part of Phase 3 and is required for its closure.
 
-**Note on ordering:** Sprint L is unblocked by the completed Editor Refactoring (ADR-0015) and by the completed Sprints C, E, and F. The functional dependency chain for Phase 3 is **J → K**, with **L** independent and able to proceed in parallel (`next_steps.md` §6.1).
+The remaining work, owner, and target dates must be recorded in `next_steps.md`. No owner or deadline is assumed by this document.
 
-**Note on ADR-0016 and Sprint K:** ADR-0016 §4.1 records that the bootstrap-ordering guarantee holds only while the `ProjectIndex` bootstrap is synchronous. Sprint K (Async loading) makes `HomePage` load projects via `TaskManager`; if the bootstrap becomes asynchronous, ADR-0016 §4.1 must be revisited before Sprint K is closed.
+### 5.3 Phase 3 UI Scope
 
-**Note on the Monitor de Logs:** the diagnostic subsystem is specified in `monitor_logs.md`. It is **not** part of Sprint K, Sprint L, or Phase 3 closure. Sprint K may emit additional `logging` records as a by-product of async work (e.g. Task lifecycle), but it does not introduce the `QtLogHandler`, the `LogsDialog`, the 📋 button wiring, or the `Areas` snapshot contract. Those belong to a dedicated, currently unscheduled sprint, deliberately sequenced after Sprint K.
+| Feature | Assigned phase |
+|---|---|
+| Project search, sorting, selection, and removal UI | Phase 3 |
+| Project import/export | Phase 8 |
+| Resource preview and resource management | Phase 4B |
+| Flow management UI | Phase 5 |
+| Recent Projects and SQLite ProjectIndex | Phase 8 |
 
----
+The coordinated deletion API is implemented; its UI affordance remains pending in Phase 3.
+
+### 5.4 Deferred Diagnostic Subsystem
+
+The **Monitor de Logs** is specified in `monitor_logs.md`, but is not implemented. It is a developer-facing diagnostic subsystem, distinct from the clinical Console, History, and Telemetry.
+
+Its implementation belongs to a dedicated, unscheduled sprint. It is not a Phase 3, 4, or Release 1.0 requirement.
 
 ## 6. Phase Breakdown
 
-### Phase 0: Foundation & Boot
+### Phase 0 — Foundation & Boot
 
-**Goal:** Establish the repository, configuration, logging, minimal persistence and application boot sequence.
-
-**Deliverables:**
-
-- ✅ `../../../pyproject.toml` and CI pipeline.
-- ✅ `ConfigurationLoader` and `AppPathResolver`.
-- ✅ `EventBus`.
-- ✅ JSON serialization for Project Metadata.
-- ✅ Boot sequence in `__main__.py`.
-- ✅ Error handling for inaccessible application paths.
-- ✅ OS username resolution for the initial actor.
-- ✅ Flow contracts and repositories.
-- 🚧 Lazy imports and startup performance improvements.
-
-**Tests:** Configuration validation, path resolution, boot dependency construction, startup smoke tests.
-
-**Status:** ✅ Implemented, with startup performance work tracked separately.
-
----
-
-### Phase 1: Contracts, Core Domain & i18n
-
-**Goal:** Formally closed on 2026-11-18.
+**Goal:** Establish repository structure, configuration, logging, minimal persistence, and application startup.
 
 **Deliverables:**
 
-- ✅ Patient Domain and value objects.
-- ✅ Project Domain.
-- ✅ UI contracts: `Area`, `Editor`, `EditorRegistry`, `ToolbarSpec`, `ToolSpec`, `LayoutBuilder`, `LayoutRenderer`.
-- ✅ `ProjectRepository` and reference implementations.
-- ✅ `ProjectContext`, `ProjectAccessPolicy`, `ProjectCatalog`.
-- ✅ ADRs 0001, 0002, 0004–0016.
-- ✅ **Sprint B (i18n):**
-  - `Locale` value object (`pt_BR`, `en_US`).
-  - `TranslationService` Protocol (`tr`, `locale`, `set_locale`).
-  - `TranslationCatalog` (JSON loader) + `TranslationCatalogRegistry`.
-  - Concrete `TranslationService` with `en_US` fallback.
-  - `en_US` and `pt_BR` catalogs for existing keys.
-  - Injection into `MainWindow`, `Workspace`, `HomePage`, `TomographyEditor`.
-  - Removal of `MainWindow._humanize_translation_key`.
-  - Contract test: every `name_key` in every `flow.json` resolves in `en_US`.
-  - `../../../tests/architecture/test_no_hardcoded_strings_in_shell_widgets.py`: shell widgets must route user-facing strings through `tr(...)`.
-- ✅ **Sprint C (`EditorContext` propagation):**
-  - `task_manager`, `telemetry`, `correlation_id`, `command_dispatcher`, `scene_query`, `event_subscription`, `translation_service`, `theme_service`, `icon_provider` propagated to every Editor.
-  - `Workspace._create_editor` and `MainWindow._create_workspace` pass the complete set.
-  - `TomographyEditor.initialize` and `MeshDebugEditor.initialize` accept the complete set.
-  - Contract test: every Editor registered in `EditorRegistry` receives all required fields.
+- Repository and CI configuration.
+- `ConfigurationLoader` and `AppPathResolver`.
+- `EventBus`.
+- JSON serialization for Project Metadata.
+- Boot sequence in `__main__.py`.
+- Error handling for inaccessible application paths.
+- OS username resolution for the initial actor.
+- Flow contracts and repositories.
+
+**Tests:** Configuration, path resolution, boot dependency construction, and startup smoke tests.
+
+**Status:** Complete.
+
+Startup performance optimization and lazy-loading improvements are separate future work and do not affect Phase 0 closure.
+
+### Phase 1 — Contracts, Core Domain & i18n
+
+**Goal:** Establish core domain contracts, repositories, UI contracts, and localization.
+
+**Deliverables:**
+
+- Patient and Project domains.
+- Value objects and domain invariants.
+- UI contracts: `Area`, `Editor`, `EditorRegistry`, `ToolbarSpec`, `ToolSpec`, `LayoutBuilder`, `LayoutRenderer`.
+- `ProjectRepository` and reference implementations.
+- `ProjectContext`, `ProjectAccessPolicy`, and `ProjectCatalog`.
+- `TranslationService` Protocol and catalogs (`pt_BR`, `en_US`).
+- Translation injection into the application shell and existing Editors.
+- `EditorContext` propagation, including TaskManager, Telemetry, CommandDispatcher, SceneQuery, EventBus subscription, ThemeService, and IconProvider.
+
+**Tests:** Domain invariants, repository contracts, serialization round-trips, localization completeness, hardcoded-string architecture tests, and EditorContext propagation.
+
+**Status:** Complete, formally closed on 2026-11-18.
+
+### Phase 2 — Workspace Engine & Icons
+
+**Goal:** Establish the Workspace architecture, layout engine, visual theme infrastructure, and centralized icon management.
+
+**Deliverables:**
+
+- `LayoutTree`, `AreaManager`, `LayoutBuilder`, `LayoutRenderer`.
+- Workspace facade, TopOverlay, and OverlayManager.
+- Three-segment Top Bar and Area toggles.
+- Atomic `Workspace.load_spec()`.
+- `ThemeService`, `ThemeCompiler`, and canonical design tokens.
+- Settings infrastructure and persistence.
+- `IconProvider` Protocol and `UnicodeIconProvider`.
+- Centralized `IconManager` and icon catalog.
+- Icon provider injection into the application shell and shared components.
+- `AreaLayoutRenderer` and `EditorStack`.
+
+The existing icon management infrastructure is complete. SVG adoption is a future integration task, not a missing IconManager.
+
+**Tests:** Layout, Editor lifecycle, rendering, theme resolution, token completeness, icon catalog, fallback, theme integration, accessibility, and settings persistence.
+
+**Status:** Complete, formally closed on 2026-11-18.
+
+### Phase 3 — Project, Home Page & Professional Module
+
+**Goal:** Complete project lifecycle management and the first fully integrated built-in module.
+
+**Deliverables:**
+
+- `ProjectManager`, `ProjectCatalog`, `HomePage`, and `MainWindow`.
+- Project selection and opening lifecycle.
+- Project search, sorting, selection, and deletion UI.
+- `FlowCatalog` and Flow repositories.
+- Editor and Module package reorganization (ADR-0015).
+- In-memory `ProjectIndex` and synchronization (ADR-0016).
+- Coordinated deletion through `ProjectManager`.
+- Asynchronous Flow definition loading through `TaskManager`.
+- Professional domain, persistence, services, commands, and Editor.
+- Professional module navigation, sections, and configuration interactions.
+
+**ProjectIndex architecture:**
+
+The repository remains authoritative. `InMemoryProjectIndex` is a read-optimized projection maintained by `ProjectIndexSynchronizer` and domain events. The index does not own project data or filesystem operations.
+
+SQLite persistence and background disk reconciliation are deferred to Phase 8.
 
 **Tests:**
 
-- Pure Python Domain tests.
-- Repository contract tests.
-- Project serialization round-trips.
-- Domain invariant and error-case tests.
-- ✅ i18n contract tests.
-- ✅ `test_no_hardcoded_strings_in_shell_widgets.py`.
-- ✅ `EditorContext` propagation tests.
+- Project lifecycle and repository integration.
+- ProjectIndex contract and synchronization.
+- Bootstrap ordering and stale-index handling.
+- Coordinated deletion and failure paths.
+- External Reference data preservation.
+- Async loading and Workspace rollback.
+- Professional module integration and UI tests.
 
-**Status:** ✅ Implemented.
+**Phase closure criteria:**
 
----
+1. Resolve `ModuleUISpec` ownership within the accepted architecture.
+2. Approve Tela 2 visually.
+3. Complete L.2 and its tests.
+4. Verify the complete Professional module workflow.
+5. Update documentation and `next_steps.md`.
 
-### Phase 2: Workspace Engine & Icons
+**Status:** In progress.
 
-**Goal:** Formally closed on 2026-11-18.
+### Phase 4A — Imaging Core & Rendering Validation
 
-**Deliverables:**
+**Goal:** Validate the complete imaging path from DICOM import to Scene persistence and correct MPR/3D visualization.
 
-- ✅ `LayoutTree`, `AreaManager`, `LayoutBuilder`, `LayoutRenderer`.
-- ✅ `Workspace` facade, `TopOverlay`, `OverlayManager`.
-- ✅ Three-segment Top Bar.
-- ✅ Area toggles (Left, Right, Bottom).
-- ✅ Atomic `Workspace.load_spec()`.
-- ✅ **Sprint E (`ThemeService` + `ThemeCompiler` + tokens):** 47 canonical tokens; `ThemeService`; `ThemeCompiler`; `cranioz.infrastructure.settings` package; boot integration; expanded `_build_qss`; `StartButton` and `FlowRow` migrated to `setProperty` + global QSS; contract and unit tests.
-- ✅ **Sprint F (`IconProvider` + `UnicodeIconProvider`):** 60-icon catalog; injected into `MainWindow`, `Workspace`, `HomePage`, `TopBar` segments, `Toolbar`, `StartButton`, `FlowRow`; hardcoded glyphs migrated; `_WHITELIST` emptied; 5 contract tests.
-- ✅ **Sprint G (`AreaLayoutRenderer`):** separates inter-Area from intra-Area layout; `AreaWidget` delegates; no visible behavior change; regression tests.
-- ✅ **Sprint H (`EditorStack`):** `EditorLayoutSpec.stack([...])`; `EditorStack` widget; single-Editor case unchanged; tests for tab switching, editor lifecycle, dispose.
+This milestone is the principal technical gate for the imaging subsystem. UI expansion must not conceal unresolved rendering or geometry problems.
 
-**Tests:**
+#### 4A.1 Reference Dataset
 
-- Pure Python layout tests.
-- `pytest-qt` rendering tests.
-- Editor lifecycle tests.
-- Editor Stack behavior tests.
-- Theme color resolution tests.
-- Icon provider determinism tests.
-- Contrast tests.
-- ✅ Token and theme completeness tests (Sprint E).
-- ✅ Settings persistence round-trip and fallback tests (Sprint E).
-- ✅ Icon catalog, fallback, theme integration, widget contract, and accessibility tests (Sprint F).
+Create a controlled **Imaging Reference Dataset** before declaring the rendering pipeline validated.
 
-**Status:** ✅ Implemented.
+The initial dataset should include a synthetic asymmetric phantom with:
 
----
+- Known dimensions and voxel spacing.
+- Known orientation and physical origin.
+- Known slice positions.
+- Distinct, controlled intensity regions.
+- Asymmetric structures that reveal axis inversion, transposition, or displacement.
+- Expected reference results for axial, coronal, sagittal, and 3D views.
 
-### Phase 3: Project, Home Page & Professional Module
+The dataset must be reproducible and independent of patient data.
 
-**Goal:** Close Phase 3 formally. Remaining functional blocker: the **Professional module (Sprint L)**[cite: 1].
+#### 4A.2 Imaging and Scene Integration
 
-**Deliverables:**
+- Complete `CommandDispatcher` integration into Editors.
+- Complete `SceneQuery` propagation.
+- Integrate `ImportDicomSeriesCommand` with the Scene.
+- Validate `Volume`, `VolumeGeometry`, `ImageMetadata`, `VolumeProvenance`, and `IntensityScale`.
+- Preserve internal RAS and DICOM LPS-to-RAS conversion.
+- Validate DICOM sorting, orientation, spacing, calibration, and intensity handling.
+- Handle patient identity mismatches.
+- Ensure PHI-safe logging.
+- Implement Scene serialization (ADR-0009).
+- Implement filesystem-backed Scene persistence.
+- Preserve source DICOM as canonical data.
+- Define External Reference and Managed Copy behavior.
+- Implement VTI export with round-trip validation.
 
-- ✅ `ProjectManager`, `ProjectCatalog`, `HomePage`, `MainWindow`[cite: 1].
-- ✅ Project selection lifecycle[cite: 1].
-- ✅ `FlowCatalog` and Flow repositories[cite: 1].
-- ✅ **Editor Architecture Refactoring:** see ADR-0015 and `refactoring_plan.md` §11. Completed on 2026-11-18[cite: 1].
-- ✅ **Sprint I (`ProjectIndex`):** implemented per ADR-0016. Closed on 2026-11-20[cite: 1].
-  - `ProjectIndex` Protocol in `application/project/index.py`: `add`, `remove`, `lookup`, `list_summaries`, `list_ids`, `count`, `contains`, `replace_all`. Includes `ProjectIndexStaleError`. The Protocol is a pure read model and does not know about the repository, the event bus, or the filesystem[cite: 1].
-  - `InMemoryProjectIndex` in `application/project/in_memory_index.py`[cite: 1].
-  - `ProjectIndexSynchronizer` and `SynchronizedProjectIndex` in `application/project/index_synchronizer.py`[cite: 1].
-  - `ProjectCatalog` consumes a `ProjectIndex` instead of querying the `ProjectRepository` directly; `ProjectCatalog.refresh()` is removed (freshness is automatic)[cite: 1].
-  - Event-driven invalidation via `ProjectCreated`, `ProjectUpdated`, `ProjectDeleted`[cite: 1].
-  - Bootstrap ordering guarantee per ADR-0016 §4: `subscribe` → `repository.list_metadata()` → `replace_all`, on the same synchronous call stack. No event queue while the bootstrap is synchronous (see §5.1 note on Sprint K)[cite: 1].
-  - Staleness rule per ADR-0016 §3.3: a query never silently returns data from a stale index; `ProjectIndexStaleError` is raised when a rebuild after a detected staleness fails[cite: 1].
-  - Handler error containment per ADR-0016 §3.4: handlers never propagate to the `EventBus`; failures log with `project_id` and operation name only (no PHI) and mark the index as possibly stale[cite: 1].
-  - Contract tests: `add`/`remove`/`lookup`/`list`/`count`/`contains`/`replace_all`; bootstrap ordering; handler error containment; staleness propagation; catalog reads via `ProjectIndex` only; end-to-end integration with `ProjectManager`[cite: 1].
-  - Benchmark documented in ADR-0016's implementation notes (not a CI gate): 100/300/1000 projects in `tmp_path`, comparing `search_projects()` latency and `repository.list_metadata` call count between baseline (direct repository) and new (indexed)[cite: 1].
-  - **Not** part of Sprint I: `FilesystemProjectIndex` does not exist. A persisted index and a SQLite implementation remain deferred to Phase 8[cite: 1].
-  - **Final validation (2026-11-20):** 1692 passing tests, 0 failed, 0 errors, 2 skipped; `ruff check`, `ruff format --check`, and `mypy src` clean. The integration fixture `../../../tests/integration/ui/test_main_window_import.py` was migrated to the composition-root wiring; the bootstrap order (`synchronizer.start()` before `manager.create_project(...)`) is preserved and documented in ADR-0016 §4.2[cite: 1].
-- ✅ **Sprint J (Coordinated deletion):** complete on 2026-11-22[cite: 1].
-  - `ProjectManager.delete_project` coordinates `ProjectCatalog` → `ProjectIndex` → `FilesystemProjectRepository` via the `ProjectDeleted` event (ADR-0016 §2.2). The `ProjectManager` does not call `ProjectCatalog` or `ProjectIndex` directly[cite: 1].
-  - Rollback semantics verified: repository failure raises before `ProjectDeleted` is published; handler failure is contained by the synchronizer (ADR-0016 §3.4) and marks the index stale; the next query rebuilds from the authoritative repository (ADR-0016 §3.3). No event compensation, no manual index re-add[cite: 1].
-  - External source data (External Reference mode) is never removed by project deletion. `FilesystemProjectRepository` owns exactly one file (`project.json`); sibling files survive byte-identical[cite: 1].
-  - Contract and failure-path tests[cite: 1].
-  - **Final validation (2026-11-22):** 1701 passing tests, 0 failed, 0 errors, 2 skipped (+9 vs Sprint I); `../../../tests/architecture` 85 passed; `ruff check`, `ruff format --check`, `mypy src` clean (284 source files); `git diff --stat src/` empty (**no production code changed**; the coordination was already correct and the sprint proved it with tests)[cite: 1].
-  - **Scope correction:** the UI affordance for delete is deferred. The API-level behavior is verified and propagates through the catalog. The UI affordance requires UX decisions that are out of scope for a "coordinated deletion" sprint. Tracked in `next_steps.md` §5.2 and §7[cite: 1].
-- ✅ **Sprint K (Async loading):** complete on 2026-11-22. K-minimal
-  option (b): flows async, projects synchronous. `HomePage.refresh()`
-  is synchronous (in-memory `SynchronizedProjectIndex`, ADR-0016);
-  the `MainWindow` dispatches a `_LoadFlowsTask` through the
-  `TaskManager` because `FlowCatalog.list_definitions()` performs
-  filesystem I/O. `synchronizer.start()` remains synchronous in the
-  composition root; ADR-0016 §4.1 is not reopened. New tests:
-  `test_home_page_flows_async.py`, `test_main_window_workspace_rollback.py`,
-  `test_main_window_bootstrap_ordering.py`[cite: 1].
-- ⏳ **Sprint L.0.2 Deliveries C and D:** deferred at the current planning
-  decision. They do not block L.1.
-  - Deferred: `TimelineSlider`, `ColorPicker`, `Histogram`, final debug-harness
-    consolidation, HiDPI validation and catalog closure.
-- 🚧 **Sprint L (Professional module):**
-  - **L.0:** complete. System form widgets delivered.
-  - **L.0.2 Delivery A:** complete. Simple Qt-native widgets delivered.
-  - **L.0.2 Delivery B:** complete. `CollapsibleSection`, stable-key `DragList`
-    and `IconSidebar` delivered.
-  - **L.1 (implementation complete, pending decision and visual approval):**
-    domain, SQLite profile persistence, repository/service, command/query flow,
-    `ProfessionalEditor`, Tela 2, central-Area materialization, and
-    `professional.*` settings are implemented. Refactoring rule 4.1.2 forbids
-    `modules.builtin` from importing Workspace components, so the UI spec is
-    currently exposed through the UI composition layer. Developer approval is
-    required before changing that boundary or closing the ModuleUISpec
-    completion criterion.
-  - **L.2:** navigation, sections and configuration interactions.
-  - `ProfessionalEditor` registered in `EditorRegistry`[cite: 1].
-  - `ModuleUISpec` for the Professional module[cite: 1].
-  - Settings integration (`professional.*` keys)[cite: 1].
-  - Tests[cite: 1].
-  - **Sprint L is unblocked** by the completed Editor Architecture Refactoring, Sprint C, Sprint E, and Sprint F[cite: 1].
+Existing implementations of `DicomSorter`, `DicomValidator`, `DicomSeriesReader`, `ImportReport`, and `VtkImageAdapter` must be validated through the complete pipeline rather than treated as proof of end-to-end correctness.
 
-**Deferred to Phase 8:**
+#### 4A.3 Rendering Integration
 
-- SQLite `ProjectIndex` backend (`SqliteProjectIndex`, same `ProjectIndex` Protocol)[cite: 1].
-- Recent Projects[cite: 1].
-- Background disk reconciliation[cite: 1].
+- Implement the minimal `RenderingAdapter` between Scene objects and VTK.
+- Validate MPR using the existing `vtkImageReslice` pipeline.
+- Validate 3D volume rendering using `vtkSmartVolumeMapper`.
+- Verify voxel ordering, scalar type, origin, spacing, direction matrix, physical coordinates, and camera bounds.
+- Validate resource ownership and repeated open/close behavior.
+- Ensure rendering does not mutate clinical source data.
+- Keep VTK render-window operations on the GUI thread (ADR-0011).
 
-**Not part of Phase 3, not deferred to Phase 8 — deferred to a dedicated unscheduled sprint:**
+#### 4A.4 Rendering Acceptance Criteria
 
-- Monitor de Logs (`monitor_logs.md`): `QtLogHandler`, `LogsDialog`, 📋 button wiring, `Areas` snapshot contract. Documented and awaiting a dedicated sprint[cite: 1].
+The pipeline is considered validated only when:
 
-**Tests:**
+1. Physical dimensions, spacing, orientation, and origin match the reference dataset.
+2. Axial, coronal, and sagittal views display the expected anatomical orientation.
+3. Asymmetric phantom structures appear in the correct positions.
+4. Crosshair and slice navigation correspond to the same physical coordinates across views.
+5. Intensity values and Window/Level behavior match the reference.
+6. 3D rendering displays the expected volume bounds and orientation.
+7. No unexplained transposition, inversion, displacement, or geometry distortion remains.
+8. Scene serialization and reload preserve the expected geometry and visualization state.
+9. Tests pass on the supported Windows environment, including rendering lifecycle checks.
 
-- Project lifecycle tests[cite: 1].
-- Filesystem repository integration tests[cite: 1].
-- HomePage selection and refresh regression tests[cite: 1].
-- Project opening and rollback tests[cite: 1].
-- ProjectIndex contract tests (index), synchronizer tests (bootstrap, events, error containment, `rebuild`, `ensure_fresh`), catalog-via-index tests, and end-to-end `ProjectManager` sync tests (Sprint I, ADR-0016)[cite: 1].
-- `ProjectIndexStaleError` propagation and `MainWindow` handling tests (Sprint I, ADR-0016)[cite: 1].
-- Delete-specific staleness paths and the physical delete invariant (Sprint J, ADR-0016 §3.3/§3.4 and §2.2)[cite: 1].
-- Architecture gate: `../../../tests/architecture/test_no_legacy_project_delete_api.py` (Sprint J)[cite: 1].
-- Async flow loading, workspace rollback, and bootstrap ordering integration tests (Sprint K)[cite: 1].
-- Professional module integration tests[cite: 1].
+The reference dataset and acceptance tests must be retained for Phase 7.
 
-**Status:** 🚧 In Progress. Remaining functional blocker: **Sprint L**. L.1 is
-implemented through the profile Editor and settings flow, but still requires a
-developer decision on ModuleUISpec ownership and manual visual approval of
-Tela 2. L.0.2 Deliveries C and D are deferred.
+#### 4A.5 Module Infrastructure
 
----
+Complete module discovery and registration for:
 
-### Phase 4: Scene & Visualization
+- Built-in module manifests.
+- Dependency resolution.
+- Entry-point imports.
+- Editors, Tools, Services, and Flow definition registration.
+- Shared EventBus across ModuleContexts.
 
-**Status:** ⏳ Planned. Begins after Phase 3 is marked `✅ Implemented`[cite: 1].
+This milestone provides module infrastructure and discovery only. It does not execute clinical workflows.
 
-**Goal:** Complete the integration between the Application layer, Scene, imaging infrastructure, rendering adapters, and Editors[cite: 1].
+**Tests:** DICOM import, geometry, calibration, NumPy/VTK interoperability, Scene lifecycle, persistence, reference dataset, MPR/3D rendering, and module registration.
 
-#### 4.1 Application Layer
+**Status:** Planned.
 
-- ✅ `main_window`, `tasks/`, `telemetry/`, `events/` contracts and reference implementations[cite: 1].
-- 🚧 `CommandDispatcher` integration into all Editors[cite: 1].
+### Phase 4B — Import & Visualization UI
 
-#### 4.2 Scene and Domain Integration
+**Goal:** Expand the validated imaging core into the complete import and visualization interface.
 
-- ✅ `domain/scene/`, `application/scene/`[cite: 1].
-- ✅ `ImportDicomSeriesCommand` and handler[cite: 1].
-- 🚧 Complete `SceneQuery` propagation[cite: 1].
-- ⏳ Scene serialization (ADR-0009)[cite: 1].
-- ⏳ Filesystem-backed Scene persistence[cite: 1].
-- ⏳ Complete integration between Commands, Scene and imported objects[cite: 1].
+#### 4B.1 Unified Import Dialog
 
-#### 4.3 Medical Imaging Infrastructure
+- `ImportManager` with categories:
+  - Volumes
+  - Radiographs
+  - Scans
+  - Photographs
+  - Meshes
+  - Dental Implants
+  - Facial Implants
+- Sources: Project, File, Sample Data.
+- `ImportDialog` with category navigation, source selector, asset grid/list, preview, and selection actions.
+- Per-category importers.
+- Auto-tagging and resource metadata.
+- Scene and DomainObjectStore integration.
+- TaskManager progress, cancellation, and error reporting.
 
-**4.3.1 Volume and geometry**
+#### 4B.2 Resource Management
 
-- ✅ `Volume`, `VolumeGeometry`, `ImageMetadata`, `VolumeProvenance`, `IntensityScale`[cite: 1].
-- ✅ Internal RAS convention[cite: 1].
-- ✅ LPS-to-RAS conversion[cite: 1].
-- ✅ Explicit intensity calibration state[cite: 1].
+- Resource preview.
+- Resource selection and management.
+- Asset metadata and contextual actions.
+- Integration with Scene and project ownership rules.
 
-**4.3.2 DICOM import and validation**
+#### 4B.3 Viewer Layouts
 
-- ✅ `DicomSorter`, `DicomValidator`, `DicomSeriesReader`, `ImportReport`[cite: 1].
-- ✅ `spacing_z` from `ImagePositionPatient` distance[cite: 1].
-- ✅ `RescaleSlope`/`RescaleIntercept` per slice[cite: 1].
-- ⏳ Patient identity mismatch handling[cite: 1].
-- ⏳ PHI-aware logging[cite: 1].
+Implement `ViewerLayoutManager` supporting:
 
-**4.3.3 Memory and interoperability**
+- 1×1, 2×2, and 3×3 layouts.
+- Editable layouts up to 6×4.
+- Panoramic and ATM-specific layouts.
+- Active and inactive view states.
+- Viewer maximization and restoration.
 
-- ✅ Voxel buffer ownership: `Volume` owns; `VtkImageAdapter` shares[cite: 1].
-- ✅ NumPy `[z, y, x]` convention[cite: 1].
-- ✅ Voxel ordering contract: `data.ravel(order="C")` without transposition. Regression test enforced[cite: 1].
-- ✅ Production scalar type: `VTK_SHORT`[cite: 1].
-- ✅ Direction matrix applied in `VtkImageAdapter`[cite: 1].
+#### 4B.4 Visualization Tools
 
-**4.3.4 Unified Import Dialog (required)**
+**2D tools:**
 
-- `ImportManager` with categories (Volume, Radiographs, Scans, Photographs, Meshes, Dental Implants, Facial Implants), sources (project, file, sample data), preview, auto-tagging[cite: 1].
-- `ImportDialog` with tab bar, source selector, asset grid/list, preview panel, add/remove/select actions[cite: 1].
-- Per-category importers[cite: 1].
-- Scene and DomainObjectStore integration[cite: 1].
-- TaskManager progress, cancellation, error reporting[cite: 1].
+- Brightness and contrast.
+- Pan and zoom.
+- HU/intensity probe.
+- ROI.
+- Nerve drawing.
+- Distance and angle.
+- Crosshair and ruler.
+- LUT selection and inversion.
+- Background color.
+- Animation and thumbnails.
 
-**4.3.5 Storage and export**
+**3D tools:**
 
-- ⏳ External Reference and Managed Copy storage modes[cite: 1].
-- ⏳ Preserve source DICOM as canonical[cite: 1].
-- ⏳ VTI export with round-trip validation[cite: 1].
-- ⏳ Project deletion never removes external source data[cite: 1].
+- ROI, cut, and paint.
+- Annotations.
+- Distance and angle.
+- Rendering preset selection.
+- Orthographic and perspective projection.
+- Background color.
+- Rotation lock and thumbnails.
 
-#### 4.4 Geometry Infrastructure
+#### 4B.5 Clinical Visualization
 
-**Implemented:** `Mesh`, `CoordinateFrame`, STL I/O, VTK adapter, `MeshDebugEditor`[cite: 1].
+- HU-based transfer functions: `bone_cortical`, `bone_trabecular`, `soft_tissue`, `air`, `metal`, and `cbct_percentile`.
+- Viewer status indicators and orientation badges.
+- Remove debug bounding geometry.
+- Validate VTK resource lifecycle.
 
-**Deferred:** `GeometryRevision`, content-hash deduplication, persistent asset storage, `ValidationProfile`, `GeometryOperation`, booleans, welding, benchmarks[cite: 1].
+**Tests:** Import Dialog integration, resource management, ViewerLayoutManager, tool behavior, LUT selection, presets, UI rendering, and performance.
 
-#### 4.5 Visualization Infrastructure
+**Status:** Planned.
 
-**Implemented:**
+### Phase 5 — Clinical Flows & Panel Widget Registry
 
-- ✅ `MPRView` (manual `vtkImageReslice` pipeline)[cite: 1].
-- ✅ `Viewport3DView` (`vtkSmartVolumeMapper`, `VTK_SHORT`)[cite: 1].
-- ✅ Axial, coronal, sagittal, 3D orientations[cite: 1].
-- ✅ Volume rendering presets[cite: 1].
-- ✅ `set_volume(Volume)`, `set_mesh(Mesh)`[cite: 1].
-- ✅ DICOM volume path validated in MPR and 3D[cite: 1].
-
-**Pending:**
-
-- ⏳ `RenderingAdapter` between Scene and VTK[cite: 1].
-- ⏳ **ViewerLayoutManager** (dynamic grids: 1×1, 2×2, 3×3, editable up to 6×4, panoramic, ATM)[cite: 1].
-- ⏳ **2D Tools** (brightness/contrast, pan, zoom, HU probe, ROI, nerve drawing, distance/angle, crosshair, ruler, LUT selection, LUT inversion, background color, animation, thumbnail)[cite: 1].
-- ⏳ **3D Tools** (ROI, cut, paint, annotations, distance/angle, preset selection, orthographic/perspective, background color, lock rotation, thumbnail)[cite: 1].
-- ⏳ **Clinical transfer functions** (HU-based presets: `bone_cortical`, `bone_trabecular`, `soft_tissue`, `air`, `metal`, `cbct_percentile`)[cite: 1].
-- ⏳ **Viewer status indicators** (active view badge, orientation badge, inactive state)[cite: 1].
-- ⏳ Remove the debug bounding box from `Viewport3DView`[cite: 1].
-- ⏳ VTK resource lifecycle under repeated open/close[cite: 1].
-- ⏳ Headless and Windows rendering tests[cite: 1].
-
-**Architectural constraints:**
-
-- Domain data must not depend on VTK[cite: 1].
-- VTK actors, mappers, and render windows are presentation objects[cite: 1].
-- Rendering adapters translate semantic Scene objects into renderable representations[cite: 1].
-- Rendering updates must not mutate clinical source data[cite: 1].
-- VTK render-window and actor lifecycle operations remain on the GUI thread (ADR-0011)[cite: 1].
-
-#### 4.6 Module Integration
-
-- 🚧 `InMemoryModuleLoader` with dependency resolution[cite: 1].
-- 🚧 Entry-point imports[cite: 1].
-- 🚧 Tools, Editors, Services, Flows registration[cite: 1].
-- 🚧 `BUILTIN_MANIFESTS`[cite: 1].
-- 🚧 Shared EventBus across ModuleContexts[cite: 1].
-- ⏳ First functional built-in module[cite: 1].
-
-#### 4.7 Tests
-
-- DICOM import tests[cite: 1].
-- Geometry and coordinate conversion tests[cite: 1].
-- Slice ordering and spacing validation[cite: 1].
-- Intensity calibration tests[cite: 1].
-- NumPy/VTK interoperability tests[cite: 1].
-- Geometry Infrastructure tests[cite: 1].
-- VTI round-trip tests[cite: 1].
-- Scene lifecycle and persistence tests[cite: 1].
-- ✅ Voxel ordering regression tests[cite: 1].
-- ✅ `int16` fidelity test[cite: 1].
-- ✅ `spacing_z` test[cite: 1].
-- ⏳ Import Dialog end-to-end tests[cite: 1].
-- ⏳ ViewerLayoutManager tests[cite: 1].
-- ⏳ Tool behavior tests[cite: 1].
-- ⏳ LUT selection and inversion tests[cite: 1].
-- ⏳ Preset selection tests[cite: 1].
-- ⏳ Performance tests[cite: 1].
-
-### Phase 5: Clinical Flows & Panel Widget Registry
-
-**Goal:** Implement workflow execution, panel composition per Area, and layout persistence.
+**Goal:** Implement workflow execution, panel composition, and layout persistence.
 
 **Deliverables:**
 
-- ⏳ `WorkflowEngine` (evaluates requirements, transitions).
-- ⏳ JSON flow loading and requirement evaluation.
-- ⏳ Step-state computation.
-- ⏳ **`WorkflowBreadcrumb` in the Top Bar** (replaces the removed `steps_panel`).
-- ⏳ Flow state persistence.
-- ⏳ **`PanelRegistry`:** panels registered by ID, addressable by Area.
-- ⏳ Area panel management: Left, Right, Bottom support zero or more registered panels.
-- ⏳ Built-in panels:
-  - **Left:** Objects, Volumes, Cephalometric Points, Masks, Measurements.
-  - **Right:** Registry, Scene, History, Material, Osteotomy Patterns, Object Properties, Tomography, Segmentation.
-  - **Bottom:** Console, History, Animation, AI Assistant, Nodes.
-- ⏳ Layout State Persistence (ADR-0010).
-- ⏳ Real ModuleRegistry and ModuleLoader integration.
-- ✅ Flow Catalog and repositories.
+- `WorkflowEngine` for requirements, transitions, and execution state.
+- JSON Flow loading and requirement evaluation.
+- Step-state computation.
+- `WorkflowBreadcrumb` in the Top Bar.
+- Flow state persistence.
+- `PanelRegistry` with ID-based registration and Area assignment.
+- Multiple registered panels per Area.
+- Panel visibility, ordering, and layout integration.
+- Layout State Persistence (ADR-0010).
+- Integration with the production ModuleRegistry and ModuleLoader.
+- Flow management UI: create, select, remove, import, export, inspect module sequence, and add modules.
 
-**Status:** ⏳ Planned.
+**Built-in panel groups:**
 
----
+| Area | Panels |
+|---|---|
+| Left | Objects, Volumes, Cephalometric Points, Masks, Measurements |
+| Right | Registry, Scene, History, Material, Osteotomy Patterns, Object Properties, Tomography, Segmentation |
+| Bottom | Console, History, Animation, AI Assistant, Nodes |
 
-### Phase 6: Clinical Pipeline
+The Console remains a clinical/application notification channel, distinct from the developer-facing Monitor de Logs.
 
-**Goal:** Implement the clinical tools required for the initial orthognathic surgery workflow.
+**Tests:** Workflow transitions, requirement evaluation, Flow persistence, PanelRegistry contracts, Area composition, and layout round-trips.
 
-#### Phase 6A — Tomography & Segmentation
+**Status:** Planned.
 
-- ⏳ Tomography Editor clinical workflow.
-- ⏳ Synchronized axial, coronal, sagittal navigation.
-- ⏳ Physical-coordinate crosshair and slice positioning.
-- ⏳ Slice distance, count, range controls.
-- ⏳ Window/Level and intensity display controls.
-- ⏳ Intensity probing.
-- ⏳ ROI tools (display ROI vs processing ROI).
-- ⏳ Threshold-based segmentation.
-- ⏳ Mask creation and editing.
-- ⏳ Segmentation paint/erase/close holes/small-segment removal.
-- ⏳ AI-assisted segmentation (deferred to Phase 10 if not ready).
-- ⏳ Curved MPR and panoramic reconstruction.
-- ⏳ Surface generation from segmentation masks.
-- ⏳ Clinical workflow integration.
+### Phase 6 — Clinical Pipeline
 
-#### Phase 6B — Registration & Cephalometry
+**Goal:** Implement the clinical capabilities required for the initial orthognathic surgery workflow.
 
-- ⏳ Image and surface registration.
-- ⏳ Reference-based alignment.
-- ⏳ Cephalometric template system.
-- ⏳ Cephalometric capture strategies (manual, thirds cube, facial fifths, dental cusps, AI-assisted).
-- ⏳ Primary vs secondary point distinction.
-- ⏳ Point connectivity.
-- ⏳ Landmark refinement and verification.
-- ⏳ Cephalometric measurements and reports.
-- ⏳ Registration and landmark validation.
+The subprojects are independently scoped and must have their own implementation and validation criteria.
 
-#### Phase 6C — Osteotomy
+#### 6A — Tomography & Segmentation
 
-- ⏳ Le Fort I, BSSO, genioplasty.
-- ⏳ Osteotomy pattern library.
-- ⏳ Boolean operations and fragment separation.
-- ⏳ Fragment movement and transform management.
-- ⏳ Pre-op vs post-op comparison and animation.
-- ⏳ Soft-tissue thickness map and color map.
-- ⏳ Surgical plan persistence.
+- Clinical Tomography Editor workflow.
+- Synchronized axial, coronal, and sagittal navigation.
+- Physical-coordinate crosshair and slice positioning.
+- Slice distance, count, and range controls.
+- Window/Level and intensity controls.
+- Intensity probing.
+- Display ROI and processing ROI.
+- Threshold-based segmentation.
+- Mask creation and editing.
+- Paint, erase, hole closing, and small-segment removal.
+- Surface generation from segmentation masks.
+- Curved MPR and panoramic reconstruction.
+- Clinical workflow integration.
 
-#### Phase 6D — Surgical Guides
+AI-assisted segmentation is not a prerequisite for this milestone. Advanced AI platform integration belongs to Phase 10.
 
-- ⏳ Parametric guide generation.
-- ⏳ Guide-to-anatomy fit validation.
-- ⏳ Manufacturing constraints.
-- ⏳ Export for additive manufacturing.
+#### 6B — Registration & Cephalometry
 
-#### Phase 6E — Integrated Validation
+**Technical deliverables:**
 
-- ⏳ End-to-end orthognathic workflow.
-- ⏳ Data integrity and reproducibility tests.
-- ⏳ Geometric validation.
-- ⏳ Clinical workflow usability tests.
+- Image and surface registration.
+- Reference-based alignment.
+- Cephalometric template system.
+- Automatic, AI-assisted, and reference-based landmark localization.
+- Primary and secondary landmark classification.
+- Point connectivity.
+- Landmark refinement and verification.
+- Cephalometric measurements and reports.
+- Registration and landmark validation.
 
-**Status:** ⏳ Planned.
+Manual localization is a refinement and fallback strategy, not the primary system architecture.
 
----
+**AI scope:** AI-assisted landmark localization is a specific, reviewable clinical algorithm within this subproject. It is distinct from the general AI Assistant, Node System, and MCP infrastructure planned for Phase 10.
 
-### Phase 7: Scientific Validation
+**Scientific data protocol:**
+
+The target of at least 30 CBCT cases requires a data acquisition and validation plan before implementation is considered scientifically complete.
+
+The protocol must define:
+
+- Data source and case eligibility.
+- Inclusion and exclusion criteria.
+- Ethics Committee/CEP approval or formal determination, as applicable.
+- Anonymization and secure storage.
+- Data access and governance.
+- Landmark annotation protocol.
+- Reference standard and examiner qualification.
+- Intra- and inter-examiner reliability.
+- Separation of development and validation datasets.
+
+Data availability and ethical approval must not be assumed. These are independent prerequisites that may require more time than software implementation.
+
+#### 6C — Osteotomy
+
+- Le Fort I, BSSO, and genioplasty.
+- Osteotomy pattern library.
+- Boolean operations and fragment separation.
+- Fragment movement and transform management.
+- Preoperative and postoperative comparison.
+- Animation.
+- Soft-tissue thickness and color maps.
+- Surgical plan persistence.
+
+#### 6D — Surgical Guides
+
+- Parametric guide generation.
+- Guide-to-anatomy fit validation.
+- Manufacturing constraints.
+- Export for additive manufacturing.
+
+#### 6E — Integrated Clinical Workflow
+
+- End-to-end orthognathic workflow.
+- Data integrity and reproducibility.
+- Geometric validation.
+- Clinical workflow usability.
+- Integration of segmentation, registration, osteotomy, and guide generation.
+
+**Status:** Planned.
+
+### Phase 7 — Scientific Validation
 
 **Goal:** Execute the scientific validation protocols defined in the doctoral research project.
 
 **Deliverables:**
 
+- Imaging geometry validation using the Phase 4A reference dataset.
+- DICOM and rendering reproducibility.
 - Geometric validation reports.
-- Reproducibility studies.
+- Clinical accuracy evaluation.
 - Inter- and intra-examiner reliability.
 - ICC and measurement error analysis.
 - Usability evaluation.
 - Performance evaluation on reference hardware.
-- Documentation of validation methodology.
+- Documentation of methods, results, and limitations.
 
-**Status:** ⏳ Planned.
+Clinical validation must use the approved dataset and protocol established in Phase 6B, as applicable.
 
----
+**Status:** Planned.
 
-### Phase 8: Scientific Product (Release 1.0)
+### Phase 8 — Scientific Product (Release 1.0)
 
-**Goal:** Consolidate the validated clinical core into a stable, distributable scientific product.
+**Goal:** Consolidate the validated clinical core into a stable and distributable scientific product.
 
 **Deliverables:**
 
+**Distribution and reliability**
 - Windows installer.
 - Autosave and crash recovery.
-- PDF report generation (localized).
-- Final user and developer documentation.
-- **Recent Projects** on the Home Page.
-- **SQLite ProjectIndex** (`SqliteProjectIndex`, same `ProjectIndex` Protocol as ADR-0016).
-- **Background disk reconciliation** for the Project Catalog (ADR-0016 §3.2).
-- **IconManager complete:** `SvgIconProvider`, SVG assets, cache by (name, size, theme), SVG recoloring.
-- **Complete migration of every widget** to `ThemeService.color(...)` + `IconProvider.icon(...)`.
-- **Locale selector UI.**
-- **Complete `pt_BR` and `en_US` catalogs.**
-- **Locale-aware formatting.**
-- **Custom volume-rendering preset editor.**
-- **High-contrast theme** (as `ThemeName.HIGH_CONTRAST`).
 - Performance profiling and optimization.
 - Release packaging and versioning.
+- Final user and developer documentation.
+
+**Project management**
+- Recent Projects on the Home Page.
+- `SqliteProjectIndex`, implementing the existing `ProjectIndex` Protocol.
+- Background disk reconciliation (ADR-0016).
+- Project import/export with compatibility, versioning, and integrity validation.
+
+**Appearance and localization**
+- SVG integration into the existing `IconManager`.
+- `SvgIconProvider` and SVG asset catalog.
+- Theme-aware SVG rendering and recoloring.
+- Icon cache by name, size, and theme.
+- Progressive migration of UI icons from Unicode to SVG.
+- Complete shared-widget migration to `ThemeService` and the existing icon management infrastructure.
+- Locale selector UI.
+- Complete `pt_BR` and `en_US` catalogs.
+- Locale-aware formatting.
+- High-contrast theme (`ThemeName.HIGH_CONTRAST`).
+
+**Medical visualization**
+- Custom volume-rendering preset editor.
+
+**Scientific dissemination**
 - Scientific publication.
-- DOI registration and public release.
+- DOI registration.
+- Public release.
 
-**Status:** ⏳ Planned.
+**Status:** Planned.
 
----
+### Phase 9 — Extensibility (Release 2.0)
 
-### Phase 9: Extensibility (Release 2.0)
-
-**Goal:** Open the platform to external development and community contributions.
+**Goal:** Enable external development and community contributions.
 
 **Deliverables:**
 
@@ -595,11 +592,9 @@ Tela 2. L.0.2 Deliveries C and D are deferred.
 - State migration contract.
 - Compatibility and versioning policies.
 
-**Status:** ⏳ Planned.
+**Status:** Planned.
 
----
-
-### Phase 10: AI and Nodes (Release 3.0)
+### Phase 10 — AI and Nodes (Release 3.0)
 
 **Goal:** Introduce advanced automation and procedural workflows.
 
@@ -608,186 +603,184 @@ Tela 2. L.0.2 Deliveries C and D are deferred.
 - Non-destructive Node System.
 - Graph evaluation and execution.
 - AI Assistant Editor.
-- AI-assisted clinical operations.
+- General AI-assisted clinical operations.
 - MCP Server integration.
 - Command parity between UI and automated execution.
 
-**Status:** ⏳ Planned.
+This phase covers platform-level AI and automation capabilities. It does not replace the specific AI-assisted landmark localization planned in Phase 6B.
 
----
+**Status:** Planned.
 
 ## 7. Testing Strategy & Metrics
 
-Testing is a clinical requirement. Metrics must be reproducible and contextualized.
+Testing is a clinical requirement. Performance and accuracy claims must be reproducible and contextualized.
 
-### 7.1 Coverage
+### 7.1 Test Coverage
 
-- **Domain:** Critical invariants and error cases.
-- **Application:** Command execution, transaction rollback, event publication, task lifecycle, i18n contract, settings round-trip, project catalog synchronization (ADR-0016), coordinated deletion (ADR-0016 §2.2/§3.3/§3.4).
-- **Infrastructure:** DICOM parsing, geometry, calibration, persistence, interoperability, settings persistence and migration.
-- **UI:** Widget behavior, Editor lifecycle, Workspace integration, tool behavior, import dialog.
-- **Appearance:** Token completeness, theme completeness, contrast, no hardcoded values, icon catalog, surface composition.
-- **End-to-End:** Complete clinical workflows using synthetic or approved datasets.
+| Layer | Required validation |
+|---|---|
+| Domain | Invariants, value objects, error cases |
+| Application | Commands, transactions, events, tasks, workflows |
+| Infrastructure | DICOM, geometry, calibration, persistence |
+| UI | Widget behavior, Editor lifecycle, Workspace integration |
+| Appearance | Tokens, themes, contrast, icon catalog |
+| Integration | Scene, import, rendering, persistence |
+| End-to-End | Clinical workflows using synthetic or approved datasets |
 
-### 7.2 Performance Metrics
+### 7.2 Performance Targets
 
-All performance targets must be measured using a defined Reference Dataset and Reference Hardware.
+All targets require a defined Reference Dataset and Reference Hardware.
 
 Initial targets:
 
 - **DICOM Import:** 500-slice reference dataset in under 10 seconds, including indexing and readiness for first visualization.
 - **Surface Rendering:** 30+ FPS for a mesh of 1,000,000 polygons on reference hardware.
 - **Memory:** Below 4 GB RAM during standard facial CT processing.
-- **Project Catalog Queries (ADR-0016):** after bootstrap, `search_projects()` must not perform filesystem I/O per keystroke. Verified by call-count test; latency benchmark documented in ADR-0016 implementation notes.
+- **Project Catalog:** No filesystem I/O per keystroke after index bootstrap; verify through call-count tests and benchmarks.
 
-### 7.3 CPU and GPU Responsibilities
+These are targets, not verified performance claims.
+
+### 7.3 CPU and GPU
 
 - Clinical data and semantic objects remain in main memory and the Domain Scene.
-- GPU memory stores renderable representations and rendering resources.
+- GPU memory stores rendering representations and resources.
 - GPU acceleration is optional for core clinical workflows.
-- CPU-based fallback must remain available for essential operations.
+- CPU fallback must remain available for essential operations.
 
 ### 7.4 Concurrency
 
-- `TaskManager` is the only application mechanism for off-thread work (ADR-0011).
+- `TaskManager` is the application mechanism for off-thread work (ADR-0011).
 - Long-running DICOM parsing, segmentation, registration, and mesh processing execute as Tasks.
 - GUI and VTK render-window operations remain on the GUI thread.
 - Cancellation is cooperative.
-- Do not use `QTimer` as a substitute for background execution.
-- The `ProjectIndexSynchronizer` (ADR-0016) assumes single-threaded execution on the main thread, consistent with the `EventBus` and `ProjectManager`. If the bootstrap becomes asynchronous (Sprint K), ADR-0016 §4.1 must be revisited.
-- The `QtLogHandler` (when implemented, see `monitor_logs.md` §6.3) does **not** spawn threads. It marshals `LogRecord`s from any thread to the GUI thread through a `Qt.ConnectionType.QueuedConnection`. This is a marshalling mechanism, not a work-execution mechanism; it does not conflict with the "TaskManager as the only application mechanism for off-thread work" rule.
+- `QTimer` must not be used as a substitute for background execution.
 
-### 7.5 Telemetry
+### 7.5 Telemetry and Privacy
 
-Long-running operations must emit telemetry events through `TelemetrySink`, using correlation IDs (ADR-0012). Telemetry must not contain PHI.
+- Long-running operations emit telemetry through `TelemetrySink`, using correlation IDs (ADR-0012).
+- Telemetry and logs must not contain PHI.
+- Project synchronization failures log only `project_id` and operation name.
+- The Monitor de Logs is a logging view, not a telemetry channel.
 
-The `ProjectIndexSynchronizer` (ADR-0016) must log failures using `project_id` and operation name only, never `project_name` or `patient_display_name`.
-
-The Monitor de Logs (`monitor_logs.md`) is a `logging` view, not a telemetry channel. It does not go through `TelemetrySink`, and it does not emit telemetry of its own.
-
----
-
-## 8. Release Criteria (Definition of Done)
+## 8. Definition of Done
 
 A phase is complete when:
 
-1. Code follows the accepted architecture and relevant ADRs.
-2. Unit, contract, integration and UI tests are passing as applicable.
+1. Implementation follows accepted architecture and relevant ADRs.
+2. Applicable unit, contract, integration, and UI tests pass.
 3. New Protocols have contract tests.
 4. CI is green.
 5. Documentation is updated.
-6. The feature is usable through its intended UI workflow.
-7. No unresolved `TODO` remains without a linked issue.
-8. No production `NoOp*` placeholder remains for a service the phase claims to deliver.
-9. No call site uses a pre-ADR API that the accepted ADR removed without a shim (e.g., no `ProjectCatalog(repository=...)` remains after ADR-0016). Verified by grep in the sprint close review.
-10. Known debt affecting the phase is fixed or explicitly tracked with a linked issue.
-11. Data integrity, failure handling and recovery behavior are tested where relevant.
-12. Every user-facing string resolves through `TranslationService`.
-13. Every shared visual property resolves through `ThemeService`; no hardcoded color, size, spacing, radius, opacity or font weight in the Qt presentation layer, except for the files explicitly listed in `_KNOWN_DEBT_FILES` (widget migration sprint).
+6. The intended UI workflow is usable.
+7. Unresolved TODOs are linked to tracked work.
+8. No production `NoOp*` placeholder remains for a service claimed as delivered.
+9. Deprecated APIs are removed from call sites or have an explicitly accepted compatibility layer.
+10. Known technical debt is fixed or tracked.
+11. Data integrity, failure handling, and recovery are tested where relevant.
+12. User-facing strings use `TranslationService`.
+13. Shared visual properties use the appearance architecture, with any remaining migration debt explicitly tracked.
 
 ### 8.1 Release 1.0 Scope
 
 Release 1.0 delivers the validated clinical core defined by the doctoral research scope.
 
-It does not include:
+It does not require:
 
 - External Plugins.
 - Node System.
-- AI/MCP platform integration.
-- Multi-monitor support as a required feature.
+- General AI/MCP platform integration.
+- Multi-monitor support.
 
 These capabilities belong to Releases 2.0 and 3.0.
 
----
+## 9. Implementation Record
 
-## 9. Implementation Summary
+This section records the current implementation baseline and major completed architectural work. Detailed implementation procedures belong in their respective ADRs and sprint documentation.
 
-The foundation, core domain, workspace, project lifecycle, imaging pipeline, and DICOM visualization are implemented. The voxel-ordering bug that blocked Phase 4 was resolved on 2026-11-06. The appearance architecture is decided (ADR-0014, `../../architecture/appearance`).
+### 9.1 Foundation and Workspace
 
-**The Editor Architecture Refactoring closed on 2026-11-18.** It moved Editor implementations out of `ui/` into a top-level `cranioz/editors/` package, separated Editor contracts from concrete implementations, separated reusable Views from concrete Editors, and enforced the dependency boundaries through AST-based architecture tests. See ADR-0015 (`../../adr/ADR-0015_Editor_and_Module_Package_Reorganization.md`) and `refactoring_plan.md` §11. Final validation: **1635 passing tests, 0 failed, 0 errors, 2 skipped, ruff check clean, ruff format --check clean, mypy src clean (281 files), 85% overall coverage.**
+Phases 0–2 are closed.
 
-Sprint B (i18n) is complete: the shell — `MainWindow`, the Home Page tree, the three Top Bar segments, and the Workspace placeholder editor — resolves user-facing strings through the `TranslationService`. The architecture guard `../../../tests/architecture/test_no_hardcoded_strings_in_shell_widgets.py` prevents regressions.
+- Configuration, logging, application paths, EventBus, and boot sequence are implemented.
+- Domain and UI contracts are established.
+- Localization contracts and catalogs are implemented.
+- ThemeService, ThemeCompiler, and canonical design tokens are implemented.
+- IconManager, IconProvider, UnicodeIconProvider, and the initial icon catalog are implemented.
+- Workspace layout, overlays, Area rendering, and EditorStack are implemented.
 
-Sprint E (appearance foundation) is complete: `ThemeService` and `ThemeCompiler` are implemented, the 47 canonical design tokens are defined for `DARK` and `LIGHT`, the `cranioz.infrastructure.settings` package provides typed, versioned, and atomically written user settings, and `AppPathResolver.user_settings_path()` resolves the user settings file. The Modern Dark palette is applied, the QSS covers tables, headers, scrollbars, buttons, inputs, labels, cards, `StartButton`, and `FlowRow`, and the two Home Page widgets (`StartButton`, `FlowRow`) are migrated from inline `setStyleSheet` to `setProperty` + the global QSS.
+SVG adoption in the UI remains a Phase 8 deliverable.
 
-Sprint F (icons) is complete: `IconState`, `IconProvider` Protocol and `UnicodeIconProvider` are implemented with the closed 60-icon catalog; the provider is injected into `MainWindow`, `Workspace`, `HomePage`, the three Top Bar segments, `Toolbar`, `StartButton`, and `FlowRow`; the hardcoded glyphs in those widgets are migrated to `provider.icon(...)`; and the `_WHITELIST` in `test_no_hardcoded_strings_in_shell_widgets.py` is empty, meaning the Sprint B debt is paid. The five contract tests (`test_icon_catalog.py`, `test_icon_fallback.py`, `test_icon_theme.py`, `test_icon_widget_contract.py`, `test_icon_accessibility.py`) pass.
+### 9.2 Editor Architecture
 
-Sprint G (`AreaLayoutRenderer`) and Sprint H (`EditorStack`) are complete. Phase 2 is closed.
+ADR-0015 was completed on 2026-11-18.
 
-Sprint C (`EditorContext` propagation) is complete. Phase 1 is closed.
+The refactoring separated Editor contracts from implementations, moved concrete Editors into the appropriate package, separated reusable Views from Editors, and added architecture tests for dependency boundaries.
 
-**ADR-0016 (Project Catalog Synchronization) is Accepted on 2026-11-18.** It specifies the mechanism by which the `ProjectCatalog` remains consistent with the `ProjectManager`: an in-memory `ProjectIndex` populated by a `ProjectIndexSynchronizer` and invalidated by `ProjectCreated`, `ProjectUpdated`, and `ProjectDeleted`. The repository remains the authoritative source; the index is a read-optimized projection. External mutations are not detected automatically and require an explicit rebuild or restart. SQLite and background reconciliation remain deferred to Phase 8.
+See ADR-0015 and `refactoring_plan.md`.
 
-**Sprint I (ProjectIndex) is complete on 2026-11-20.** The `ProjectIndex` Protocol, `InMemoryProjectIndex`, `ProjectIndexSynchronizer`, and `SynchronizedProjectIndex` are implemented and tested under ADR-0016. `ProjectCatalog` consumes a `ProjectIndex` and no longer calls `repository.list_metadata()`; `refresh()` is removed. Final validation: **1692 passing tests, 0 failed, 0 errors, 2 skipped; `ruff check`, `ruff format --check`, `mypy src` clean.** The integration fixture `../../../tests/integration/ui/test_main_window_import.py` was migrated to the composition-root wiring (`repository → synchronizer → index → catalog`), preserving the bootstrap order required by ADR-0016 §4. No production code changed during that migration; the drift was confined to the test fixture.
+### 9.3 Project Catalog
 
-**Sprint J (Coordinated deletion) is complete on 2026-11-22.** `ProjectManager.delete_project` coordinates `ProjectCatalog` → `ProjectIndex` → `FilesystemProjectRepository` via the `ProjectDeleted` event. The delete-specific staleness paths (handler containment, rebuild-on-next-query, `ProjectIndexStaleError` on double failure) and the physical delete invariant (only `project.json` is removed; sibling files survive byte-identical) are verified. Final validation: **1701 passing tests, 0 failed, 0 errors, 2 skipped; `../../../tests/architecture` 85 passed; `ruff check`, `ruff format --check`, `mypy src` clean (284 source files); `git diff --stat src/` empty.** The UI affordance for delete remains deferred (`next_steps.md` §5.2, §7).
+ADR-0016 was accepted on 2026-11-18.
 
-The immediate focus is **Sprint L.1 (Professional Module)**. On 2026-11-26 the
-`ProfessionalEditor`, Tela 2 profile interface, central-Area composition,
-profile settings integration, visual debug harness, and focused tests were
-added. Validation: **1863 passed, 0 failed, 0 errors, 3 skipped; `ruff check`,
-`ruff format --check` (644 files), and `mypy src` (325 source files) clean.**
-The remaining L.1 items are the ModuleUISpec ownership decision and manual
-visual approval. Sprint K is complete. L.0.2 Deliveries C and D are deferred
-and do not block Phase 3.
+The repository remains authoritative. `InMemoryProjectIndex` is a read-optimized projection maintained by `ProjectIndexSynchronizer` and domain events.
 
-Phase 4 begins after Phase 3 is marked `✅ Implemented`. Its first deliverables are the Unified Import Dialog, the `RenderingAdapter`, the `ViewerLayoutManager`, the 2D/3D tools, and the clinical transfer function presets.
+Sprint I completed on 2026-11-20. Sprint J completed on 2026-11-22. Sprint K completed on 2026-11-22.
 
-The geometry infrastructure initial subset is validated. Full geometry infrastructure is deferred.
+The SQLite index and background disk reconciliation remain Phase 8 deliverables.
 
-The **Monitor de Logs** (`monitor_logs.md`) is a developer-facing diagnostic subsystem. Its specification is complete, but no implementation exists. It is deferred to a dedicated, currently unscheduled sprint, sequenced after Sprint K so that the async-loading logging informs the tab mapping. It is **not** part of Phase 3's closure criteria, **not** part of Phase 4's deliverables, and **not** a Release 1.0 requirement. The `logs_requested` signal is reserved in `home_page.md` §25; the `Areas` snapshot contract with the `Workspace` is specified in `monitor_logs.md` §7.
+### 9.4 Professional Module
 
----
+Sprint L is the active Phase 3 work.
 
-## 10. Known Issues and Resolutions
+The Professional domain, SQLite profile persistence, service/repository boundary, command/query flow, ProfessionalEditor, Tela 2, and settings integration have been implemented. ModuleUISpec ownership, visual approval, and L.2 remain required for closure.
 
-### 10.1 ADR-0014 (Widget Toolkit Selection)
+### 9.5 Imaging
 
-...
+The imaging foundation includes:
 
-### 10.2 Editor and Module Package Reorganization (ADR-0015)
+- `Volume`, `VolumeGeometry`, `ImageMetadata`, `VolumeProvenance`, and `IntensityScale`.
+- Internal RAS convention and DICOM LPS-to-RAS conversion.
+- DICOM sorting, validation, and series reading.
+- NumPy `[z, y, x]` convention.
+- `Volume` ownership of the voxel buffer.
+- `VtkImageAdapter` sharing the buffer.
+- Explicit intensity calibration state.
+- MPR and 3D view implementations.
 
-Completed 2026-11-18. Resolved items:
+The complete DICOM-to-Scene-to-rendering path must still pass the Phase 4A reference dataset and acceptance criteria. Existing implementations must not be interpreted as proof of end-to-end validation.
 
-- The duplicated `_PlaceholderEditor` was consolidated into the canonical `PlaceholderEditor`.
-- The duplicate `_null_task_manager.py` was removed; `module_loader.py` uses `NoopTaskManager` from `cranioz.application.tasks`.
-- `cranioz.ui.editors` was removed.
-- `DummyEditor` and `DebugEditor` moved to `../../../tests/fixtures/editors/test_editor.py`.
-- `editor_manifest.py` and `editor_catalog.py` were removed (deferred to Sprint L if a contract is needed).
-- `MeshDebugEditor` moved to `editors/builtin/mesh_debug/editor.py`.
-- `_KNOWN_DEBT_FILES` reduced from 8 to 5 files.
-- `Workspace.find_viewport_3d()` is documented as an approved exception to §4.1 rule 8. A regression test is tracked as follow-up.
+### 9.6 Validation Baseline
 
-### 10.3 Project Catalog Synchronization (ADR-0016)
+The last recorded validation baseline for Sprint L.1 is:
 
-Accepted 2026-11-18. Recorded decisions:
+- 1863 passed.
+- 0 failed.
+- 0 errors.
+- 3 skipped.
+- `ruff check` clean.
+- `ruff format --check` clean (644 files).
+- `mypy src` clean (325 source files).
 
-- The `ProjectIndex` Protocol is a pure read model; `InMemoryProjectIndex` is the reference implementation.
-- `ProjectIndexSynchronizer` and `SynchronizedProjectIndex` maintain and decorate the index.
-- `ProjectCatalog.refresh()` is removed; freshness is automatic via `SynchronizedProjectIndex`.
-- Bootstrap uses direct ordering (`subscribe` → `repository.list_metadata()` → `replace_all`) on the same synchronous call stack; no event queue while the bootstrap is synchronous.
-- `FilesystemProjectIndex` does not exist as a class name; a persisted or SQLite-backed index is deferred to Phase 8.
-- Handler failures are logged with `project_id` and operation name only (no PHI), and mark the index as possibly stale.
-- A query never silently returns data from a stale index; `ProjectIndexStaleError` is raised when a rebuild after a detected staleness fails.
-- External mutations are not detected automatically; explicit rebuild or restart is required, and background reconciliation is deferred to Phase 8.
-- Sprint K (Async loading) must revisit the bootstrap-ordering decision if the index bootstrap becomes asynchronous.
-- **Integration fixture drift (Sprint I/02, 2026-11-20):** `../../../tests/integration/ui/test_main_window_import.py` was still constructing `ProjectCatalog(repository=...)` after ADR-0016 removed that parameter. The fixture was rewritten to mirror `__main__.py::_build_project_subsystem` line-for-line, preserving the `synchronizer.start()` → `manager.create_project(...)` order. No compatibility shim was added; the `TypeError` from the removed parameter is the intended forcing function. Recorded in ADR-0016 §6.3.
-- **Coordinated deletion closure (Sprint J, 2026-11-22):** the coordination is event-driven and already correct; the sprint added the failure-path tests and the physical delete invariant, and an architecture gate (`test_no_legacy_project_delete_api.py`). The UI affordance for delete is deferred. The `repository.delete → publish(ProjectDeleted)` pair remains synchronous and must not be parallelized without re-opening ADR-0016 §4.1.
+This is the last recorded baseline, not an assertion that the full suite was rerun on 2026-11-26. Each subsequent sprint must record its own validation results.
 
-### 10.4 Deferred to a Future PR
+## 10. Deferred Work and Architectural References
 
-- `application/event_bus.py` → `application/events/bus.py` (Step 6.1 of `refactoring_plan.md`). Deferred per `refactoring_plan.md` §5.10.
-- `editors/view_overlays/` (Step 4.4 of `refactoring_plan.md`). Skipped because the current `ui/editors/overlays/gizmos/` and `ui/editors/overlays/rulers/` directories contain only empty `__init__.py` files.
+This section consolidates deferred items to avoid repeating them throughout the roadmap.
 
-### 10.5 Monitor de Logs (planned)
+| Item | Destination | Reference |
+|---|---|---|
+| Startup optimization and lazy imports | Future backlog | Boot architecture |
+| TimelineSlider, ColorPicker, Histogram, final harness and HiDPI closure | Deferred Sprint L work | `next_steps.md` |
+| Monitor de Logs | Dedicated unscheduled sprint | `monitor_logs.md` |
+| SQLite ProjectIndex and disk reconciliation | Phase 8 | ADR-0016 |
+| Project import/export | Phase 8 | Project persistence and compatibility design |
+| SVG UI migration | Phase 8 | Appearance and icon architecture |
+| GeometryRevision, content-hash deduplication, persistent asset storage, ValidationProfile, GeometryOperation, booleans, welding, and benchmarks | Future geometry work | Geometry architecture |
+| General AI and Node infrastructure | Phase 10 | AI and Nodes architecture |
 
-The **Monitor de Logs** (`monitor_logs.md`) is a developer-facing diagnostic subsystem, distinct from the Console and History Editors (see `monitor_logs.md` §2). It is specified but not implemented. Recorded decisions:
+The following refactoring items remain deferred to future PRs:
 
-- The `logs_requested` signal is reserved in `home_page.md` §25; the 📋 button is not wired.
-- The `LogsDialog` is non-modal (`Qt.WindowType.Tool`), single-instance per `MainWindow`, with tabs `Boot / Home Page / Workspace / Areas / Scene / Project / Tomography / Segmentation`.
-- The `QtLogHandler` is a `logging.Handler` that marshals records to the GUI thread via a `QueuedConnection`; it is installed by the bootstrap after `_configure_logging`.
-- The `Areas` tab is fed by `cranioz.ui.workspace` records tagged with `area_snapshot=True`. The aggregated INFO line is emitted once per applied layout (already debounced by 50 ms in `Workspace._apply_default_splitter_sizes`); per-Area DEBUG lines are emitted per Area. The existing `_logger.info("DEBUG: Vertical splitter ...")` in `Workspace._compute_vertical_sizes` will be lowered to `debug` when the contract is implemented.
-- The Console Editor is **not** fed by `logging`. It is a clinical channel, fed by an application-level notification service (to be defined). This separation is a project invariant.
-- The Monitor de Logs is not a telemetry channel; it does not use `TelemetrySink` and does not emit telemetry.
+- `application/event_bus.py` → `application/events/bus.py`, per `refactoring_plan.md`.
+- `editors/view_overlays/`, pending a concrete implementation need.
 
-Implementation is deferred to a dedicated, currently unscheduled sprint, sequenced after Sprint K. It does not block Sprint K, Sprint L, Phase 3 closure, or Phase 4.
+Detailed specifications and architectural rationale belong in the referenced documents. This roadmap defines sequencing, scope, and completion criteria; it does not replace ADRs, `next_steps.md`, or feature-specific specifications.

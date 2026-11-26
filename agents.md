@@ -13,6 +13,7 @@ The primary objectives are:
 - Optimize token consumption without compromising implementation quality.
 - Keep development tasks focused and independently verifiable.
 - Preserve developer control over architectural decisions.
+- Create a small scope of actions, test them, and finalize them.
 
 These guidelines apply regardless of the AI model or development tool being used.
 
