@@ -125,7 +125,7 @@ def main() -> int:
     workspace.load_spec(PROFESSIONAL_UI_SPEC)
 
     window = QMainWindow()
-    window.setWindowTitle("CranioZ - Professional Editor (L.1)")
+    window.setWindowTitle("CranioZ - Professional Editor (L.2 sections)")
     window.setCentralWidget(workspace)
     window.resize(1280, 800)
     window.show()

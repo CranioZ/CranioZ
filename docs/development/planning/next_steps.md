@@ -51,30 +51,31 @@ The Editor Architecture Refactoring (ADR-0015) and Sprints I, J, and K are compl
 
 ### 2.2 Current Validation Baseline
 
-Last recorded baseline, 2026-11-26:
+Last recorded baseline after the initial L.2 section integration, 2026-11-26:
 
-- 1866 passed.
+- 1867 passed.
 - 0 failed.
 - 0 errors.
-- 3 skipped.
+- 2 skipped.
 - `ruff check` clean.
 - `ruff format --check` clean (644 files).
 - `mypy src` clean (325 source files).
 
 This is the last recorded validation result, not a claim that the suite was rerun after every subsequent change. Update the baseline after each completed delivery.
 
+Focused L.1 validation on 2026-11-26: 9 tests passed for the Professional Module contract, Editor/Workspace materialization, and dependency boundaries.
+
 ## 3. Immediate Priorities
 
 The `ModuleUISpec` ownership decision was approved on 2026-11-26. The current execution sequence is:
 
-1. Perform manual visual review and approval of Professional Editor Tela 2.
-2. Align the Professional architecture documentation with the approved `ModuleUISpec` ownership.
-3. Implement Sprint L.2 — Professional navigation and configuration interactions.
-4. Implement the pending project-management UI, especially project removal.
-5. Run complete validation and close Sprint L.
-6. Review all Phase 3 completion criteria against `implementation_plan.md`.
-7. Close Phase 3 formally.
-8. Begin Phase 4A only after Phase 3 closure.
+1. Decide whether application-level selection of `PROFESSIONAL_UI_SPEC` belongs to Sprint L or the future module activation flow.
+2. Continue Sprint L.2 with `DragList`, `IconSidebar`, section persistence, and the remaining prototype screens.
+3. Implement the pending project-management UI, especially project removal.
+4. Run complete validation and close Sprint L.
+5. Review all Phase 3 completion criteria against `implementation_plan.md`.
+6. Close Phase 3 formally.
+7. Begin Phase 4A only after Phase 3 closure.
 
 L.0.2 Deliveries C and D remain deferred. They do not block L.1, L.2, or Phase 3 closure unless a concrete dependency is identified.
 
@@ -87,8 +88,8 @@ Sprint L is organized into four execution stages.
 | L.0 | System form widgets | Complete |
 | L.0.2 A/B | Extended widget suite | Complete |
 | L.0.2 C/D | TimelineSlider, ColorPicker, Histogram, final harness and HiDPI closure | Deferred |
-| L.1 | Professional Editor and profile integration | Implemented; pending visual approval |
-| L.2 | Navigation, sections, visibility, ordering, and persistence | Pending |
+| L.1 | Professional Editor and profile integration | Implemented; visually approved 2026-11-26 |
+| L.2 | Navigation, sections, visibility, ordering, and persistence | In progress |
 
 ### 4.1 L.1 — Remaining Actions
 
@@ -106,10 +107,15 @@ The implementation includes:
 Remaining actions:
 
 - [x] Decide the ownership and exposure contract for `ModuleUISpec`, respecting the package dependency rules established by ADR-0015.
-- [ ] Align `professional.md` and related architecture documentation with the approved decision.
-- [ ] Validate the actual Editor registration and materialization path.
-- [ ] Perform manual visual review of Tela 2.
-- [ ] Record approval or required corrections.
+- [x] Align `professional.md` and related architecture documentation with the approved decision.
+- [x] Validate the Editor registration and Workspace materialization path.
+- [ ] Decide whether application-level selection of `PROFESSIONAL_UI_SPEC` belongs to Sprint L or to the future module activation flow. The current application loads the default/debug Workspace specs; the harness and integration test prove spec materialization.
+- [x] Perform manual visual review of Tela 2.
+- [x] Record approval or required corrections.
+
+Visual review on 2026-11-26 identified that the Tela 2 title was hidden
+under the Workspace Top Bar. Header clearance was corrected and the
+corrected Tela 2 was approved by the developer on 2026-11-26.
 
 **Approved decision (2026-11-26):** `PROFESSIONAL_UI_SPEC` remains owned by the UI Workspace composition layer and is selected and registered by the composition root. Built-in Modules must not import Workspace components or concrete Editors. This preserves the dependency boundaries established by ADR-0015 and the existing architecture guard.
 
@@ -119,7 +125,9 @@ Remaining actions:
 
 Scope:
 
-- [ ] Integrate `CollapsibleSection`, `DragList`, and `IconSidebar`.
+- [x] Integrate `CollapsibleSection` into the Tela 2 profile groups.
+- [ ] Connect section presentation state to persistence and the remaining L.2 screens.
+- [ ] Integrate `DragList` and `IconSidebar`.
 - [ ] Integrate `EyeToggleButton` and `VisibilityToggle`.
 - [ ] Implement prototype screens Tela 3–7.
 - [ ] Implement navigation between sections.
@@ -193,7 +201,7 @@ Before closing Phase 3:
 
 - [ ] Complete Sprint L, including L.2.
 - [x] Resolve ModuleUISpec ownership.
-- [ ] Approve Tela 2 visually.
+- [x] Approve Tela 2 visually (2026-11-26).
 - [ ] Complete project search, sorting, selection, and removal UI.
 - [ ] Run complete validation.
 - [ ] Update `implementation_plan.md` with verified completion status.
@@ -323,23 +331,16 @@ Run the complete validation suite after each delivery and before closing Sprint 
 
 ## 10. Next Handoff
 
-**Immediate task:** Perform the manual visual review of Professional Editor Tela 2.
+**Immediate task:** Decide whether application-level
+`PROFESSIONAL_UI_SPEC` selection belongs to Sprint L or the future
+module activation flow.
 
-Run:
+After that decision:
 
-```powershell
-.venv\Scripts\python.exe scripts\debug\ui\professional\debug_professional_editor.py
-```
-
-After the review:
-
-1. Record visual approval or required corrections.
-2. Align the Professional architecture documentation with the approved `ModuleUISpec` ownership.
-3. Validate the actual Editor registration and materialization path.
-4. Implement L.2.
-5. Complete the remaining Phase 3 project-management UI.
-6. Validate and close Sprint L.
-7. Close Phase 3 according to `implementation_plan.md`.
+1. Continue L.2 with `DragList`, `IconSidebar`, section persistence, and the remaining prototype screens.
+2. Complete the remaining Phase 3 project-management UI.
+3. Validate and close Sprint L.
+4. Close Phase 3 according to `implementation_plan.md`.
 
 ### Reference Documents
 

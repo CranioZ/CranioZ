@@ -1,11 +1,16 @@
 # Professional Module
 
-**Module ID:** `professional`  
-**Status:** Specification  
-**Scope:** Professional profile, administrative management, procedures, documents, schedule, and budgets  
-**Persistence:** Dedicated SQLite database outside clinical projects (ADR-0018)  
-**Initial Regional Profile:** `BR` (Brazil)  
-**Implementation:** Incremental, following the project roadmap
+**Module ID:** `professional`
+
+**Status:** Implementation in progress (Sprint L.2)
+
+**Scope:** Professional profile, administrative management, procedures, documents, schedule, and budgets
+
+**Persistence:** Dedicated SQLite database outside clinical projects (ADR-0018)
+
+**Initial Regional Profile:** `BR` (Brazil)
+
+**Implementation:** L.1 implemented and visually approved on 2026-11-26; L.2 in progress
 
 ---
 
@@ -409,6 +414,7 @@ Patient-sensitive placeholders must be resolved at generation time through the P
 The module follows the existing CranioZ architecture.
 
 - `ProfessionalModule`: declarative module definition.
+- `PROFESSIONAL_UI_SPEC`: Workspace composition owned by the UI Workspace layer.
 - `ProfessionalEditor`: concrete Editor implementation.
 - `ProfessionalService`: application service and database owner.
 - `ProfessionalRepository`: persistence abstraction.
@@ -416,7 +422,11 @@ The module follows the existing CranioZ architecture.
 - `ProfessionalQueries`: read operations.
 - `ProfessionalMigrationService`: database schema migrations.
 
-The module contributes its UI through `ModuleUISpec`. It must not instantiate its Editor directly.
+The Workspace composition layer owns `PROFESSIONAL_UI_SPEC` in
+`src/cranioz/ui/workspace/specs/professional.py`. The composition root
+is responsible for selecting and registering that spec while registering the Editor.
+`ProfessionalModule` remains declarative and must not import Workspace
+components or concrete Editors.
 
 The Editor is registered in `EditorRegistry` and hosted by the central Workspace Area.
 
@@ -577,10 +587,12 @@ The implementation is incremental. The stages below describe the target delivery
 
 **Goal:** Deliver the first functional Professional Editor.
 
+**Status:** Implemented and visually approved on 2026-11-26.
+
 **Implementation**
 - Implement `ProfessionalEditor`.
 - Register it in `EditorRegistry`.
-- Provide the Professional Module's `ModuleUISpec`.
+- Implement the Professional Workspace composition in the UI Workspace layer.
 - Host the Editor in the central Area.
 - Implement the initial profile interface (Tela 2 of the UI prototype).
 - Integrate `professional.*` settings.
@@ -626,6 +638,9 @@ The implementation is incremental. The stages below describe the target delivery
 - Navigation and configuration work as specified.
 - Presentation state survives application restart.
 - No unnecessary Professional-specific widgets are added to the generic widget package.
+
+**Current status:** In progress. `CollapsibleSection` is integrated into the
+Tela 2 profile groups; navigation, persistence, and the remaining screens are pending.
 
 ## Stage 3 — Professional catalogs
 
@@ -793,8 +808,8 @@ The implementation plan above describes the target Professional Module. It does 
 | L.0 | System form widgets | Complete |
 | L.0.2 A/B | Extended widgets — initial deliveries | Complete |
 | L.0.2 C/D | Remaining widgets and debug harness consolidation | Deferred |
-| L.1 | ProfessionalEditor, profile, SQLite persistence, ModuleUISpec, settings | Next implementation focus |
-| L.2 | Professional navigation and configuration interactions | Planned |
+| L.1 | ProfessionalEditor, profile, SQLite persistence, Workspace composition, settings | Implemented; visually approved 2026-11-26 |
+| L.2 | Professional navigation and configuration interactions | In progress |
 
 The immediate implementation must remain limited to:
 

@@ -42,12 +42,14 @@ from cranioz.ui.widgets.forms import (
     FormRow,
     SignaturePreview,
 )
+from cranioz.ui.widgets.sections import CollapsibleSection
 
 _logger = logging.getLogger(__name__)
 
 PROFESSIONAL_EDITOR_ID = "editor.professional"
 PROFESSIONAL_QUERIES_EXTRA = "professional_queries"
 PROFESSIONAL_SETTINGS_EXTRA = "professional_settings"
+_TOP_BAR_CLEARANCE_PX = 56
 
 
 class _ProfessionalEditorSignals(QObject):
@@ -100,6 +102,7 @@ class ProfessionalEditor(Editor):
         self._logo: FilePicker | None = None
         self._signature: FilePicker | None = None
         self._signature_preview: SignaturePreview | None = None
+        self._sections: dict[str, CollapsibleSection] = {}
 
     # ----- Lifecycle -------------------------------------------------
 
@@ -132,6 +135,7 @@ class ProfessionalEditor(Editor):
         self._queries = None
         self._settings = None
         self._loaded_profile = None
+        self._sections.clear()
 
     # ----- Content ---------------------------------------------------
 
@@ -206,7 +210,8 @@ class ProfessionalEditor(Editor):
         root = QWidget()
         root.setObjectName("professional_editor.content")
         layout = QVBoxLayout(root)
-        layout.setContentsMargins(16, 12, 16, 12)
+        # The Workspace Top Bar overlays the top of the Central Area.
+        layout.setContentsMargins(16, _TOP_BAR_CLEARANCE_PX, 16, 12)
         layout.setSpacing(12)
 
         title = QLabel(self._tr("professional.profile.title", "Professional profile"))
@@ -293,6 +298,7 @@ class ProfessionalEditor(Editor):
 
         layout.addWidget(
             self._section(
+                "identification",
                 self._tr("professional.profile.identification", "Professional identification"),
                 (
                     self._row(self._salutation, self._full_name, stretches=(1, 3)),
@@ -303,6 +309,7 @@ class ProfessionalEditor(Editor):
         )
         layout.addWidget(
             self._section(
+                "registration",
                 self._tr("professional.profile.registration_section", "Professional registration"),
                 (
                     self._row(self._authority, self._registration_number),
@@ -313,6 +320,7 @@ class ProfessionalEditor(Editor):
         )
         layout.addWidget(
             self._section(
+                "address",
                 self._tr("professional.profile.address_section", "Address"),
                 (
                     self._row(self._postal_code, self._street),
@@ -324,6 +332,7 @@ class ProfessionalEditor(Editor):
         )
         layout.addWidget(
             self._section(
+                "documents",
                 self._tr("professional.profile.documents_section", "Documents"),
                 (
                     self._logo,
@@ -390,17 +399,24 @@ class ProfessionalEditor(Editor):
         self._cancel_button.setEnabled(self._queries is not None)
         return footer
 
-    def _section(self, title: str, children: tuple[QWidget, ...]) -> QWidget:
-        section = QFrame()
-        section.setProperty("class", "card")
-        layout = QVBoxLayout(section)
-        layout.setContentsMargins(12, 12, 12, 12)
+    def _section(
+        self,
+        section_id: str,
+        title: str,
+        children: tuple[QWidget, ...],
+    ) -> CollapsibleSection:
+        section = CollapsibleSection(title)
+        section.setObjectName(f"professional.profile.section.{section_id}")
+
+        body = QWidget()
+        body.setObjectName(f"professional.profile.section.{section_id}.body")
+        layout = QVBoxLayout(body)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(8)
-        label = QLabel(title)
-        label.setProperty("role", "title")
-        layout.addWidget(label)
         for child in children:
             layout.addWidget(child)
+        section.set_body_widget(body)
+        self._sections[section_id] = section
         return section
 
     @staticmethod

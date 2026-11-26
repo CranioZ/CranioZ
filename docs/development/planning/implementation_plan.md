@@ -106,11 +106,10 @@ Phase 3 remains active. Phase 4 begins after formal Phase 3 closure.
 - **L.0.2 B:** CollapsibleSection, DragList, IconSidebar — complete.
 - **L.0.2 C/D:** TimelineSlider, ColorPicker, Histogram, final harness consolidation, HiDPI validation, and catalog closure — deferred.
 - **L.1:** Professional domain, SQLite profile persistence, repository/service, command/query flow, ProfessionalEditor, Tela 2, central-Area composition, and `professional.*` settings — implementation substantially complete.
-- **L.2:** Navigation, section organization, visibility, drag ordering, persistence, and final UI integration — pending.
+- **L.2:** Navigation, section organization, visibility, drag ordering, persistence, and final UI integration — in progress. `CollapsibleSection` is integrated into the Tela 2 profile groups; the remaining interactions and persistence are pending.
 
-L.1 still requires:
-1. A decision on `ModuleUISpec` ownership that respects the package dependency rules.
-2. Manual visual approval of Tela 2.
+The `ModuleUISpec` ownership decision and the visual approval of Tela 2
+were completed on 2026-11-26.
 
 L.2 remains part of Phase 3 and is required for its closure.
 
@@ -234,8 +233,8 @@ SQLite persistence and background disk reconciliation are deferred to Phase 8.
 
 **Phase closure criteria:**
 
-1. Resolve `ModuleUISpec` ownership within the accepted architecture.
-2. Approve Tela 2 visually.
+1. Resolve `ModuleUISpec` ownership within the accepted architecture (approved 2026-11-26).
+2. Approve Tela 2 visually (completed 2026-11-26).
 3. Complete L.2 and its tests.
 4. Verify the complete Professional module workflow.
 5. Update documentation and `next_steps.md`.
@@ -732,7 +731,7 @@ The SQLite index and background disk reconciliation remain Phase 8 deliverables.
 
 Sprint L is the active Phase 3 work.
 
-The Professional domain, SQLite profile persistence, service/repository boundary, command/query flow, ProfessionalEditor, Tela 2, and settings integration have been implemented. ModuleUISpec ownership, visual approval, and L.2 remain required for closure.
+The Professional domain, SQLite profile persistence, service/repository boundary, command/query flow, ProfessionalEditor, Tela 2, and settings integration have been implemented. `ModuleUISpec` ownership and Tela 2 visual approval were completed on 2026-11-26. L.2 remains required for closure and is in progress.
 
 ### 9.5 Imaging
 
@@ -751,12 +750,12 @@ The complete DICOM-to-Scene-to-rendering path must still pass the Phase 4A refer
 
 ### 9.6 Validation Baseline
 
-The last recorded validation baseline for Sprint L.1 is:
+The last recorded full validation baseline is:
 
-- 1863 passed.
+- 1867 passed.
 - 0 failed.
 - 0 errors.
-- 3 skipped.
+- 2 skipped.
 - `ruff check` clean.
 - `ruff format --check` clean (644 files).
 - `mypy src` clean (325 source files).
