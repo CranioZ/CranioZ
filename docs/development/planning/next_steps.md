@@ -3,7 +3,7 @@
 **Document type:** Development action plan and handoff  
 **Status:** Active  
 **Current phase:** Phase 3 — Project, Home Page & Professional Module  
-**Last updated:** 2026-11-26
+**Last updated:** 2026-11-27
 
 ---
 
@@ -32,7 +32,7 @@ Phases 0, 1, and 2 are closed.
 
 The Editor Architecture Refactoring (ADR-0015) and Sprints I, J, and K are complete.
 
-**Phase 3 remains in progress.** Sprint L is substantially implemented, but its remaining work and the project-management UI must be completed before Phase 3 can close.
+**Phase 3 remains in progress.** Sprint L is substantially implemented; the remaining Professional screens and Tela 7 work must be completed before Phase 3 can close.
 
 ### 2.1 Completed Deliverables
 
@@ -51,19 +51,22 @@ The Editor Architecture Refactoring (ADR-0015) and Sprints I, J, and K are compl
 | SVG provider, central asset catalog, and UI icon migration | Complete |
 | Main Window display states: maximize, full screen, and restore | Complete |
 | Home Page top bar: SVG wordmark and logs/help/settings actions | Complete |
+| Home Page visual refinement: StartButton, action variants, and table rows | Complete |
+| Home Page project management: selection, removal, and catalog refresh | Complete |
+| Seed project names: patient name without the `Caso ` prefix | Complete |
 
 ### 2.2 Current Validation Baseline
 
-Last recorded baseline after the icon and Home Page top-bar delivery,
-2026-11-26:
+Last recorded baseline after the Home Page refinement and project-management UI delivery,
+2026-11-27:
 
-- 1915 passed.
+- 1935 passed.
 - 0 failed.
 - 0 errors.
 - 2 skipped.
 - `ruff check` clean.
-- `ruff format --check` clean (647 files).
-- `mypy src` clean (327 source files).
+- `ruff format --check` clean (649 files).
+- `mypy src` clean (328 source files).
 
 This validation was rerun for the current delivery. Update the baseline after each subsequent completed delivery.
 
@@ -81,6 +84,16 @@ use the centralized SVG asset catalog. The implemented interface includes:
   top bars.
 - Theme-aware `currentColor` rendering and aspect-ratio preservation for
   non-square SVG sources.
+- `StartButton` refined to an 80 px control with a 32 px icon and reduced outer margin.
+- SVG icons on the project and flow management actions.
+- Collapsible project search opened and closed through the search icon.
+- Project management page with multi-selection, removal confirmation, error handling,
+  and Home Page catalog refresh.
+- Dedicated visual variants for Home Page top-bar actions and Community
+  Sidebar items.
+- Alternating project-table row colors.
+- Seed data stores the patient name directly, without the `Caso ` prefix, and
+  normalizes projects created by previous seed runs.
 
 ## 3. Immediate Priorities
 
@@ -89,11 +102,10 @@ The `ModuleUISpec` ownership decision was approved on 2026-11-26. The current ex
 1. Implement Tela 3, document templates.
 2. Implement the remaining Professional screens one at a time.
 3. Implement Tela 7 visibility and ordering.
-4. Implement the pending project-management UI, especially project removal.
-5. Run complete validation and close Sprint L.
-6. Review all Phase 3 completion criteria against `implementation_plan.md`.
-7. Close Phase 3 formally.
-8. Begin Phase 4A only after Phase 3 closure.
+4. Run complete validation and close Sprint L.
+5. Review all Phase 3 completion criteria against `implementation_plan.md`.
+6. Close Phase 3 formally.
+7. Begin Phase 4A only after Phase 3 closure.
 
 L.0.2 Deliveries C and D remain deferred. They do not block L.1, L.2, or Phase 3 closure unless a concrete dependency is identified.
 
@@ -206,7 +218,7 @@ Do not start C/D merely to complete the original widget list. Reassess their nec
 - [ ] Validate settings restoration.
 - [ ] Validate theme and language changes.
 - [x] Validate navigation and presentation-state persistence.
-- [ ] Run the complete test suite and static analysis.
+- [x] Run the complete test suite and static analysis.
 - [ ] Update `widget_catalog.md` for any implemented or changed widgets.
 - [ ] Record unresolved limitations.
 
@@ -216,16 +228,16 @@ Sprint L must not absorb unrelated Phase 4 work.
 
 ### 5.1 Project Management UI
 
-The project deletion API is already implemented. The missing work is its user-facing interface.
+The project deletion API and its Phase 3 user-facing interface are implemented.
 
 - [x] Implement project search.
 - [x] Implement project sorting.
 - [x] Validate project sorting visually through the Home Page debug harness.
-- [ ] Implement project selection and multi-selection behavior.
-- [ ] Implement project removal UI.
-- [ ] Connect removal to the existing `ProjectManager.delete_project` API.
-- [ ] Validate confirmation, error handling, and catalog refresh.
-- [ ] Ensure External Reference source data is never deleted with the project.
+- [x] Implement project selection and multi-selection behavior.
+- [x] Implement project removal UI.
+- [x] Connect removal to the existing `ProjectManager.delete_project` API.
+- [x] Validate confirmation, error handling, and catalog refresh.
+- [x] Ensure External Reference source data is never deleted with the project.
 
 Visual validation on 2026-11-26 confirmed ascending order and sort indicators for project name, ID, and creation date.
 
@@ -238,10 +250,10 @@ Before closing Phase 3:
 - [ ] Complete Sprint L, including L.2.
 - [x] Resolve ModuleUISpec ownership.
 - [x] Approve Tela 2 visually (2026-11-26).
-- [ ] Complete project search, sorting, selection, and removal UI.
-- [ ] Run complete validation.
-- [ ] Update `implementation_plan.md` with verified completion status.
-- [ ] Update documentation and record remaining technical debt.
+- [x] Complete project search, sorting, selection, and removal UI.
+- [x] Run complete validation.
+- [x] Update `implementation_plan.md` with verified completion status.
+- [x] Update documentation and record remaining technical debt.
 
 **Phase 4 must not formally begin until these criteria are satisfied.**
 
@@ -397,9 +409,8 @@ Tela 7 configuration work.
 1. Implement Tela 3, document templates.
 2. Implement the remaining Professional prototype screens one at a time.
 3. Implement Tela 7 visibility and ordering.
-4. Complete the remaining Phase 3 project-management UI.
-5. Validate and close Sprint L.
-6. Close Phase 3 according to `implementation_plan.md`.
+4. Validate and close Sprint L.
+5. Close Phase 3 according to `implementation_plan.md`.
 
 ### Reference Documents
 

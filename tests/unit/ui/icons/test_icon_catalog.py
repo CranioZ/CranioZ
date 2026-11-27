@@ -42,8 +42,8 @@ def test_catalog_contains_required_names() -> None:
 
 def test_catalog_has_expected_count() -> None:
     # 60 canonical + 6 Professional + 9 shell + 5 window + 1 toggle
-    # + 4 L.0.2 additions = 85
-    assert len(_DEFAULT_GLYPHS) == 85
+    # + 4 L.0.2 additions + 4 Home Page project/flow actions = 89
+    assert len(_DEFAULT_GLYPHS) == 89
 
 
 def test_svg_catalog_names_have_unicode_fallbacks() -> None:

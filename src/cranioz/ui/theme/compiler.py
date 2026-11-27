@@ -202,8 +202,8 @@ def _build_qss(tokens: ThemeTokens) -> str:
     b = tokens.borders
     s = tokens.spacing
 
-    # StartButton is a 72x72 circle; the radius is half the size.
-    start_button_radius = 36
+    # StartButton is an 80x80 circle; the radius is half the size.
+    start_button_radius = 40
 
     # Block 5.5: Area backgrounds and rounded corners. The Central
     # Area is the lightest (background_elevated); lateral and bottom
@@ -282,12 +282,29 @@ QFrame[class="card_elevated"] {{
 }}
 
 /* ----- Home Page Dashboard Containers ---------------------------- */
-QWidget#home_page_project_table, QWidget#home_page_flow_list, QWidget#home_page_community_sidebar {{
+QWidget#home_page_project_table, QWidget#home_page_flow_list,
+QWidget#home_page_community_sidebar, QWidget#home_page_project_management {{
     background-color: {c.background_panel};
     border: {b.width_default}px solid {c.border_default};
     border-radius: {b.radius_panel}px;
     margin: {s.xs}px {s.sm}px;
     padding: {s.sm}px;
+}}
+
+QPushButton#home_page_project_management_back {{
+    background-color: {c.interactive_default};
+    border: {b.width_default}px solid {c.interactive_default};
+    border-radius: 26px;
+    min-width: 52px;
+    max-width: 52px;
+    min-height: 52px;
+    max-height: 52px;
+    padding: 0;
+}}
+
+QPushButton#home_page_project_management_back:hover {{
+    background-color: {c.interactive_hover};
+    border-color: {c.interactive_hover};
 }}
 
 /* ----- Toolbars -------------------------------------------------- */

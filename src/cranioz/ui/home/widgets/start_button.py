@@ -36,6 +36,9 @@ from cranioz.ui.icons.provider import IconProvider
 class StartButton(QPushButton):
     """Floating circular button for starting a planning session."""
 
+    FIXED_SIZE: int = 45
+    ICON_SIZE: int = 45
+
     start_requested = Signal()
 
     def __init__(
@@ -45,12 +48,12 @@ class StartButton(QPushButton):
     ) -> None:
         super().__init__(parent)
         self.setObjectName("home_page_start_button")
-        self.setFixedSize(72, 72)
+        self.setFixedSize(self.FIXED_SIZE, self.FIXED_SIZE)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setAccessibleName(tr("homepage.start_button.label", "Start"))
         self.setEnabled(False)
-        self.setIcon(icon_provider.icon("start", size=28))
-        self.setIconSize(QSize(28, 28))
+        self.setIcon(icon_provider.icon("start", size=self.ICON_SIZE))
+        self.setIconSize(QSize(self.ICON_SIZE, self.ICON_SIZE))
         self.setProperty("state", "disabled")
         self._repolish()
         self.clicked.connect(self.start_requested)

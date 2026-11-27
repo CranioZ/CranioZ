@@ -32,10 +32,10 @@ def test_bottom_bar_holds_start_button(qtbot: QtBot, start_button: StartButton) 
 
 
 def test_start_button_has_emphasized_size(start_button: StartButton) -> None:
-    assert start_button.size().width() == 72
-    assert start_button.size().height() == 72
-    assert start_button.iconSize().width() == 28
-    assert start_button.iconSize().height() == 28
+    assert start_button.size().width() == StartButton.FIXED_SIZE
+    assert start_button.size().height() == StartButton.FIXED_SIZE
+    assert start_button.iconSize().width() == StartButton.ICON_SIZE
+    assert start_button.iconSize().height() == StartButton.ICON_SIZE
 
 
 def test_bottom_bar_has_minimum_height(qtbot: QtBot, start_button: StartButton) -> None:

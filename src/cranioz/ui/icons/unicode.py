@@ -25,7 +25,7 @@ from cranioz.ui.theme.service import ThemeService
 
 _logger = logging.getLogger(__name__)
 
-#: Canonical runtime catalog of 85 icon names.
+#: Canonical runtime catalog of 89 icon names.
 #: Includes the canonical catalog and widget-specific additions.
 _DEFAULT_GLYPHS: Final[dict[str, str]] = {
     # 6.1 Navigation (8)
@@ -112,6 +112,10 @@ _DEFAULT_GLYPHS: Final[dict[str, str]] = {
     "news": "📰",
     "feedback": "✉",
     "contribute": "♥",
+    "project_new": "＋",  # noqa: RUF001 - fullwidth plus matches the catalog
+    "project_manage": "✎",
+    "project_search": "⌕",
+    "flow_manage": "✎",
     "start": "▶",
     "logs": "▤",
     "eye-open": "👁",

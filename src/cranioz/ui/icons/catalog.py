@@ -25,6 +25,10 @@ SVG_ICON_ASSETS: Final[dict[str, str]] = {
     "news": "home_page/community/news.svg",
     "feedback": "home_page/community/improve.svg",
     "contribute": "home_page/community/contribute.svg",
+    "project_new": "home_page/projects/new_projet.svg",
+    "project_manage": "home_page/projects/edit_project.svg",
+    "project_search": "home_page/projects/zoom.svg",
+    "flow_manage": "home_page/flows/edit_flows.svg",
     "start": "home_page/botttom_bar/next.svg",
     "forward": "home_page/botttom_bar/next.svg",
     # Workspace shell.

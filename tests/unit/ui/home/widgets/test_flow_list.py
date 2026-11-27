@@ -51,6 +51,10 @@ def test_manage_button_emits_signal(qtbot: QtBot, flow_list: FlowList) -> None:
         flow_list._manage_button.click()
 
 
+def test_manage_button_uses_svg_icon(flow_list: FlowList) -> None:
+    assert not flow_list._manage_button.icon().isNull()
+
+
 def test_set_flows_populates(flow_list: FlowList) -> None:
     flow_list.set_flows((_flow("a"), _flow("b")))
     assert flow_list.flow_count() == 2

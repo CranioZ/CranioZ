@@ -5,6 +5,7 @@
     "title": { "message": "Lista de projetos", "description": "Título da seção de projetos." },
     "new_project": { "message": "Novo projeto", "description": "Botão para criar novo projeto." },
     "manage_projects": { "message": "Gerir projetos", "description": "Botão para abrir a página de gestão de projetos." },
+    "search": { "message": "Buscar por nome do projeto ou do paciente", "description": "Tooltip do botão que abre a busca de projetos." },
     "search_placeholder": { "message": "Buscar por nome do projeto ou do paciente", "description": "Placeholder do campo de busca." },
     "columns": {
       "name": { "message": "Nome", "description": "Coluna: nome." },
@@ -19,6 +20,21 @@
     "title": { "message": "Fluxos clínicos", "description": "Título da seção de fluxos." },
     "manage_flows": { "message": "Gerir Fluxos", "description": "Botão para abrir a página de gestão de fluxos." },
     "empty": { "message": "Nenhum fluxo disponível", "description": "Placeholder quando não há fluxo carregado." }
+  },
+  "project_management": {
+    "title": { "message": "Lista de projetos", "description": "Título da página de gestão de projetos." },
+    "new_project": { "message": "Novo projeto", "description": "Botão para criar um projeto na página de gestão." },
+    "search": { "message": "Buscar projeto", "description": "Tooltip do botão de busca na gestão de projetos." },
+    "search_placeholder": { "message": "Buscar por nome do projeto ou do paciente", "description": "Placeholder da busca na gestão de projetos." },
+    "select_projects": { "message": "Selecionar projetos", "description": "Botão para marcar todos os projetos." },
+    "deselect_projects": { "message": "Desmarcar projetos", "description": "Botão para desmarcar todos os projetos." },
+    "remove_projects": { "message": "Remover projeto", "description": "Botão para remover os projetos selecionados." },
+    "export_projects": { "message": "Exportar projeto", "description": "Botão para exportar os projetos selecionados." },
+    "import_projects": { "message": "Importar projeto", "description": "Botão para importar projetos." },
+    "back": { "message": "Voltar", "description": "Botão para retornar da gestão de projetos." },
+    "confirm_remove_title": { "message": "Remover projetos?", "description": "Título da confirmação de remoção." },
+    "confirm_remove_body": { "message": "Remover {count} projeto(s) selecionado(s)? Esta ação não pode ser desfeita.", "description": "Confirmação da remoção de projetos." },
+    "remove_failed_title": { "message": "Não foi possível remover projetos", "description": "Título do erro de remoção de projetos." }
   },
   "community_sidebar": {
     "community": { "message": "Comunidade", "description": "Barra lateral: link da comunidade." },

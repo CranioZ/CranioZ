@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 
 from PySide6.QtCore import Qt
 from pytestqt.qtbot import QtBot
+from tests.conftest import make_icon_provider, make_theme_service
 
 from cranioz.application.event_bus import EventBus
 from cranioz.application.project.access_policy import (
@@ -26,6 +27,7 @@ from cranioz.domain.project.project_id import ProjectId
 from cranioz.domain.project.project_status import ProjectStatus
 from cranioz.domain.project.project_summary import ProjectSummary
 from cranioz.ui.home.widgets.project_table import ProjectTable
+from cranioz.ui.theme.tokens import ThemeMode
 
 
 def _make_catalog_and_manager() -> tuple[ProjectCatalog, ProjectManager]:
@@ -143,6 +145,34 @@ def test_new_button_emits_signal(qtbot: QtBot) -> None:
 
     with qtbot.waitSignal(table.new_project_requested, timeout=1000):
         table._new_button.click()
+
+
+def test_action_buttons_use_svg_icons(qtbot: QtBot) -> None:
+    catalog, _ = _make_catalog_and_manager()
+    icon_provider = make_icon_provider(make_theme_service(ThemeMode.DARK))
+    table = ProjectTable(catalog, icon_provider=icon_provider)
+    qtbot.addWidget(table)
+
+    assert not table._new_button.icon().isNull()
+    assert not table._manage_button.icon().isNull()
+    assert not table._search_button.icon().isNull()
+
+
+def test_search_is_hidden_until_search_icon_is_clicked(qtbot: QtBot) -> None:
+    catalog, _ = _make_catalog_and_manager()
+    icon_provider = make_icon_provider(make_theme_service(ThemeMode.DARK))
+    table = ProjectTable(catalog, icon_provider=icon_provider)
+    qtbot.addWidget(table)
+
+    assert table._search_edit.isHidden() is True
+
+    table._search_button.click()
+
+    assert table._search_edit.isHidden() is False
+
+    table._search_button.click()
+
+    assert table._search_edit.isHidden() is True
 
 
 def test_refresh_reloads(qtbot: QtBot) -> None:

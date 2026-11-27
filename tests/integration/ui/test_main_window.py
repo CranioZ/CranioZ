@@ -107,7 +107,10 @@ def window(
         theme_service=theme_service,
         icon_provider=icon_provider,
     )
-    qtbot.addWidget(w)
+    qtbot.addWidget(
+        w,
+        before_close_func=lambda window: window._close_active_project(),
+    )
     return w
 
 
@@ -316,7 +319,6 @@ def test_open_missing_project_shows_error(
     ("signal_name", "expected_title"),
     [
         ("new_project_requested", "New project"),
-        ("manage_projects_requested", "Manage projects"),
         ("manage_flows_requested", "Manage flows"),
         ("settings_requested", "Settings"),
         ("help_requested", "Help"),
@@ -346,6 +348,49 @@ def test_placeholder_shows_information(
 
     assert len(calls) == 1
     assert calls[0][0] == expected_title
+
+
+def test_manage_projects_opens_project_management_page(
+    window: MainWindow,
+    seeded_manager: ProjectManager,
+) -> None:
+    del seeded_manager
+    window.home().refresh()
+
+    window.home().manage_projects_requested.emit()
+
+    assert _stack(window).currentWidget() is window.project_management()
+    assert window.project_management().row_count() == 1
+
+
+def test_project_management_back_returns_to_home(window: MainWindow) -> None:
+    window.home().manage_projects_requested.emit()
+
+    window.project_management().back_requested.emit()
+
+    assert _stack(window).currentWidget() is window.home()
+
+
+def test_project_management_removes_selected_project(
+    window: MainWindow,
+    seeded_manager: ProjectManager,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    del seeded_manager
+    monkeypatch.setattr(
+        QMessageBox,
+        "question",
+        staticmethod(lambda *args, **kwargs: QMessageBox.StandardButton.Yes),
+    )
+    window.home().refresh()
+    window.home().manage_projects_requested.emit()
+    page = window.project_management()
+    page._select_button.click()
+
+    page._remove_button.click()
+
+    assert page.row_count() == 0
+    assert window.home()._project_table_widget().row_count() == 0
 
 
 # ----- Window controls ----------------------------------------------

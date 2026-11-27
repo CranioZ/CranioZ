@@ -24,10 +24,11 @@ and the code easier to read. Behavior is unchanged.
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, Signal, QSize
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
+    QSizePolicy,
     QPushButton,
     QWidget,
 )
@@ -55,12 +56,15 @@ class HomeTopBar(QWidget):
         self,
         icon_provider: IconProvider,
         parent: QWidget | None = None,
+        *,
+        show_menu: bool = True,
     ) -> None:
         super().__init__(parent)
         self.setObjectName("home_page.top_bar")
         self.setFixedHeight(self.FIXED_HEIGHT)
 
         self._icon_provider = icon_provider
+        self._show_menu = show_menu
 
         # Build the widgets. Each helper returns the widget and
         # wires its signal.
@@ -91,11 +95,24 @@ class HomeTopBar(QWidget):
         return button
 
     def _build_logo(self) -> QLabel:
+        target_height = 28
+
         logo = QLabel()
         logo.setObjectName("home_page.top_bar.logo")
-        logo.setFixedSize(80, 16)
+        logo.setFixedHeight(target_height)
+        logo.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
         logo.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
-        logo.setPixmap(self._icon_provider.icon("cranioz", size=16).pixmap(80, 16))
+
+        icon = self._icon_provider.icon("cranioz", size=64)
+        pixmap = icon.pixmap(QSize(512, 128))
+        if not pixmap.isNull():
+            pixmap = pixmap.scaledToHeight(
+                target_height,
+                Qt.TransformationMode.SmoothTransformation,
+            )
+            logo.setPixmap(pixmap)
+            logo.setFixedWidth(pixmap.width())
+
         label = tr("core.app.name", "CranioZ")
         logo.setAccessibleName(label)
         logo.setToolTip(label)
@@ -174,7 +191,10 @@ class HomeTopBar(QWidget):
         layout = QHBoxLayout(self)
         layout.setContentsMargins(8, 4, 8, 4)
         layout.setSpacing(6)
-        layout.addWidget(self._menu_button)
+        if self._show_menu:
+            layout.addWidget(self._menu_button)
+        else:
+            self._menu_button.hide()
         layout.addWidget(self._title)
         layout.addStretch(1)
         layout.addWidget(self._logs_button)

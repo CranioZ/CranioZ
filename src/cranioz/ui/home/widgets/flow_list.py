@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
@@ -63,6 +63,8 @@ class FlowList(QWidget):
 
         self._manage_button = QPushButton(tr("homepage.flow_list.manage_flows", "Manage Flows"))
         self._manage_button.setObjectName("home_page.flow_list.manage")
+        self._manage_button.setIcon(self._icon_provider.icon("flow_manage", size=18))
+        self._manage_button.setIconSize(QSize(18, 18))
         self._manage_button.clicked.connect(self.manage_flows_requested)
 
         top = QWidget()

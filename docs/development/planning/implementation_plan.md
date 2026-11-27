@@ -3,7 +3,7 @@
 **Document type:** Roadmap and execution plan  
 **Status:** Living document  
 **Scope:** Phased implementation of the CranioZ platform, from foundation to release  
-**Last updated:** 2026-11-26
+**Last updated:** 2026-11-27
 
 ---
 
@@ -97,6 +97,7 @@ Phase 3 remains active. Phase 4 begins after formal Phase 3 closure.
 | J | 3 | Coordinated project deletion | Complete |
 | K | 3 | Asynchronous flow loading | Complete |
 | Icon Foundation | 2 | SVG provider, fallback, recolor, cache, HiDPI, and six Professional assets | Complete |
+| Home Page Refinement | 3 | SVG action icons, collapsible search, StartButton sizing, and project management with selection/removal | Complete |
 
 ### 5.2 Sprint L — Professional Module
 
@@ -130,7 +131,7 @@ The remaining work, owner, and target dates must be recorded in `next_steps.md`.
 | Flow management UI | Phase 5 |
 | Recent Projects and SQLite ProjectIndex | Phase 8 |
 
-The coordinated deletion API is implemented; its UI affordance remains pending in Phase 3.
+The coordinated deletion API and the Phase 3 project-management UI are implemented, including search, selection, confirmation, error handling, and catalog refresh. Project import/export remains a Phase 8 deliverable.
 
 ### 5.4 Deferred Diagnostic Subsystem
 
@@ -232,6 +233,7 @@ SQLite persistence and background disk reconciliation are deferred to Phase 8.
 - ProjectIndex contract and synchronization.
 - Bootstrap ordering and stale-index handling.
 - Coordinated deletion and failure paths.
+- Project management page selection, removal, confirmation, and catalog refresh.
 - External Reference data preservation.
 - Async loading and Workspace rollback.
 - Professional module integration and UI tests.
@@ -753,15 +755,15 @@ The complete DICOM-to-Scene-to-rendering path must still pass the Phase 4A refer
 
 ### 9.6 Validation Baseline
 
-The last recorded full validation baseline, rerun on 2026-11-26 after the SVG provider integration, is:
+The last recorded full validation baseline, rerun on 2026-11-27 after the Home Page refinement and project-management UI delivery, is:
 
-- 1883 passed.
+- 1935 passed.
 - 0 failed.
 - 0 errors.
 - 2 skipped.
 - `ruff check` clean.
-- `ruff format --check` clean (646 files).
-- `mypy src` clean (326 source files).
+- `ruff format --check` clean (649 files).
+- `mypy src` clean (328 source files).
 
 Each subsequent sprint must record its own validation results.
 

@@ -43,6 +43,7 @@ from cranioz.editors.views.viewport_3d.mesh_debug_editor import (
 from cranioz.infrastructure.i18n.translation_service import TranslationService
 from cranioz.infrastructure.scene.scene_query_adapter import SceneQueryAdapter
 from cranioz.ui.home.home_page import HomePage
+from cranioz.ui.home.project_management_page import ProjectManagementPage
 from cranioz.ui.icons.provider import IconProvider
 from cranioz.ui.theme.service import ThemeService
 from cranioz.ui.tools.registry.tool_registry import ToolRegistry
@@ -153,6 +154,7 @@ class MainWindow(QMainWindow):
 
         self._current_project_id: ProjectId | None = None
         self._workspace: Workspace | None = None
+        self._management_return_widget: QWidget | None = None
         self._debug_mesh = os.environ.get("CRANIOZ_DEBUG_MESH") == "1"
 
         self.setWindowFlags(
@@ -177,8 +179,14 @@ class MainWindow(QMainWindow):
             translation_service=self._translation_service,
             icon_provider=self._icon_provider,
         )
+        self._project_management = ProjectManagementPage(
+            self._catalog,
+            icon_provider=self._icon_provider,
+            parent=self,
+        )
         self._stack = QStackedWidget(self)
         self._stack.addWidget(self._home)
+        self._stack.addWidget(self._project_management)
 
         self._central_container = QWidget(self)
         container_layout = QVBoxLayout(self._central_container)
@@ -199,6 +207,7 @@ class MainWindow(QMainWindow):
             self._home._top_bar_widget()._title.installEventFilter(self._drag_filter)
 
         self._connect_home_signals()
+        self._connect_project_management_signals()
         self._dispatch_flow_loading()
 
         self.setWindowTitle(self._tr("core.app.name", "CranioZ"))
@@ -310,6 +319,20 @@ class MainWindow(QMainWindow):
         home.minimize_requested.connect(self.showMinimized)
         home.maximize_requested.connect(self._on_window_maximize_requested)
         home.close_requested.connect(self.close)
+
+    def _connect_project_management_signals(self) -> None:
+        page = self._project_management
+        page.back_requested.connect(self._on_project_management_back_requested)
+        page.new_project_requested.connect(self._on_new_project_requested)
+        page.remove_projects_requested.connect(self._on_remove_projects_requested)
+        page.export_projects_requested.connect(self._on_export_projects_requested)
+        page.import_projects_requested.connect(self._on_import_projects_requested)
+        page.logs_requested.connect(self._on_logs_requested)
+        page.help_requested.connect(self._on_help_requested)
+        page.settings_requested.connect(self._on_settings_requested)
+        page.minimize_requested.connect(self.showMinimized)
+        page.maximize_requested.connect(self._on_window_maximize_requested)
+        page.close_requested.connect(self.close)
 
     # ----- Async flow loading (Sprint K) -----------------------------
 
@@ -502,6 +525,12 @@ class MainWindow(QMainWindow):
         home = getattr(self, "_home", None)
         if home is not None:
             tb = home._top_bar_widget()
+            if hasattr(tb, "_maximize_button"):
+                self._set_window_control(tb._maximize_button, icon, tooltip)
+
+        management = getattr(self, "_project_management", None)
+        if management is not None:
+            tb = management.top_bar()
             if hasattr(tb, "_maximize_button"):
                 self._set_window_control(tb._maximize_button, icon, tooltip)
 
@@ -750,10 +779,73 @@ class MainWindow(QMainWindow):
         )
 
     def _on_manage_projects_requested(self) -> None:
+        self._management_return_widget = self._stack.currentWidget()
+        self._project_management.refresh()
+        self._stack.setCurrentWidget(self._project_management)
+
+    def _on_project_management_back_requested(self) -> None:
+        target = self._management_return_widget
+        if target is None or target is self._project_management:
+            target = self._home
+        self._stack.setCurrentWidget(target)
+        self._management_return_widget = None
+
+    def _on_remove_projects_requested(self, project_ids: object) -> None:
+        if not isinstance(project_ids, tuple) or not project_ids:
+            return
+
+        count = len(project_ids)
+        reply = QMessageBox.question(
+            self,
+            self._tr(
+                "homepage.project_management.confirm_remove_title",
+                "Remove projects?",
+            ),
+            self._tr(
+                "homepage.project_management.confirm_remove_body",
+                "Remove {count} selected project(s)? This action cannot be undone.",
+                count=count,
+            ),
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+
+        failures: list[str] = []
+        for project_id in project_ids:
+            if not isinstance(project_id, ProjectId):
+                continue
+            try:
+                self._manager.delete_project(self._actor, project_id)
+            except ProjectError as exc:
+                failures.append(f"{project_id.value}: {exc}")
+
+        self._home.refresh()
+        self._project_management.refresh()
+
+        if failures:
+            QMessageBox.critical(
+                self,
+                self._tr(
+                    "homepage.project_management.remove_failed_title",
+                    "Could not remove projects",
+                ),
+                "\n".join(failures),
+            )
+
+    def _on_export_projects_requested(self, _project_ids: object) -> None:
         self._show_future_feature(
-            "workspace.placeholder.manage_projects",
-            "Manage projects",
-            "Bloco 8 (Patient Module)",
+            "homepage.project_management.export_projects",
+            "Export project",
+            "Phase 8",
+        )
+
+    def _on_import_projects_requested(self) -> None:
+        self._show_future_feature(
+            "homepage.project_management.import_projects",
+            "Import project",
+            "Phase 8",
         )
 
     def _on_manage_flows_requested(self) -> None:
@@ -849,6 +941,9 @@ class MainWindow(QMainWindow):
 
     def home(self) -> HomePage:
         return self._home
+
+    def project_management(self) -> ProjectManagementPage:
+        return self._project_management
 
     def current_workspace(self) -> Workspace | None:
         return self._workspace

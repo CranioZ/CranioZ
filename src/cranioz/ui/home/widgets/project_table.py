@@ -34,7 +34,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QHBoxLayout,
@@ -52,6 +52,7 @@ from cranioz.application.project.catalog import ProjectCatalog
 from cranioz.domain.project.project_id import ProjectId
 from cranioz.domain.project.project_summary import ProjectSummary
 from cranioz.infrastructure.i18n import tr
+from cranioz.ui.icons.provider import IconProvider
 
 
 class _ProjectTableItem(QTableWidgetItem):
@@ -94,13 +95,26 @@ class ProjectTable(QWidget):
     def __init__(
         self,
         catalog: ProjectCatalog,
+        icon_provider: IconProvider | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self._catalog = catalog
+        self._icon_provider = icon_provider
         self.setObjectName("home_page.project_table")
 
-        # ----- Header -----
+        header = self._build_header()
+        self._build_table(_columns())
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(8, 8, 8, 8)
+        layout.setSpacing(6)
+        layout.addLayout(header)
+        layout.addWidget(self._table, stretch=1)
+
+        self.refresh()
+
+    def _build_header(self) -> QHBoxLayout:
         title = QLabel(tr("homepage.project_list.title", "Project list"))
         title.setObjectName("home_page.project_table.title")
         title_font = title.font()
@@ -110,13 +124,29 @@ class ProjectTable(QWidget):
 
         self._new_button = QPushButton(tr("homepage.project_list.new_project", "New project"))
         self._new_button.setObjectName("home_page.project_table.new")
+        self._set_button_icon(self._new_button, "project_new")
         self._new_button.clicked.connect(self.new_project_requested)
 
         self._manage_button = QPushButton(
             tr("homepage.project_list.manage_projects", "Manage projects")
         )
         self._manage_button.setObjectName("home_page.project_table.manage")
+        self._set_button_icon(self._manage_button, "project_manage")
         self._manage_button.clicked.connect(self.manage_projects_requested)
+
+        search_tooltip = tr(
+            "homepage.project_list.search",
+            "Search by project or patient name",
+        )
+        self._search_button = QPushButton()
+        self._search_button.setObjectName("home_page.project_table.search_button")
+        self._search_button.setProperty("class", "icon")
+        self._search_button.setFlat(True)
+        self._search_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._set_button_icon(self._search_button, "project_search")
+        self._search_button.setToolTip(search_tooltip)
+        self._search_button.setAccessibleName(search_tooltip)
+        self._search_button.clicked.connect(self._toggle_search)
 
         self._search_edit = QLineEdit()
         self._search_edit.setObjectName("home_page.project_table.search")
@@ -126,19 +156,21 @@ class ProjectTable(QWidget):
                 "Search by project or patient name",
             )
         )
-        self._search_edit.setMinimumWidth(320)
-        self._search_edit.setMaximumWidth(420)
+        self._search_edit.setMinimumWidth(240)
+        self._search_edit.setMaximumWidth(360)
         self._search_edit.textChanged.connect(self.refresh)
+        self._search_edit.setVisible(False)
 
         header = QHBoxLayout()
         header.addWidget(title)
         header.addStretch(1)
         header.addWidget(self._new_button)
         header.addWidget(self._manage_button)
+        header.addWidget(self._search_button)
         header.addWidget(self._search_edit)
+        return header
 
-        # ----- Table -----
-        columns = _columns()
+    def _build_table(self, columns: tuple[str, ...]) -> None:
         self._table = QTableWidget(0, len(columns))
         self._table.setObjectName("home_page.project_table.table")
         self._table.setHorizontalHeaderLabels(columns)
@@ -158,14 +190,6 @@ class ProjectTable(QWidget):
         header_view.setMinimumSectionSize(80)
 
         self._table.itemSelectionChanged.connect(self._on_selection_changed)
-
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(8, 8, 8, 8)
-        layout.setSpacing(6)
-        layout.addLayout(header)
-        layout.addWidget(self._table, stretch=1)
-
-        self.refresh()
 
     # ----- Public API -----------------------------------------------
 
@@ -198,6 +222,18 @@ class ProjectTable(QWidget):
         return self._table.rowCount()
 
     # ----- Internals ------------------------------------------------
+
+    def _set_button_icon(self, button: QPushButton, icon_name: str) -> None:
+        if self._icon_provider is None:
+            return
+        button.setIcon(self._icon_provider.icon(icon_name, size=18))
+        button.setIconSize(QSize(18, 18))
+
+    def _toggle_search(self) -> None:
+        visible = self._search_edit.isHidden()
+        self._search_edit.setVisible(visible)
+        if visible:
+            self._search_edit.setFocus(Qt.FocusReason.ShortcutFocusReason)
 
     def _id_text_at_row(self, row: int) -> str:
         item = self._table.item(row, 1)

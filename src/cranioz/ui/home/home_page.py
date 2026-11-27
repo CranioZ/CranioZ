@@ -135,7 +135,11 @@ class HomePage(QWidget):
 
         self._top_bar = HomeTopBar(self._icon_provider, self)
         self._sidebar = CommunitySidebar(self._icon_provider, self)
-        self._project_table = ProjectTable(catalog, self)
+        self._project_table = ProjectTable(
+            catalog,
+            icon_provider=self._icon_provider,
+            parent=self,
+        )
         self._flow_list = FlowList(
             translate=self._translate_flow,
             icon_provider=self._icon_provider,

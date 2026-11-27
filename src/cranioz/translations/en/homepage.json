@@ -5,6 +5,7 @@
     "title": { "message": "Project list", "description": "Title of the project table section." },
     "new_project": { "message": "New project", "description": "Button to create a new project." },
     "manage_projects": { "message": "Manage projects", "description": "Button to open the project management page." },
+    "search": { "message": "Search by project or patient name", "description": "Tooltip for the button that opens project search." },
     "search_placeholder": { "message": "Search by project or patient name", "description": "Placeholder for the project search field." },
     "columns": {
       "name": { "message": "Name", "description": "Project table column: name." },
@@ -19,6 +20,21 @@
     "title": { "message": "Clinical flows", "description": "Title of the flow list section." },
     "manage_flows": { "message": "Manage Flows", "description": "Button to open the flow management page." },
     "empty": { "message": "No flows available", "description": "Placeholder when no flow is loaded." }
+  },
+  "project_management": {
+    "title": { "message": "Project list", "description": "Title of the project management page." },
+    "new_project": { "message": "New project", "description": "Button to create a project on the management page." },
+    "search": { "message": "Search project", "description": "Tooltip for the project management search button." },
+    "search_placeholder": { "message": "Search by project or patient name", "description": "Search placeholder on the project management page." },
+    "select_projects": { "message": "Select projects", "description": "Button to select all projects." },
+    "deselect_projects": { "message": "Deselect projects", "description": "Button to clear all project selections." },
+    "remove_projects": { "message": "Remove project", "description": "Button to remove selected projects." },
+    "export_projects": { "message": "Export project", "description": "Button to export selected projects." },
+    "import_projects": { "message": "Import project", "description": "Button to import projects." },
+    "back": { "message": "Back", "description": "Button to leave project management." },
+    "confirm_remove_title": { "message": "Remove projects?", "description": "Project removal confirmation title." },
+    "confirm_remove_body": { "message": "Remove {count} selected project(s)? This action cannot be undone.", "description": "Project removal confirmation message." },
+    "remove_failed_title": { "message": "Could not remove projects", "description": "Project removal error title." }
   },
   "community_sidebar": {
     "community": { "message": "Community", "description": "Community sidebar: community link." },

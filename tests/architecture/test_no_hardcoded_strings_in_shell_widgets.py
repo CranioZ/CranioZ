@@ -57,6 +57,7 @@ _SHELL_FILES: tuple[Path, ...] = (
     _REPO_ROOT / "src" / "cranioz" / "__main__.py",
     _REPO_ROOT / "src" / "cranioz" / "ui" / "main_window.py",
     _REPO_ROOT / "src" / "cranioz" / "ui" / "home" / "home_page.py",
+    _REPO_ROOT / "src" / "cranioz" / "ui" / "home" / "project_management_page.py",
     _REPO_ROOT / "src" / "cranioz" / "ui" / "home" / "widgets" / "community_sidebar.py",
     _REPO_ROOT / "src" / "cranioz" / "ui" / "home" / "widgets" / "flow_list.py",
     _REPO_ROOT / "src" / "cranioz" / "ui" / "home" / "widgets" / "flow_row.py",
