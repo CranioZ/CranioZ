@@ -9,6 +9,13 @@
     "toggle_area_right": { "message": "Alternar Área Direita", "description": "Tooltip para alternar a Área Direita." },
     "toggle_area_bottom": { "message": "Alternar Área Inferior", "description": "Tooltip para alternar a Área Inferior." },
     "add_module": { "message": "Adicionar módulo", "description": "Tooltip do botão '+' em Módulos." },
+    "window": {
+      "minimize": { "message": "Minimizar", "description": "Tooltip do controle de minimizar janela." },
+      "maximize": { "message": "Maximizar", "description": "Tooltip do controle de maximizar janela." },
+      "full_screen": { "message": "Tela completa", "description": "Tooltip do controle de tela completa." },
+      "restore": { "message": "Restaurar", "description": "Tooltip do controle de restaurar janela." },
+      "close": { "message": "Fechar", "description": "Tooltip do controle de fechar janela." }
+    },
     "menu": {
       "new_project": { "message": "Novo projeto", "description": "Menu Home: novo projeto." },
       "open_project": { "message": "Abrir projeto", "description": "Menu Home: abrir projeto." },

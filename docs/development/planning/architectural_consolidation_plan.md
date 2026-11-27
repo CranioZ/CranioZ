@@ -881,9 +881,11 @@ Delivered:
   `_build_empty_placeholder()` uses `WA_TranslucentBackground`.
 - **Block 5.6 — Window controls in ExtrasSegment.**
   `minimize_requested`, `maximize_requested`, `close_requested`;
-  `MainWindow._on_window_maximize_requested` toggles
-  `showMaximized`/`showNormal`; `closeEvent` asks for confirmation when
-  a project is open, then tears it down via `_close_active_project`.
+  `MainWindow._on_window_maximize_requested` cycles through
+  `showMaximized`, `showFullScreen`, and `showNormal`;
+  `_update_window_control_state` keeps both top bars synchronized with the
+  active display state. `closeEvent` asks for confirmation when a project is
+  open, then tears it down via `_close_active_project`.
   19 tests.
 - **Block 5.6.1 — Window controls in HomeTopBar.**
   `HomeTopBar.minimize_requested`, `maximize_requested`,
@@ -900,8 +902,9 @@ Delivered:
   a resize dead zone. Native resize is delegated to the OS via
   `windowHandle().startSystemResize(edges)` in `mousePressEvent`, with
   dynamic cursor feedback in `mouseMoveEvent`.
-  `_update_maximize_icon(restore=...)` keeps the maximize/restore icon
-  in sync between `HomeTopBar` and `ExtrasSegment`. 3 new integration
+  `_update_window_control_state()` keeps the maximize/full-screen/restore
+  icon and accessible label in sync between `HomeTopBar` and
+  `ExtrasSegment`. 3 new integration
   tests in `test_main_window.py` (`test_main_window_is_frameless`,
   `test_main_window_drag_filter_is_installed`,
   `test_main_window_central_container_has_margins`).

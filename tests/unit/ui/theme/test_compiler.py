@@ -221,6 +221,14 @@ def test_qss_differs_between_themes() -> None:
     assert dark_qss != light_qss
 
 
+def test_qss_contains_home_button_variants() -> None:
+    compiler = ThemeCompiler()
+    qss = compiler.compile(DARK_TOKENS).qss
+
+    assert 'QPushButton[class="icon"]' in qss
+    assert 'QPushButton[class="sidebar-item"]' in qss
+
+
 # ----- apply: with QApplication (uses qapp fixture) ------------------
 
 

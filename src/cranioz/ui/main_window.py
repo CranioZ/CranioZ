@@ -9,7 +9,7 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
 from PySide6.QtCore import QEvent, QObject, QPoint, Qt
-from PySide6.QtGui import QCloseEvent, QMouseEvent
+from PySide6.QtGui import QCloseEvent, QIcon, QMouseEvent
 from PySide6.QtWidgets import (
     QFileDialog,
     QMainWindow,
@@ -203,7 +203,7 @@ class MainWindow(QMainWindow):
 
         self.setWindowTitle(self._tr("core.app.name", "CranioZ"))
         self.resize(1000, 650)
-        self._update_maximize_icon(restore=False)
+        self._update_window_control_state()
 
     # ----- Redimensionamento Nativo (Qt 6) ---------------------------
     # (idêntico ao original; omitido aqui por brevidade — NÃO MUDA)
@@ -301,6 +301,7 @@ class MainWindow(QMainWindow):
         home.manage_flows_requested.connect(self._on_manage_flows_requested)
         home.settings_requested.connect(self._on_settings_requested)
         home.help_requested.connect(self._on_help_requested)
+        home.logs_requested.connect(self._on_logs_requested)
         home.community_requested.connect(self._on_community_requested)
         home.library_requested.connect(self._on_library_requested)
         home.news_requested.connect(self._on_news_requested)
@@ -397,6 +398,7 @@ class MainWindow(QMainWindow):
         self._workspace = workspace
         self._current_project_id = project_id
         self._register_dicom_import_handler()
+        self._update_window_control_state()
 
     def _create_workspace(self, context: ProjectContext) -> Workspace:
         scene_query = None
@@ -476,26 +478,49 @@ class MainWindow(QMainWindow):
         extras.close_requested.connect(self.close)
 
     def _on_window_maximize_requested(self) -> None:
-        if self.isMaximized():
+        if self.isFullScreen():
             self.showNormal()
-            self._update_maximize_icon(restore=False)
+        elif self.isMaximized():
+            self.showFullScreen()
         else:
             self.showMaximized()
-            self._update_maximize_icon(restore=True)
+        self._update_window_control_state()
 
-    def _update_maximize_icon(self, restore: bool) -> None:
-        icon_name = "window_restore" if restore else "window_maximize"
+    def _update_window_control_state(self) -> None:
+        if self.isFullScreen():
+            icon_name = "window_restore"
+            tooltip = self._tr("workspace.window.restore", "Restore")
+        elif self.isMaximized():
+            icon_name = "window_fullscreen"
+            tooltip = self._tr("workspace.window.full_screen", "Full screen")
+        else:
+            icon_name = "window_maximize"
+            tooltip = self._tr("workspace.window.maximize", "Maximize")
+
         icon = self._icon_provider.icon(icon_name)
 
-        tb = self._home._top_bar_widget()
-        if hasattr(tb, "_maximize_button"):
-            tb._maximize_button.setIcon(icon)
+        home = getattr(self, "_home", None)
+        if home is not None:
+            tb = home._top_bar_widget()
+            if hasattr(tb, "_maximize_button"):
+                self._set_window_control(tb._maximize_button, icon, tooltip)
 
         if self._workspace is not None:
             right_segment = self._workspace.top_overlay().right_segment()
             extras = right_segment.findChild(ExtrasSegment)
             if extras and hasattr(extras, "_maximize_button"):
-                extras._maximize_button.setIcon(icon)
+                self._set_window_control(extras._maximize_button, icon, tooltip)
+
+    @staticmethod
+    def _set_window_control(button: QPushButton, icon: QIcon, tooltip: str) -> None:
+        button.setIcon(icon)
+        button.setToolTip(tooltip)
+        button.setAccessibleName(tooltip)
+
+    def changeEvent(self, event: QEvent) -> None:  # noqa: N802
+        super().changeEvent(event)
+        if event.type() == QEvent.Type.WindowStateChange:
+            self._update_window_control_state()
 
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802
         if self._current_project_id is not None:
@@ -750,6 +775,13 @@ class MainWindow(QMainWindow):
             "workspace.placeholder.help",
             "Help",
             "piece 7.6d (Documentation)",
+        )
+
+    def _on_logs_requested(self) -> None:
+        self._show_future_feature(
+            "homepage.top_bar.logs",
+            "Logs",
+            "monitor_logs.md",
         )
 
     def _on_community_requested(self) -> None:

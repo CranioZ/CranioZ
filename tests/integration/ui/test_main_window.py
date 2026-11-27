@@ -320,6 +320,7 @@ def test_open_missing_project_shows_error(
         ("manage_flows_requested", "Manage flows"),
         ("settings_requested", "Settings"),
         ("help_requested", "Help"),
+        ("logs_requested", "Logs"),
         ("community_requested", "Community"),
         ("library_requested", "Object library"),
         ("news_requested", "News"),
@@ -345,6 +346,75 @@ def test_placeholder_shows_information(
 
     assert len(calls) == 1
     assert calls[0][0] == expected_title
+
+
+# ----- Window controls ----------------------------------------------
+
+
+def test_window_control_cycles_through_display_states(
+    window: MainWindow,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    state = {"maximized": False, "fullscreen": False}
+    calls: list[str] = []
+
+    monkeypatch.setattr(MainWindow, "isMaximized", lambda _self: state["maximized"])
+    monkeypatch.setattr(MainWindow, "isFullScreen", lambda _self: state["fullscreen"])
+    monkeypatch.setattr(
+        MainWindow,
+        "showMaximized",
+        lambda _self: calls.append("maximized"),
+    )
+    monkeypatch.setattr(
+        MainWindow,
+        "showFullScreen",
+        lambda _self: calls.append("fullscreen"),
+    )
+    monkeypatch.setattr(
+        MainWindow,
+        "showNormal",
+        lambda _self: calls.append("normal"),
+    )
+
+    window._on_window_maximize_requested()  # noqa: SLF001
+    state["maximized"] = True
+    window._on_window_maximize_requested()  # noqa: SLF001
+    state["fullscreen"] = True
+    window._on_window_maximize_requested()  # noqa: SLF001
+
+    assert calls == ["maximized", "fullscreen", "normal"]
+
+
+def test_window_control_icon_and_tooltip_follow_display_state(
+    window: MainWindow,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    state = {"maximized": False, "fullscreen": False}
+
+    monkeypatch.setattr(MainWindow, "isMaximized", lambda _self: state["maximized"])
+    monkeypatch.setattr(MainWindow, "isFullScreen", lambda _self: state["fullscreen"])
+    button = window.home()._top_bar_widget()._maximize_button  # noqa: SLF001
+
+    window._update_window_control_state()  # noqa: SLF001
+    maximize_image = button.icon().pixmap(20, 20).toImage()
+    assert button.toolTip() == "Maximize"
+    assert button.accessibleName() == "Maximize"
+
+    state["maximized"] = True
+    window._update_window_control_state()  # noqa: SLF001
+    fullscreen_image = button.icon().pixmap(20, 20).toImage()
+    assert button.toolTip() == "Full screen"
+    assert button.accessibleName() == "Full screen"
+
+    state["fullscreen"] = True
+    window._update_window_control_state()  # noqa: SLF001
+    restore_image = button.icon().pixmap(20, 20).toImage()
+    assert button.toolTip() == "Restore"
+    assert button.accessibleName() == "Restore"
+
+    assert maximize_image != fullscreen_image
+    assert maximize_image != restore_image
+    assert fullscreen_image != restore_image
 
 
 # ----- Lifecycle ----------------------------------------------------

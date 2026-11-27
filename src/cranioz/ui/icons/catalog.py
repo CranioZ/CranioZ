@@ -11,11 +11,14 @@ SVG_ICON_ASSETS: Final[dict[str, str]] = {
     # Main window controls.
     "window_minimize": "main_window/minimize.svg",
     "window_maximize": "main_window/maximize.svg",
-    "window_restore": "main_window/maximize.svg",
+    "window_fullscreen": "main_window/fullscreen.svg",
+    "window_restore": "main_window/restore.svg",
     "window_close": "main_window/close.svg",
     # Home page.
+    "cranioz": "home_page/cranioz/cranioz.svg",
     "sidebar_toggle": "home_page/top_bar/side_navigation.svg",
     "help": "home_page/top_bar/help.svg",
+    "logs": "home_page/top_bar/terminal.svg",
     "settings": "home_page/top_bar/settings_applications.svg",
     "community": "home_page/community/community.svg",
     "library": "home_page/community/library_objects.svg",

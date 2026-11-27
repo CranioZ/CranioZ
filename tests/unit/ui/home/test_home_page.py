@@ -139,6 +139,14 @@ def test_top_bar_help_signal_is_forwarded(qtbot: QtBot) -> None:
         page._top_bar_widget()._help_button.click()
 
 
+def test_top_bar_logs_signal_is_forwarded(qtbot: QtBot) -> None:
+    page, _, _ = _make_page()
+    qtbot.addWidget(page)
+
+    with qtbot.waitSignal(page.logs_requested, timeout=1000):
+        page._top_bar_widget()._logs_button.click()
+
+
 def test_top_bar_settings_signal_is_forwarded(qtbot: QtBot) -> None:
     page, _, _ = _make_page()
     qtbot.addWidget(page)

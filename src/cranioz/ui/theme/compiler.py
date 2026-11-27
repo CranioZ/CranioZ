@@ -202,8 +202,8 @@ def _build_qss(tokens: ThemeTokens) -> str:
     b = tokens.borders
     s = tokens.spacing
 
-    # StartButton is a 56x56 circle; the radius is half the size.
-    start_button_radius = 28
+    # StartButton is a 72x72 circle; the radius is half the size.
+    start_button_radius = 36
 
     # Block 5.5: Area backgrounds and rounded corners. The Central
     # Area is the lightest (background_elevated); lateral and bottom
@@ -339,6 +339,60 @@ QPushButton:disabled, QToolButton:disabled {{
     background-color: {c.background_elevated};
     color: {c.text_disabled};
     border-color: {c.border_default};
+}}
+
+/* Home top-bar icons: quiet actions, distinct from primary buttons. */
+QPushButton[class="icon"] {{
+    background-color: transparent;
+    color: {c.text_primary};
+    border: {b.width_default}px solid transparent;
+    border-radius: {b.radius_control}px;
+    min-width: 32px;
+    max-width: 32px;
+    min-height: 32px;
+    max-height: 32px;
+    padding: 0;
+}}
+
+QPushButton[class="icon"]:hover {{
+    background-color: {c.background_elevated};
+    border-color: {c.border_default};
+}}
+
+QPushButton[class="icon"]:pressed {{
+    background-color: {c.background_input};
+    border-color: {c.interactive_default};
+}}
+
+QPushButton[class="icon"]:focus {{
+    border-color: {c.border_focus};
+}}
+
+/* Community sidebar: left-aligned navigation entries. */
+QPushButton[class="sidebar-item"] {{
+    background-color: transparent;
+    color: {c.text_primary};
+    border: {b.width_default}px solid transparent;
+    border-radius: {b.radius_control}px;
+    min-height: {d.control_height}px;
+    padding: 6px {s.sm}px;
+    text-align: left;
+    font-weight: {t.weight_regular};
+}}
+
+QPushButton[class="sidebar-item"]:hover {{
+    background-color: {c.background_elevated};
+    border-color: {c.border_default};
+}}
+
+QPushButton[class="sidebar-item"]:pressed {{
+    background-color: {c.interactive_pressed};
+    border-color: {c.interactive_pressed};
+    color: {c.text_inverse};
+}}
+
+QPushButton[class="sidebar-item"]:focus {{
+    border-color: {c.border_focus};
 }}
 
 /* Secondary buttons: outlined, neutral surface. */

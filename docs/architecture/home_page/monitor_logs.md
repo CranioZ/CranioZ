@@ -1,7 +1,7 @@
 # Logs Monitor
 
 **Document type:** Technical specification
-**Status:** Planned (not implemented)
+**Status:** Planned; HomePage button and `logs_requested` wiring implemented
 **Scope:** Developer/support diagnostic window fed by `logging`
 **Last updated:** 2026-11-22
 
@@ -28,9 +28,9 @@ The Logs Monitor is **not**:
 - A telemetry channel (see §2).
 - A replacement for the log file or stdout (see §6.6).
 
-The specification is complete, but implementation is pending. The
-`logs_requested` signal is reserved in `home_page.md` §25. The Workspace
-layout snapshot contract (§7) is not yet implemented.
+The specification is complete, but the Logs Monitor implementation is pending.
+The HomePage Logs button and `logs_requested` signal are integrated. The
+Workspace layout snapshot contract (§7) is not yet implemented.
 
 This document is the single source of truth for the implementation.
 
@@ -132,8 +132,8 @@ determine whether an operation or clinical result is correct.
   them would create ambiguity in screenshots, support tickets and issue
   reports.
 - HomePage button tooltip: `Logs`. **Translated** through
-  `TranslationService` (key `home.toolbar.logs` in `en/` and `pt-BR/`).
-  The button itself is the 📋 icon provided by `IconProvider`.
+  `TranslationService` (key `homepage.top_bar.logs` in `en/` and `pt-BR/`).
+  The button uses the `terminal.svg` asset through `IconProvider`.
 - Ownership: One instance per `MainWindow`.
 - Repeated requests raise and activate the existing instance.
 - Closing the dialog hides it instead of destroying it.

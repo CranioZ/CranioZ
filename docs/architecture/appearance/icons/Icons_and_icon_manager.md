@@ -291,9 +291,37 @@ The following names are the closed set for Phase 2. Adding a name requires a PR 
 | `schedule` | 📅 | Schedule tab |
 | `procedures` | 📋 | Procedures tab |
 
-**Total: 65 icon names.**
+### 6.11 Runtime Shell Extensions (20)
 
-### 6.11 Catalog Rules
+These names extend the canonical catalog for shell, Home Page, Workspace,
+window-control, and reusable-widget integration.
+
+| Name | Purpose |
+|---|---|
+| `window_minimize` | Minimize the application window |
+| `window_maximize` | Maximize the application window |
+| `window_fullscreen` | Enter application full-screen mode |
+| `window_restore` | Restore the application window |
+| `window_close` | Close the application window |
+| `more_options` | Open an overflow or secondary-actions menu |
+| `toggle` | Toggle a tool or presentation state |
+| `cranioz` | CranioZ wordmark |
+| `logs` | Open the Logs Monitor |
+| `community` | Open community resources |
+| `library` | Open the shared object library |
+| `news` | Open project news |
+| `feedback` | Submit improvement feedback |
+| `contribute` | Open contribution resources |
+| `start` | Start a planning flow |
+| `eye-open` | Visible-state indicator |
+| `eye-closed` | Hidden-state indicator |
+| `clear` | Clear an input or temporary state |
+| `drag` | Reorder handle |
+| `professional_settings` | Open Professional configuration |
+
+**Total runtime catalog: 85 icon names.**
+
+### 6.12 Catalog Rules
 
 - Names are `snake_case`, semantically descriptive.
 - A name MUST be added to this catalog before it is used in widget code. Using a name not in the catalog produces the fallback icon and a WARNING.
@@ -320,7 +348,8 @@ The glyph itself does not change. The color is derived from the theme, so hover 
 
 ### 7.2 SvgIconProvider
 
-- Loads single-source assets from `assets/icons/<name>.svg`.
+- Resolves logical names through the central Python asset catalog and loads
+  the corresponding `assets/icons/<relative-path>.svg`.
 - Substitutes `currentColor` with the active state color from `ThemeService.color(...)`.
 - Renders at the active device pixel ratio for HiDPI output.
 - Delegates missing or invalid assets to the injected Unicode fallback provider.
@@ -500,11 +529,14 @@ Each migration is a separate PR with a regression test asserting that the widget
 
 ## 14. The SvgIconProvider (Incremental Adoption)
 
-The provider foundation, Unicode fallback, cache, HiDPI rendering, and the six Professional navigation assets are implemented. Phase 8 retains bulk asset migration and visual closure.
+The provider foundation, Unicode fallback, cache, HiDPI rendering, and the
+Main Window, Home Page, Workspace, and Professional navigation assets are
+implemented. Phase 8 retains migration of the remaining application icons.
 
 **Scope:**
 
-- Load SVG assets from `assets/icons/<name>.svg`.
+- Resolve icon names through `cranioz.ui.icons.catalog` and load the mapped
+  SVG asset from `assets/icons/`.
 - Recolor SVGs using `ThemeService.color(...)` for state variants.
 - Cache by `(name, size, theme, state)`.
 - Invalidate on `theme_changed`.
@@ -515,20 +547,19 @@ The provider foundation, Unicode fallback, cache, HiDPI rendering, and the six P
 
 ```text
 assets/icons/
-├── professional_profile.svg
-├── document_templates.svg
-├── budget.svg
-├── schedule.svg
-├── procedures.svg
-├── settings.svg
-└── ...
+├── main_window/
+├── home_page/
+├── workspace/
+└── modules/
+    └── professional/
 ```
 
 Adding a new SVG icon requires:
 
 1. Adding or confirming the logical name in the catalog in this document.
-2. Adding a monochrome SVG that uses `currentColor`.
-3. Running the catalog and provider tests to confirm rendering and fallback.
+2. Adding the logical-name-to-asset mapping in `ui/icons/catalog.py`.
+3. Adding a monochrome SVG that uses `currentColor`.
+4. Running the catalog and provider tests to confirm rendering and fallback.
 
 ---
 

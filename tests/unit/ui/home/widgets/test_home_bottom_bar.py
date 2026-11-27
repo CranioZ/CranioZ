@@ -31,6 +31,13 @@ def test_bottom_bar_holds_start_button(qtbot: QtBot, start_button: StartButton) 
     assert bar.start_button() is start_button
 
 
+def test_start_button_has_emphasized_size(start_button: StartButton) -> None:
+    assert start_button.size().width() == 72
+    assert start_button.size().height() == 72
+    assert start_button.iconSize().width() == 28
+    assert start_button.iconSize().height() == 28
+
+
 def test_bottom_bar_has_minimum_height(qtbot: QtBot, start_button: StartButton) -> None:
     bar = HomeBottomBar(start_button)
     qtbot.addWidget(bar)

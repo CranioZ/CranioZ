@@ -4,8 +4,8 @@ This script is a development tool. It is NOT part of production.
 
 It creates 5 fake projects in the CranioZ projects root, using the
 same names as ``scripts/debug_home_page.py``. It is idempotent: a
-project whose id already exists is skipped, so the script can be run
-multiple times without error.
+project whose id already exists is skipped, except that the old
+``Caso `` prefix is removed from projects created by previous runs.
 
 Run with:
 
@@ -18,6 +18,7 @@ Home Page's ProjectTable.
 from __future__ import annotations
 
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
 from cranioz.application.event_bus import EventBus
@@ -65,10 +66,18 @@ def main() -> int:
     )
 
     created = 0
+    updated = 0
     skipped = 0
     for name, patient_id in _FAKE_PROJECTS:
         pid = ProjectId(patient_id)
         if repository.exists(pid):
+            project = repository.get(pid)
+            if project.metadata.project_name.startswith("Caso "):
+                project.update_metadata(project.metadata.with_name(name, now=datetime.now(UTC)))
+                manager.update_project(_SEED_ACTOR, project)
+                print(f"  update {name!r} ({patient_id}) - removed 'Caso ' prefix")
+                updated += 1
+                continue
             print(f"  skip   {name!r} ({patient_id}) — already exists")
             skipped += 1
             continue
@@ -76,7 +85,7 @@ def main() -> int:
         manager.create_project(
             _SEED_ACTOR,
             project_id=pid,
-            project_name=f"Caso {name}",
+            project_name=name,
             patient_id=PatientId(patient_id),
             patient_display_name=name,
             clinical_procedure="orthognathic",
@@ -84,8 +93,8 @@ def main() -> int:
         print(f"  create {name!r} ({patient_id})")
         created += 1
 
-    print(f"\nDone. Created: {created}, skipped: {skipped}.")
-    if created:
+    print(f"\nDone. Created: {created}, updated: {updated}, skipped: {skipped}.")
+    if created or updated:
         print("Restart the main_window to see the projects in the Home Page.")
     return 0
 

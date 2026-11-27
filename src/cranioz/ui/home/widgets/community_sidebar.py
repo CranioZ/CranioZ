@@ -70,16 +70,12 @@ class CommunitySidebar(QWidget):
             label = tr(key, source)
             button = QPushButton(label)
             button.setObjectName(f"home_page.community_sidebar.{item_key}")
+            button.setProperty("class", "sidebar-item")
             button.setFlat(True)
             button.setCursor(Qt.CursorShape.PointingHandCursor)
             button.setIcon(icon_provider.icon(item_key))
             button.setAccessibleName(label)
             button.setToolTip(label)
-            # TODO(sprint-widget-migration): replace inline QSS with
-            # a property + global QSS rule. The StyleSheet is kept
-            # here only to preserve the current visual (left-aligned
-            # text) until the widget migration sprint.
-            button.setStyleSheet("text-align: left; padding: 6px 8px;")
             layout.addWidget(button)
             self._buttons[item_key] = button
 

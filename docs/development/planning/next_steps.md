@@ -48,23 +48,39 @@ The Editor Architecture Refactoring (ADR-0015) and Sprints I, J, and K are compl
 | Sprint L.0 — System form widgets | Complete |
 | Sprint L.0.2 Delivery A — Qt-native widgets | Complete |
 | Sprint L.0.2 Delivery B — Sections and lists | Complete |
-| SVG provider foundation and Professional navigation assets | Complete |
+| SVG provider, central asset catalog, and UI icon migration | Complete |
+| Main Window display states: maximize, full screen, and restore | Complete |
+| Home Page top bar: SVG wordmark and logs/help/settings actions | Complete |
 
 ### 2.2 Current Validation Baseline
 
-Last recorded baseline after the SVG provider integration, 2026-11-26:
+Last recorded baseline after the icon and Home Page top-bar delivery,
+2026-11-26:
 
-- 1883 passed.
+- 1915 passed.
 - 0 failed.
 - 0 errors.
 - 2 skipped.
 - `ruff check` clean.
-- `ruff format --check` clean (646 files).
-- `mypy src` clean (326 source files).
+- `ruff format --check` clean (647 files).
+- `mypy src` clean (327 source files).
 
 This validation was rerun for the current delivery. Update the baseline after each subsequent completed delivery.
 
 Focused L.1 validation on 2026-11-26: 9 tests passed for the Professional Module contract, Editor/Workspace materialization, and dependency boundaries.
+
+### 2.3 Latest UI Delivery
+
+The Main Window, Home Page, Workspace shell, and Professional navigation now
+use the centralized SVG asset catalog. The implemented interface includes:
+
+- SVG wordmark and logs/help/settings actions on the Home Page top bar.
+- `logs_requested` forwarding through `HomePage` to a temporary MainWindow
+  placeholder; the Logs Dialog itself remains deferred.
+- Distinct maximize, full-screen, and restore icons synchronized across both
+  top bars.
+- Theme-aware `currentColor` rendering and aspect-ratio preservation for
+  non-square SVG sources.
 
 ## 3. Immediate Priorities
 
@@ -278,7 +294,7 @@ It does not implement workflow execution. `WorkflowEngine` and Flow execution be
 | Logs Monitor | Deferred; unscheduled | `monitor_logs.md` |
 | SQLite ProjectIndex and Recent Projects | Planned | Phase 8 / ADR-0016 |
 | Project import/export | Planned | Phase 8 |
-| Remaining SVG asset migration for non-Professional icons | Planned | Phase 8 |
+| Remaining SVG migration outside Main Window, Home Page, Workspace, and Professional | Planned | Phase 8 |
 | General AI and Node System | Planned | Phase 10 |
 | GeometryRevision, asset deduplication, and advanced geometry operations | Deferred | Geometry roadmap |
 | Startup optimization and lazy imports | Backlog | Future maintenance |
@@ -288,7 +304,10 @@ It does not implement workflow execution. `WorkflowEngine` and Flow execution be
 
 ### 7.1 Logs Monitor
 
-The Logs Monitor is a developer-facing diagnostic subsystem specified in `monitor_logs.md`.
+The Logs Monitor is a developer-facing diagnostic subsystem specified in
+`monitor_logs.md`. The Home Page button and `logs_requested` wiring are
+implemented; `LogsDialog`, `QtLogHandler`, and diagnostic routing remain
+deferred.
 
 It is distinct from the clinical Console, History, and Telemetry. Its implementation belongs to a dedicated sprint and does not block Sprint L or Phase 3 closure.
 
@@ -296,10 +315,12 @@ It is distinct from the clinical Console, History, and Telemetry. Its implementa
 
 The production composition root installs `SvgIconProvider` with
 `UnicodeIconProvider` as the fallback. Theme-aware recoloring, cache
-invalidation, HiDPI rendering, and the six Professional navigation assets are
-implemented. Icons without a migrated SVG continue to use Unicode without
-changing their consumers. Progressive migration of the remaining assets is
-planned for Phase 8. Do not create a second icon-management system.
+invalidation, HiDPI rendering, aspect-ratio preservation, and centralized
+logical-name-to-path resolution are implemented. The Main Window, Home Page,
+Workspace shell, and Professional navigation assets are migrated. Icons
+without a migrated SVG continue to use Unicode without changing their
+consumers. Progressive migration of the remaining assets is planned for Phase
+8. Do not create a second icon-management system.
 
 New SVG assets are added to:
 
@@ -307,7 +328,8 @@ New SVG assets are added to:
 
 Rules for manual asset addition:
 
-- The filename must match the logical name passed to `provider.icon(...)`.
+- Register each logical name and relative asset path in
+  `src/cranioz/ui/icons/catalog.py`.
 - Use lowercase `snake_case`; there are no `dark/` or `light/` subdirectories.
 - Use `currentColor` for monochrome paint so theme and state colors are applied.
 - Prefer a `viewBox="0 0 24 24"` source with a transparent background.

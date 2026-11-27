@@ -78,6 +78,7 @@ class HomePage(QWidget):
 
     # ----- Top bar ---------------------------------------------------
 
+    logs_requested = Signal()
     help_requested = Signal()
     settings_requested = Signal()
 
@@ -209,6 +210,7 @@ class HomePage(QWidget):
     def _connect_signals(self) -> None:
         tb = self._top_bar
         tb.toggle_sidebar_requested.connect(self._on_toggle_sidebar)
+        tb.logs_requested.connect(self.logs_requested)
         tb.help_requested.connect(self.help_requested)
         tb.settings_requested.connect(self.settings_requested)
         tb.minimize_requested.connect(self.minimize_requested)

@@ -1,6 +1,6 @@
 """HomeTopBar — the top bar of the Home Page.
 
-Displays the menu icon, the main_window title, the help/settings
+Displays the menu icon, the CranioZ wordmark, the logs/help/settings
 icons, and the window controls. Every control emits a signal; nothing
 here executes an operation.
 
@@ -15,8 +15,8 @@ showMaximized(), or close() itself: the MainWindow is responsible
 (Block 5.6.1).
 
 Block 5.5 fix: the __init__ was refactored to extract
-``_build_menu_button``, ``_build_title``, ``_build_help_button``,
-``_build_settings_button``, ``_build_window_controls`` and
+``_build_menu_button``, ``_build_logo``, ``_build_action_button``,
+``_build_window_controls`` and
 ``_build_layout``. The original __init__ had 52 statements (Ruff
 PLR0915 limit is 50); the extracted methods keep each block small
 and the code easier to read. Behavior is unchanged.
@@ -42,6 +42,7 @@ class HomeTopBar(QWidget):
     FIXED_HEIGHT: int = 48
 
     toggle_sidebar_requested = Signal()
+    logs_requested = Signal()
     help_requested = Signal()
     settings_requested = Signal()
 
@@ -64,7 +65,8 @@ class HomeTopBar(QWidget):
         # Build the widgets. Each helper returns the widget and
         # wires its signal.
         self._menu_button = self._build_menu_button()
-        self._title = self._build_title()
+        self._title = self._build_logo()
+        self._logs_button = self._build_logs_button()
         self._help_button = self._build_help_button()
         self._settings_button = self._build_settings_button()
         (
@@ -79,6 +81,7 @@ class HomeTopBar(QWidget):
     def _build_menu_button(self) -> QPushButton:
         button = QPushButton()
         button.setObjectName("home_page.top_bar.menu")
+        button.setProperty("class", "icon")
         button.setFlat(True)
         button.setCursor(Qt.CursorShape.PointingHandCursor)
         button.setIcon(self._icon_provider.icon("sidebar_toggle"))
@@ -87,37 +90,59 @@ class HomeTopBar(QWidget):
         button.clicked.connect(self.toggle_sidebar_requested)
         return button
 
-    def _build_title(self) -> QLabel:
-        title = QLabel(tr("core.app.name", "CranioZ"))
-        title.setObjectName("home_page.top_bar.title")
-        font = title.font()
-        font.setPointSize(14)
-        font.setBold(True)
-        title.setFont(font)
-        return title
+    def _build_logo(self) -> QLabel:
+        logo = QLabel()
+        logo.setObjectName("home_page.top_bar.logo")
+        logo.setFixedSize(80, 16)
+        logo.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        logo.setPixmap(self._icon_provider.icon("cranioz", size=16).pixmap(80, 16))
+        label = tr("core.app.name", "CranioZ")
+        logo.setAccessibleName(label)
+        logo.setToolTip(label)
+        return logo
+
+    def _build_logs_button(self) -> QPushButton:
+        button = self._build_action_button(
+            icon_name="logs",
+            object_name="home_page.top_bar.logs",
+            tooltip=tr("homepage.top_bar.logs", "Logs"),
+        )
+        button.clicked.connect(self.logs_requested)
+        return button
 
     def _build_help_button(self) -> QPushButton:
-        button = QPushButton()
-        button.setObjectName("home_page.top_bar.help")
-        button.setFlat(True)
-        button.setCursor(Qt.CursorShape.PointingHandCursor)
-        button.setFixedWidth(32)
-        button.setIcon(self._icon_provider.icon("help"))
-        button.setToolTip(tr("homepage.top_bar.help", "Help"))
-        button.setAccessibleName(tr("homepage.top_bar.help", "Help"))
+        button = self._build_action_button(
+            icon_name="help",
+            object_name="home_page.top_bar.help",
+            tooltip=tr("homepage.top_bar.help", "Help"),
+        )
         button.clicked.connect(self.help_requested)
         return button
 
     def _build_settings_button(self) -> QPushButton:
+        button = self._build_action_button(
+            icon_name="settings",
+            object_name="home_page.top_bar.settings",
+            tooltip=tr("homepage.top_bar.settings", "Settings"),
+        )
+        button.clicked.connect(self.settings_requested)
+        return button
+
+    def _build_action_button(
+        self,
+        icon_name: str,
+        object_name: str,
+        tooltip: str,
+    ) -> QPushButton:
         button = QPushButton()
-        button.setObjectName("home_page.top_bar.settings")
+        button.setObjectName(object_name)
+        button.setProperty("class", "icon")
         button.setFlat(True)
         button.setCursor(Qt.CursorShape.PointingHandCursor)
         button.setFixedWidth(32)
-        button.setIcon(self._icon_provider.icon("settings"))
-        button.setToolTip(tr("homepage.top_bar.settings", "Settings"))
-        button.setAccessibleName(tr("homepage.top_bar.settings", "Settings"))
-        button.clicked.connect(self.settings_requested)
+        button.setIcon(self._icon_provider.icon(icon_name))
+        button.setToolTip(tooltip)
+        button.setAccessibleName(tooltip)
         return button
 
     def _build_window_controls(self) -> tuple[QPushButton, QPushButton, QPushButton]:
@@ -152,6 +177,7 @@ class HomeTopBar(QWidget):
         layout.addWidget(self._menu_button)
         layout.addWidget(self._title)
         layout.addStretch(1)
+        layout.addWidget(self._logs_button)
         layout.addWidget(self._help_button)
         layout.addWidget(self._settings_button)
         layout.addWidget(self._minimize_button)

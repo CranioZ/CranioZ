@@ -116,12 +116,20 @@ class SvgIconProvider(IconProvider):
         screen = QGuiApplication.primaryScreen()
         if screen is not None:
             ratio = max(1.0, screen.devicePixelRatio())
-        pixel_size = max(1, round(size * ratio))
-        pixmap = QPixmap(pixel_size, pixel_size)
+
+        view_box = renderer.viewBoxF()
+        if view_box.width() > 0 and view_box.height() > 0:
+            pixel_width = max(1, round(size * (view_box.width() / view_box.height()) * ratio))
+            pixel_height = max(1, round(size * ratio))
+        else:
+            pixel_width = max(1, round(size * ratio))
+            pixel_height = pixel_width
+
+        pixmap = QPixmap(pixel_width, pixel_height)
         pixmap.fill(Qt.GlobalColor.transparent)
         painter = QPainter(pixmap)
         try:
-            renderer.render(painter, QRectF(0, 0, pixel_size, pixel_size))
+            renderer.render(painter, QRectF(0, 0, pixel_width, pixel_height))
         finally:
             painter.end()
         pixmap.setDevicePixelRatio(ratio)

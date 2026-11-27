@@ -72,6 +72,14 @@ def test_lists_projects(qtbot: QtBot) -> None:
     assert table.row_count() == 2
 
 
+def test_rows_use_alternating_colors(qtbot: QtBot) -> None:
+    catalog, _ = _make_catalog_and_manager()
+    table = ProjectTable(catalog)
+    qtbot.addWidget(table)
+
+    assert table._table.alternatingRowColors() is True
+
+
 def test_search_filters(qtbot: QtBot) -> None:
     catalog, manager = _make_catalog_and_manager()
     _seed(manager, "p-001", "Alpha")

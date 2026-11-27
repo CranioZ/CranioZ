@@ -83,6 +83,30 @@ def test_selected_state_uses_a_different_rendered_color(
     assert selected_image != default_image
 
 
+def test_window_control_states_use_distinct_icons(provider: SvgIconProvider) -> None:
+    maximize = provider.icon("window_maximize", size=24).pixmap(24, 24).toImage()
+    fullscreen = provider.icon("window_fullscreen", size=24).pixmap(24, 24).toImage()
+    restore = provider.icon("window_restore", size=24).pixmap(24, 24).toImage()
+
+    assert maximize != fullscreen
+    assert maximize != restore
+    assert fullscreen != restore
+
+
+def test_wide_svg_preserves_its_aspect_ratio(provider: SvgIconProvider) -> None:
+    icon = provider.icon("cranioz", size=20)
+    image = icon.pixmap(100, 20).toImage()
+
+    assert image.isNull() is False
+    assert image.width() == 100
+    assert image.height() == 20
+    assert any(
+        image.pixelColor(x, y).alpha() > 0
+        for x in range(image.width())
+        for y in range(image.height())
+    )
+
+
 def test_missing_svg_delegates_to_unicode_fallback(
     provider: SvgIconProvider,
     fallback_provider: UnicodeIconProvider,

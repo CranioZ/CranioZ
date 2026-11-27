@@ -9,6 +9,13 @@
     "toggle_area_right": { "message": "Toggle Area Right", "description": "Tooltip for the Right Area toggle." },
     "toggle_area_bottom": { "message": "Toggle Area Bottom", "description": "Tooltip for the Bottom Area toggle." },
     "add_module": { "message": "Add module", "description": "Tooltip for the '+' button in Modules." },
+    "window": {
+      "minimize": { "message": "Minimize", "description": "Tooltip for the window minimize control." },
+      "maximize": { "message": "Maximize", "description": "Tooltip for the window maximize control." },
+      "full_screen": { "message": "Full screen", "description": "Tooltip for the window full-screen control." },
+      "restore": { "message": "Restore", "description": "Tooltip for the window restore control." },
+      "close": { "message": "Close", "description": "Tooltip for the window close control." }
+    },
     "menu": {
       "new_project": { "message": "New project", "description": "Home segment menu: new project." },
       "open_project": { "message": "Open project", "description": "Home segment menu: open project." },

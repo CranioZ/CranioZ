@@ -26,6 +26,15 @@ def test_has_five_buttons(sidebar: CommunitySidebar) -> None:
         assert sidebar.button_for(key) is not None
 
 
+def test_buttons_use_sidebar_variant(sidebar: CommunitySidebar) -> None:
+    buttons = [
+        sidebar.button_for(key)
+        for key in ("community", "library", "news", "feedback", "contribute")
+    ]
+
+    assert all(button.property("class") == "sidebar-item" for button in buttons)
+
+
 @pytest.mark.parametrize(
     ("key", "signal_name"),
     [

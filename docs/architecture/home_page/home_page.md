@@ -736,8 +736,8 @@ Layout (top to bottom, left to right):
         └── QVBoxLayout (right column, stretch 8 / 42 / 42 / 8)
             ├── HomeTopBar             (stretch 8)
             │   ├── ☰ menu             → emits toggle_sidebar_requested
-            │   ├── CranioZ            (title)
-            │   ├── (documentation)    → emits help_requested   [icon in image 4]
+            │   ├── CranioZ            (cranioz.svg wordmark)
+            │   ├── terminal           → emits logs_requested
             │   ├── ? help             → emits help_requested
             │   ├── ⚙ settings         → emits settings_requested
             │   └── window controls    → minimize / maximize / close

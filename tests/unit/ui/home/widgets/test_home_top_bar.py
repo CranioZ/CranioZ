@@ -30,9 +30,25 @@ def test_top_bar_has_fixed_height(bar: HomeTopBar) -> None:
     assert bar.height() == HomeTopBar.FIXED_HEIGHT
 
 
+def test_action_buttons_use_icon_variant(bar: HomeTopBar) -> None:
+    buttons = (
+        bar._menu_button,
+        bar._logs_button,
+        bar._help_button,
+        bar._settings_button,
+    )
+
+    assert all(button.property("class") == "icon" for button in buttons)
+
+
 def test_help_button_emits_signal(qtbot: QtBot, bar: HomeTopBar) -> None:
     with qtbot.waitSignal(bar.help_requested, timeout=1000):
         bar._help_button.click()
+
+
+def test_logs_button_emits_signal(qtbot: QtBot, bar: HomeTopBar) -> None:
+    with qtbot.waitSignal(bar.logs_requested, timeout=1000):
+        bar._logs_button.click()
 
 
 def test_settings_button_emits_signal(qtbot: QtBot, bar: HomeTopBar) -> None:
@@ -40,8 +56,13 @@ def test_settings_button_emits_signal(qtbot: QtBot, bar: HomeTopBar) -> None:
         bar._settings_button.click()
 
 
-def test_title_is_cranioz(bar: HomeTopBar) -> None:
-    assert bar._title.text() == "CranioZ"
+def test_logo_is_rendered_from_svg(bar: HomeTopBar) -> None:
+    pixmap = bar._title.pixmap()
+
+    assert pixmap.isNull() is False
+    assert pixmap.size().width() == 80
+    assert pixmap.size().height() == 16
+    assert bar._title.accessibleName() == "CranioZ"
 
 
 @pytest.mark.qt

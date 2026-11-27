@@ -25,7 +25,7 @@ from cranioz.ui.theme.service import ThemeService
 
 _logger = logging.getLogger(__name__)
 
-#: Canonical runtime catalog of 82 icon names.
+#: Canonical runtime catalog of 85 icon names.
 #: Includes the canonical catalog and widget-specific additions.
 _DEFAULT_GLYPHS: Final[dict[str, str]] = {
     # 6.1 Navigation (8)
@@ -39,6 +39,7 @@ _DEFAULT_GLYPHS: Final[dict[str, str]] = {
     "sidebar_toggle": "▤",
     "window_minimize": "—",
     "window_maximize": "▢",
+    "window_fullscreen": "⛶",
     "window_restore": "❐",
     "window_close": "✕",
     "more_options": "⋮",
@@ -105,12 +106,14 @@ _DEFAULT_GLYPHS: Final[dict[str, str]] = {
     "about": "ⓘ",
     "log": "☰",
     # Additional names for shell widgets (Sprint F).
+    "cranioz": "CranioZ",
     "community": "👥",
     "library": "📚",
     "news": "📰",
     "feedback": "✉",
     "contribute": "♥",
     "start": "▶",
+    "logs": "▤",
     "eye-open": "👁",
     "eye-closed": "⊘",
     "clear": "✕",

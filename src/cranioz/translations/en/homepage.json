@@ -29,6 +29,7 @@
   },
   "top_bar": {
     "menu": { "message": "Menu", "description": "Top bar: menu button tooltip." },
+    "logs": { "message": "Logs", "description": "Top bar: logs monitor button tooltip." },
     "help": { "message": "Help", "description": "Top bar: help button tooltip." },
     "settings": { "message": "Settings", "description": "Top bar: settings button tooltip." }
   },

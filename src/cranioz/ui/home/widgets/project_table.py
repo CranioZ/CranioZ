@@ -146,6 +146,7 @@ class ProjectTable(QWidget):
         self._table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self._table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self._table.setSortingEnabled(True)
+        self._table.setAlternatingRowColors(True)
         self._table.verticalHeader().setVisible(False)
 
         header_view = self._table.horizontalHeader()

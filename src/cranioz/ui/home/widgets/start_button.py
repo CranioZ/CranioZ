@@ -26,7 +26,7 @@ selector syntax.
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtWidgets import QPushButton, QWidget
 
 from cranioz.infrastructure.i18n import tr
@@ -45,11 +45,12 @@ class StartButton(QPushButton):
     ) -> None:
         super().__init__(parent)
         self.setObjectName("home_page_start_button")
-        self.setFixedSize(56, 56)
+        self.setFixedSize(72, 72)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setAccessibleName(tr("homepage.start_button.label", "Start"))
         self.setEnabled(False)
-        self.setIcon(icon_provider.icon("start"))
+        self.setIcon(icon_provider.icon("start", size=28))
+        self.setIconSize(QSize(28, 28))
         self.setProperty("state", "disabled")
         self._repolish()
         self.clicked.connect(self.start_requested)
