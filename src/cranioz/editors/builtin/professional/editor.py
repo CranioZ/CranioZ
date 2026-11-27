@@ -1,12 +1,13 @@
-"""Professional Editor: installation profile (prototype Tela 2)."""
+"""Professional Editor with internal navigation and profile (prototype Tela 2)."""
 
 from __future__ import annotations
 
+import contextlib
 import html
 import logging
 import uuid
 from pathlib import Path
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 from PySide6.QtCore import QObject, Qt, Signal
 from PySide6.QtGui import QPixmap
@@ -17,6 +18,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QScrollArea,
     QSizePolicy,
+    QStackedWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -42,7 +44,11 @@ from cranioz.ui.widgets.forms import (
     FormRow,
     SignaturePreview,
 )
+from cranioz.ui.widgets.navigation import IconSidebar
 from cranioz.ui.widgets.sections import CollapsibleSection, DragList
+
+if TYPE_CHECKING:
+    from cranioz.ui.theme.service import ThemeService
 
 _logger = logging.getLogger(__name__)
 
@@ -50,6 +56,25 @@ PROFESSIONAL_EDITOR_ID = "editor.professional"
 PROFESSIONAL_QUERIES_EXTRA = "professional_queries"
 PROFESSIONAL_SETTINGS_EXTRA = "professional_settings"
 _TOP_BAR_CLEARANCE_PX = 56
+
+_PROFESSIONAL_TABS = (
+    (
+        "professional",
+        "professional_profile",
+        "professional.tabs.professional",
+        "Professional",
+    ),
+    (
+        "document_templates",
+        "document_templates",
+        "professional.tabs.document_templates",
+        "Document templates",
+    ),
+    ("budgets", "budget", "professional.tabs.budgets", "Budgets"),
+    ("schedule", "schedule", "professional.tabs.schedule", "Schedule"),
+    ("procedures", "procedures", "professional.tabs.procedures", "Procedures"),
+    ("config", "settings", "professional.tabs.config", "Config"),
+)
 
 
 class _ProfessionalEditorSignals(QObject):
@@ -73,12 +98,17 @@ class ProfessionalEditor(Editor):
         self._context: EditorContext | None = None
         self._queries: ProfessionalQueries | None = None
         self._settings: ProfessionalEditorSettings | None = None
+        self._theme_service: ThemeService | None = None
         self._loaded_profile: ProfessionalProfile | None = None
         self._content: QWidget | None = None
         self._status_label: QLabel | None = None
         self._preview: QLabel | None = None
         self._save_button: QPushButton | None = None
         self._cancel_button: QPushButton | None = None
+        self._sidebar: IconSidebar | None = None
+        self._pages: QStackedWidget | None = None
+        self._page_indices: dict[str, int] = {}
+        self._active_section = "professional"
 
         self._salutation: FormField | None = None
         self._full_name: FormField | None = None
@@ -109,6 +139,7 @@ class ProfessionalEditor(Editor):
 
     def initialize(self, context: EditorContext) -> None:
         self._context = context
+        self._theme_service = context.theme_service
         queries = context.extras.get(PROFESSIONAL_QUERIES_EXTRA)
         if isinstance(queries, ProfessionalQueries):
             self._queries = queries
@@ -124,10 +155,18 @@ class ProfessionalEditor(Editor):
 
     def activate(self) -> None:
         if self._settings is not None:
-            self._settings.set_last_section("professional")
+            section_key = self._settings.last_section()
+            if self._pages is None:
+                if section_key in {tab[0] for tab in _PROFESSIONAL_TABS}:
+                    self._active_section = section_key
+                return
+            self._select_section(section_key, persist=False)
 
     def dispose(self) -> None:
         super().dispose()
+        if self._theme_service is not None:
+            with contextlib.suppress(RuntimeError, TypeError):
+                self._theme_service.theme_changed.disconnect(self._refresh_navigation_icons)
         if self._content is not None:
             self._content.setParent(None)
             self._content.deleteLater()
@@ -135,7 +174,11 @@ class ProfessionalEditor(Editor):
         self._context = None
         self._queries = None
         self._settings = None
+        self._theme_service = None
         self._loaded_profile = None
+        self._sidebar = None
+        self._pages = None
+        self._page_indices.clear()
         self._sections.clear()
         self._section_list = None
 
@@ -154,6 +197,10 @@ class ProfessionalEditor(Editor):
     @property
     def preview_text(self) -> str:
         return "" if self._preview is None else self._preview.text()
+
+    @property
+    def active_section(self) -> str:
+        return self._active_section
 
     def save_profile(self) -> ProfessionalProfile | None:
         """Validate, dispatch, and return the saved profile."""
@@ -211,9 +258,61 @@ class ProfessionalEditor(Editor):
     def _build_content(self) -> QWidget:
         root = QWidget()
         root.setObjectName("professional_editor.content")
-        layout = QVBoxLayout(root)
+        layout = QHBoxLayout(root)
         # The Workspace Top Bar overlays the top of the Central Area.
         layout.setContentsMargins(16, _TOP_BAR_CLEARANCE_PX, 16, 12)
+        layout.setSpacing(12)
+
+        self._sidebar = IconSidebar(
+            self._context.icon_provider if self._context is not None else None
+        )
+        self._sidebar.setObjectName("professional_editor.navigation")
+        self._sidebar.setAccessibleName(
+            self._tr("professional.tabs.navigation", "Professional sections")
+        )
+        self._sidebar.setSizePolicy(
+            QSizePolicy.Policy.Fixed,
+            QSizePolicy.Policy.Expanding,
+        )
+        theme = self._context.theme_service if self._context is not None else None
+        if theme is not None:
+            self._sidebar.setFixedWidth(
+                theme.dimension("icon_size") + theme.dimension("control_height")
+            )
+        for key, icon_name, label_key, fallback in _PROFESSIONAL_TABS:
+            self._sidebar.add_item(
+                key,
+                icon_name,
+                self._tr(label_key, fallback),
+            )
+
+        self._pages = QStackedWidget()
+        self._pages.setObjectName("professional_editor.pages")
+        self._add_page("professional", self._build_profile_page())
+        for key, _icon_name, label_key, fallback in _PROFESSIONAL_TABS[1:]:
+            self._add_page(
+                key,
+                self._build_placeholder_page(key, self._tr(label_key, fallback)),
+            )
+
+        layout.addWidget(self._sidebar)
+        layout.addWidget(self._pages, 1)
+
+        self._sidebar.item_selected.connect(self._on_navigation_selected)
+        if theme is not None:
+            theme.theme_changed.connect(self._refresh_navigation_icons)
+        initial_section = (
+            self._settings.last_section() if self._settings is not None else "professional"
+        )
+        self._select_section(initial_section, persist=False)
+        self._connect_form_signals()
+        return root
+
+    def _build_profile_page(self) -> QWidget:
+        page = QWidget()
+        page.setObjectName("professional_editor.page.professional")
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(12)
 
         title = QLabel(self._tr("professional.profile.title", "Professional profile"))
@@ -241,9 +340,56 @@ class ProfessionalEditor(Editor):
         columns.addWidget(self._build_preview_panel(), 2)
         layout.addLayout(columns, 1)
         layout.addLayout(self._build_footer())
+        return page
 
-        self._connect_form_signals()
-        return root
+    def _build_placeholder_page(self, section_key: str, title: str) -> QWidget:
+        page = QWidget()
+        page.setObjectName(f"professional_editor.page.{section_key}")
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(12)
+
+        heading = QLabel(title)
+        heading.setProperty("role", "title")
+        message = QLabel(
+            self._tr(
+                "professional.tabs.unavailable",
+                "This section will be implemented in a later delivery.",
+            )
+        )
+        message.setProperty("role", "subtitle")
+        message.setWordWrap(True)
+        layout.addWidget(heading)
+        layout.addWidget(message)
+        layout.addStretch(1)
+        return page
+
+    def _add_page(self, section_key: str, page: QWidget) -> None:
+        if self._pages is None:
+            raise RuntimeError("the Professional Editor page stack is not available")
+        self._page_indices[section_key] = self._pages.addWidget(page)
+
+    def _on_navigation_selected(self, section_key: str) -> None:
+        self._select_section(section_key, persist=True)
+
+    def _refresh_navigation_icons(self, _theme: object) -> None:
+        if self._sidebar is not None:
+            self._sidebar.refresh_icons()
+
+    def _select_section(self, section_key: str, *, persist: bool) -> None:
+        if section_key not in self._page_indices:
+            _logger.warning(
+                "ProfessionalEditor ignored unknown section %r",
+                section_key,
+            )
+            section_key = "professional"
+        self._active_section = section_key
+        if self._sidebar is not None:
+            self._sidebar.set_active(section_key)
+        if self._pages is not None:
+            self._pages.setCurrentIndex(self._page_indices[section_key])
+        if persist and self._settings is not None:
+            self._settings.set_last_section(section_key)
 
     def _build_form(self) -> QWidget:
         self._salutation = self._field("profile.salutation", "Salutation")
@@ -356,6 +502,9 @@ class ProfessionalEditor(Editor):
             ),
         )
         self._section_list = section_list
+        self._restore_section_expansion()
+        for section in self._sections.values():
+            section.expanded_changed.connect(self._persist_section_expansion)
         self._restore_section_order()
         section_list.order_changed.connect(self._persist_section_order)
         layout.addWidget(section_list)
@@ -452,6 +601,21 @@ class ProfessionalEditor(Editor):
         if self._settings is None:
             return
         self._settings.set_navigation_order(tuple(sections))
+
+    def _restore_section_expansion(self) -> None:
+        if self._settings is None:
+            return
+        collapsed = set(self._settings.collapsed_sections())
+        for section_id, section in self._sections.items():
+            section.set_expanded(section_id not in collapsed)
+
+    def _persist_section_expansion(self, _expanded: bool) -> None:
+        if self._settings is None:
+            return
+        collapsed = tuple(
+            section_id for section_id, section in self._sections.items() if not section.expanded
+        )
+        self._settings.set_collapsed_sections(collapsed)
 
     @staticmethod
     def _row(*widgets: QWidget, stretches: int | tuple[int, ...] = 1) -> FormRow:

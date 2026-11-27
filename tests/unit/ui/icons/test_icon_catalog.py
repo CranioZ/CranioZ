@@ -25,10 +25,15 @@ def test_catalog_contains_required_names() -> None:
         "eye-closed",
         "clear",
         "drag",
+        "professional_profile",
+        "document_templates",
+        "budget",
+        "schedule",
+        "procedures",
     }
     assert required.issubset(_DEFAULT_GLYPHS.keys())
 
 
 def test_catalog_has_expected_count() -> None:
-    # 60 canonical + 6 shell + 4 window + 1 toggle + 4 L.0.2 = 75
-    assert len(_DEFAULT_GLYPHS) == 75
+    # 60 canonical + 5 Professional + 6 shell + 4 window + 1 toggle + 4 L.0.2 = 80
+    assert len(_DEFAULT_GLYPHS) == 80

@@ -15,6 +15,7 @@ APPEARANCE_THEME_MODE = "appearance.theme_mode"
 # the dedicated SQLite database, never in this settings document.
 PROFESSIONAL_UI_LAST_SECTION = "professional.ui.last_section"
 PROFESSIONAL_UI_NAVIGATION_ORDER = "professional.ui.navigation_order"
+PROFESSIONAL_UI_COLLAPSED_SECTIONS = "professional.ui.collapsed_sections"
 PROFESSIONAL_UI_VISIBLE_SECTIONS = "professional.ui.visible_sections"
 
 #: All keys recognized by the current phase. ``set()`` rejects others.
@@ -23,6 +24,7 @@ KNOWN_KEYS: frozenset[str] = frozenset(
         APPEARANCE_THEME_MODE,
         PROFESSIONAL_UI_LAST_SECTION,
         PROFESSIONAL_UI_NAVIGATION_ORDER,
+        PROFESSIONAL_UI_COLLAPSED_SECTIONS,
         PROFESSIONAL_UI_VISIBLE_SECTIONS,
     }
 )

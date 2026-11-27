@@ -6,7 +6,9 @@
     "budgets": { "message": "Budgets", "description": "Professional module tab: budgets." },
     "schedule": { "message": "Schedule", "description": "Professional module tab: schedule." },
     "procedures": { "message": "Procedures", "description": "Professional module tab: procedures." },
-    "config": { "message": "Config", "description": "Professional module tab: configuration." }
+    "config": { "message": "Config", "description": "Professional module tab: configuration." },
+    "navigation": { "message": "Professional module sections", "description": "Accessible name for the side navigation." },
+    "unavailable": { "message": "This section will be implemented in a later delivery.", "description": "Placeholder state for tabs not implemented yet." }
   },
   "profile": {
     "title": { "message": "Professional profile", "description": "Tela 2 title." },

@@ -640,13 +640,18 @@ The implementation is incremental. The stages below describe the target delivery
 - Presentation state survives application restart.
 - No unnecessary Professional-specific widgets are added to the generic widget package.
 
-**Current status:** In progress. `CollapsibleSection` is integrated into the
-Tela 2 profile groups. Their `DragList` order is restored and persisted through
+**Current status:** In progress. `IconSidebar` provides the six-item internal
+navigation defined by the prototype using SVG assets with Unicode fallback. The
+Professional tab opens Tela 2; the
+remaining tabs expose localized placeholder pages until their functional
+screens are delivered. The active tab is restored and persisted through
+`professional.ui.last_section`. `CollapsibleSection` is integrated into the Tela
+2 profile groups. Their `DragList` order is restored and persisted through
 `professional.ui.navigation_order`, and their expanded/collapsed state is
 restored and persisted through `professional.ui.collapsed_sections`. The Tela 2
-ordering interface was visually approved on 2026-11-26; navigation and the
-remaining screens are pending. Tela 2 does not expose visibility controls; tab
-visibility and ordering belong to the Tela 7 reorganization dialog.
+ordering interface was visually approved on 2026-11-26. Tela 2 does not expose
+visibility controls; tab visibility and ordering belong to the Tela 7
+reorganization dialog.
 
 ## Stage 3 — Professional catalogs
 
@@ -815,7 +820,7 @@ The implementation plan above describes the target Professional Module. It does 
 | L.0.2 A/B | Extended widgets — initial deliveries | Complete |
 | L.0.2 C/D | Remaining widgets and debug harness consolidation | Deferred |
 | L.1 | ProfessionalEditor, profile, SQLite persistence, Workspace composition, settings | Implemented; visually approved 2026-11-26 |
-| L.2 | Professional navigation and configuration interactions | In progress; Tela 2 ordering complete |
+| L.2 | Professional navigation and configuration interactions | In progress; IconSidebar and Tela 2 state complete |
 
 The immediate implementation must remain limited to:
 

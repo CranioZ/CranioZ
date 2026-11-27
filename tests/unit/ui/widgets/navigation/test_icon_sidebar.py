@@ -6,6 +6,8 @@ import pytest
 from PySide6.QtWidgets import QToolButton
 
 from cranioz.ui.icons.provider import IconProvider
+from cranioz.ui.theme.service import ThemeService
+from cranioz.ui.theme.tokens import ThemeMode
 from cranioz.ui.widgets.navigation import IconSidebar
 
 
@@ -86,3 +88,21 @@ def test_set_active_unknown_key_raises(qtbot, icon_provider: IconProvider) -> No
     qtbot.addWidget(sidebar)
     with pytest.raises(KeyError):
         sidebar.set_active("missing")
+
+
+def test_refresh_icons_requests_theme_aware_icons(
+    qtbot,
+    icon_provider: IconProvider,
+    theme_service: ThemeService,
+) -> None:
+    sidebar = IconSidebar(icon_provider)
+    qtbot.addWidget(sidebar)
+    sidebar.add_item("professional", "professional_profile", "Professional")
+    button = _buttons(sidebar)[0]
+    dark = button.icon().pixmap(20, 20).toImage()
+
+    theme_service.set_mode(ThemeMode.LIGHT)
+    sidebar.refresh_icons()
+    light = button.icon().pixmap(20, 20).toImage()
+
+    assert light != dark

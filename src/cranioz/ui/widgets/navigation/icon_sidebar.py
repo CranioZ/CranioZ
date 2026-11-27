@@ -61,7 +61,11 @@ class IconSidebar(QWidget):
         self._buttons[key] = button
         self._icon_names[key] = icon_name
         self._button_group.addButton(button)
-        self._layout.insertWidget(len(self._buttons) - 1, button)
+        self._layout.insertWidget(
+            len(self._buttons) - 1,
+            button,
+            alignment=Qt.AlignmentFlag.AlignHCenter,
+        )
         self._refresh_button(key)
 
     def set_active(self, key: str) -> None:
@@ -73,6 +77,11 @@ class IconSidebar(QWidget):
 
     def active_key(self) -> str | None:
         return self._active_key
+
+    def refresh_icons(self) -> None:
+        """Re-request every icon from the provider."""
+        for key in self._buttons:
+            self._refresh_button(key)
 
     def _on_button_clicked(self, key: str, checked: bool = False) -> None:
         if not checked:

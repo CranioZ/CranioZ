@@ -76,6 +76,7 @@ from cranioz.infrastructure.settings.in_memory_settings_service import (
 
 # --- User Interface: Icons ---
 from cranioz.ui.icons.provider import IconProvider
+from cranioz.ui.icons.svg import SvgIconProvider, default_svg_icons_root
 from cranioz.ui.icons.unicode import UnicodeIconProvider
 
 # --- User Interface: Main Window ---
@@ -338,7 +339,11 @@ def make_icon_provider(
 ) -> IconProvider:
     if theme_service is None:
         theme_service = make_theme_service(ThemeMode.DARK)
-    return UnicodeIconProvider(theme_service=theme_service)
+    return SvgIconProvider(
+        theme_service=theme_service,
+        icons_root=default_svg_icons_root(),
+        fallback_provider=UnicodeIconProvider(theme_service=theme_service),
+    )
 
 
 # =====================================================================

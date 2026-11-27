@@ -48,18 +48,19 @@ The Editor Architecture Refactoring (ADR-0015) and Sprints I, J, and K are compl
 | Sprint L.0 — System form widgets | Complete |
 | Sprint L.0.2 Delivery A — Qt-native widgets | Complete |
 | Sprint L.0.2 Delivery B — Sections and lists | Complete |
+| SVG provider foundation and Professional navigation assets | Complete |
 
 ### 2.2 Current Validation Baseline
 
-Last recorded baseline after the L.2 Tela 2 section-ordering integration, 2026-11-26:
+Last recorded baseline after the SVG provider integration, 2026-11-26:
 
-- 1867 passed.
+- 1883 passed.
 - 0 failed.
 - 0 errors.
 - 2 skipped.
 - `ruff check` clean.
-- `ruff format --check` clean (644 files).
-- `mypy src` clean (325 source files).
+- `ruff format --check` clean (646 files).
+- `mypy src` clean (326 source files).
 
 This validation was rerun for the current delivery. Update the baseline after each subsequent completed delivery.
 
@@ -69,13 +70,14 @@ Focused L.1 validation on 2026-11-26: 9 tests passed for the Professional Module
 
 The `ModuleUISpec` ownership decision was approved on 2026-11-26. The current execution sequence is:
 
-1. Decide whether application-level selection of `PROFESSIONAL_UI_SPEC` belongs to Sprint L or the future module activation flow.
-2. Continue Sprint L.2 with `IconSidebar`, Tela 7 visibility, and the remaining prototype screens.
-3. Implement the pending project-management UI, especially project removal.
-4. Run complete validation and close Sprint L.
-5. Review all Phase 3 completion criteria against `implementation_plan.md`.
-6. Close Phase 3 formally.
-7. Begin Phase 4A only after Phase 3 closure.
+1. Implement Tela 3, document templates.
+2. Implement the remaining Professional screens one at a time.
+3. Implement Tela 7 visibility and ordering.
+4. Implement the pending project-management UI, especially project removal.
+5. Run complete validation and close Sprint L.
+6. Review all Phase 3 completion criteria against `implementation_plan.md`.
+7. Close Phase 3 formally.
+8. Begin Phase 4A only after Phase 3 closure.
 
 L.0.2 Deliveries C and D remain deferred. They do not block L.1, L.2, or Phase 3 closure unless a concrete dependency is identified.
 
@@ -89,7 +91,7 @@ Sprint L is organized into four execution stages.
 | L.0.2 A/B | Extended widget suite | Complete |
 | L.0.2 C/D | TimelineSlider, ColorPicker, Histogram, final harness and HiDPI closure | Deferred |
 | L.1 | Professional Editor and profile integration | Implemented; visually approved 2026-11-26 |
-| L.2 | Navigation, sections, visibility, ordering, and persistence | In progress; Tela 2 ordering complete |
+| L.2 | Navigation, sections, visibility, ordering, and persistence | In progress; IconSidebar and Tela 2 state complete |
 
 ### 4.1 L.1 — Remaining Actions
 
@@ -109,7 +111,7 @@ Remaining actions:
 - [x] Decide the ownership and exposure contract for `ModuleUISpec`, respecting the package dependency rules established by ADR-0015.
 - [x] Align `professional.md` and related architecture documentation with the approved decision.
 - [x] Validate the Editor registration and Workspace materialization path.
-- [ ] Decide whether application-level selection of `PROFESSIONAL_UI_SPEC` belongs to Sprint L or to the future module activation flow. The current application loads the default/debug Workspace specs; the harness and integration test prove spec materialization.
+- [x] Decide whether application-level selection of `PROFESSIONAL_UI_SPEC` belongs to Sprint L or to the future module activation flow. The decision assigns selection to the UI Workspace composition root; the harness and integration test prove spec materialization.
 - [x] Perform manual visual review of Tela 2.
 - [x] Record approval or required corrections.
 
@@ -129,10 +131,11 @@ Scope:
 - [x] Integrate `DragList` for ordering the Tela 2 profile groups.
 - [x] Persist and restore the Tela 2 section order through `professional.ui.navigation_order`.
 - [x] Persist and restore Tela 2 section expansion state through `professional.ui.collapsed_sections`.
-- [ ] Integrate `IconSidebar`.
+- [x] Integrate `IconSidebar` with the six Professional tabs.
+- [x] Implement `SvgIconProvider` with Unicode fallback and migrate the six Professional navigation icons.
 - [ ] Integrate `EyeToggleButton` and `VisibilityToggle` in the Tela 7 top-level tab configuration.
 - [ ] Implement prototype screens Tela 3–7.
-- [ ] Implement navigation between sections.
+- [x] Implement navigation between the six Professional tabs; unimplemented tabs show localized placeholders.
 - [x] Support section expansion/collapse and drag ordering in Tela 2.
 - [ ] Implement Tela 7 top-level tab visibility and ordering.
 - [x] Persist and restore Tela 2 navigation order.
@@ -141,7 +144,8 @@ Scope:
 - [ ] Migrate `SignaturePreview` empty-state colors to design tokens.
 - [ ] Migrate the `FilePicker` browse action to the existing icon infrastructure.
 - [ ] Validate keyboard and accessibility behavior.
-- [ ] Validate theme and language changes.
+- [x] Validate theme changes, including SVG icon recoloring and refresh.
+- [ ] Validate language changes.
 
 Visual validation on 2026-11-26 confirmed the Tela 2 section layout,
 expansion/collapse behavior, drag handles, ordering, and preview rendering.
@@ -185,7 +189,7 @@ Do not start C/D merely to complete the original widget list. Reassess their nec
 - [ ] Validate profile persistence across application restarts.
 - [ ] Validate settings restoration.
 - [ ] Validate theme and language changes.
-- [ ] Validate navigation and presentation-state persistence.
+- [x] Validate navigation and presentation-state persistence.
 - [ ] Run the complete test suite and static analysis.
 - [ ] Update `widget_catalog.md` for any implemented or changed widgets.
 - [ ] Record unresolved limitations.
@@ -274,7 +278,7 @@ It does not implement workflow execution. `WorkflowEngine` and Flow execution be
 | Logs Monitor | Deferred; unscheduled | `monitor_logs.md` |
 | SQLite ProjectIndex and Recent Projects | Planned | Phase 8 / ADR-0016 |
 | Project import/export | Planned | Phase 8 |
-| SVG integration into the existing IconManager | Planned | Phase 8 |
+| Remaining SVG asset migration for non-Professional icons | Planned | Phase 8 |
 | General AI and Node System | Planned | Phase 10 |
 | GeometryRevision, asset deduplication, and advanced geometry operations | Deferred | Geometry roadmap |
 | Startup optimization and lazy imports | Backlog | Future maintenance |
@@ -290,9 +294,26 @@ It is distinct from the clinical Console, History, and Telemetry. Its implementa
 
 ### 7.2 Icon Infrastructure
 
-The `IconManager` and existing icon provider infrastructure are implemented. The current UI uses the existing Unicode-based provider.
+The production composition root installs `SvgIconProvider` with
+`UnicodeIconProvider` as the fallback. Theme-aware recoloring, cache
+invalidation, HiDPI rendering, and the six Professional navigation assets are
+implemented. Icons without a migrated SVG continue to use Unicode without
+changing their consumers. Progressive migration of the remaining assets is
+planned for Phase 8. Do not create a second icon-management system.
 
-SVG integration and progressive migration of UI icons are planned for Phase 8. Do not create a second icon-management system.
+New SVG assets are added to:
+
+`src/cranioz/assets/icons/`
+
+Rules for manual asset addition:
+
+- The filename must match the logical name passed to `provider.icon(...)`.
+- Use lowercase `snake_case`; there are no `dark/` or `light/` subdirectories.
+- Use `currentColor` for monochrome paint so theme and state colors are applied.
+- Prefer a `viewBox="0 0 24 24"` source with a transparent background.
+- Do not embed raster images, fonts, scripts, or external references.
+- Reuse the same SVG by requesting the same logical name from multiple widgets.
+- A fully new logical name also requires catalog and Unicode fallback updates.
 
 ## 8. Architectural Constraints
 
@@ -347,16 +368,16 @@ Run the complete validation suite after each delivery and before closing Sprint 
 
 ## 10. Next Handoff
 
-**Immediate task:** Decide whether application-level
-`PROFESSIONAL_UI_SPEC` selection belongs to Sprint L or the future
-module activation flow.
+**Immediate task:** Implement one remaining Professional prototype screen,
+starting with the document templates screen, without combining it with the
+Tela 7 configuration work.
 
-After that decision:
-
-1. Continue L.2 with `IconSidebar`, visibility and remaining presentation persistence, and the remaining prototype screens.
-2. Complete the remaining Phase 3 project-management UI.
-3. Validate and close Sprint L.
-4. Close Phase 3 according to `implementation_plan.md`.
+1. Implement Tela 3, document templates.
+2. Implement the remaining Professional prototype screens one at a time.
+3. Implement Tela 7 visibility and ordering.
+4. Complete the remaining Phase 3 project-management UI.
+5. Validate and close Sprint L.
+6. Close Phase 3 according to `implementation_plan.md`.
 
 ### Reference Documents
 

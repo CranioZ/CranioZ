@@ -353,6 +353,28 @@ QPushButton[class="secondary"]:hover, QToolButton[class="secondary"]:hover {{
     border-color: {c.interactive_hover};
 }}
 
+/* IconSidebar: borderless navigation items centered in a narrow rail. */
+QToolButton#CraniozIconSidebarItem {{
+    background-color: transparent;
+    border: none;
+    border-radius: {b.radius_control}px;
+    min-width: {d.control_height}px;
+    max-width: {d.control_height}px;
+    min-height: {d.control_height}px;
+    max-height: {d.control_height}px;
+    padding: 0;
+    qproperty-iconSize: {d.icon_size}px {d.icon_size}px;
+}}
+
+QToolButton#CraniozIconSidebarItem:hover {{
+    background-color: {c.background_elevated};
+}}
+
+QToolButton#CraniozIconSidebarItem:checked {{
+    background-color: {c.background_elevated};
+    border: {b.width_default}px solid {c.interactive_hover};
+}}
+
 
 /* FilePicker browse button: compact secondary variant.
    The objectName selector has higher specificity than the generic

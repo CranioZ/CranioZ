@@ -13,8 +13,8 @@
 This document defines how CranioZ represents, resolves, and applies icons across the interface. It establishes:
 
 - The `IconProvider` contract that widgets consume.
-- The current `UnicodeIconProvider` implementation (Phase 2).
-- The future `SvgIconProvider` implementation (Phase 8).
+- The `UnicodeIconProvider` compatibility and fallback implementation.
+- The incrementally adopted `SvgIconProvider` implementation.
 - The canonical icon name catalog.
 - Icon state handling, theme integration, accessibility, and fallbacks.
 
@@ -31,30 +31,30 @@ The current codebase uses hardcoded Unicode glyphs (`☰`, `▢`, `□`, `?`) in
 - It cannot support hover, pressed, disabled, and selected states consistently.
 - It embeds icon choices inside widget code, defeating the appearance system.
 
-At the same time, waiting for Phase 8 to introduce production SVG assets would leave the UI inconsistent through Phases 2–7, and the test suite would depend on placeholders that will later be removed.
+At the same time, waiting for Phase 8 to introduce production SVG assets would leave the UI inconsistent through Phases 2–7. The SVG provider foundation and the first six assets were therefore introduced early.
 
-The solution is to introduce the **contract** now and defer the **assets**.
+The **contract** is stable, SVG assets are adopted incrementally, and Unicode remains the fallback.
 
 ---
 
 ## 3. Architecture — Two Layers
 
-The icon system separates the **contract** (Phase 2) from the **product** (Phase 8).
+The icon system separates the stable widget contract from the selected provider and incremental asset migration.
 
 ```text
 ┌─────────────────────────────────────────────┐
 │ IconProvider (Protocol)                     │ Stable contract
 ├─────────────────────────────────────────────┤
-│ UnicodeIconProvider (Phase 2)               │ Current implementation
-│ SvgIconProvider (Phase 8)                   │ Future implementation
+│ UnicodeIconProvider                          │ Compatibility / fallback
+│ SvgIconProvider                              │ Incremental implementation
 ├─────────────────────────────────────────────┤
 │ Widgets consume provider.icon(...)          │ No widget knows which provider
 └─────────────────────────────────────────────┘
 ```
 
-Widgets consume `provider.icon(name, size, state)` and `provider.text_glyph(name)`. They MUST NOT know whether the provider is Unicode-based or SVG-based.
+Widgets consume `provider.icon(name, size, state)` and `provider.text_glyph(name)`. They MUST NOT know whether a concrete asset is SVG-backed or Unicode-backed.
 
-Switching providers in Phase 8 changes a single line in the boot sequence. No widget changes.
+The composition root now installs `SvgIconProvider` with a required Unicode fallback. Remaining Phase 8 work is progressive asset migration, not creation of a second icon system.
 
 ---
 
@@ -281,9 +281,19 @@ The following names are the closed set for Phase 2. Adding a name requires a PR 
 | `about` | ⓘ | About CranioZ |
 | `log` | ☰ | Log console |
 
-**Total: 60 icon names.**
+### 6.10 Professional Navigation (5)
 
-### 6.10 Catalog Rules
+| Name | Glyph | Purpose |
+|---|---|---|
+| `professional_profile` | 👤 | Professional profile tab |
+| `document_templates` | 📄 | Document templates tab |
+| `budget` | 🧾 | Budgets tab |
+| `schedule` | 📅 | Schedule tab |
+| `procedures` | 📋 | Procedures tab |
+
+**Total: 65 icon names.**
+
+### 6.11 Catalog Rules
 
 - Names are `snake_case`, semantically descriptive.
 - A name MUST be added to this catalog before it is used in widget code. Using a name not in the catalog produces the fallback icon and a WARNING.
@@ -308,12 +318,15 @@ Widgets may request `IconState.HOVER`, `PRESSED`, `SELECTED`, or `DISABLED`.
 
 The glyph itself does not change. The color is derived from the theme, so hover and pressed states respond to theme changes automatically.
 
-### 7.2 SvgIconProvider (Phase 8)
+### 7.2 SvgIconProvider
 
-- Loads assets from `assets/icons/<theme>/<name>_<state>.svg` if present.
-- Falls back to `<name>.svg` with a color substitution via `ThemeService.color(...)`.
-- Falls back to `<name>.svg` at reduced opacity for `DISABLED`.
-- The provider caches by `(name, size, theme, state)` and invalidates on `theme_changed`.
+- Loads single-source assets from `assets/icons/<name>.svg`.
+- Substitutes `currentColor` with the active state color from `ThemeService.color(...)`.
+- Renders at the active device pixel ratio for HiDPI output.
+- Delegates missing or invalid assets to the injected Unicode fallback provider.
+- Treats a missing SVG as expected during incremental migration and logs it at DEBUG; malformed existing SVG assets are errors.
+- Caches by `(name, size, theme, state)` and invalidates on `theme_changed`.
+- Icon widgets that retain `QIcon` instances re-request them on `theme_changed`.
 
 ---
 
@@ -331,9 +344,11 @@ class SvgIconProvider:
         self,
         theme_service: ThemeService,
         icons_root: Path,
+        fallback_provider: IconProvider,
     ) -> None:
         self._theme_service = theme_service
         self._icons_root = icons_root
+        self._fallback_provider = fallback_provider
         self._cache: dict[tuple[str, int, ThemeName, IconState], QIcon] = {}
         theme_service.theme_changed.connect(self._on_theme_changed)
 
@@ -387,14 +402,14 @@ class ToolbarButton(QPushButton):
 
 ## 10. Fallback Behavior
 
-If `provider.icon(name)` is called with a name that is not in the catalog:
+Providers MUST NOT raise when an icon cannot be resolved:
 
-- The provider MUST NOT raise an exception.
-- It returns a fallback icon: a `?` glyph at the requested size.
-- It logs a WARNING with the missing name and the calling widget's class, to ease detection during development.
+- A catalog name without a migrated SVG delegates to the Unicode fallback and logs at DEBUG.
+- An unknown logical name returns the Unicode fallback and logs a WARNING.
+- An existing but malformed SVG logs an ERROR and delegates to the Unicode fallback.
 - The widget continues to function.
 
-Silent failures are not permitted. A missing icon is a defect that must be visible during review.
+Silent asset corruption is not permitted. The phase that completes each icon's migration must remove its dependence on fallback.
 
 The catalog test (§12) fails CI if a widget uses a name that is not in the catalog.
 
@@ -454,6 +469,15 @@ The following tests are normative and live in `tests/architecture/`:
 - Asserts that every ToolbarButton created in tests has a non-empty accessibleName and toolTip.
 - Asserts that icon-only controls in the widget library set both.
 
+### 12.6 SVG Provider
+
+`test_svg_icon_provider.py`:
+
+- Verifies visible rendering for every migrated Professional asset.
+- Verifies theme/state recoloring, cache invalidation, and HiDPI source rendering.
+- Verifies missing and malformed assets use the Unicode fallback.
+- Verifies migrated assets declare `currentColor`.
+
 ---
 
 ## 13. Widget Migration Roadmap
@@ -465,21 +489,22 @@ Widgets currently using hardcoded glyphs are migrated incrementally.
 | Phase 2 | TopBar, HomeSegment, ModulesSegment, ExtrasSegment |
 | Phase 2 | HomePage navigation buttons |
 | Phase 2 | Toolbar and ToolButton |
+| Phase 3 | Professional IconSidebar (`professional_profile`, `document_templates`, `budget`, `schedule`, `procedures`, `settings`) |
 | Phase 4 | MPRView and Viewport3DView chrome |
 | Phase 4 | Import dialog, settings dialog, project management dialog |
-| Phase 8 | Complete migration to SvgIconProvider |
+| Phase 8 | Complete the remaining bulk migration to SvgIconProvider |
 
 Each migration is a separate PR with a regression test asserting that the widget calls `provider.icon(...)` with a name that exists in the catalog.
 
 ---
 
-## 14. The SvgIconProvider (Phase 8 — Deferred)
+## 14. The SvgIconProvider (Incremental Adoption)
 
-The Phase 8 implementation is out of scope for this document but is anticipated here to keep the contract stable.
+The provider foundation, Unicode fallback, cache, HiDPI rendering, and the six Professional navigation assets are implemented. Phase 8 retains bulk asset migration and visual closure.
 
 **Scope:**
 
-- Load SVG assets from `assets/icons/<theme>/<name>.svg`.
+- Load SVG assets from `assets/icons/<name>.svg`.
 - Recolor SVGs using `ThemeService.color(...)` for state variants.
 - Cache by `(name, size, theme, state)`.
 - Invalidate on `theme_changed`.
@@ -490,23 +515,20 @@ The Phase 8 implementation is out of scope for this document but is anticipated 
 
 ```text
 assets/icons/
-├── dark/
-│   ├── home.svg
-│   ├── save.svg
-│   ├── menu.svg
-│   └── ...
-└── light/
-    ├── home.svg
-    ├── save.svg
-    ├── menu.svg
-    └── ...
+├── professional_profile.svg
+├── document_templates.svg
+├── budget.svg
+├── schedule.svg
+├── procedures.svg
+├── settings.svg
+└── ...
 ```
 
-Adding a new icon in Phase 8 requires:
+Adding a new SVG icon requires:
 
-1. Adding the SVG to both `<theme>/` directories.
-2. Adding the name to the catalog in this document.
-3. Running the catalog test to confirm consistency.
+1. Adding or confirming the logical name in the catalog in this document.
+2. Adding a monochrome SVG that uses `currentColor`.
+3. Running the catalog and provider tests to confirm rendering and fallback.
 
 ---
 

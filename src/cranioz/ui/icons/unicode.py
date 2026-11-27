@@ -3,10 +3,10 @@
 Phase 2 implementation of IconProvider. It maps logical icon names
 to Unicode glyphs and renders them into QIcons via QPainter.
 
-The catalog is the closed set of 60 names from
-`docs/architecture/appearance/icons/icons_and_icon_manager.md` §6,
-plus 6 additional names required by the shell migration (5 for the
-CommunitySidebar and 1 for the StartButton).
+The runtime catalog extends the canonical names in
+`docs/architecture/appearance/icons/icons_and_icon_manager.md` §6
+with shell, window-control, widget, and Professional Editor names.
+These glyphs are temporary; SVG assets remain a Phase 8 deliverable.
 
 Spec: docs/architecture/appearance/icons/icons_and_icon_manager.md
 """
@@ -20,13 +20,13 @@ from PySide6.QtCore import QRect, Qt
 from PySide6.QtGui import QColor, QFont, QIcon, QPainter, QPixmap
 
 from cranioz.ui.icons.provider import IconProvider
-from cranioz.ui.icons.state import IconState
+from cranioz.ui.icons.state import IconState, color_token_for_state
 from cranioz.ui.theme.service import ThemeService
 
 _logger = logging.getLogger(__name__)
 
-#: Canonical catalog of 66 icon names.
-#: 60 from the spec §6, plus 6 added for shell widgets.
+#: Canonical runtime catalog of 80 icon names.
+#: Includes the canonical catalog and widget-specific additions.
 _DEFAULT_GLYPHS: Final[dict[str, str]] = {
     # 6.1 Navigation (8)
     "home": "⌂",
@@ -114,6 +114,12 @@ _DEFAULT_GLYPHS: Final[dict[str, str]] = {
     "eye-closed": "⊘",
     "clear": "✕",
     "drag": "⋮⋮",
+    # Professional Editor navigation.
+    "professional_profile": "👤",
+    "document_templates": "📄",
+    "budget": "🧾",
+    "schedule": "📅",
+    "procedures": "📋",
 }
 
 
@@ -152,14 +158,7 @@ class UnicodeIconProvider(IconProvider):
         """No-op: the provider does not cache icons."""
 
     def _color_for_state(self, state: IconState) -> QColor:
-        token = {
-            IconState.DEFAULT: "text_primary",
-            IconState.HOVER: "interactive_hover",
-            IconState.PRESSED: "interactive_pressed",
-            IconState.SELECTED: "interactive_default",
-            IconState.DISABLED: "text_disabled",
-        }[state]
-        return QColor(self._theme_service.color(token))
+        return QColor(self._theme_service.color(color_token_for_state(state)))
 
     @staticmethod
     def _render_glyph(glyph: str, size: int, color: QColor) -> QIcon:

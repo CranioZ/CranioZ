@@ -142,7 +142,11 @@ from cranioz.modules.core.registry import (  # noqa: E402
 )
 
 # --- UI: Icons, Main Window, Theme, Tools ---
-from cranioz.ui.icons import UnicodeIconProvider  # noqa: E402
+from cranioz.ui.icons import (  # noqa: E402
+    SvgIconProvider,
+    UnicodeIconProvider,
+    default_svg_icons_root,
+)
 from cranioz.ui.main_window import MainWindow  # noqa: E402
 from cranioz.ui.theme import ThemeMode, ThemeService  # noqa: E402
 from cranioz.ui.tools.builtin.log_tool import LogTool  # noqa: E402
@@ -402,7 +406,11 @@ def main() -> int:
     editor_registry, tool_registry = _build_ui_registries()
     theme_service = _build_theme_service(config, settings)
     theme_service.compiler().apply(theme_service.compiled())
-    icon_provider = UnicodeIconProvider(theme_service)
+    icon_provider = SvgIconProvider(
+        theme_service=theme_service,
+        icons_root=default_svg_icons_root(),
+        fallback_provider=UnicodeIconProvider(theme_service),
+    )
     _logger.debug("ThemeService initialized and applied: %r", theme_service)
     actor = _resolve_actor()
 

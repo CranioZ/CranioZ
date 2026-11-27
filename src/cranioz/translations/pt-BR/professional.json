@@ -6,7 +6,9 @@
     "budgets": { "message": "Orçamentos", "description": "Aba do módulo Profissional: orçamentos." },
     "schedule": { "message": "Agenda", "description": "Aba do módulo Profissional: agenda." },
     "procedures": { "message": "Procedimentos", "description": "Aba do módulo Profissional: procedimentos." },
-    "config": { "message": "Config", "description": "Aba do módulo Profissional: configuração." }
+    "config": { "message": "Config", "description": "Aba do módulo Profissional: configuração." },
+    "navigation": { "message": "Seções do módulo Profissional", "description": "Nome acessível da navegação lateral." },
+    "unavailable": { "message": "Esta seção será implementada em uma entrega futura.", "description": "Estado provisório de abas ainda não implementadas." }
   },
   "profile": {
     "title": { "message": "Perfil profissional", "description": "Título da Tela 2." },

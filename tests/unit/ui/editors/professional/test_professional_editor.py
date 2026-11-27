@@ -5,7 +5,9 @@ from __future__ import annotations
 from collections.abc import Iterator
 
 import pytest
+from PySide6.QtWidgets import QStackedWidget, QToolButton
 from pytestqt.qtbot import QtBot
+from tests.conftest import make_icon_provider, make_theme_service
 
 from cranioz.application.commands.executor import CommandExecutor
 from cranioz.application.commands.in_memory_bus import InMemoryCommandBus
@@ -31,8 +33,14 @@ from cranioz.editors.core.editor.editor_context import EditorContext
 from cranioz.infrastructure.settings.in_memory_settings_service import (
     InMemorySettingsService,
 )
-from cranioz.infrastructure.settings.keys import PROFESSIONAL_UI_LAST_SECTION
+from cranioz.infrastructure.settings.keys import (
+    PROFESSIONAL_UI_COLLAPSED_SECTIONS,
+    PROFESSIONAL_UI_LAST_SECTION,
+)
+from cranioz.ui.theme.tokens import ThemeMode
 from cranioz.ui.widgets.forms import FormField
+from cranioz.ui.widgets.navigation import IconSidebar
+from cranioz.ui.widgets.sections import CollapsibleSection
 
 
 @pytest.fixture
@@ -69,11 +77,14 @@ def editor(
     ],
 ) -> Iterator[tuple[ProfessionalEditor, ProfessionalService, InMemorySettingsService]]:
     _, service, dispatcher, settings = professional_services
+    theme = make_theme_service(ThemeMode.DARK)
     editor = ProfessionalEditor()
     editor.initialize(
         EditorContext(
             editor_id=editor.editor_id,
             command_dispatcher=dispatcher,
+            theme_service=theme,
+            icon_provider=make_icon_provider(theme),
             extras={
                 PROFESSIONAL_QUERIES_EXTRA: service,
                 PROFESSIONAL_SETTINGS_EXTRA: settings,
@@ -159,10 +170,130 @@ def test_activate_integrates_professional_settings_namespace(
     editor: tuple[ProfessionalEditor, ProfessionalService, InMemorySettingsService],
 ) -> None:
     editor_widget, _, settings = editor
+    settings.set(PROFESSIONAL_UI_LAST_SECTION, "budgets")
 
     editor_widget.activate()
 
-    assert settings.get(PROFESSIONAL_UI_LAST_SECTION, "") == "professional"
+    assert editor_widget.active_section == "budgets"
+
+
+def test_sidebar_navigates_and_persists_active_section(
+    editor: tuple[ProfessionalEditor, ProfessionalService, InMemorySettingsService],
+) -> None:
+    editor_widget, _, settings = editor
+    content = editor_widget.content_widget()
+    sidebar = content.findChild(IconSidebar, "professional_editor.navigation")
+    pages = content.findChild(QStackedWidget, "professional_editor.pages")
+    assert sidebar is not None
+    assert pages is not None
+    assert sidebar.active_key() == "professional"
+
+    buttons = sidebar.findChildren(QToolButton)
+    assert [button.toolTip() for button in buttons] == [
+        "Professional",
+        "Document templates",
+        "Budgets",
+        "Schedule",
+        "Procedures",
+        "Config",
+    ]
+
+    buttons[2].click()
+
+    assert editor_widget.active_section == "budgets"
+    assert sidebar.active_key() == "budgets"
+    assert settings.get(PROFESSIONAL_UI_LAST_SECTION, "") == "budgets"
+    assert pages.currentWidget() is not None
+    assert pages.currentWidget().objectName() == "professional_editor.page.budgets"
+
+
+def test_sidebar_restores_last_active_section(
+    qtbot: QtBot,
+    editor: tuple[ProfessionalEditor, ProfessionalService, InMemorySettingsService],
+) -> None:
+    editor_widget, _, settings = editor
+    settings.set(PROFESSIONAL_UI_LAST_SECTION, "schedule")
+    context = editor_widget._context  # noqa: SLF001
+    assert context is not None
+    editor_widget.dispose()
+
+    restored_editor = ProfessionalEditor()
+    restored_editor.initialize(context)
+    restored_content = restored_editor.content_widget()
+    qtbot.addWidget(restored_content)
+    sidebar = restored_content.findChild(
+        IconSidebar,
+        "professional_editor.navigation",
+    )
+    pages = restored_content.findChild(
+        QStackedWidget,
+        "professional_editor.pages",
+    )
+
+    assert restored_editor.active_section == "schedule"
+    assert sidebar is not None
+    assert sidebar.active_key() == "schedule"
+    assert pages is not None
+    assert pages.currentWidget() is not None
+    assert pages.currentWidget().objectName() == "professional_editor.page.schedule"
+
+
+def test_theme_change_refreshes_sidebar_icons(
+    editor: tuple[ProfessionalEditor, ProfessionalService, InMemorySettingsService],
+) -> None:
+    editor_widget, _, _ = editor
+    context = editor_widget._context  # noqa: SLF001
+    assert context is not None
+    theme_service = context.theme_service
+    assert theme_service is not None
+    content = editor_widget.content_widget()
+    sidebar = content.findChild(IconSidebar, "professional_editor.navigation")
+    assert sidebar is not None
+    button = sidebar.findChildren(QToolButton)[0]
+    dark = button.icon().pixmap(20, 20).toImage()
+
+    try:
+        theme_service.set_mode(ThemeMode.LIGHT)
+        light = button.icon().pixmap(20, 20).toImage()
+    finally:
+        theme_service.set_mode(ThemeMode.DARK)
+
+    assert light != dark
+
+
+def test_section_expansion_state_is_persisted_and_restored(
+    qtbot: QtBot,
+    editor: tuple[ProfessionalEditor, ProfessionalService, InMemorySettingsService],
+) -> None:
+    editor_widget, _, settings = editor
+    content = editor_widget.content_widget()
+    address = content.findChild(
+        CollapsibleSection,
+        "professional.profile.section.address",
+    )
+    assert address is not None
+    assert address.expanded is True
+
+    address.toggle()
+
+    assert address.expanded is False
+    assert settings.get(PROFESSIONAL_UI_COLLAPSED_SECTIONS, []) == ["address"]
+
+    context = editor_widget._context  # noqa: SLF001
+    assert context is not None
+    editor_widget.dispose()
+
+    restored_editor = ProfessionalEditor()
+    restored_editor.initialize(context)
+    restored_content = restored_editor.content_widget()
+    qtbot.addWidget(restored_content)
+    restored_address = restored_content.findChild(
+        CollapsibleSection,
+        "professional.profile.section.address",
+    )
+
+    assert restored_address is not None
+    assert restored_address.expanded is False
 
 
 def test_blank_full_name_reports_validation_error(

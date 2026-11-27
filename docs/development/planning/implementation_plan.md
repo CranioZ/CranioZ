@@ -96,6 +96,7 @@ Phase 3 remains active. Phase 4 begins after formal Phase 3 closure.
 | I | 3 | ProjectIndex (ADR-0016) | Complete |
 | J | 3 | Coordinated project deletion | Complete |
 | K | 3 | Asynchronous flow loading | Complete |
+| Icon Foundation | 2 | SVG provider, fallback, recolor, cache, HiDPI, and six Professional assets | Complete |
 
 ### 5.2 Sprint L — Professional Module
 
@@ -106,7 +107,7 @@ Phase 3 remains active. Phase 4 begins after formal Phase 3 closure.
 - **L.0.2 B:** CollapsibleSection, DragList, IconSidebar — complete.
 - **L.0.2 C/D:** TimelineSlider, ColorPicker, Histogram, final harness consolidation, HiDPI validation, and catalog closure — deferred.
 - **L.1:** Professional domain, SQLite profile persistence, repository/service, command/query flow, ProfessionalEditor, Tela 2, central-Area composition, and `professional.*` settings — implementation substantially complete.
-- **L.2:** Navigation, section organization, visibility, drag ordering, persistence, and final UI integration — in progress. `CollapsibleSection` is integrated into the Tela 2 profile groups. Their `DragList` order and expanded/collapsed state are restored and persisted through `professional.ui.navigation_order` and `professional.ui.collapsed_sections`. The Tela 2 ordering interface was visually approved on 2026-11-26; internal navigation and the remaining screens are pending.
+- **L.2:** Navigation, section organization, visibility, drag ordering, persistence, and final UI integration — in progress. `IconSidebar` provides the six Professional tabs; the active tab is restored and persisted through `professional.ui.last_section`, and unimplemented tabs show localized placeholder pages. `CollapsibleSection` is integrated into the Tela 2 profile groups. Their `DragList` order and expanded/collapsed state are restored and persisted through `professional.ui.navigation_order` and `professional.ui.collapsed_sections`. The Tela 2 ordering interface was visually approved on 2026-11-26; the remaining functional screens and Tela 7 controls are pending.
 
 The `ModuleUISpec` ownership decision and the visual approval of Tela 2
 were completed on 2026-11-26.
@@ -196,7 +197,7 @@ Startup performance optimization and lazy-loading improvements are separate futu
 - Icon provider injection into the application shell and shared components.
 - `AreaLayoutRenderer` and `EditorStack`.
 
-The existing icon management infrastructure is complete. SVG adoption is a future integration task, not a missing IconManager.
+The existing icon management infrastructure is complete. `SvgIconProvider` and the first six Professional assets were introduced early with Unicode fallback; the remaining bulk asset migration is a Phase 8 integration task.
 
 **Tests:** Layout, Editor lifecycle, rendering, theme resolution, token completeness, icon catalog, fallback, theme integration, accessibility, and settings persistence.
 
@@ -560,11 +561,9 @@ Clinical validation must use the approved dataset and protocol established in Ph
 - Project import/export with compatibility, versioning, and integrity validation.
 
 **Appearance and localization**
-- SVG integration into the existing `IconManager`.
-- `SvgIconProvider` and SVG asset catalog.
-- Theme-aware SVG rendering and recoloring.
-- Icon cache by name, size, and theme.
-- Progressive migration of UI icons from Unicode to SVG.
+- Complete the SVG asset catalog for the remaining logical icon names.
+- Continue progressive migration of UI icons from Unicode to SVG.
+- Close the final icon visual style, licensing, and provenance review.
 - Complete shared-widget migration to `ThemeService` and the existing icon management infrastructure.
 - Locale selector UI.
 - Complete `pt_BR` and `en_US` catalogs.
@@ -711,7 +710,7 @@ Phases 0–2 are closed.
 - IconManager, IconProvider, UnicodeIconProvider, and the initial icon catalog are implemented.
 - Workspace layout, overlays, Area rendering, and EditorStack are implemented.
 
-SVG adoption in the UI remains a Phase 8 deliverable.
+The SVG provider foundation, theme recoloring, HiDPI rendering, fallback, cache, and six Professional navigation assets are implemented. The remaining SVG asset migration is a Phase 8 deliverable.
 
 ### 9.2 Editor Architecture
 
@@ -735,7 +734,7 @@ The SQLite index and background disk reconciliation remain Phase 8 deliverables.
 
 Sprint L is the active Phase 3 work.
 
-The Professional domain, SQLite profile persistence, service/repository boundary, command/query flow, ProfessionalEditor, Tela 2, and settings integration have been implemented. `ModuleUISpec` ownership and Tela 2 visual approval were completed on 2026-11-26. Tela 2 section ordering and expansion state are persisted through `professional.ui.navigation_order` and `professional.ui.collapsed_sections`. L.2 remains required for closure and is in progress.
+The Professional domain, SQLite profile persistence, service/repository boundary, command/query flow, ProfessionalEditor, Tela 2, and settings integration have been implemented. `ModuleUISpec` ownership and Tela 2 visual approval were completed on 2026-11-26. `IconSidebar` now provides the six-item internal navigation and persists the active tab through `professional.ui.last_section`. Tela 2 section ordering and expansion state are persisted through `professional.ui.navigation_order` and `professional.ui.collapsed_sections`. L.2 remains required for closure and is in progress.
 
 ### 9.5 Imaging
 
@@ -754,15 +753,15 @@ The complete DICOM-to-Scene-to-rendering path must still pass the Phase 4A refer
 
 ### 9.6 Validation Baseline
 
-The last recorded full validation baseline, rerun on 2026-11-26 after the Tela 2 section-ordering integration, is:
+The last recorded full validation baseline, rerun on 2026-11-26 after the SVG provider integration, is:
 
-- 1867 passed.
+- 1883 passed.
 - 0 failed.
 - 0 errors.
 - 2 skipped.
 - `ruff check` clean.
-- `ruff format --check` clean (644 files).
-- `mypy src` clean (325 source files).
+- `ruff format --check` clean (646 files).
+- `mypy src` clean (326 source files).
 
 Each subsequent sprint must record its own validation results.
 
@@ -777,7 +776,7 @@ This section consolidates deferred items to avoid repeating them throughout the 
 | Monitor de Logs | Dedicated unscheduled sprint | `monitor_logs.md` |
 | SQLite ProjectIndex and disk reconciliation | Phase 8 | ADR-0016 |
 | Project import/export | Phase 8 | Project persistence and compatibility design |
-| SVG UI migration | Phase 8 | Appearance and icon architecture |
+| Remaining SVG UI asset migration | Phase 8 | Appearance and icon architecture |
 | GeometryRevision, content-hash deduplication, persistent asset storage, ValidationProfile, GeometryOperation, booleans, welding, and benchmarks | Future geometry work | Geometry architecture |
 | General AI and Node infrastructure | Phase 10 | AI and Nodes architecture |
 

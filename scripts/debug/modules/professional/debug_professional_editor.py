@@ -46,7 +46,7 @@ from cranioz.infrastructure.i18n.translation_service import IdentityTranslationS
 from cranioz.infrastructure.settings.in_memory_settings_service import (
     InMemorySettingsService,
 )
-from cranioz.ui.icons.unicode import UnicodeIconProvider
+from cranioz.ui.icons import SvgIconProvider, UnicodeIconProvider, default_svg_icons_root
 from cranioz.ui.theme.service import ThemeService
 from cranioz.ui.theme.tokens import ThemeMode
 from cranioz.ui.tools.builtin.log_tool import LogTool
@@ -113,7 +113,11 @@ def main() -> int:
         editor_registry=editor_registry,
         tool_registry=tool_registry,
         theme_service=theme,
-        icon_provider=UnicodeIconProvider(theme),
+        icon_provider=SvgIconProvider(
+            theme_service=theme,
+            icons_root=default_svg_icons_root(),
+            fallback_provider=UnicodeIconProvider(theme),
+        ),
         project_context=_project_context(),
         command_dispatcher=dispatcher,
         translation_service=IdentityTranslationService(),
