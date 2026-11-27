@@ -24,11 +24,10 @@ and the code easier to read. Behavior is unchanged.
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt, Signal, QSize
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
-    QSizePolicy,
     QPushButton,
     QWidget,
 )
@@ -95,23 +94,11 @@ class HomeTopBar(QWidget):
         return button
 
     def _build_logo(self) -> QLabel:
-        target_height = 28
-
         logo = QLabel()
         logo.setObjectName("home_page.top_bar.logo")
-        logo.setFixedHeight(target_height)
-        logo.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
+        logo.setFixedSize(80, 16)
         logo.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
-
-        icon = self._icon_provider.icon("cranioz", size=64)
-        pixmap = icon.pixmap(QSize(512, 128))
-        if not pixmap.isNull():
-            pixmap = pixmap.scaledToHeight(
-                target_height,
-                Qt.TransformationMode.SmoothTransformation,
-            )
-            logo.setPixmap(pixmap)
-            logo.setFixedWidth(pixmap.width())
+        logo.setPixmap(self._icon_provider.icon("cranioz", size=16).pixmap(80, 16))
 
         label = tr("core.app.name", "CranioZ")
         logo.setAccessibleName(label)
