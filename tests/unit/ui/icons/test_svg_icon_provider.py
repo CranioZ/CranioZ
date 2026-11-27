@@ -11,20 +11,12 @@ from PySide6.QtWidgets import QApplication
 from cranioz.infrastructure.settings.in_memory_settings_service import (
     InMemorySettingsService,
 )
+from cranioz.ui.icons.catalog import SVG_ICON_ASSETS
 from cranioz.ui.icons.state import IconState
 from cranioz.ui.icons.svg import SvgIconProvider, default_svg_icons_root
 from cranioz.ui.icons.unicode import UnicodeIconProvider
 from cranioz.ui.theme.service import ThemeService
 from cranioz.ui.theme.tokens import ThemeMode
-
-_PROFESSIONAL_ICONS = (
-    "professional_profile",
-    "document_templates",
-    "budget",
-    "schedule",
-    "procedures",
-    "settings",
-)
 
 
 @pytest.fixture
@@ -50,8 +42,8 @@ def provider(
     )
 
 
-@pytest.mark.parametrize("name", _PROFESSIONAL_ICONS)
-def test_professional_svg_assets_render_visible_pixels(
+@pytest.mark.parametrize("name", tuple(SVG_ICON_ASSETS))
+def test_catalog_svg_assets_render_visible_pixels(
     provider: SvgIconProvider,
     name: str,
 ) -> None:
@@ -97,10 +89,10 @@ def test_missing_svg_delegates_to_unicode_fallback(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     with caplog.at_level(logging.DEBUG, logger="cranioz.ui.icons.svg"):
-        icon = provider.icon("home", size=20)
+        icon = provider.icon("save", size=20)
 
     assert icon.isNull() is False
-    assert provider.text_glyph("home") == fallback_provider.text_glyph("home")
+    assert provider.text_glyph("save") == fallback_provider.text_glyph("save")
     assert "missing asset" in caplog.text
     assert all(record.levelno < logging.WARNING for record in caplog.records)
 
@@ -114,7 +106,7 @@ def test_invalid_svg_uses_fallback_and_logs(
 ) -> None:
     icons_root = tmp_path / "icons"
     icons_root.mkdir()
-    (icons_root / "professional_profile.svg").write_text(
+    (icons_root / "invalid.svg").write_text(
         "<svg xmlns='http://www.w3.org/2000/svg' fill='currentColor'><broken>",
         encoding="utf-8",
     )
@@ -125,15 +117,15 @@ def test_invalid_svg_uses_fallback_and_logs(
     )
 
     with caplog.at_level(logging.ERROR):
-        icon = provider.icon("professional_profile", size=20)
+        icon = provider.icon("invalid", size=20)
 
     assert icon.isNull() is False
     assert "invalid SVG icon" in caplog.text
 
 
-def test_professional_assets_are_source_recolorable() -> None:
+def test_catalog_assets_are_source_recolorable() -> None:
     icons_root = default_svg_icons_root()
 
-    for name in _PROFESSIONAL_ICONS:
-        source = (icons_root / f"{name}.svg").read_text(encoding="utf-8")
+    for relative_path in SVG_ICON_ASSETS.values():
+        source = (icons_root / relative_path).read_text(encoding="utf-8")
         assert "currentColor" in source

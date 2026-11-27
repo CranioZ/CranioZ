@@ -9,6 +9,7 @@ from PySide6.QtCore import QByteArray, QRectF, Qt
 from PySide6.QtGui import QGuiApplication, QIcon, QPainter, QPixmap
 from PySide6.QtSvg import QSvgRenderer
 
+from cranioz.ui.icons.catalog import svg_icon_path
 from cranioz.ui.icons.provider import IconProvider
 from cranioz.ui.icons.state import IconState, color_token_for_state
 from cranioz.ui.theme.service import ThemeService
@@ -55,7 +56,7 @@ class SvgIconProvider(IconProvider):
         if cached is not None:
             return cached
 
-        path = self._icons_root / f"{name}.svg"
+        path = svg_icon_path(name, self._icons_root)
         if not path.is_file():
             _logger.debug(
                 "SvgIconProvider: missing asset %r; using fallback",

@@ -66,7 +66,7 @@ class ExtrasSegment(QWidget):
 
         # ----- Extras (menu + area toggles) -----
         self._menu_button = self._make_button(
-            icon_name="menu",
+            icon_name="more_options",
             object_name="workspace.top_bar.extras_segment.menu",
             tooltip=tr("workspace.top_bar.extras", "Extras"),
         )

@@ -81,7 +81,7 @@ class HomeTopBar(QWidget):
         button.setObjectName("home_page.top_bar.menu")
         button.setFlat(True)
         button.setCursor(Qt.CursorShape.PointingHandCursor)
-        button.setIcon(self._icon_provider.icon("menu"))
+        button.setIcon(self._icon_provider.icon("sidebar_toggle"))
         button.setToolTip(tr("homepage.top_bar.menu", "Menu"))
         button.setAccessibleName(tr("homepage.top_bar.menu", "Menu"))
         button.clicked.connect(self.toggle_sidebar_requested)

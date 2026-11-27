@@ -73,7 +73,7 @@ _PROFESSIONAL_TABS = (
     ("budgets", "budget", "professional.tabs.budgets", "Budgets"),
     ("schedule", "schedule", "professional.tabs.schedule", "Schedule"),
     ("procedures", "procedures", "professional.tabs.procedures", "Procedures"),
-    ("config", "settings", "professional.tabs.config", "Config"),
+    ("config", "professional_settings", "professional.tabs.config", "Config"),
 )
 
 
