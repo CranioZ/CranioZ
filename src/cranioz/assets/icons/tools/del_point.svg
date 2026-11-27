@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="100%" height="100%" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+    <g transform="matrix(0.91778,0,0,0.91778,1.940133,0.37613)">
+        <circle cx="9.692" cy="22.308" r="9.692" style="fill:rgb(255,8,8);"/>
+    </g>
+    <g transform="matrix(1.38964,0,0,1.547151,-366.826582,-394.720729)">
+        <use xlink:href="#_Image1" x="272" y="261" width="16px" height="6px"/>
+    </g>
+    <defs>
+        <image id="_Image1" width="16px" height="6px" xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAGCAYAAADKfB7nAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAV0lEQVQYlWNgoBAwMjAwMPz//l2ZgYFBm4GB4T8SZkDjo+O/jJyc+1mgCgMYGBh6SLT8BwMDAycTBa7/z8CA8IIgAwODKIwPpZExNrH/jJyclyhwAAQAAEh7FuVJ0IaXAAAAAElFTkSuQmCC"/>
+    </defs>
+</svg>
