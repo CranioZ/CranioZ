@@ -56,8 +56,8 @@ The roadmap contains eleven phases. Phase 4 is divided into two milestones to is
 | 0 | Foundation & Boot | Complete | Repository, configuration, boot |
 | 1 | Contracts, Core Domain & i18n | Complete | Domain contracts, repositories, localization |
 | 2 | Workspace Engine & Icons | Complete | Workspace, themes, icon infrastructure |
-| 3 | Project, Home Page & Professional Module | In progress | Project lifecycle, Professional module |
-| 4A | Imaging Core & Rendering Validation | Planned | DICOM-to-Scene pipeline, validated MPR/3D |
+| 3 | Project, Home Page & Professional Module | Complete | Project lifecycle, Professional module foundation |
+| 4A | Imaging Core & Rendering Validation | In progress | DICOM-to-Scene pipeline, validated MPR/3D |
 | 4B | Import & Visualization UI | Planned | Import Dialog, layouts, tools, presets |
 | 5 | Clinical Flows & Panel Registry | Planned | WorkflowEngine, panels, layout persistence |
 | 6 | Clinical Pipeline | Planned | Segmentation, cephalometry, osteotomy, guides |
@@ -78,9 +78,9 @@ The appearance architecture is documented in `../../architecture/appearance`.
 
 ## 5. Current Status and Immediate Priorities
 
-Phases 0, 1, and 2 are closed. The Editor Architecture Refactoring (ADR-0015) is complete.
+Phases 0, 1, 2, and 3 are closed. The Editor Architecture Refactoring (ADR-0015) is complete.
 
-Phase 3 remains active. Phase 4 begins after formal Phase 3 closure.
+Phase 4A is the active implementation phase. The remaining Professional screens are deferred and do not block any phase.
 
 ### 5.1 Completed Work
 
@@ -98,17 +98,18 @@ Phase 3 remains active. Phase 4 begins after formal Phase 3 closure.
 | K | 3 | Asynchronous flow loading | Complete |
 | Icon Foundation | 2 | SVG provider, fallback, recolor, cache, HiDPI, and six Professional assets | Complete |
 | Home Page Refinement | 3 | SVG action icons, collapsible search, StartButton sizing, and project management with selection/removal | Complete |
+| Phase 3 Closure | 3 | Project lifecycle, Home Page, Professional profile and navigation; remaining Professional screens deferred | Complete |
 
 ### 5.2 Sprint L — Professional Module
 
-**Status:** In progress.
+**Status:** Complete for the accepted Phase 3 scope.
 
 - **L.0:** System form widgets — complete.
 - **L.0.2 A:** Qt-native widgets — complete.
 - **L.0.2 B:** CollapsibleSection, DragList, IconSidebar — complete.
 - **L.0.2 C/D:** TimelineSlider, ColorPicker, Histogram, final harness consolidation, HiDPI validation, and catalog closure — deferred.
-- **L.1:** Professional domain, SQLite profile persistence, repository/service, command/query flow, ProfessionalEditor, Tela 2, central-Area composition, and `professional.*` settings — implementation substantially complete.
-- **L.2:** Navigation, section organization, visibility, drag ordering, persistence, and final UI integration — in progress. `IconSidebar` provides the six Professional tabs; the active tab is restored and persisted through `professional.ui.last_section`, and unimplemented tabs show localized placeholder pages. `CollapsibleSection` is integrated into the Tela 2 profile groups. Their `DragList` order and expanded/collapsed state are restored and persisted through `professional.ui.navigation_order` and `professional.ui.collapsed_sections`. The Tela 2 ordering interface was visually approved on 2026-11-26; the remaining functional screens and Tela 7 controls are pending.
+- **L.1:** Professional domain, SQLite profile persistence, repository/service, command/query flow, ProfessionalEditor, Tela 2, central-Area composition, and `professional.*` settings — complete.
+- **L.2:** Navigation, section organization, drag ordering, and persistence for the delivered profile workflow — complete for the accepted Phase 3 scope. `IconSidebar` provides the six Professional tabs; the active tab is restored and persisted through `professional.ui.last_section`, and unimplemented tabs show localized placeholder pages. `CollapsibleSection` is integrated into the Tela 2 profile groups. Their `DragList` order and expanded/collapsed state are restored and persisted through `professional.ui.navigation_order` and `professional.ui.collapsed_sections`. The Tela 2 ordering interface was visually approved on 2026-11-26.
 
 The `ModuleUISpec` ownership decision and the visual approval of Tela 2
 were completed on 2026-11-26.
@@ -117,9 +118,7 @@ Tela 2 does not expose visibility controls in its profile sections. Per the
 UI prototype, top-level module tab visibility and ordering belong to the
 Tela 7 reorganization dialog.
 
-L.2 remains part of Phase 3 and is required for its closure.
-
-The remaining work, owner, and target dates must be recorded in `next_steps.md`. No owner or deadline is assumed by this document.
+On 2026-11-27, the developer determined that the remaining Professional pages neither block nor unlock any phase. Phase 3 is therefore closed with Telas 3–7 and the remaining Professional capabilities deferred to future module work. Their progress, owner, and target dates are recorded in `next_steps.md`.
 
 ### 5.3 Phase 3 UI Scope
 
@@ -130,6 +129,7 @@ The remaining work, owner, and target dates must be recorded in `next_steps.md`.
 | Resource preview and resource management | Phase 4B |
 | Flow management UI | Phase 5 |
 | Recent Projects and SQLite ProjectIndex | Phase 8 |
+| Professional Telas 3–7 and remaining module capabilities | Future Professional backlog |
 
 The coordinated deletion API and the Phase 3 project-management UI are implemented, including search, selection, confirmation, error handling, and catalog refresh. Project import/export remains a Phase 8 deliverable.
 
@@ -242,11 +242,12 @@ SQLite persistence and background disk reconciliation are deferred to Phase 8.
 
 1. Resolve `ModuleUISpec` ownership within the accepted architecture (approved 2026-11-26).
 2. Approve Tela 2 visually (completed 2026-11-26).
-3. Complete L.2 and its tests.
-4. Verify the complete Professional module workflow.
+3. Complete the accepted L.2 scope and its tests.
+4. Verify the delivered Professional profile and navigation workflow.
 5. Update documentation and `next_steps.md`.
+6. Defer Professional Telas 3–7 as independent future work (approved 2026-11-27).
 
-**Status:** In progress.
+**Status:** Complete, formally closed on 2026-11-27 with the remaining Professional screens deferred.
 
 ### Phase 4A — Imaging Core & Rendering Validation
 
@@ -327,7 +328,7 @@ This milestone provides module infrastructure and discovery only. It does not ex
 
 **Tests:** DICOM import, geometry, calibration, NumPy/VTK interoperability, Scene lifecycle, persistence, reference dataset, MPR/3D rendering, and module registration.
 
-**Status:** Planned.
+**Status:** In progress.
 
 ### Phase 4B — Import & Visualization UI
 
@@ -734,9 +735,11 @@ The SQLite index and background disk reconciliation remain Phase 8 deliverables.
 
 ### 9.4 Professional Module
 
-Sprint L is the active Phase 3 work.
+Phase 3 closed on 2026-11-27 with Sprint L's accepted scope complete.
 
-The Professional domain, SQLite profile persistence, service/repository boundary, command/query flow, ProfessionalEditor, Tela 2, and settings integration have been implemented. `ModuleUISpec` ownership and Tela 2 visual approval were completed on 2026-11-26. `IconSidebar` now provides the six-item internal navigation and persists the active tab through `professional.ui.last_section`. Tela 2 section ordering and expansion state are persisted through `professional.ui.navigation_order` and `professional.ui.collapsed_sections`. L.2 remains required for closure and is in progress.
+The Professional domain, SQLite profile persistence, service/repository boundary, command/query flow, ProfessionalEditor, Tela 2, and settings integration have been implemented. `ModuleUISpec` ownership and Tela 2 visual approval were completed on 2026-11-26. `IconSidebar` now provides the six-item internal navigation and persists the active tab through `professional.ui.last_section`. Tela 2 section ordering and expansion state are persisted through `professional.ui.navigation_order` and `professional.ui.collapsed_sections`.
+
+The remaining Professional pages and capabilities are future backlog work. They are independent of the active clinical-imaging sequence.
 
 ### 9.5 Imaging
 
@@ -774,7 +777,8 @@ This section consolidates deferred items to avoid repeating them throughout the 
 | Item | Destination | Reference |
 |---|---|---|
 | Startup optimization and lazy imports | Future backlog | Boot architecture |
-| TimelineSlider, ColorPicker, Histogram, final harness and HiDPI closure | Deferred Sprint L work | `next_steps.md` |
+| TimelineSlider, ColorPicker, Histogram, final harness and HiDPI closure | Future Professional backlog | `next_steps.md` |
+| Professional Telas 3–7 and remaining module capabilities | Future Professional backlog | `professional.md`, `next_steps.md` |
 | Monitor de Logs | Dedicated unscheduled sprint | `monitor_logs.md` |
 | SQLite ProjectIndex and disk reconciliation | Phase 8 | ADR-0016 |
 | Project import/export | Phase 8 | Project persistence and compatibility design |

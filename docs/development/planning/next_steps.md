@@ -2,7 +2,7 @@
 
 **Document type:** Development action plan and handoff  
 **Status:** Active  
-**Current phase:** Phase 3 — Project, Home Page & Professional Module  
+**Current phase:** Phase 4A — Imaging Core & Rendering Validation
 **Last updated:** 2026-11-27
 
 ---
@@ -28,11 +28,13 @@ The widget catalog must be consulted before creating or modifying reusable syste
 
 ## 2. Current Project Status
 
-Phases 0, 1, and 2 are closed.
+Phases 0, 1, 2, and 3 are closed.
 
 The Editor Architecture Refactoring (ADR-0015) and Sprints I, J, and K are complete.
 
-**Phase 3 remains in progress.** Sprint L is substantially implemented; the remaining Professional screens and Tela 7 work must be completed before Phase 3 can close.
+Phase 3 closed on 2026-11-27. Sprint L delivered the Professional profile and navigation workflow. The developer determined that the remaining Professional screens neither block nor unlock any phase, so Telas 3–7 and the remaining Professional capabilities are deferred.
+
+**Phase 4A is now active.**
 
 ### 2.1 Completed Deliverables
 
@@ -54,6 +56,7 @@ The Editor Architecture Refactoring (ADR-0015) and Sprints I, J, and K are compl
 | Home Page visual refinement: StartButton, action variants, and table rows | Complete |
 | Home Page project management: selection, removal, and catalog refresh | Complete |
 | Seed project names: patient name without the `Caso ` prefix | Complete |
+| Phase 3 closure with remaining Professional screens deferred | Complete |
 
 ### 2.2 Current Validation Baseline
 
@@ -97,29 +100,28 @@ use the centralized SVG asset catalog. The implemented interface includes:
 
 ## 3. Immediate Priorities
 
-The `ModuleUISpec` ownership decision was approved on 2026-11-26. The current execution sequence is:
+The DICOM visualization bug is considered resolved and must not be reopened as an active task. The current execution sequence is:
 
-1. Implement Tela 3, document templates.
-2. Implement the remaining Professional screens one at a time.
-3. Implement Tela 7 visibility and ordering.
-4. Run complete validation and close Sprint L.
-5. Review all Phase 3 completion criteria against `implementation_plan.md`.
-6. Close Phase 3 formally.
-7. Begin Phase 4A only after Phase 3 closure.
+1. Define the Phase 4A Imaging Reference Dataset using a synthetic asymmetric phantom.
+2. Establish objective reference results for geometry, MPR, and 3D rendering.
+3. Validate Scene integration and persistence.
+4. Complete the minimal `RenderingAdapter`.
+5. Run the Phase 4A acceptance suite on Windows.
+6. Close Phase 4A before beginning Phase 4B.
 
-L.0.2 Deliveries C and D remain deferred. They do not block L.1, L.2, or Phase 3 closure unless a concrete dependency is identified.
+Professional Telas 3–7, L.0.2 Deliveries C/D, and the remaining Professional capabilities are future backlog work. They do not block Phase 4A.
 
-## 4. Sprint L — Professional Module
+## 4. Sprint L — Closed Professional Module Scope
 
-Sprint L is organized into four execution stages.
+Sprint L is closed for the accepted Phase 3 scope.
 
 | Stage | Scope | Status |
 |---|---|---|
 | L.0 | System form widgets | Complete |
 | L.0.2 A/B | Extended widget suite | Complete |
 | L.0.2 C/D | TimelineSlider, ColorPicker, Histogram, final harness and HiDPI closure | Deferred |
-| L.1 | Professional Editor and profile integration | Implemented; visually approved 2026-11-26 |
-| L.2 | Navigation, sections, visibility, ordering, and persistence | In progress; IconSidebar and Tela 2 state complete |
+| L.1 | Professional Editor and profile integration | Complete; visually approved 2026-11-26 |
+| L.2 | Navigation, sections, ordering, and persistence for the profile workflow | Complete for Phase 3 scope; remaining screens deferred |
 
 ### 4.1 L.1 — Remaining Actions
 
@@ -151,7 +153,7 @@ corrected Tela 2 was approved by the developer on 2026-11-26.
 
 ### 4.2 L.2 — Professional Navigation
 
-**Goal:** Complete the Professional Editor's internal navigation and configuration interactions.
+**Goal:** Complete the Professional Editor's internal navigation and configuration interactions for the delivered profile workflow.
 
 Scope:
 
@@ -161,19 +163,19 @@ Scope:
 - [x] Persist and restore Tela 2 section expansion state through `professional.ui.collapsed_sections`.
 - [x] Integrate `IconSidebar` with the six Professional tabs.
 - [x] Implement `SvgIconProvider` with Unicode fallback and migrate the six Professional navigation icons.
-- [ ] Integrate `EyeToggleButton` and `VisibilityToggle` in the Tela 7 top-level tab configuration.
-- [ ] Implement prototype screens Tela 3–7.
 - [x] Implement navigation between the six Professional tabs; unimplemented tabs show localized placeholders.
 - [x] Support section expansion/collapse and drag ordering in Tela 2.
-- [ ] Implement Tela 7 top-level tab visibility and ordering.
 - [x] Persist and restore Tela 2 navigation order.
-- [ ] Persist and restore Tela 7 top-level tab visibility.
-- [ ] Implement pending `pt_BR` translations.
-- [ ] Migrate `SignaturePreview` empty-state colors to design tokens.
-- [ ] Migrate the `FilePicker` browse action to the existing icon infrastructure.
-- [ ] Validate keyboard and accessibility behavior.
 - [x] Validate theme changes, including SVG icon recoloring and refresh.
-- [ ] Validate language changes.
+
+The following items belong to the future Professional backlog and do not block any phase:
+
+- Integrate `EyeToggleButton` and `VisibilityToggle` in the Tela 7 top-level tab configuration.
+- Implement prototype screens Tela 3–7.
+- Implement and persist Tela 7 top-level tab visibility and ordering.
+- Complete pending translations and language-change validation.
+- Migrate remaining appearance and icon usage in Professional widgets.
+- Validate keyboard and accessibility behavior across the complete Professional module.
 
 Visual validation on 2026-11-26 confirmed the Tela 2 section layout,
 expansion/collapse behavior, drag handles, ordering, and preview rendering.
@@ -212,19 +214,17 @@ Do not start C/D merely to complete the original widget list. Reassess their nec
 
 ### 4.4 Sprint L Closure
 
-- [ ] Validate the Professional Editor through the actual Workspace and Editor lifecycle.
-- [ ] Validate ModuleUISpec registration and materialization.
-- [ ] Validate profile persistence across application restarts.
-- [ ] Validate settings restoration.
-- [ ] Validate theme and language changes.
+- [x] Developer approved Sprint L closure for the accepted Phase 3 scope on 2026-11-27.
+- [x] Validate the Professional Editor through the actual Workspace and Editor lifecycle.
+- [x] Validate ModuleUISpec registration and materialization.
 - [x] Validate navigation and presentation-state persistence.
+- [x] Validate theme changes.
 - [x] Run the complete test suite and static analysis.
-- [ ] Update `widget_catalog.md` for any implemented or changed widgets.
-- [ ] Record unresolved limitations.
+- [x] Record remaining profiles, screens, translations, accessibility, and widget-catalog work as future Professional backlog.
 
-Sprint L must not absorb unrelated Phase 4 work.
+Phase 3 and Sprint L are closed as of 2026-11-27. Future Professional work must be scheduled separately and must not reopen Phase 3.
 
-## 5. Remaining Phase 3 Work
+## 5. Phase 3 Closure and Deferred Work
 
 ### 5.1 Project Management UI
 
@@ -245,25 +245,28 @@ The project import/export interface is not part of Phase 3; it belongs to Phase 
 
 ### 5.2 Phase 3 Closure
 
-Before closing Phase 3:
+Phase 3 was formally closed on 2026-11-27:
 
-- [ ] Complete Sprint L, including L.2.
+- [x] Complete Sprint L for the accepted Phase 3 scope.
 - [x] Resolve ModuleUISpec ownership.
 - [x] Approve Tela 2 visually (2026-11-26).
 - [x] Complete project search, sorting, selection, and removal UI.
 - [x] Run complete validation.
 - [x] Update `implementation_plan.md` with verified completion status.
 - [x] Update documentation and record remaining technical debt.
+- [x] Defer Professional Telas 3–7 and remaining module capabilities to future work.
 
-**Phase 4 must not formally begin until these criteria are satisfied.**
+The deferral was approved by the developer because the remaining Professional pages neither block nor unlock any phase. Phase 4A is active.
 
-## 6. Next Phase — Phase 4
+## 6. Current Phase — Phase 4
 
 Phase 4 is divided into two milestones. This section is a handoff summary; `implementation_plan.md` contains the complete scope and acceptance criteria.
 
 ### 6.1 Phase 4A — Imaging Core & Rendering Validation
 
 **Primary objective:** Validate the complete DICOM → Volume → Scene → VTK → MPR/3D path.
+
+**Status:** In progress.
 
 Initial sequence:
 
@@ -302,7 +305,9 @@ It does not implement workflow execution. `WorkflowEngine` and Flow execution be
 
 | Item | Status | Reference / Destination |
 |---|---|---|
-| L.0.2 Deliveries C/D | Deferred | Sprint L |
+| Professional Telas 3–7 | Deferred | Future Professional backlog |
+| Remaining Professional module capabilities | Deferred | Future Professional backlog |
+| L.0.2 Deliveries C/D | Deferred | Future Professional backlog |
 | Logs Monitor | Deferred; unscheduled | `monitor_logs.md` |
 | SQLite ProjectIndex and Recent Projects | Planned | Phase 8 / ADR-0016 |
 | Project import/export | Planned | Phase 8 |
@@ -321,7 +326,7 @@ The Logs Monitor is a developer-facing diagnostic subsystem specified in
 implemented; `LogsDialog`, `QtLogHandler`, and diagnostic routing remain
 deferred.
 
-It is distinct from the clinical Console, History, and Telemetry. Its implementation belongs to a dedicated sprint and does not block Sprint L or Phase 3 closure.
+It is distinct from the clinical Console, History, and Telemetry. Its implementation belongs to a dedicated sprint and does not block Phase 4A.
 
 ### 7.2 Icon Infrastructure
 
@@ -370,7 +375,7 @@ The following constraints apply to all upcoming work:
 
 ## 9. Validation Procedure
 
-Run the complete validation suite after each delivery and before closing Sprint L.
+Run the complete validation suite after each delivery and before closing a phase or milestone.
 
 ### 9.1 Pytest
 
@@ -402,15 +407,18 @@ Run the complete validation suite after each delivery and before closing Sprint 
 
 ## 10. Next Handoff
 
-**Immediate task:** Implement one remaining Professional prototype screen,
-starting with the document templates screen, without combining it with the
-Tela 7 configuration work.
+**Immediate task:** Establish the Phase 4A Imaging Reference Dataset and its
+regression tests. Do not reopen the resolved DICOM visualization bug and do
+not expand the visualization UI.
 
-1. Implement Tela 3, document templates.
-2. Implement the remaining Professional prototype screens one at a time.
-3. Implement Tela 7 visibility and ordering.
-4. Validate and close Sprint L.
-5. Close Phase 3 according to `implementation_plan.md`.
+1. Define the synthetic asymmetric phantom and its expected geometry.
+2. Add objective tests for NumPy → VTK conversion and MPR orientation.
+3. Establish reference results for 3D rendering and resource lifecycle.
+4. Validate Scene integration, persistence, and the minimal `RenderingAdapter`.
+5. Run the Phase 4A acceptance suite before beginning Phase 4B.
+
+Professional Telas 3–7 remain deferred. They may resume in a future,
+separately scoped Professional module cycle.
 
 ### Reference Documents
 
